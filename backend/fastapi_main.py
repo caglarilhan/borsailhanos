@@ -1527,6 +1527,62 @@ async def tail_logs(lines: int = 200):
         logger.error(f"Log tail hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/ai/xai/lightgbm/{symbol}")
+async def explain_lightgbm(symbol: str, period: str = "360d", interval: str = "1d", top_n: int = 10):
+    """LightGBM son tahmin için SHAP feature katkıları"""
+    try:
+        import yfinance as yf
+        import shap
+        import numpy as np
+        from ai_models.lightgbm_model import LightGBMModel
+        
+        # Veri
+        df = yf.Ticker(symbol).history(period=period, interval=interval)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri yok")
+        
+        model = LightGBMModel()
+        # Model yüklü değilse eğitelim (hızlıca)
+        if not model.load_model():
+            model.train(df)
+        if not model.is_trained:
+            raise HTTPException(status_code=500, detail="Model yüklenemedi/eğitilemedi")
+        
+        # Feature'lar
+        features_df = model.create_features(df)
+        X = features_df[model.feature_names].fillna(0)
+        x_last = X.iloc[-1:]
+        
+        # SHAP hesapla
+        explainer = shap.TreeExplainer(model.model)
+        shap_values = explainer.shap_values(x_last)
+        
+        # Binary'de shap_values bir liste olabilir
+        if isinstance(shap_values, list):
+            sv = shap_values[1] if len(shap_values) > 1 else shap_values[0]
+        else:
+            sv = shap_values
+        
+        contrib = sorted(
+            [
+                (fname, float(sv[0, idx]))
+                for idx, fname in enumerate(model.feature_names)
+            ],
+            key=lambda x: abs(x[1]), reverse=True
+        )[:top_n]
+        
+        return {
+            'symbol': symbol,
+            'top_contributions': contrib,
+            'prediction': float(model.model.predict_proba(x_last)[0][1]),
+            'timestamp': datetime.now().isoformat()
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"XAI SHAP hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Error handlers
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
