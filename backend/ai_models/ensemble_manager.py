@@ -24,6 +24,9 @@ except Exception:
     LSTMModel = None  # type: ignore
     _LSTM_AVAILABLE = False
 from .timegpt_model import TimeGPTModel, TimeGPTForecast
+from .catboost_model import CatBoostModel
+from .sentiment_tr import TurkishSentiment
+from .macro_regime_detector import MacroRegimeDetector
 
 logger = logging.getLogger(__name__)
 
@@ -38,8 +41,9 @@ class AIEnsembleManager:
         # Model ağırlıkları (başlangıç)
         self.default_weights = {
             'lightgbm': 0.4,    # Günlük yön tahmini
-            'lstm': 0.35,       # 4 saatlik pattern
-            'timegpt': 0.25     # 10 günlük forecast
+            'catboost': 0.25,   # Alternatif ağaç model
+            'lstm': 0.2,        # 4 saatlik pattern
+            'timegpt': 0.15     # 10 günlük forecast
         }
         
         # Performance thresholds
@@ -48,6 +52,8 @@ class AIEnsembleManager:
         self.min_weight = 0.1
         
         self.initialize_models()
+        self.sentiment = TurkishSentiment()
+        self.macro_detector = MacroRegimeDetector()
     
     def initialize_models(self):
         """AI modellerini başlat"""
@@ -56,6 +62,8 @@ class AIEnsembleManager:
             
             # LightGBM
             self.models['lightgbm'] = LightGBMModel(f"{self.models_dir}lightgbm_model.pkl")
+            # CatBoost
+            self.models['catboost'] = CatBoostModel(f"{self.models_dir}catboost_model.cbm")
             
             # LSTM (optional)
             if _LSTM_AVAILABLE:
@@ -87,7 +95,18 @@ class AIEnsembleManager:
                 self.weights = self.default_weights.copy()
                 self.save_weights()
                 logger.info("Varsayılan ağırlıklar kullanılıyor")
-                
+            # Eksik anahtarları tamamla ve normalize et
+            changed = False
+            for k, v in self.default_weights.items():
+                if k not in self.weights:
+                    self.weights[k] = v
+                    changed = True
+            total = sum(self.weights.values())
+            if total > 0:
+                for k in list(self.weights.keys()):
+                    self.weights[k] = self.weights[k] / total
+                if changed:
+                    self.save_weights()
         except Exception as e:
             logger.error(f"Ağırlık yükleme hatası: {e}")
             self.weights = self.default_weights.copy()
@@ -130,6 +149,22 @@ class AIEnsembleManager:
             except Exception as e:
                 logger.error(f"LightGBM tahmin hatası: {e}")
             
+            # 1b. CatBoost - Günlük yön tahmini
+            try:
+                cb: CatBoostModel = self.models['catboost']
+                if cb and cb.is_trained or cb.load_model():
+                    direction, probability = cb.predict(df)
+                    predictions['catboost'] = {
+                        'direction': 'BULLISH' if direction == 1 else 'BEARISH',
+                        'confidence': probability,
+                        'horizon': '1D'
+                    }
+                    confidences['catboost'] = probability
+                else:
+                    logger.info("CatBoost model eğitilmemiş")
+            except Exception as e:
+                logger.error(f"CatBoost tahmin hatası: {e}")
+
             # 2. LSTM - 4 saatlik pattern
             try:
                 if self.models.get('lstm') is not None and getattr(self.models['lstm'], 'is_trained', False):
@@ -161,8 +196,11 @@ class AIEnsembleManager:
             except Exception as e:
                 logger.error(f"TimeGPT tahmin hatası: {e}")
             
+            # Sentiment ve makro rejim bilgisi
+            sentiment_score, news_count = self.sentiment.score_symbol_news(symbol)
+            regime, confidence, regime_weights = self.macro_detector.update_regime()
             # Ensemble tahmin
-            ensemble_result = self.combine_predictions(predictions, confidences)
+            ensemble_result = self.combine_predictions(predictions, confidences, sentiment_score, regime, regime_weights)
             
             # Performance tracking
             self.track_performance(symbol, ensemble_result)
@@ -173,7 +211,7 @@ class AIEnsembleManager:
             logger.error(f"Ensemble tahmin hatası: {e}")
             return {}
     
-    def combine_predictions(self, predictions: Dict, confidences: Dict) -> Dict:
+    def combine_predictions(self, predictions: Dict, confidences: Dict, sentiment_score: float = 0.0, regime: str = 'UNKNOWN', regime_weights: Dict = None) -> Dict:
         """Model tahminlerini birleştir"""
         try:
             if not predictions:
@@ -188,6 +226,13 @@ class AIEnsembleManager:
                 weight = self.weights['lightgbm']
                 direction_score = 1 if predictions['lightgbm']['direction'] == 'BULLISH' else -1
                 weighted_score += direction_score * weight * confidences['lightgbm']
+                total_weight += weight
+
+            # CatBoost yön tahmini
+            if 'catboost' in predictions:
+                weight = self.weights.get('catboost', self.default_weights.get('catboost', 0.25))
+                direction_score = 1 if predictions['catboost']['direction'] == 'BULLISH' else -1
+                weighted_score += direction_score * weight * confidences['catboost']
                 total_weight += weight
             
             # LSTM pattern score
@@ -211,6 +256,11 @@ class AIEnsembleManager:
                 weighted_score += trend_score * weight * confidences['timegpt']
                 total_weight += weight
             
+            # Sentiment: pozitif → biraz artır, negatif → azalt
+            sent_mult = 1.0 + max(min(sentiment_score, 0.2), -0.2)
+
+            weighted_score *= sent_mult
+
             # Normalize
             if total_weight > 0:
                 ensemble_score = weighted_score / total_weight
@@ -238,7 +288,11 @@ class AIEnsembleManager:
                 'ensemble_score': ensemble_score,
                 'model_predictions': predictions,
                 'model_weights': self.weights,
+                'regime_weights': regime_weights,
                 'risk_reward': risk_reward,
+                'sentiment_score': sentiment_score,
+                'regime': regime,
+                'regime_confidence': 0.7,  # Default confidence
                 'timestamp': datetime.now().isoformat()
             }
             
@@ -323,6 +377,10 @@ class AIEnsembleManager:
             
         except Exception as e:
             logger.error(f"Ağırlık güncelleme hatası: {e}")
+
+    def get_macro_regime_info(self) -> Dict:
+        """Makro rejim bilgisi"""
+        return self.macro_detector.get_current_regime()
     
     def track_performance(self, symbol: str, prediction: Dict):
         """Performance tracking"""

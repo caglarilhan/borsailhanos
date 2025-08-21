@@ -17,6 +17,8 @@ import logging
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
 import talib
+from sklearn.calibration import CalibratedClassifierCV
+from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +29,8 @@ class LightGBMModel:
         self.scaler = StandardScaler()
         self.feature_names = []
         self.is_trained = False
+        self.calibrator: Optional[CalibratedClassifierCV] = None
+        self.best_threshold: float = 0.5
         
         # Hyperparameters
         self.params = {
@@ -223,9 +227,44 @@ class LightGBMModel:
             validation_scores = self.walk_forward_validation(X, y)
             logger.info(f"Validation skorları: {validation_scores}")
             
-            # Final model eğitimi (tüm veri ile)
+            # Hold-out validation (son %20) ile kalibrasyon ve eşik optimizasyonu
+            split_idx = int(len(X) * 0.8)
+            X_train, X_val = X.iloc[:split_idx], X.iloc[split_idx:]
+            y_train, y_val = y.iloc[:split_idx], y.iloc[split_idx:]
+
             self.model = lgb.LGBMClassifier(**self.params)
-            self.model.fit(X, y)
+            self.model.fit(X_train, y_train)
+
+            # Kalibrasyon (isotonic, gerekirse sigmoid)
+            try:
+                self.calibrator = CalibratedClassifierCV(self.model, method='isotonic', cv='prefit')
+                self.calibrator.fit(X_val, y_val)
+            except Exception as _:
+                self.calibrator = CalibratedClassifierCV(self.model, method='sigmoid', cv='prefit')
+                self.calibrator.fit(X_val, y_val)
+
+            # Eşik optimizasyonu: yüksek precision hedefi (min recall = 0.2)
+            val_proba = self.calibrator.predict_proba(X_val)[:, 1] if self.calibrator else self.model.predict_proba(X_val)[:, 1]
+            thresholds = [round(t, 3) for t in list(np.linspace(0.2, 0.9, 71))]
+            best = {'thr': 0.5, 'precision': -1, 'recall': 0, 'f1': 0}
+            for t in thresholds:
+                y_hat = (val_proba >= t).astype(int)
+                prec = precision_score(y_val, y_hat, zero_division=0)
+                rec = recall_score(y_val, y_hat, zero_division=0)
+                f1 = f1_score(y_val, y_hat, zero_division=0)
+                # Önce min recall sağlanarak precision maksimize edilir, eşit ise f1'e bakılır
+                if rec >= 0.2 and (prec > best['precision'] or (prec == best['precision'] and f1 > best['f1'])):
+                    best = {'thr': t, 'precision': float(prec), 'recall': float(rec), 'f1': float(f1)}
+            # Eğer hiç threshold min recall'ü sağlamazsa, en iyi f1'i seç
+            if best['precision'] < 0:
+                for t in thresholds:
+                    y_hat = (val_proba >= t).astype(int)
+                    prec = precision_score(y_val, y_hat, zero_division=0)
+                    rec = recall_score(y_val, y_hat, zero_division=0)
+                    f1 = f1_score(y_val, y_hat, zero_division=0)
+                    if f1 > best['f1']:
+                        best = {'thr': t, 'precision': float(prec), 'recall': float(rec), 'f1': float(f1)}
+            self.best_threshold = float(best['thr'])
             
             # Feature importance
             feature_importance = pd.DataFrame({
@@ -246,7 +285,14 @@ class LightGBMModel:
                 'validation_scores': validation_scores,
                 'feature_importance': feature_importance.to_dict('records'),
                 'training_date': datetime.now().isoformat(),
-                'feature_count': len(self.feature_names)
+                'feature_count': len(self.feature_names),
+                'calibration': {
+                    'method': 'isotonic/sigmoid',
+                    'best_threshold': self.best_threshold,
+                    'val_precision': best.get('precision'),
+                    'val_recall': best.get('recall'),
+                    'val_f1': best.get('f1')
+                }
             }
             
         except Exception as e:
@@ -263,9 +309,12 @@ class LightGBMModel:
             features_df = self.create_features(df)
             X = features_df[self.feature_names].iloc[-1:].fillna(0)
             
-            # Tahmin
-            prediction = self.model.predict(X)[0]
-            probability = self.model.predict_proba(X)[0][1]
+            # Tahmin (kalibre edilmiş olasılık ve optimize eşik)
+            if self.calibrator:
+                probability = float(self.calibrator.predict_proba(X)[0][1])
+            else:
+                probability = float(self.model.predict_proba(X)[0][1])
+            prediction = 1 if probability >= self.best_threshold else 0
             
             return prediction, probability
             
@@ -284,7 +333,8 @@ class LightGBMModel:
                 'scaler': self.scaler,
                 'feature_names': self.feature_names,
                 'params': self.params,
-                'training_date': datetime.now().isoformat()
+                'training_date': datetime.now().isoformat(),
+                'best_threshold': self.best_threshold
             }
             
             joblib.dump(model_data, self.model_path)
@@ -303,6 +353,8 @@ class LightGBMModel:
                 self.feature_names = model_data['feature_names']
                 self.params = model_data['params']
                 self.is_trained = True
+                self.best_threshold = float(model_data.get('best_threshold', 0.5))
+                # Kalibratörü yeniden inşa etmek için None bırakıyoruz; ihtiyaç halinde tekrar kalibre edilebilir
                 logger.info("Model yüklendi")
                 return True
             return False

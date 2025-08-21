@@ -77,6 +77,48 @@ performance_tracker = None
 accuracy_optimizer = None
 firestore_schema = None
 
+# LSTM scheduler state
+_lstm_task: Optional[asyncio.Task] = None
+_lstm_stop_event: Optional[asyncio.Event] = None
+_lstm_interval_min: int = 240
+_lstm_symbol: str = "SISE.IS"
+
+async def _lstm_scheduler_loop():
+    global _lstm_stop_event, _lstm_interval_min, _lstm_symbol
+    try:
+        if _lstm_stop_event is None:
+            _lstm_stop_event = asyncio.Event()
+        while not _lstm_stop_event.is_set():
+            try:
+                # Run one training pass
+                import yfinance as yf
+                from ai_models.lstm_model import LSTMModel
+                import pandas as pd
+                df = yf.Ticker(_lstm_symbol).history(period="60d", interval="60m")
+                if not df.empty:
+                    df.index = pd.to_datetime(df.index)
+                    df_4h = pd.DataFrame({
+                        'Open': df['Open'].resample('4H').first(),
+                        'High': df['High'].resample('4H').max(),
+                        'Low': df['Low'].resample('4H').min(),
+                        'Close': df['Close'].resample('4H').last(),
+                        'Volume': df['Volume'].resample('4H').sum()
+                    }).dropna()
+                    model = LSTMModel()
+                    model.train(df_4h)
+                    logger.info(f"LSTM scheduled training done for {_lstm_symbol}")
+                else:
+                    logger.warning(f"LSTM scheduler: no data for {_lstm_symbol}")
+            except Exception as ex:
+                logger.warning(f"LSTM scheduler error: {ex}")
+            # Wait for interval or stop
+            try:
+                await asyncio.wait_for(_lstm_stop_event.wait(), timeout=_lstm_interval_min * 60)
+            except asyncio.TimeoutError:
+                continue
+    except Exception as e:
+        logger.error(f"LSTM scheduler loop crashed: {e}")
+
 @app.on_event("startup")
 async def startup_event():
     """Uygulama başlangıcında çalışır"""
@@ -208,6 +250,14 @@ async def shutdown_event():
         if task and not task.done():
             task.cancel()
             logger.info("🛑 BIST100 scanner durduruluyor")
+        # Stop LSTM scheduler
+        global _lstm_stop_event
+        if _lstm_stop_event is not None:
+            _lstm_stop_event.set()
+        global _lstm_task
+        if _lstm_task is not None and not _lstm_task.done():
+            _lstm_task.cancel()
+            logger.info("🛑 LSTM scheduler durduruluyor")
     except Exception as e:
         logger.warning(f"Scanner durdurma hatası: {e}")
 
@@ -593,6 +643,21 @@ async def get_ensemble_weights():
         logger.error(f"Model ağırlıkları hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/ai/macro/regime")
+async def get_macro_regime():
+    """Mevcut makro rejim bilgisini getir"""
+    try:
+        from ai_models.ensemble_manager import AIEnsembleManager
+        
+        ensemble_manager = AIEnsembleManager()
+        regime_info = ensemble_manager.get_macro_regime_info()
+        
+        return regime_info
+        
+    except Exception as e:
+        logger.error(f"Makro rejim hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/ai/models/status")
 async def get_ai_models_status():
     """AI modellerin durumu"""
@@ -638,6 +703,47 @@ async def get_ai_models_status():
         
     except Exception as e:
         logger.error(f"AI model durumu hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/scheduler/lstm/start")
+async def start_lstm_scheduler(symbol: str = "SISE.IS", interval_min: int = 240):
+    """LSTM eğitim zamanlayıcısını başlat"""
+    try:
+        global _lstm_task, _lstm_stop_event, _lstm_interval_min, _lstm_symbol
+        _lstm_symbol = symbol
+        _lstm_interval_min = max(30, interval_min)
+        if _lstm_stop_event is None:
+            _lstm_stop_event = asyncio.Event()
+        else:
+            _lstm_stop_event.clear()
+        if _lstm_task is None or _lstm_task.done():
+            _lstm_task = asyncio.create_task(_lstm_scheduler_loop())
+        return {"status": "started", "symbol": _lstm_symbol, "interval_min": _lstm_interval_min}
+    except Exception as e:
+        logger.error(f"LSTM scheduler start hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/scheduler/lstm/stop")
+async def stop_lstm_scheduler():
+    """LSTM eğitim zamanlayıcısını durdur"""
+    try:
+        global _lstm_stop_event
+        if _lstm_stop_event is not None:
+            _lstm_stop_event.set()
+        return {"status": "stopped"}
+    except Exception as e:
+        logger.error(f"LSTM scheduler stop hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/timegpt/config")
+async def set_timegpt_api_key(api_key: str):
+    """TimeGPT API anahtarını ortam değişkenine yazar (runtime)"""
+    try:
+        import os
+        os.environ['TIMEGPT_API_KEY'] = api_key
+        return {"status": "configured"}
+    except Exception as e:
+        logger.error(f"TimeGPT key set hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
@@ -1419,6 +1525,31 @@ async def train_lstm(symbol: str = "SISE.IS", period: str = "60d", interval: str
         }
     except Exception as e:
         logger.error(f"LSTM eğitim hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/train/catboost")
+async def train_catboost(symbol: str = "SISE.IS", period: str = "360d", interval: str = "1d"):
+    """CatBoost model eğitimi (yfinance verisi ile)"""
+    try:
+        import yfinance as yf
+        from ai_models.catboost_model import CatBoostModel
+        
+        df = yf.Ticker(symbol).history(period=period, interval=interval)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri yok")
+        
+        model = CatBoostModel()
+        result = model.train(df)
+        if not result:
+            raise HTTPException(status_code=500, detail="CatBoost eğitim başarısız")
+        
+        return {
+            'symbol': symbol,
+            'result': result,
+            'timestamp': datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"CatBoost eğitim hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/snapshots/health")

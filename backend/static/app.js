@@ -247,10 +247,51 @@ async function loadAIEnsemble(){
   }
 }
 
+// Makro rejim kartı
+function macroRegimeCard(regime){
+  const regimeType = regime.regime || 'UNKNOWN';
+  const confidence = (regime.confidence * 100).toFixed(0);
+  const lastUpdate = regime.last_update ? new Date(regime.last_update).toLocaleString() : 'Bilinmiyor';
+  
+  let regimeCls = 'mid';
+  if(regimeType === 'RISK_ON') regimeCls = 'good';
+  else if(regimeType === 'RISK_OFF') regimeCls = 'bad';
+  
+  let weightsHtml = '';
+  if(regime.weights && Object.keys(regime.weights).length > 0){
+    weightsHtml = '<div style="margin-top:10px;font-size:12px;"><strong>Model Ağırlıkları:</strong><br>';
+    for(const [model, weight] of Object.entries(regime.weights)){
+      weightsHtml += `${model}: ${(weight * 100).toFixed(1)}%<br>`;
+      }
+    weightsHtml += '</div>';
+  }
+  
+  return `<div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>Makro Rejim</strong>
+      <span class="rr ${regimeCls}">${regimeType}</span>
+    </div>
+    <div>Güven: <strong>${confidence}%</strong></div>
+    <div style="opacity:.7;font-size:12px">Son Güncelleme: ${lastUpdate}</div>
+    ${weightsHtml}
+  </div>`;
+}
+
+// Makro rejim yükle
+async function loadMacroRegime(){
+  try{
+    const data = await fetchJSON('/ai/macro/regime');
+    $('#macro-regime').innerHTML = macroRegimeCard(data);
+  }catch(e){
+    console.error('macro regime error', e);
+    $('#macro-regime').innerHTML = '<div>Makro rejim yüklenemedi</div>';
+  }
+}
+
 // Ana yükleme fonksiyonunu güncelle
 document.addEventListener('DOMContentLoaded', async ()=>{
   await initSymbols();
-  await Promise.all([loadForecast(), loadSignals(), loadPrices(), loadHealthSummary(), loadTopsisRanking(), loadTechnicalPatterns(), loadAIEnsemble()]);
+  await Promise.all([loadForecast(), loadSignals(), loadPrices(), loadHealthSummary(), loadTopsisRanking(), loadTechnicalPatterns(), loadAIEnsemble(), loadMacroRegime()]);
   $('#refreshBtn').addEventListener('click', ()=>{
     loadForecast();
     loadSignals();
@@ -259,6 +300,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadTopsisRanking();
     loadTechnicalPatterns();
     loadAIEnsemble();
+    loadMacroRegime();
   });
   // 30sn'de bir yenile
   setInterval(()=>{ 
@@ -269,6 +311,7 @@ document.addEventListener('DOMContentLoaded', async ()=>{
     loadTopsisRanking(); 
     loadTechnicalPatterns(); 
     loadAIEnsemble(); 
+    loadMacroRegime(); 
   }, 30000);
 });
 

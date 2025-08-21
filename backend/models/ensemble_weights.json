@@ -1,5 +1,6 @@
 {
-  "lightgbm": 0.4,
-  "lstm": 0.35,
-  "timegpt": 0.25
+  "lightgbm": 0.32,
+  "lstm": 0.27999999999999997,
+  "timegpt": 0.2,
+  "catboost": 0.2
 }
