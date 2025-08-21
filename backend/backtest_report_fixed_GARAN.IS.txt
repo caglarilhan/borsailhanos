@@ -1,0 +1,32 @@
+
+# 🚀 ULTRA TRADING ROBOT - PERFORMANS RAPORU (DÜZELTİLMİŞ)
+## 📊 GARAN.IS Analizi
+**Rapor Tarihi:** 2025-08-17T20:56:41.181404
+
+## 📈 GENEL ÖZET
+- **Toplam Strateji:** 3
+- **En İyi Getiri:** %0.00
+- **Ortalama Kazanma Oranı:** %0.00
+
+## 🏆 EN İYİ STRATEJİ
+**Scalping Strategy (5m-15m)** - 0.00% getiri
+
+## 📊 STRATEJİ KARŞILAŞTIRMASI
+
+### Scalping Strategy (5m-15m)
+- **Toplam Getiri:** %0.00
+- **Kazanma Oranı:** %0.00
+- **Sharpe Ratio:** 0.00
+- **Toplam İşlem:** 0
+
+### Swing Trading Strategy (1h-4h-1d)
+- **Toplam Getiri:** %0.00
+- **Kazanma Oranı:** %0.00
+- **Sharpe Ratio:** 0.00
+- **Toplam İşlem:** 0
+
+### Position Trading Strategy (1d-1wk)
+- **Toplam Getiri:** %0.00
+- **Kazanma Oranı:** %0.00
+- **Sharpe Ratio:** 0.00
+- **Toplam İşlem:** 0

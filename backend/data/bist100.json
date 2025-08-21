@@ -1,0 +1,39 @@
+{
+  "symbols": [
+    {"symbol": "XU100", "name": "BIST100", "sector": "Endeks"},
+    {"symbol": "GARAN.IS", "name": "Garanti BBVA", "sector": "Bankacılık"},
+    {"symbol": "AKBNK.IS", "name": "Akbank", "sector": "Bankacılık"},
+    {"symbol": "ISCTR.IS", "name": "İş Bankası (C)", "sector": "Bankacılık"},
+    {"symbol": "YKBNK.IS", "name": "Yapı Kredi", "sector": "Bankacılık"},
+    {"symbol": "HALKB.IS", "name": "Halkbank", "sector": "Bankacılık"},
+    {"symbol": "VAKBN.IS", "name": "Vakıfbank", "sector": "Bankacılık"},
+    {"symbol": "THYAO.IS", "name": "Türk Hava Yolları", "sector": "Ulaşım"},
+    {"symbol": "SISE.IS", "name": "Şişe Cam", "sector": "Sanayi"},
+    {"symbol": "EREGL.IS", "name": "Ereğli Demir Çelik", "sector": "Demir-Çelik"},
+    {"symbol": "TUPRS.IS", "name": "Tüpraş", "sector": "Enerji"},
+    {"symbol": "ASELS.IS", "name": "Aselsan", "sector": "Savunma"},
+    {"symbol": "KRDMD.IS", "name": "Kardemir (D)", "sector": "Demir-Çelik"},
+    {"symbol": "PGSUS.IS", "name": "Pegasus", "sector": "Ulaşım"},
+    {"symbol": "SAHOL.IS", "name": "Sabancı Holding", "sector": "Holding"},
+    {"symbol": "KCHOL.IS", "name": "Koç Holding", "sector": "Holding"},
+    {"symbol": "BIMAS.IS", "name": "BİM", "sector": "Perakende"},
+    {"symbol": "TCELL.IS", "name": "Turkcell", "sector": "Telekom"},
+    {"symbol": "TTKOM.IS", "name": "Türk Telekom", "sector": "Telekom"},
+    {"symbol": "EKGYO.IS", "name": "Emlak Konut GYO", "sector": "GYO"},
+    {"symbol": "SASA.IS", "name": "SASA Polyester", "sector": "Kimya"},
+    {"symbol": "HEKTS.IS", "name": "Hektaş", "sector": "Kimya"},
+    {"symbol": "TOASO.IS", "name": "Tofaş", "sector": "Otomotiv"},
+    {"symbol": "FROTO.IS", "name": "Ford Otosan", "sector": "Otomotiv"},
+    {"symbol": "ULKER.IS", "name": "Ülker", "sector": "Gıda"},
+    {"symbol": "MGROS.IS", "name": "Migros", "sector": "Perakende"},
+    {"symbol": "ARCLK.IS", "name": "Arçelik", "sector": "Beyaz Eşya"},
+    {"symbol": "KOZAL.IS", "name": "Koza Altın", "sector": "Madencilik"},
+    {"symbol": "KOZAA.IS", "name": "Koza Anadolu", "sector": "Holding"},
+    {"symbol": "PETKM.IS", "name": "Petkim", "sector": "Kimya"},
+    {"symbol": "ALARK.IS", "name": "Alarko Holding", "sector": "Holding"},
+    {"symbol": "VESTL.IS", "name": "Vestel", "sector": "Elektronik"},
+    {"symbol": "ALGY0.IS", "name": "Algoritmik Placeholder", "sector": "Diğer"}
+  ]
+}
+
+

@@ -4,9 +4,11 @@ PRD v2.0 - FastAPI Ana Uygulama
 Railway deploy için hazır
 """
 
-from fastapi import FastAPI, HTTPException, BackgroundTasks
+from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.templating import Jinja2Templates
 import uvicorn
 from typing import Dict, List, Optional
 import logging
@@ -14,6 +16,7 @@ from datetime import datetime, timedelta
 import asyncio
 import json
 import pandas as pd
+import numpy as np
 
 # Local imports
 try:
@@ -31,6 +34,7 @@ try:
     from accuracy_optimizer import AccuracyOptimizer
     from firestore_schema import FirestoreSchema
     from config import config
+    from bist100_scanner import BIST100Scanner
 except ImportError as e:
     print(f"⚠️ Import hatası: {e}")
 
@@ -44,6 +48,10 @@ app = FastAPI(
     description="PRD v2.0 - Yapay zekâ destekli yatırım danışmanı",
     version="2.0.0"
 )
+# Static ve Templates
+app.mount("/static", StaticFiles(directory="static"), name="static")
+templates = Jinja2Templates(directory="templates")
+
 
 # CORS middleware
 app.add_middleware(
@@ -170,6 +178,14 @@ async def startup_event():
         # except Exception as e:
         #     logger.warning(f"Firestore schema hatası: {e}")
         
+        # BIST100 48s tarayıcıyı arka planda başlat
+        try:
+            app.state.bist_scanner = BIST100Scanner()
+            app.state.scanner_task = asyncio.create_task(app.state.bist_scanner.start_continuous_scanning())
+            logger.info("✅ BIST100 scanner arka planda başlatıldı")
+        except Exception as e:
+            logger.warning(f"BIST100 scanner başlatma hatası: {e}")
+
         logger.info("✅ Tüm modüller başlatıldı")
         
     except Exception as e:
@@ -184,6 +200,445 @@ async def root():
         "timestamp": datetime.now().isoformat(),
         "version": "2.0.0"
     }
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    try:
+        task = getattr(app.state, 'scanner_task', None)
+        if task and not task.done():
+            task.cancel()
+            logger.info("🛑 BIST100 scanner durduruluyor")
+    except Exception as e:
+        logger.warning(f"Scanner durdurma hatası: {e}")
+
+@app.get("/dashboard")
+async def ui_dashboard(request: Request):
+    """Basit web dashboard"""
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {
+            "request": request,
+            "title": "BIST AI Smart Trader",
+        },
+    )
+
+@app.get("/forecast/active")
+async def get_active_forecast_signals():
+    """BIST100 48 saat önceden aktif sinyaller (scanner snapshot)"""
+    try:
+        import os, json
+        path = os.path.join("data", "forecast_signals.json")
+        if not os.path.exists(path):
+            return {"generated_at": None, "total_active": 0, "signals": []}
+        with open(path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"Forecast snapshot okuma hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/bist100/symbols")
+async def get_bist100_symbols(sector: Optional[str] = None):
+    """BIST100 sembolleri + sektör filtresi"""
+    try:
+        import os, json
+        path = os.path.join("data", "bist100.json")
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        symbols = data.get('symbols', [])
+        if sector:
+            sector_lower = sector.lower()
+            symbols = [s for s in symbols if s.get('sector','').lower() == sector_lower]
+        return {
+            'count': len(symbols),
+            'symbols': symbols,
+            'sectors': sorted(list({s.get('sector','Diğer') for s in data.get('symbols', [])}))
+        }
+    except Exception as e:
+        logger.error(f"BIST100 sembol hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/analysis/fundamental/{symbol}")
+async def get_fundamental_analysis(symbol: str):
+    """Sembol için fundamental analiz (DuPont + Piotroski)"""
+    try:
+        from analysis.fundamental_analysis import FundamentalAnalyzer
+        
+        # Örnek finansal veri (gerçek veri için FMP API veya Yahoo Finance kullanılacak)
+        sample_data = {
+            'net_income': 1000000,
+            'revenue': 10000000,
+            'total_equity': 5000000,
+            'total_assets': 15000000,
+            'total_debt': 2000000,
+            'current_assets': 8000000,
+            'current_liabilities': 3000000,
+            'operating_cash_flow': 1200000,
+            'roa_current': 6.67,
+            'roa_previous': 6.0,
+            'debt_current': 2000000,
+            'debt_previous': 2200000,
+            'current_ratio_current': 2.67,
+            'current_ratio_previous': 2.5,
+            'shares_current': 1000000,
+            'shares_previous': 1000000,
+            'gross_margin_current': 25,
+            'gross_margin_previous': 24,
+            'asset_turnover_current': 0.67,
+            'asset_turnover_previous': 0.65
+        }
+        
+        analyzer = FundamentalAnalyzer()
+        result = analyzer.get_financial_health_summary(symbol, sample_data)
+        
+        return {
+            'symbol': symbol,
+            'analysis': result,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Fundamental analiz hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/analysis/topsis/ranking")
+async def get_topsis_ranking(sector: Optional[str] = None):
+    """BIST100 için TOPSIS sıralama"""
+    try:
+        from analysis.mcdm_ranking import GreyTOPSISAnalyzer, create_financial_decision_matrix
+        
+        # Örnek finansal veri (gerçek veri için veri tabanından çekilecek)
+        sample_symbols = [
+            {
+                'symbol': 'SISE.IS',
+                'financial_health': {
+                    'health_score': 85,
+                    'piotroski': {'Total_Score': 8},
+                    'dupont': {'ROE': 18.5, 'NetProfitMargin': 12.3},
+                    'ratios': {'DebtEquity': 0.4, 'CurrentRatio': 2.8}
+                }
+            },
+            {
+                'symbol': 'EREGL.IS', 
+                'financial_health': {
+                    'health_score': 72,
+                    'piotroski': {'Total_Score': 6},
+                    'dupont': {'ROE': 15.2, 'NetProfitMargin': 10.1},
+                    'ratios': {'DebtEquity': 0.6, 'CurrentRatio': 2.1}
+                }
+            },
+            {
+                'symbol': 'TUPRS.IS',
+                'financial_health': {
+                    'health_score': 68,
+                    'piotroski': {'Total_Score': 5},
+                    'dupont': {'ROE': 12.8, 'NetProfitMargin': 8.7},
+                    'ratios': {'DebtEquity': 0.8, 'CurrentRatio': 1.9}
+                }
+            }
+        ]
+        
+        # Karar matrisi oluştur
+        decision_matrix, criteria_types = create_financial_decision_matrix(sample_symbols)
+        
+        if decision_matrix.empty:
+            raise HTTPException(status_code=400, detail="Karar matrisi oluşturulamadı")
+        
+        # TOPSIS analizi
+        analyzer = GreyTOPSISAnalyzer()
+        results = analyzer.rank_alternatives(decision_matrix, criteria_types)
+        
+        return {
+            'ranking': results.to_dict('index'),
+            'criteria_types': criteria_types,
+            'decision_matrix': decision_matrix.to_dict('index'),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"TOPSIS sıralama hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/analysis/health/summary")
+async def get_health_summary():
+    """Tüm sembollerin finansal sağlık özeti"""
+    try:
+        from analysis.fundamental_analysis import FundamentalAnalyzer
+        import numpy as np
+        
+        # BIST100 sembolleri
+        with open("data/bist100.json", 'r', encoding='utf-8') as f:
+            import json
+            bist100 = json.load(f)
+        
+        analyzer = FundamentalAnalyzer()
+        summary = []
+        
+        # Her sembol için örnek veri (gerçek veri için API'den çekilecek)
+        for symbol_info in bist100['symbols'][:5]:  # İlk 5'i test et
+            symbol = symbol_info['symbol']
+            
+            # Sembol bazlı örnek veri
+            sample_data = {
+                'net_income': np.random.randint(500000, 2000000),
+                'revenue': np.random.randint(5000000, 20000000),
+                'total_equity': np.random.randint(3000000, 10000000),
+                'total_assets': np.random.randint(10000000, 30000000),
+                'total_debt': np.random.randint(1000000, 5000000),
+                'current_assets': np.random.randint(5000000, 15000000),
+                'current_liabilities': np.random.randint(2000000, 8000000),
+                'operating_cash_flow': np.random.randint(600000, 2500000),
+                'roa_current': np.random.uniform(4, 8),
+                'roa_previous': np.random.uniform(3, 7),
+                'debt_current': np.random.randint(1000000, 5000000),
+                'debt_previous': np.random.randint(1200000, 5500000),
+                'current_ratio_current': np.random.uniform(1.5, 3.5),
+                'current_ratio_previous': np.random.uniform(1.3, 3.2),
+                'shares_current': 1000000,
+                'shares_previous': 1000000,
+                'gross_margin_current': np.random.uniform(20, 30),
+                'gross_margin_previous': np.random.uniform(19, 29),
+                'asset_turnover_current': np.random.uniform(0.5, 0.8),
+                'asset_turnover_previous': np.random.uniform(0.4, 0.7)
+            }
+            
+            result = analyzer.get_financial_health_summary(symbol, sample_data)
+            summary.append(result)
+        
+        # Sağlık skoruna göre sırala
+        summary.sort(key=lambda x: x.get('health_score', 0), reverse=True)
+        
+        return {
+            'summary': summary,
+            'total_symbols': len(summary),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Sağlık özeti hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/analysis/patterns/{symbol}")
+async def get_technical_patterns(symbol: str, timeframe: str = "1d", limit: int = 50):
+    """Sembol için teknik formasyon tespiti"""
+    try:
+        from analysis.pattern_detection import TechnicalPatternEngine
+        import yfinance as yf
+        
+        # Veri çek
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=f"{limit}d", interval=timeframe)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} verisi bulunamadı")
+        
+        # Pattern engine ile tara
+        engine = TechnicalPatternEngine()
+        patterns = engine.scan_all_patterns(df, symbol)
+        
+        # Pattern'ları JSON serializable yap
+        pattern_data = []
+        for pattern in patterns:
+            pattern_data.append({
+                'symbol': pattern.symbol,
+                'pattern_type': pattern.pattern_type,
+                'pattern_name': pattern.pattern_name,
+                'confidence': pattern.confidence,
+                'direction': pattern.direction,
+                'entry_price': pattern.entry_price,
+                'stop_loss': pattern.stop_loss,
+                'take_profit': pattern.take_profit,
+                'risk_reward': pattern.risk_reward,
+                'timestamp': pattern.timestamp.isoformat(),
+                'description': pattern.description
+            })
+        
+        return {
+            'symbol': symbol,
+            'timeframe': timeframe,
+            'patterns': pattern_data,
+            'total_patterns': len(pattern_data),
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Teknik formasyon hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/analysis/patterns/scan/bist100")
+async def scan_bist100_patterns():
+    """BIST100'de teknik formasyon taraması"""
+    try:
+        from analysis.pattern_detection import TechnicalPatternEngine
+        import yfinance as yf
+        
+        # BIST100 sembolleri
+        with open("data/bist100.json", 'r', encoding='utf-8') as f:
+            import json
+            bist100 = json.load(f)
+        
+        engine = TechnicalPatternEngine()
+        all_patterns = []
+        
+        # İlk 10 sembolü tara (test için)
+        for symbol_info in bist100['symbols'][:10]:
+            symbol = symbol_info['symbol']
+            
+            try:
+                # Veri çek
+                ticker = yf.Ticker(symbol)
+                df = ticker.history(period="30d", interval="1d")
+                
+                if not df.empty:
+                    patterns = engine.scan_all_patterns(df, symbol)
+                    all_patterns.extend(patterns)
+                    
+            except Exception as e:
+                logger.warning(f"{symbol} pattern tarama hatası: {e}")
+                continue
+        
+        # Pattern'ları JSON serializable yap
+        pattern_data = []
+        for pattern in all_patterns:
+            pattern_data.append({
+                'symbol': pattern.symbol,
+                'pattern_type': pattern.pattern_type,
+                'pattern_name': pattern.pattern_name,
+                'confidence': pattern.confidence,
+                'direction': pattern.direction,
+                'entry_price': pattern.entry_price,
+                'stop_loss': pattern.stop_loss,
+                'take_profit': pattern.take_profit,
+                'risk_reward': pattern.risk_reward,
+                'timestamp': pattern.timestamp.isoformat(),
+                'description': pattern.description
+            })
+        
+        # Güven skoruna göre sırala
+        pattern_data.sort(key=lambda x: x['confidence'], reverse=True)
+        
+        return {
+            'total_symbols_scanned': 10,
+            'total_patterns_found': len(pattern_data),
+            'patterns': pattern_data,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"BIST100 pattern tarama hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ai/ensemble/prediction/{symbol}")
+async def get_ensemble_prediction(symbol: str, timeframe: str = "1d", limit: int = 100):
+    """AI Ensemble tahmin"""
+    try:
+        from ai_models.ensemble_manager import AIEnsembleManager
+        import yfinance as yf
+        
+        # Veri çek
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=f"{limit}d", interval=timeframe)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} verisi bulunamadı")
+        
+        # AI Ensemble tahmin
+        ensemble_manager = AIEnsembleManager()
+        prediction = ensemble_manager.get_ensemble_prediction(df, symbol)
+        
+        if not prediction:
+            raise HTTPException(status_code=500, detail="Ensemble tahmin yapılamadı")
+        
+        return {
+            'symbol': symbol,
+            'prediction': prediction,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"AI Ensemble tahmin hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ai/ensemble/performance")
+async def get_ensemble_performance():
+    """AI Ensemble performance özeti"""
+    try:
+        from ai_models.ensemble_manager import AIEnsembleManager
+        
+        ensemble_manager = AIEnsembleManager()
+        performance = ensemble_manager.get_performance_summary()
+        
+        return {
+            'performance': performance,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"AI Ensemble performance hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ai/ensemble/weights")
+async def get_ensemble_weights():
+    """Model ağırlıkları"""
+    try:
+        from ai_models.ensemble_manager import AIEnsembleManager
+        
+        ensemble_manager = AIEnsembleManager()
+        
+        return {
+            'weights': ensemble_manager.weights,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Model ağırlıkları hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ai/models/status")
+async def get_ai_models_status():
+    """AI modellerin durumu"""
+    try:
+        from ai_models.lightgbm_model import LightGBMModel
+        from ai_models.timegpt_model import TimeGPTModel
+        # LSTM opsiyonel, import hatasına toleranslı
+        try:
+            from ai_models.lstm_model import LSTMModel
+            lstm_available = True
+        except Exception:
+            LSTMModel = None  # type: ignore
+            lstm_available = False
+        
+        # Model durumları
+        lightgbm = LightGBMModel()
+        lstm = LSTMModel() if lstm_available else None
+        timegpt = TimeGPTModel()
+        
+        return {
+            'models': {
+                'lightgbm': {
+                    'status': 'trained' if lightgbm.is_trained else 'not_trained',
+                    'type': 'Gradient Boosting',
+                    'horizon': '1D',
+                    'description': 'Günlük yön tahmini'
+                },
+                'lstm': {
+                    'status': ('trained' if (lstm and getattr(lstm, 'is_trained', False)) else ('unavailable' if not lstm_available else 'not_trained')),
+                    'type': 'Neural Network',
+                    'horizon': '4H',
+                    'description': '4 saatlik pattern öğrenme'
+                },
+                'timegpt': {
+                    'status': 'configured' if timegpt.is_configured else 'not_configured',
+                    'type': 'Transformer',
+                    'horizon': '10D',
+                    'description': '10 günlük forecast'
+                }
+            },
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"AI model durumu hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 async def health_check():
@@ -873,6 +1328,203 @@ async def get_feature_importance(symbol: str):
         raise
     except Exception as e:
         logger.error(f"Özellik önem hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/rl/decision/{symbol}")
+async def get_rl_decision(symbol: str, timeframe: str = "1d", limit: int = 120):
+    """RL ajanından pozisyon kararı"""
+    try:
+        from ai_models.ensemble_manager import AIEnsembleManager
+        from ai_models.rl_agent import RLPortfolioAgent
+        import yfinance as yf
+        
+        # Veri
+        df = yf.Ticker(symbol).history(period=f"{limit}d", interval=timeframe)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri yok")
+        
+        # Ensemble sinyal
+        ensemble = AIEnsembleManager().get_ensemble_prediction(df, symbol)
+        
+        # RL karar
+        agent = RLPortfolioAgent()
+        decision = agent.decide(symbol, df, ensemble)
+        
+        return {
+            'symbol': symbol,
+            'ensemble': ensemble,
+            'rl_decision': decision.__dict__
+        }
+    except Exception as e:
+        logger.error(f"RL karar hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/train/lightgbm")
+async def train_lightgbm(symbol: str = "SISE.IS", period: str = "360d", interval: str = "1d"):
+    """LightGBM model eğitimi (yfinance verisi ile)"""
+    try:
+        import yfinance as yf
+        from ai_models.lightgbm_model import LightGBMModel
+        
+        df = yf.Ticker(symbol).history(period=period, interval=interval)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri yok")
+        
+        model = LightGBMModel()
+        result = model.train(df)
+        if not result:
+            raise HTTPException(status_code=500, detail="LightGBM eğitim başarısız")
+        
+        return {
+            'symbol': symbol,
+            'result': result,
+            'timestamp': datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"LightGBM eğitim hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/train/lstm")
+async def train_lstm(symbol: str = "SISE.IS", period: str = "60d", interval: str = "60m"):
+    """LSTM model eğitimi (yfinance verisi ile, 60m veriden 4H pattern)"""
+    try:
+        import yfinance as yf
+        from ai_models.lstm_model import LSTMModel
+        import pandas as pd
+        
+        df = yf.Ticker(symbol).history(period=period, interval=interval)
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri yok")
+        
+        # 60m veriyi 4 saatlik OHLCV'e yeniden örnekle
+        df = df.copy()
+        df.index = pd.to_datetime(df.index)
+        df_4h = pd.DataFrame({
+            'Open': df['Open'].resample('4H').first(),
+            'High': df['High'].resample('4H').max(),
+            'Low': df['Low'].resample('4H').min(),
+            'Close': df['Close'].resample('4H').last(),
+            'Volume': df['Volume'].resample('4H').sum()
+        }).dropna()
+        
+        model = LSTMModel()
+        result = model.train(df_4h)
+        if not result:
+            raise HTTPException(status_code=500, detail="LSTM eğitim başarısız")
+        
+        return {
+            'symbol': symbol,
+            'result': result,
+            'timestamp': datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"LSTM eğitim hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/snapshots/health")
+async def generate_health_snapshot():
+    """Finansal sağlık snapshot (dosyaya kaydet)"""
+    try:
+        import os, json
+        import numpy as np
+        from analysis.fundamental_analysis import FundamentalAnalyzer
+        
+        # Semboller
+        path_symbols = os.path.join("data", "bist100.json")
+        with open(path_symbols, 'r', encoding='utf-8') as f:
+            symbols_data = json.load(f)
+        symbols = [s['symbol'] for s in symbols_data.get('symbols', [])][:20]
+        
+        analyzer = FundamentalAnalyzer()
+        summary = []
+        for sym in symbols:
+            mock = {
+                'net_income': np.random.randint(500000, 2000000),
+                'revenue': np.random.randint(5000000, 20000000),
+                'total_equity': np.random.randint(3000000, 10000000),
+                'total_assets': np.random.randint(10000000, 30000000),
+                'total_debt': np.random.randint(1000000, 5000000),
+                'current_assets': np.random.randint(5000000, 15000000),
+                'current_liabilities': np.random.randint(2000000, 8000000),
+                'operating_cash_flow': np.random.randint(600000, 2500000),
+                'roa_current': np.random.uniform(4, 8),
+                'roa_previous': np.random.uniform(3, 7),
+                'debt_current': np.random.randint(1000000, 5000000),
+                'debt_previous': np.random.randint(1200000, 5500000),
+                'current_ratio_current': np.random.uniform(1.5, 3.5),
+                'current_ratio_previous': np.random.uniform(1.3, 3.2),
+                'shares_current': 1000000,
+                'shares_previous': 1000000,
+                'gross_margin_current': np.random.uniform(20, 30),
+                'gross_margin_previous': np.random.uniform(19, 29),
+                'asset_turnover_current': np.random.uniform(0.5, 0.8),
+                'asset_turnover_previous': np.random.uniform(0.4, 0.7)
+            }
+            summary.append(analyzer.get_financial_health_summary(sym, mock))
+        summary.sort(key=lambda x: x.get('health_score', 0), reverse=True)
+        
+        out_dir = os.path.join("data", "snapshots")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f"health_{datetime.now().strftime('%Y%m%d_%H%M')}.json")
+        with open(out_path, 'w', encoding='utf-8') as f:
+            json.dump({'generated_at': datetime.now().isoformat(), 'summary': summary}, f, ensure_ascii=False)
+        
+        return {'file': out_path, 'total': len(summary)}
+    except Exception as e:
+        logger.error(f"Health snapshot hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/snapshots/topsis")
+async def generate_topsis_snapshot():
+    """TOPSIS snapshot (dosyaya kaydet)"""
+    try:
+        import os, json
+        from analysis.mcdm_ranking import GreyTOPSISAnalyzer, create_financial_decision_matrix
+        
+        # Health snapshot oluştur
+        health_resp = await generate_health_snapshot()
+        file_path = health_resp['file']
+        with open(file_path, 'r', encoding='utf-8') as f:
+            health_data = json.load(f)
+        
+        # TOPSIS hazırla
+        symbols_data = []
+        for item in health_data['summary']:
+            symbols_data.append({'symbol': item['symbol'], 'financial_health': item})
+        decision_matrix, criteria_types = create_financial_decision_matrix(symbols_data)
+        
+        analyzer = GreyTOPSISAnalyzer()
+        results = analyzer.rank_alternatives(decision_matrix, criteria_types)
+        
+        out_dir = os.path.join("data", "snapshots")
+        os.makedirs(out_dir, exist_ok=True)
+        out_path = os.path.join(out_dir, f"topsis_{datetime.now().strftime('%Y%m%d_%H%M')}.json")
+        with open(out_path, 'w', encoding='utf-8') as f:
+            json.dump({
+                'generated_at': datetime.now().isoformat(),
+                'ranking': results.to_dict('index'),
+                'criteria_types': criteria_types
+            }, f, ensure_ascii=False)
+        
+        return {'file': out_path, 'total': len(results)}
+    except Exception as e:
+        logger.error(f"TOPSIS snapshot hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/logs/tail")
+async def tail_logs(lines: int = 200):
+    """Log dosyasının son satırları"""
+    try:
+        import os
+        log_path = os.path.join("logs", "app.log")
+        if not os.path.exists(log_path):
+            return {'lines': [], 'message': 'Log dosyası bulunamadı'}
+        with open(log_path, 'r', encoding='utf-8') as f:
+            content = f.readlines()
+        tail = content[-lines:]
+        return {'lines': tail}
+    except Exception as e:
+        logger.error(f"Log tail hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Error handlers

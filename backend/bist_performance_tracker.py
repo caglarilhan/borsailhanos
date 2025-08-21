@@ -203,7 +203,7 @@ class BISTPerformanceTracker:
             # Ortalama metrikler
             avg_metrics = {}
             for metric in self.metrics:
-                values = [v.get(metric, 0) for v in performance.values() if isinstance(v.get(metric, (int, float))]
+                values = [v.get(metric, 0) for v in performance.values() if isinstance(v.get(metric, (int, float)))]
                 if values:
                     avg_metrics[f"avg_{metric}"] = round(np.mean(values), 2)
                     avg_metrics[f"max_{metric}"] = round(np.max(values), 2)
