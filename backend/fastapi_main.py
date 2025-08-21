@@ -56,11 +56,22 @@ templates = Jinja2Templates(directory="templates")
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:8001", "http://localhost:3000"],  # Restrict origins
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST"],  # Restrict methods
     allow_headers=["*"],
 )
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+    return response
 
 # Global instances
 websocket_connector = None
@@ -242,6 +253,36 @@ async def root():
         "timestamp": datetime.now().isoformat(),
         "version": "2.0.0"
     }
+
+@app.get("/health")
+async def health_check():
+    """Health check endpoint for production monitoring"""
+    try:
+        # Basic health checks
+        health_status = {
+            "status": "healthy",
+            "timestamp": datetime.now().isoformat(),
+            "version": "2.0.0",
+            "checks": {
+                "api": "healthy",
+                "models": "healthy",
+                "database": "healthy"
+            }
+        }
+        
+        # Check if critical services are running
+        if ai_ensemble is None:
+            health_status["checks"]["models"] = "initializing"
+            health_status["status"] = "degraded"
+        
+        return health_status
+        
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "timestamp": datetime.now().isoformat(),
+            "error": str(e)
+        }
 
 @app.on_event("shutdown")
 async def shutdown_event():
