@@ -1,0 +1,31 @@
+{
+  "total_symbols": 19,
+  "average_accuracy": 0.5012048089492085,
+  "accuracy_std": 0.049531855329941595,
+  "average_max_drawdown": -0.37382628589163175,
+  "average_volatility": 0.2884019350618694,
+  "trend_distribution": {
+    "uptrend": 17,
+    "sideways": 2
+  },
+  "top_5_accuracy": [
+    "ASELS.IS",
+    "GARAN.IS",
+    "AKBNK.IS",
+    "BIMAS.IS",
+    "SAHOL.IS"
+  ],
+  "worst_5_accuracy": [
+    "VESTL.IS",
+    "SASA.IS",
+    "SISE.IS",
+    "FROTO.IS",
+    "KCHOL.IS"
+  ],
+  "accuracy_distribution": {
+    "excellent": 0,
+    "good": 1,
+    "fair": 18,
+    "poor": 0
+  }
+}

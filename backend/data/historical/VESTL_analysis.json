@@ -1,0 +1,282 @@
+{
+  "symbol": "VESTL.IS",
+  "data_period": {
+    "start_date": "2023-08-21T00:00:00+03:00",
+    "end_date": "2025-08-21T00:00:00+03:00",
+    "total_days": 501,
+    "data_points": 501
+  },
+  "technical_analysis": {
+    "signals": {
+      "trend": "neutral",
+      "rsi": "neutral",
+      "macd": "bearish",
+      "bollinger": "middle",
+      "volume": "normal"
+    },
+    "current_values": {
+      "price": 39.84000015258789,
+      "rsi": 51.12539818243594,
+      "macd": 0.5158878383776013,
+      "sma_20": 38.66500015258789,
+      "sma_50": 36.54280010223388,
+      "sma_200": 51.08534991264343
+    },
+    "support_resistance": {
+      "resistance": [
+        107.30000305175781,
+        98.69999694824219,
+        92.4000015258789,
+        89.0,
+        80.5999984741211
+      ],
+      "support": [
+        31.31999969482422,
+        42.540000915527344,
+        45.15999984741211,
+        54.099998474121094,
+        54.75
+      ]
+    },
+    "volume_analysis": {
+      "current_ratio": 1.2528397887294649,
+      "avg_volume": 7151456.3
+    }
+  },
+  "accuracy_metrics": {
+    "direction_accuracy": 0.468,
+    "volatility_accuracy": 0.6745605513146182,
+    "trend_accuracy": 0.29740518962075846,
+    "rsi_accuracy": 0.2435129740518962,
+    "macd_accuracy": 0.3532934131736527,
+    "combined_accuracy": 0.4073544256321851,
+    "volatility": 0.4824466062403866,
+    "total_signals": 500
+  },
+  "drawdown_analysis": {
+    "max_drawdown": -0.6916504832147394,
+    "avg_drawdown": -0.1747360451236339,
+    "avg_duration": 48.4,
+    "avg_recovery_time": 9.444444444444445,
+    "total_drawdowns": 10,
+    "current_drawdown": -0.6132038820137098,
+    "drawdown_periods": [
+      {
+        "start_idx": 1,
+        "bottom_idx": 2,
+        "end_idx": 3,
+        "max_drawdown": -0.05431306380282425,
+        "duration": 2,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 5,
+        "bottom_idx": 5,
+        "end_idx": 6,
+        "max_drawdown": -0.023520531348533148,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 7,
+        "bottom_idx": 10,
+        "end_idx": 12,
+        "max_drawdown": -0.05159887927747842,
+        "duration": 5,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 13,
+        "bottom_idx": 20,
+        "end_idx": 31,
+        "max_drawdown": -0.1395517181914659,
+        "duration": 18,
+        "recovery_time": 11
+      },
+      {
+        "start_idx": 32,
+        "bottom_idx": 89,
+        "end_idx": 118,
+        "max_drawdown": -0.381142861502511,
+        "duration": 86,
+        "recovery_time": 29
+      },
+      {
+        "start_idx": 120,
+        "bottom_idx": 120,
+        "end_idx": 121,
+        "max_drawdown": -0.023299728445447396,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 123,
+        "bottom_idx": 126,
+        "end_idx": 129,
+        "max_drawdown": -0.11309193900700729,
+        "duration": 6,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 131,
+        "bottom_idx": 139,
+        "end_idx": 175,
+        "max_drawdown": -0.22553639312899373,
+        "duration": 44,
+        "recovery_time": 36
+      },
+      {
+        "start_idx": 177,
+        "bottom_idx": 177,
+        "end_idx": 178,
+        "max_drawdown": -0.04365485331733823,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 179,
+        "bottom_idx": 457,
+        "end_idx": 499,
+        "max_drawdown": -0.6916504832147394,
+        "duration": 320,
+        "recovery_time": null
+      }
+    ]
+  },
+  "trend_analysis": {
+    "current_trend": "uptrend",
+    "trend_periods": [
+      {
+        "trend": "sideways",
+        "start_idx": 20,
+        "end_idx": 57,
+        "duration": 37,
+        "price_change": 0.3276015813904256
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 57,
+        "end_idx": 117,
+        "duration": 60,
+        "price_change": 9.71428073182398
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 117,
+        "end_idx": 119,
+        "duration": 2,
+        "price_change": 7.589295141551387
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 119,
+        "end_idx": 165,
+        "duration": 46,
+        "price_change": 20.0553241880499
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 165,
+        "end_idx": 171,
+        "duration": 6,
+        "price_change": -2.649773007941426
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 171,
+        "end_idx": 172,
+        "duration": 1,
+        "price_change": -0.059175209180843194
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 172,
+        "end_idx": 174,
+        "duration": 2,
+        "price_change": -1.1249224186762525
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 174,
+        "end_idx": 203,
+        "duration": 29,
+        "price_change": -2.215567034875561
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 203,
+        "end_idx": 207,
+        "duration": 4,
+        "price_change": 7.1034847691031295
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 207,
+        "end_idx": 320,
+        "duration": 113,
+        "price_change": -26.986848825265135
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 320,
+        "end_idx": 325,
+        "duration": 5,
+        "price_change": 11.354737937759673
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 325,
+        "end_idx": 359,
+        "duration": 34,
+        "price_change": -7.4542834544396905
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 359,
+        "end_idx": 366,
+        "duration": 7,
+        "price_change": -9.270519765812384
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 366,
+        "end_idx": 479,
+        "duration": 113,
+        "price_change": -35.34338696678345
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 479,
+        "end_idx": 484,
+        "duration": 5,
+        "price_change": -1.0362635414346306
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 484,
+        "end_idx": 500,
+        "duration": 16,
+        "price_change": 4.293192033753879
+      }
+    ],
+    "uptrends": 5,
+    "downtrends": 3,
+    "sideways_periods": 8,
+    "avg_uptrend_duration": 25.2,
+    "avg_downtrend_duration": 95.33333333333333,
+    "avg_uptrend_gain": 2.923898104661537,
+    "avg_downtrend_loss": -17.538651686741535
+  },
+  "volatility_analysis": {
+    "current_volatility": 0.2564605762498644,
+    "avg_volatility": 0.4552284527186767,
+    "volatility_std": 0.14483018076417398,
+    "low_vol_periods": 159,
+    "medium_vol_periods": 158,
+    "high_vol_periods": 164,
+    "volatility_clustering": 0,
+    "volatility_persistence": 0,
+    "volatility_trend": "decreasing"
+  },
+  "timestamp": "2025-08-21T21:58:46.080475"
+}

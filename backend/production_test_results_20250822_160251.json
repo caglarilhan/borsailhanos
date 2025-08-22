@@ -1,0 +1,77 @@
+{
+  "data_pipeline": {
+    "status": "PASS",
+    "tests": [
+      {
+        "name": "Health Check",
+        "status": "PASS",
+        "message": "Health endpoint working",
+        "duration": 0.055971
+      },
+      {
+        "name": "Metrics Endpoint",
+        "status": "PASS",
+        "message": "Metrics endpoint working",
+        "duration": 0.062951
+      },
+      {
+        "name": "Cache Stats",
+        "status": "PASS",
+        "message": "Cache stats working",
+        "duration": 0.023441
+      }
+    ]
+  },
+  "api_endpoints": {
+    "status": "PARTIAL",
+    "tests": [
+      {
+        "name": "Dashboard",
+        "status": "PASS",
+        "message": "Dashboard working",
+        "duration": 0.067056
+      },
+      {
+        "name": "AI Models Status",
+        "status": "PASS",
+        "message": "AI Models status working",
+        "duration": 1.067571
+      },
+      {
+        "name": "AI Ensemble Prediction",
+        "status": "FAIL",
+        "message": "HTTP 500",
+        "duration": 1.008654
+      },
+      {
+        "name": "AI Macro Regime",
+        "status": "PASS",
+        "message": "AI Macro regime working",
+        "duration": 0.008013
+      }
+    ]
+  },
+  "performance": {
+    "status": "PASS",
+    "tests": [
+      {
+        "name": "Response Time",
+        "status": "PASS",
+        "message": "0.0892s (EXCELLENT)",
+        "duration": 0.0891718864440918
+      },
+      {
+        "name": "Memory Usage",
+        "status": "PASS",
+        "message": "22.44MB (EXCELLENT)",
+        "duration": 22.4375
+      },
+      {
+        "name": "CPU Usage",
+        "status": "PASS",
+        "message": "77.90% (ACCEPTABLE)",
+        "duration": 77.9
+      }
+    ]
+  }
+}

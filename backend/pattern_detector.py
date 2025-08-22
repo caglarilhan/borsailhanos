@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 import yfinance as yf
-import talib
+# TA-Lib yerine ta kütüphanesi kullan
+import ta
 from typing import List, Dict, Tuple, Optional
 import logging
 from datetime import datetime, timedelta
@@ -63,16 +64,16 @@ class PatternDetector:
             volume_array = volume.values.astype(float)
             
             # Trend indikatörleri
-            data['EMA_20'] = talib.EMA(close_array, timeperiod=20)
-            data['EMA_50'] = talib.EMA(close_array, timeperiod=50)
-            data['EMA_200'] = talib.EMA(close_array, timeperiod=200)
-            data['SMA_20'] = talib.SMA(close_array, timeperiod=20)
-            data['SMA_50'] = talib.SMA(close_array, timeperiod=50)
+                    data['EMA_20'] = ta.trend.ema_indicator(close_array, window=20)
+        data['EMA_50'] = ta.trend.ema_indicator(close_array, window=50)
+        data['EMA_200'] = ta.trend.ema_indicator(close_array, window=200)
+        data['SMA_20'] = ta.trend.sma_indicator(close_array, window=20)
+        data['SMA_50'] = ta.trend.sma_indicator(close_array, window=50)
             
             # Momentum indikatörleri
-            data['RSI'] = talib.RSI(close_array, timeperiod=14)
-            data['MACD'], data['MACD_Signal'], data['MACD_Hist'] = talib.MACD(close_array)
-            data['Stoch_K'], data['Stoch_D'] = talib.STOCH(high_array, low_array, close_array)
+                    data['RSI'] = ta.momentum.rsi(close_array, window=14)
+        data['MACD'], data['MACD_Signal'], data['MACD_Hist'] = ta.trend.macd(close_array)
+        data['Stoch_K'], data['Stoch_D'] = ta.momentum.stoch(high_array, low_array, close_array)
             
             # Volatilite indikatörleri
             data['ATR'] = talib.ATR(high_array, low_array, close_array, timeperiod=14)

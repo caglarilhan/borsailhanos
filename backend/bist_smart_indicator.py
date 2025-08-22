@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 import yfinance as yf
-import talib
+# TA-Lib yerine ta kütüphanesi kullan
+import ta
 from datetime import datetime, timedelta
 import logging
 from typing import List, Dict, Tuple, Optional
@@ -118,8 +119,8 @@ class BISTSmartIndicator:
             volume = data['Volume'].values.astype(float)
             
             # 1. EMA Cross Sinyali (0-25 puan)
-            ema20 = talib.EMA(close, timeperiod=20)
-            ema50 = talib.EMA(close, timeperiod=50)
+                    ema20 = ta.trend.ema_indicator(close, window=20)
+        ema50 = ta.trend.ema_indicator(close, window=50)
             
             # Son 5 günlük EMA cross analizi
             ema_cross_score = 0
@@ -134,7 +135,7 @@ class BISTSmartIndicator:
             ema_cross_score = max(0, min(25, ema_cross_score + 12.5))  # 0-25 arası
             
             # 2. RSI Sinyali (0-25 puan)
-            rsi = talib.RSI(close, timeperiod=14)
+            rsi = ta.momentum.rsi(close, window=14)
             if len(rsi) > 0:
                 last_rsi = rsi[-1]
                 if last_rsi < 30:

@@ -1,0 +1,90 @@
+🎯 LOAD TESTING REPORT
+==================================================
+Test Start: 2025-08-22T15:19:28.085517
+Test End: 2025-08-22T15:20:03.499186
+Total Duration: 35.5s
+Base URL: http://localhost:8001
+
+📊 LIGHT__HEALTH
+------------------------------
+Endpoint: /health
+RPS: 691.95
+Avg Response: 0.0981s
+P95 Response: 0.1348s
+Error Rate: 0.0%
+Grade: 🟢 EXCELLENT
+
+📊 LIGHT__AI_MODELS_STATUS
+------------------------------
+Endpoint: /ai/models/status
+RPS: 324.98
+Avg Response: 0.2026s
+P95 Response: 0.2877s
+Error Rate: 0.0%
+Grade: 🟡 GOOD
+
+📊 LIGHT__AI_MACRO_REGIME
+------------------------------
+Endpoint: /ai/macro/regime
+RPS: 682.8
+Avg Response: 0.0877s
+P95 Response: 0.142s
+Error Rate: 0.0%
+Grade: 🟢 EXCELLENT
+
+📊 LIGHT__DASHBOARD
+------------------------------
+Endpoint: /dashboard
+RPS: 1329.4
+Avg Response: 0.0428s
+P95 Response: 0.0696s
+Error Rate: 0.0%
+Grade: 🟢 EXCELLENT
+
+📊 MEDIUM__HEALTH
+------------------------------
+Endpoint: /health
+RPS: 2931.32
+Avg Response: 0.0514s
+P95 Response: 0.0736s
+Error Rate: 0.0%
+Grade: 🟢 EXCELLENT
+
+📊 MEDIUM__AI_MODELS_STATUS
+------------------------------
+Endpoint: /ai/models/status
+RPS: 884.1
+Avg Response: 0.1625s
+P95 Response: 0.2774s
+Error Rate: 0.0%
+Grade: 🟡 GOOD
+
+📊 HEAVY_HEALTH
+------------------------------
+Endpoint: /health
+RPS: 283.92
+Avg Response: 0.1715s
+P95 Response: 0.2377s
+Error Rate: 0.0%
+Grade: 🟡 GOOD
+
+📊 APACHE_BENCH_HEALTH
+------------------------------
+Endpoint: /health
+RPS: 956.09
+P95 Response: 0.142s
+Error Rate: 0.0%
+
+📊 STRESS_TEST
+------------------------------
+RPS: 507.21
+Avg Response: 0.0275s
+P95 Response: 0.0446s
+Error Rate: 50.0%
+Grade: 🟢 EXCELLENT
+
+📈 SUMMARY
+--------------------
+Successful Tests: 8/9
+Success Rate: 88.9%
+✅ Most tests passed

@@ -2,23 +2,21 @@
 version: '3.8'
 
 services:
+  # Main application
   bist-ai-trader:
     build: .
     container_name: bist-ai-trader
     ports:
       - "8001:8001"
     environment:
-      - HOST=0.0.0.0
-      - PORT=8001
-      - DEBUG=false
-      - LOG_LEVEL=INFO
       - TIMEGPT_API_KEY=${TIMEGPT_API_KEY}
       - FINNHUB_API_KEY=${FINNHUB_API_KEY}
       - FMP_API_KEY=${FMP_API_KEY}
+      - DEBUG=false
+      - LOG_LEVEL=INFO
     volumes:
-      - ./models:/app/models
+      - ./data:/app/data
       - ./logs:/app/logs
-      - ./snapshots:/app/snapshots
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
@@ -26,27 +24,55 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - bist-network
 
-  # Redis for caching (optional)
+  # Redis for caching and session management
   redis:
     image: redis:7-alpine
-    container_name: bist-redis
+    container_name: bist-ai-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
-    networks:
-      - bist-network
+    command: redis-server --appendonly yes
 
-  # Prometheus for monitoring
+  # PostgreSQL for production database
+  postgres:
+    image: postgres:15-alpine
+    container_name: bist-ai-postgres
+    environment:
+      - POSTGRES_DB=bist_ai_trader
+      - POSTGRES_USER=bist_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-bist_password}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  # Nginx for reverse proxy and load balancing
+  nginx:
+    image: nginx:alpine
+    container_name: bist-ai-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - bist-ai-trader
+    restart: unless-stopped
+
+  # Prometheus for metrics collection
   prometheus:
     image: prom/prometheus:latest
-    container_name: bist-prometheus
+    container_name: bist-ai-prometheus
     ports:
       - "9090:9090"
     volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -55,28 +81,30 @@ services:
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=200h'
       - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
     restart: unless-stopped
-    networks:
-      - bist-network
+    depends_on:
+      - bist-ai-trader
 
-  # Grafana for visualization
+  # Grafana for metrics visualization
   grafana:
     image: grafana/grafana:latest
-    container_name: bist-grafana
+    container_name: bist-ai-grafana
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=bistai123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     restart: unless-stopped
-    networks:
-      - bist-network
+    depends_on:
+      - prometheus
 
 volumes:
+  redis_data:
+  postgres_data:
   prometheus_data:
   grafana_data:
-
-networks:
-  bist-network:
-    driver: bridge

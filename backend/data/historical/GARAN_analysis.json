@@ -1,0 +1,494 @@
+{
+  "symbol": "GARAN.IS",
+  "data_period": {
+    "start_date": "2023-08-21T00:00:00+03:00",
+    "end_date": "2025-08-21T00:00:00+03:00",
+    "total_days": 501,
+    "data_points": 501
+  },
+  "technical_analysis": {
+    "signals": {
+      "trend": "bullish",
+      "rsi": "neutral",
+      "macd": "bearish",
+      "bollinger": "middle",
+      "volume": "normal"
+    },
+    "current_values": {
+      "price": 148.10000610351562,
+      "rsi": 54.67626689031572,
+      "macd": 2.4437691085543065,
+      "sma_20": 144.9800003051758,
+      "sma_50": 136.0479997253418,
+      "sma_200": 122.11018741607666
+    },
+    "support_resistance": {
+      "resistance": [
+        140.40845792781488,
+        134.2366395474007,
+        133.36873488125516,
+        130.95787799233065,
+        127.87198526698864
+      ],
+      "support": [
+        40.72774628363414,
+        50.448543519850425,
+        54.04542120169084,
+        55.198272272838175,
+        93.73420940453413
+      ]
+    },
+    "volume_analysis": {
+      "current_ratio": 1.167721788956389,
+      "avg_volume": 19119632.1
+    }
+  },
+  "accuracy_metrics": {
+    "direction_accuracy": 0.508,
+    "volatility_accuracy": 0.7106509365241944,
+    "trend_accuracy": 0.6287425149700598,
+    "rsi_accuracy": 0.2754491017964072,
+    "macd_accuracy": 0.6766467065868264,
+    "combined_accuracy": 0.5598978519754976,
+    "volatility": 0.4071606024907484,
+    "total_signals": 500
+  },
+  "drawdown_analysis": {
+    "max_drawdown": -0.27809223417123424,
+    "avg_drawdown": -0.059218046662954,
+    "avg_duration": 13.151515151515152,
+    "avg_recovery_time": 6.8125,
+    "total_drawdowns": 33,
+    "current_drawdown": -0.02437415595426947,
+    "drawdown_periods": [
+      {
+        "start_idx": 3,
+        "bottom_idx": 42,
+        "end_idx": 68,
+        "max_drawdown": -0.1805326844288905,
+        "duration": 65,
+        "recovery_time": 26
+      },
+      {
+        "start_idx": 69,
+        "bottom_idx": 71,
+        "end_idx": 72,
+        "max_drawdown": -0.012785347836357907,
+        "duration": 3,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 76,
+        "bottom_idx": 78,
+        "end_idx": 81,
+        "max_drawdown": -0.059166653396443024,
+        "duration": 5,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 82,
+        "bottom_idx": 84,
+        "end_idx": 85,
+        "max_drawdown": -0.03040008047338999,
+        "duration": 3,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 86,
+        "bottom_idx": 90,
+        "end_idx": 98,
+        "max_drawdown": -0.10800005426659529,
+        "duration": 12,
+        "recovery_time": 8
+      },
+      {
+        "start_idx": 102,
+        "bottom_idx": 108,
+        "end_idx": 128,
+        "max_drawdown": -0.11135694974421301,
+        "duration": 26,
+        "recovery_time": 20
+      },
+      {
+        "start_idx": 130,
+        "bottom_idx": 139,
+        "end_idx": 151,
+        "max_drawdown": -0.1374269638841911,
+        "duration": 21,
+        "recovery_time": 12
+      },
+      {
+        "start_idx": 153,
+        "bottom_idx": 153,
+        "end_idx": 155,
+        "max_drawdown": -0.0036257359405326957,
+        "duration": 2,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 159,
+        "bottom_idx": 159,
+        "end_idx": 160,
+        "max_drawdown": -0.0071326416969094576,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 162,
+        "bottom_idx": 162,
+        "end_idx": 163,
+        "max_drawdown": -0.0020188670365224913,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 164,
+        "bottom_idx": 164,
+        "end_idx": 167,
+        "max_drawdown": -0.053619320577029665,
+        "duration": 3,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 168,
+        "bottom_idx": 168,
+        "end_idx": 169,
+        "max_drawdown": -0.028589529209078254,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 170,
+        "bottom_idx": 170,
+        "end_idx": 171,
+        "max_drawdown": -0.0075282235173328845,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 176,
+        "bottom_idx": 176,
+        "end_idx": 177,
+        "max_drawdown": -0.007651466829161801,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 178,
+        "bottom_idx": 178,
+        "end_idx": 179,
+        "max_drawdown": -0.009786926339619606,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 180,
+        "bottom_idx": 181,
+        "end_idx": 182,
+        "max_drawdown": -0.03417372990470847,
+        "duration": 2,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 183,
+        "bottom_idx": 183,
+        "end_idx": 185,
+        "max_drawdown": -0.02388882916203005,
+        "duration": 2,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 188,
+        "bottom_idx": 191,
+        "end_idx": 194,
+        "max_drawdown": -0.026653516777823415,
+        "duration": 6,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 197,
+        "bottom_idx": 201,
+        "end_idx": 206,
+        "max_drawdown": -0.09346229108406541,
+        "duration": 9,
+        "recovery_time": 5
+      },
+      {
+        "start_idx": 209,
+        "bottom_idx": 210,
+        "end_idx": 211,
+        "max_drawdown": -0.009640645056075245,
+        "duration": 2,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 212,
+        "bottom_idx": 213,
+        "end_idx": 215,
+        "max_drawdown": -0.05141389900140343,
+        "duration": 3,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 219,
+        "bottom_idx": 219,
+        "end_idx": 221,
+        "max_drawdown": -0.008885342849273368,
+        "duration": 2,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 224,
+        "bottom_idx": 301,
+        "end_idx": 337,
+        "max_drawdown": -0.26448448461081375,
+        "duration": 113,
+        "recovery_time": 36
+      },
+      {
+        "start_idx": 338,
+        "bottom_idx": 341,
+        "end_idx": 354,
+        "max_drawdown": -0.06676672849458083,
+        "duration": 16,
+        "recovery_time": 13
+      },
+      {
+        "start_idx": 355,
+        "bottom_idx": 355,
+        "end_idx": 356,
+        "max_drawdown": -0.0014925554663249494,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 357,
+        "bottom_idx": 366,
+        "end_idx": 386,
+        "max_drawdown": -0.09941945289242426,
+        "duration": 29,
+        "recovery_time": 20
+      },
+      {
+        "start_idx": 387,
+        "bottom_idx": 387,
+        "end_idx": 388,
+        "max_drawdown": -0.0050179820475567535,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 389,
+        "bottom_idx": 390,
+        "end_idx": 391,
+        "max_drawdown": -0.03735014724625539,
+        "duration": 2,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 392,
+        "bottom_idx": 427,
+        "end_idx": 464,
+        "max_drawdown": -0.27809223417123424,
+        "duration": 72,
+        "recovery_time": 37
+      },
+      {
+        "start_idx": 465,
+        "bottom_idx": 465,
+        "end_idx": 469,
+        "max_drawdown": -0.02375801251242726,
+        "duration": 4,
+        "recovery_time": 4
+      },
+      {
+        "start_idx": 472,
+        "bottom_idx": 473,
+        "end_idx": 476,
+        "max_drawdown": -0.058368517791029355,
+        "duration": 4,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 477,
+        "bottom_idx": 481,
+        "end_idx": 485,
+        "max_drawdown": -0.04055946190040416,
+        "duration": 8,
+        "recovery_time": 4
+      },
+      {
+        "start_idx": 487,
+        "bottom_idx": 496,
+        "end_idx": 499,
+        "max_drawdown": -0.07114626373278407,
+        "duration": 12,
+        "recovery_time": null
+      }
+    ]
+  },
+  "trend_analysis": {
+    "current_trend": "uptrend",
+    "trend_periods": [
+      {
+        "trend": "sideways",
+        "start_idx": 20,
+        "end_idx": 50,
+        "duration": 30,
+        "price_change": -6.093910064958999
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 50,
+        "end_idx": 70,
+        "duration": 20,
+        "price_change": 15.957446340405868
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 70,
+        "end_idx": 77,
+        "duration": 7,
+        "price_change": 8.990835073751773
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 77,
+        "end_idx": 141,
+        "duration": 64,
+        "price_change": 4.545445683130122
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 141,
+        "end_idx": 161,
+        "duration": 20,
+        "price_change": 21.819682006165497
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 161,
+        "end_idx": 249,
+        "duration": 88,
+        "price_change": 54.80305585784819
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 249,
+        "end_idx": 254,
+        "duration": 5,
+        "price_change": 0.0
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 254,
+        "end_idx": 276,
+        "duration": 22,
+        "price_change": 9.821427814589745
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 276,
+        "end_idx": 285,
+        "duration": 9,
+        "price_change": -4.3902458163823255
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 285,
+        "end_idx": 295,
+        "duration": 10,
+        "price_change": -4.761902199064224
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 295,
+        "end_idx": 304,
+        "duration": 9,
+        "price_change": -6.071431699695719
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 304,
+        "end_idx": 321,
+        "duration": 17,
+        "price_change": 14.828897509971709
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 321,
+        "end_idx": 325,
+        "duration": 4,
+        "price_change": 6.456960256688515
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 325,
+        "end_idx": 368,
+        "duration": 43,
+        "price_change": -0.7776144008281101
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 368,
+        "end_idx": 396,
+        "duration": 28,
+        "price_change": 9.090914727478653
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 396,
+        "end_idx": 399,
+        "duration": 3,
+        "price_change": -22.988506857703353
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 399,
+        "end_idx": 410,
+        "duration": 11,
+        "price_change": 2.343210271060741
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 410,
+        "end_idx": 445,
+        "duration": 35,
+        "price_change": 1.890359113715329
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 445,
+        "end_idx": 450,
+        "duration": 5,
+        "price_change": 12.337657741973885
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 450,
+        "end_idx": 500,
+        "duration": 50,
+        "price_change": 22.295630032699297
+      }
+    ],
+    "uptrends": 6,
+    "downtrends": 4,
+    "sideways_periods": 10,
+    "avg_uptrend_duration": 43.0,
+    "avg_downtrend_duration": 23.5,
+    "avg_uptrend_gain": 8.852684686013655,
+    "avg_downtrend_loss": 10.624532694670663
+  },
+  "volatility_analysis": {
+    "current_volatility": 0.26936454682300165,
+    "avg_volatility": 0.3954670402553823,
+    "volatility_std": 0.09441510265763725,
+    "low_vol_periods": 159,
+    "medium_vol_periods": 158,
+    "high_vol_periods": 164,
+    "volatility_clustering": 0,
+    "volatility_persistence": 0,
+    "volatility_trend": "decreasing"
+  },
+  "timestamp": "2025-08-21T21:58:44.264766"
+}

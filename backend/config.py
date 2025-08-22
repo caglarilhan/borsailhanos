@@ -67,5 +67,43 @@ class Config:
         """Check if running in production"""
         return not cls.DEBUG and cls.LOG_LEVEL == 'INFO'
 
+class MarketDataConfig:
+    """Market data configuration for BIST Performance Tracker"""
+    
+    def __init__(self):
+        self.bist_stocks = [
+            'SISE.IS', 'EREGL.IS', 'TUPRS.IS', 'AKBNK.IS', 'GARAN.IS',
+            'THYAO.IS', 'ASELS.IS', 'KRDMD.IS', 'BIMAS.IS', 'SAHOL.IS'
+        ]
+        self.performance_metrics = ['return', 'volatility', 'sharpe', 'drawdown']
+        self.target_metrics = {'min_return': 0.15, 'max_volatility': 0.30}
+        self.update_interval = 3600  # 1 hour
+
+class BISTPerformanceTracker:
+    """Mock BIST Performance Tracker for compatibility"""
+    
+    def __init__(self):
+        self.is_active = False
+    
+    def start_tracking(self):
+        self.is_active = True
+        return {'status': 'started'}
+    
+    def get_performance_summary(self):
+        return {'status': 'mock', 'total_stocks': 10}
+
+class AccuracyOptimizer:
+    """Mock Accuracy Optimizer for compatibility"""
+    
+    def __init__(self):
+        self.is_active = False
+    
+    def start_optimization(self):
+        self.is_active = True
+        return {'status': 'started'}
+    
+    def get_optimization_status(self):
+        return {'status': 'mock', 'accuracy': 0.85}
+
 # Global config instance
 config = Config()

@@ -10,9 +10,11 @@ import pandas as pd
 import numpy as np
 from typing import Dict, List, Tuple, Optional
 import logging
-import talib
+# TA-Lib yerine ta kütüphanesi kullan
+import ta
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+import ta
 
 logger = logging.getLogger(__name__)
 
@@ -43,8 +45,8 @@ class TechnicalPatternEngine:
                 return None
                 
             # EMA hesapla
-            ema_fast = talib.EMA(df['Close'], fast_period)
-            ema_slow = talib.EMA(df['Close'], slow_period)
+            ema_fast = ta.trend.ema_indicator(df['Close'], window=fast_period)
+            ema_slow = ta.trend.ema_indicator(df['Close'], window=slow_period)
             
             # Son 2 mum için kesişim kontrol
             current_fast = ema_fast.iloc[-1]
@@ -155,7 +157,7 @@ class TechnicalPatternEngine:
                     ))
             
             # TA-Lib ile de kontrol et
-            bullish_engulf = talib.CDLENGULFING(df['Open'], df['High'], df['Low'], df['Close'])
+            bullish_engulf = ta.candlestick.CDLENGULFING(df['Open'], df['High'], df['Low'], df['Close'])
             if bullish_engulf.iloc[-1] > 0:
                 print("DEBUG: TA-Lib Bullish Engulfing tespit edildi!")
                 

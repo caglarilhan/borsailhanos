@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from datetime import datetime, timedelta
 import yfinance as yf
-import talib
+# TA-Lib yerine ta kütüphanesi kullan
+import ta
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -58,21 +59,21 @@ class VisualAnalyzer:
             df = data.copy()
             
             # EMA'lar
-            df['EMA_20'] = talib.EMA(df['Close'].values, timeperiod=20)
-            df['EMA_50'] = talib.EMA(df['Close'].values, timeperiod=50)
-            df['EMA_200'] = talib.EMA(df['Close'].values, timeperiod=200)
+            df['EMA_20'] = ta.trend.ema_indicator(df['Close'].values, window=20)
+            df['EMA_50'] = ta.trend.ema_indicator(df['Close'].values, window=50)
+            df['EMA_200'] = ta.trend.ema_indicator(df['Close'].values, window=200)
             
             # RSI
-            df['RSI'] = talib.RSI(df['Close'].values, timeperiod=14)
+            df['RSI'] = ta.momentum.rsi(df['Close'].values, window=14)
             
             # MACD
-            df['MACD'], df['MACD_Signal'], df['MACD_Hist'] = talib.MACD(df['Close'].values)
+            df['MACD'], df['MACD_Signal'], df['MACD_Hist'] = ta.trend.macd(df['Close'].values)
             
             # Bollinger Bands
-            df['BB_Upper'], df['BB_Middle'], df['BB_Lower'] = talib.BBANDS(df['Close'].values)
+            df['BB_Upper'], df['BB_Middle'], df['BB_Lower'] = ta.volatility.bollinger_bands(df['Close'].values)
             
             # ATR
-            df['ATR'] = talib.ATR(df['High'].values, df['Low'].values, df['Close'].values, timeperiod=14)
+            df['ATR'] = ta.volatility.average_true_range(df['High'].values, df['Low'].values, df['Close'].values, window=14)
             
             # Volume MA
             df['Volume_MA_20'] = df['Volume'].rolling(window=20).mean()
@@ -258,19 +259,19 @@ class VisualAnalyzer:
             patterns = []
             
             # Bullish Engulfing
-            bullish_engulfing = talib.CDLENGULFING(df['Open'].values, df['High'].values, 
+            bullish_engulfing = ta.candlestick.CDLENGULFING(df['Open'].values, df['High'].values, 
                                                   df['Low'].values, df['Close'].values)
             
             # Morning Star
-            morning_star = talib.CDLMORNINGSTAR(df['Open'].values, df['High'].values, 
+            morning_star = ta.candlestick.CDLMORNINGSTAR(df['Open'].values, df['High'].values, 
                                                df['Low'].values, df['Close'].values)
             
             # Hammer
-            hammer = talib.CDLHAMMER(df['Open'].values, df['High'].values, 
+            hammer = ta.candlestick.CDLHAMMER(df['Open'].values, df['High'].values, 
                                    df['Low'].values, df['Close'].values)
             
             # Doji
-            doji = talib.CDLDOJI(df['Open'].values, df['High'].values, 
+            doji = ta.candlestick.CDLDOJI(df['Open'].values, df['High'].values, 
                                 df['Low'].values, df['Close'].values)
             
             # Pattern tespiti ve işaretleme

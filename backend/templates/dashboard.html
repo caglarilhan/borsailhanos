@@ -53,6 +53,103 @@
       </section>
 
       <section class="panel">
+        <h2>🔄 Sürekli Optimizasyon</h2>
+        <div id="continuous-optimization" class="cards">
+          <div class="optimization-status">
+            <div class="status-item">
+              <span class="label">Durum:</span>
+              <span class="value" id="opt-status">Kontrol ediliyor...</span>
+            </div>
+            <div class="status-item">
+              <span class="label">Sonraki:</span>
+              <span class="value" id="next-optimization">Yükleniyor...</span>
+            </div>
+            <div class="status-item">
+              <span class="label">Geçmiş:</span>
+              <span class="value" id="opt-history">-</span>
+            </div>
+          </div>
+          <div class="optimization-actions">
+            <button class="btn btn-primary" onclick="forceOptimization('full')">🔄 Tam Optimizasyon</button>
+            <button class="btn btn-secondary" onclick="forceOptimization('hyperopt')">🔧 Hyperopt</button>
+            <button class="btn btn-info" onclick="getOptimizationReport()">📊 Rapor</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>🤖 Trading Robot</h2>
+        <div id="trading-robot" class="cards">
+          <div class="robot-status">
+            <div class="status-item">
+              <span class="label">Durum:</span>
+              <span class="value" id="robot-status">Aktif</span>
+            </div>
+            <div class="status-item">
+              <span class="label">Capital:</span>
+              <span class="value" id="robot-capital">100,000 TL</span>
+            </div>
+            <div class="status-item">
+              <span class="label">Win Rate:</span>
+              <span class="value" id="robot-winrate">0%</span>
+            </div>
+          </div>
+          <div class="robot-actions">
+            <button class="btn btn-primary" onclick="startAutoTrading()">🚀 Auto Trading</button>
+            <button class="btn btn-secondary" onclick="analyzeAllSymbols()">🔍 Tümünü Analiz Et</button>
+            <button class="btn btn-info" onclick="getPortfolioSummary()">📊 Portfolio</button>
+          </div>
+        </div>
+      </section>
+
+                        <section class="panel">
+                    <h2>📈 En Trend & En Dip Hisseler</h2>
+                    <div id="trending-stocks" class="cards">
+                      <div class="trend-section">
+                        <h3>🔥 En Trend Hisseler</h3>
+                        <div id="top-gainers" class="stock-list"></div>
+                      </div>
+                      <div class="dip-section">
+                        <h3>📉 En Dip Hisseler</h3>
+                        <div id="top-losers" class="stock-list"></div>
+                      </div>
+                    </div>
+                  </section>
+
+                  <section class="panel">
+                    <h2>📊 Geçmiş Doğruluk Analizi</h2>
+                    <div id="historical-accuracy" class="cards">
+                      <div class="accuracy-summary">
+                        <div class="summary-item">
+                          <span class="label">Genel Doğruluk:</span>
+                          <span class="value" id="overall-accuracy">50.12%</span>
+                        </div>
+                        <div class="summary-item">
+                          <span class="label">Toplam Sembol:</span>
+                          <span class="value" id="total-symbols">19</span>
+                        </div>
+                        <div class="summary-item">
+                          <span class="label">En İyi Performans:</span>
+                          <span class="value" id="best-performer">ASELS.IS</span>
+                        </div>
+                        <div class="summary-item">
+                          <span class="label">Ortalama Drawdown:</span>
+                          <span class="value" id="avg-drawdown">-37.38%</span>
+                        </div>
+                      </div>
+                      <div class="accuracy-actions">
+                        <button class="btn btn-primary" onclick="analyzeAllHistorical()">🔍 Tümünü Analiz Et</button>
+                        <button class="btn btn-secondary" onclick="getHistoricalReport()">📋 Detaylı Rapor</button>
+                        <button class="btn btn-info" onclick="getHistoricalSummary()">📊 Güncel Özet</button>
+                      </div>
+                      <div class="accuracy-distribution">
+                        <h3>📈 Doğruluk Dağılımı</h3>
+                        <div id="accuracy-chart" class="chart-container"></div>
+                      </div>
+                    </div>
+                  </section>
+
+      <section class="panel">
         <h2>Fiyatlar</h2>
         <table id="pricesTable">
           <thead>

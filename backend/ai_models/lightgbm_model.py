@@ -16,7 +16,8 @@ import joblib
 import logging
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime, timedelta
-import talib
+# TA-Lib yerine ta kütüphanesi kullan
+import ta
 from sklearn.calibration import CalibratedClassifierCV
 from sklearn.metrics import precision_score, recall_score, f1_score, roc_auc_score
 
@@ -59,33 +60,33 @@ class LightGBMModel:
             
             # Moving averages
             for period in [5, 10, 20, 50]:
-                features[f'sma_{period}'] = talib.SMA(df['Close'], period)
-                features[f'ema_{period}'] = talib.EMA(df['Close'], period)
+                features[f'sma_{period}'] = ta.trend.sma_indicator(df['Close'], window=period)
+                features[f'ema_{period}'] = ta.trend.ema_indicator(df['Close'], window=period)
                 features[f'price_sma_{period}_ratio'] = df['Close'] / features[f'sma_{period}']
                 features[f'price_ema_{period}_ratio'] = df['Close'] / features[f'ema_{period}']
             
             # Momentum indikatörleri
-            features['rsi'] = talib.RSI(df['Close'], 14)
-            features['stoch_k'], features['stoch_d'] = talib.STOCH(df['High'], df['Low'], df['Close'])
-            features['macd'], features['macd_signal'], features['macd_hist'] = talib.MACD(df['Close'])
-            features['williams_r'] = talib.WILLR(df['High'], df['Low'], df['Close'], 14)
+            features['rsi'] = ta.momentum.rsi(df['Close'], window=14)
+            features['stoch_k'], features['stoch_d'] = ta.momentum.stoch(df['High'], df['Low'], df['Close'])
+            features['macd'], features['macd_signal'], features['macd_hist'] = ta.trend.macd(df['Close'])
+            features['williams_r'] = ta.momentum.williams_r(df['High'], df['Low'], df['Close'], window=14)
             
             # Volatilite indikatörleri
-            features['bbands_upper'], features['bbands_middle'], features['bbands_lower'] = talib.BBANDS(df['Close'])
+            features['bbands_upper'], features['bbands_middle'], features['bbands_lower'] = ta.volatility.bollinger_bands(df['Close'])
             features['bbands_width'] = (features['bbands_upper'] - features['bbands_lower']) / features['bbands_middle']
             features['bbands_position'] = (df['Close'] - features['bbands_lower']) / (features['bbands_upper'] - features['bbands_lower'])
             
             # Hacim bazlı feature'lar
             if 'Volume' in df.columns:
-                features['volume_sma'] = talib.SMA(df['Volume'], 20)
+                features['volume_sma'] = ta.trend.sma_indicator(df['Volume'], window=20)
                 features['volume_ratio'] = df['Volume'] / features['volume_sma']
                 features['price_volume'] = df['Close'] * df['Volume']
-                features['obv'] = talib.OBV(df['Close'], df['Volume'])
+                features['obv'] = ta.volume.on_balance_volume(df['Close'], df['Volume'])
             
             # Trend indikatörleri
-            features['adx'] = talib.ADX(df['High'], df['Low'], df['Close'], 14)
-            features['cci'] = talib.CCI(df['High'], df['Low'], df['Close'], 14)
-            features['aroon_up'], features['aroon_down'] = talib.AROON(df['High'], df['Low'], 14)
+            features['adx'] = ta.trend.adx(df['High'], df['Low'], df['Close'], window=14)
+            features['cci'] = ta.trend.cci(df['High'], df['Low'], df['Close'], window=14)
+            features['aroon_up'], features['aroon_down'] = ta.trend.aroon(df['High'], df['Low'], window=14)
             features['aroon_osc'] = features['aroon_up'] - features['aroon_down']
             
             # Fibonacci retracement levels

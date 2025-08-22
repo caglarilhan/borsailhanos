@@ -6,7 +6,7 @@ Railway deploy için hazır
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
@@ -15,6 +15,12 @@ import logging
 from datetime import datetime, timedelta
 import asyncio
 import json
+import time
+from monitoring.metrics import track_request, track_prediction, track_error, get_metrics
+from prometheus_client import CONTENT_TYPE_LATEST
+from middleware.rate_limiter import APIRateLimitMiddleware
+from core.cache import initialize_cache, close_cache, cache_manager, cached_ops, cache_result
+from core.database import initialize_database, close_database, db_manager
 import pandas as pd
 import numpy as np
 
@@ -53,14 +59,34 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
 
+# Rate limiting middleware
+app.add_middleware(APIRateLimitMiddleware)
+
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8001", "http://localhost:3000"],  # Restrict origins
+    allow_origins=["http://localhost:8001", "http://localhost:3000", "https://localhost"],  # Restrict origins
     allow_credentials=True,
     allow_methods=["GET", "POST"],  # Restrict methods
     allow_headers=["*"],
 )
+
+# Metrics middleware
+@app.middleware("http")
+async def metrics_middleware(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    
+    # Track metrics
+    duration = time.time() - start_time
+    track_request(
+        method=request.method,
+        endpoint=str(request.url.path),
+        status_code=response.status_code,
+        duration=duration
+    )
+    
+    return response
 
 # Security headers middleware
 @app.middleware("http")
@@ -219,9 +245,8 @@ async def startup_event():
             accuracy_optimizer = None
         
         # WebSocket connector (demo mode)
-        websocket_connector = WebSocketConnector(
-            finnhub_api_key="demo",
-            symbols=["SISE.IS", "EREGL.IS", "TUPRS.IS", "AAPL", "MSFT", "GOOGL"]
+        websocket_connector = RealTimeDataPipeline(
+            finnhub_api_key="demo"
         )
         
         # Firestore schema (geçici olarak devre dışı)
@@ -238,6 +263,19 @@ async def startup_event():
             logger.info("✅ BIST100 scanner arka planda başlatıldı")
         except Exception as e:
             logger.warning(f"BIST100 scanner başlatma hatası: {e}")
+
+        # Initialize cache and database
+        try:
+            await initialize_cache()
+            logger.info("✅ Redis cache başlatıldı")
+        except Exception as e:
+            logger.warning(f"Redis cache başlatma hatası: {e}")
+        
+        try:
+            await initialize_database()
+            logger.info("✅ Database pool başlatıldı")
+        except Exception as e:
+            logger.warning(f"Database başlatma hatası: {e}")
 
         logger.info("✅ Tüm modüller başlatıldı")
         
@@ -266,7 +304,8 @@ async def health_check():
             "checks": {
                 "api": "healthy",
                 "models": "healthy",
-                "database": "healthy"
+                "database": "healthy",
+                "cache": "healthy"
             }
         }
         
@@ -274,6 +313,24 @@ async def health_check():
         if ai_ensemble is None:
             health_status["checks"]["models"] = "initializing"
             health_status["status"] = "degraded"
+        
+        # Check cache status
+        try:
+            cache_stats = await cache_manager.get_stats()
+            if cache_stats.get("status") != "connected":
+                health_status["checks"]["cache"] = "disconnected"
+                health_status["status"] = "degraded"
+        except:
+            health_status["checks"]["cache"] = "error"
+        
+        # Check database status
+        try:
+            db_stats = await db_manager.get_pool_stats()
+            if db_stats.get("status") != "connected":
+                health_status["checks"]["database"] = "disconnected"
+                health_status["status"] = "degraded"
+        except:
+            health_status["checks"]["database"] = "error"
         
         return health_status
         
@@ -299,8 +356,22 @@ async def shutdown_event():
         if _lstm_task is not None and not _lstm_task.done():
             _lstm_task.cancel()
             logger.info("🛑 LSTM scheduler durduruluyor")
+        
+        # Close cache and database connections
+        try:
+            await close_cache()
+            logger.info("🛑 Redis cache kapatıldı")
+        except Exception as e:
+            logger.warning(f"Cache kapatma hatası: {e}")
+        
+        try:
+            await close_database()
+            logger.info("🛑 Database pool kapatıldı")
+        except Exception as e:
+            logger.warning(f"Database kapatma hatası: {e}")
+            
     except Exception as e:
-        logger.warning(f"Scanner durdurma hatası: {e}")
+        logger.warning(f"Shutdown hatası: {e}")
 
 @app.get("/dashboard")
 async def ui_dashboard(request: Request):
@@ -699,6 +770,211 @@ async def get_macro_regime():
         logger.error(f"Makro rejim hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# Continuous Optimization Endpoints
+@app.get("/ai/optimization/status")
+async def get_optimization_status():
+    """Continuous optimization durumu"""
+    try:
+        from continuous_optimizer import ContinuousOptimizer
+        
+        optimizer = ContinuousOptimizer()
+        status = optimizer.get_optimization_status()
+        
+        return status
+        
+    except Exception as e:
+        logger.error(f"Optimization status hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ai/optimization/force")
+async def force_optimization(optimization_type: str = "full"):
+    """Zorla optimizasyon çalıştır"""
+    try:
+        from continuous_optimizer import ContinuousOptimizer
+        
+        optimizer = ContinuousOptimizer()
+        results = optimizer.force_optimization(optimization_type)
+        
+        return {
+            'optimization_type': optimization_type,
+            'results': results,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Force optimization hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ai/optimization/report")
+async def get_optimization_report():
+    """Optimizasyon raporu oluştur"""
+    try:
+        from continuous_optimizer import ContinuousOptimizer
+        
+        optimizer = ContinuousOptimizer()
+        report = optimizer.create_optimization_report()
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"Optimization report hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Trading Robot Endpoints
+@app.get("/trading/robot/status")
+async def get_trading_robot_status():
+    """Trading robot durumu"""
+    try:
+        from trading_robot import TradingRobot
+        
+        robot = TradingRobot()
+        status = {
+            'is_active': True,
+            'initial_capital': robot.initial_capital,
+            'current_capital': robot.current_capital,
+            'total_trades': robot.total_trades,
+            'winning_trades': robot.winning_trades,
+            'losing_trades': robot.losing_trades,
+            'win_rate': (robot.winning_trades / max(robot.total_trades, 1)) * 100,
+            'total_pnl': robot.total_pnl,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        return status
+        
+    except Exception as e:
+        logger.error(f"Trading robot status hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/trading/robot/analyze/{symbol}")
+async def analyze_symbol_for_trading(symbol: str):
+    """Hisse için trading analizi"""
+    try:
+        from trading_robot import TradingRobot
+        
+        robot = TradingRobot()
+        analysis = robot.analyze_symbol(symbol)
+        
+        return analysis
+        
+    except Exception as e:
+        logger.error(f"Symbol analiz hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/trading/robot/execute")
+async def execute_trade(symbol: str, action: str, quantity: int, price: float):
+    """Trade'i gerçekleştir"""
+    try:
+        from trading_robot import TradingRobot
+        
+        robot = TradingRobot()
+        result = robot.execute_trade(symbol, action, quantity, price)
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Trade execution hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/trading/robot/portfolio")
+async def get_trading_portfolio():
+    """Trading portfolio özeti"""
+    try:
+        from trading_robot import TradingRobot
+        
+        robot = TradingRobot()
+        portfolio = robot.get_portfolio_summary()
+        
+        return portfolio
+        
+    except Exception as e:
+        logger.error(f"Portfolio hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/trading/robot/auto-trade")
+async def start_auto_trading(symbols: List[str]):
+    """Otomatik trading başlat"""
+    try:
+        from trading_robot import TradingRobot
+        
+        robot = TradingRobot()
+        results = robot.auto_trade(symbols)
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"Auto trading hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Historical Accuracy Analysis Endpoints
+@app.get("/historical/accuracy/analyze/{symbol}")
+async def analyze_symbol_historical_accuracy(symbol: str, force_update: bool = False):
+    """Tek hisse için geçmiş doğruluk analizi"""
+    try:
+        from historical_accuracy_analyzer import HistoricalAccuracyAnalyzer
+        
+        analyzer = HistoricalAccuracyAnalyzer()
+        analysis = analyzer.analyze_single_symbol(symbol, force_update)
+        
+        return analysis
+        
+    except Exception as e:
+        logger.error(f"Historical accuracy analiz hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/historical/accuracy/analyze-all")
+async def analyze_all_symbols_historical_accuracy(force_update: bool = False):
+    """Tüm semboller için geçmiş doğruluk analizi"""
+    try:
+        from historical_accuracy_analyzer import HistoricalAccuracyAnalyzer
+        
+        analyzer = HistoricalAccuracyAnalyzer()
+        results = analyzer.analyze_all_symbols(force_update)
+        
+        return results
+        
+    except Exception as e:
+        logger.error(f"Genel historical accuracy analiz hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/historical/accuracy/report")
+async def get_historical_accuracy_report():
+    """Geçmiş doğruluk raporu"""
+    try:
+        from historical_accuracy_analyzer import HistoricalAccuracyAnalyzer
+        
+        analyzer = HistoricalAccuracyAnalyzer()
+        report = analyzer.generate_accuracy_report()
+        
+        return report
+        
+    except Exception as e:
+        logger.error(f"Historical accuracy rapor hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/historical/accuracy/summary")
+async def get_historical_accuracy_summary():
+    """En güncel historical accuracy özeti"""
+    try:
+        from historical_accuracy_analyzer import HistoricalAccuracyAnalyzer
+        
+        analyzer = HistoricalAccuracyAnalyzer()
+        
+        # En güncel özeti oku
+        latest_file = analyzer.data_dir / "latest_summary.json"
+        
+        if not latest_file.exists():
+            return {'error': 'Henüz analiz yapılmamış'}
+        
+        with open(latest_file, 'r', encoding='utf-8') as f:
+            latest_data = json.load(f)
+        
+        return latest_data
+        
+    except Exception as e:
+        logger.error(f"Historical accuracy özet hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/ai/models/status")
 async def get_ai_models_status():
     """AI modellerin durumu"""
@@ -1088,22 +1364,31 @@ async def process_webhook_signal(signal_data: Dict):
         logger.error(f"Webhook işleme hatası: {e}")
 
 @app.get("/metrics")
-async def get_metrics():
-    """Performans metrikleri"""
+async def get_prometheus_metrics():
+    """Prometheus metrics endpoint"""
     try:
-        metrics = {
-            "api_requests": 0,  # Placeholder
-            "signals_generated": 0,
-            "accuracy_rate": 0.0,
-            "latency_avg": 0.0,
-            "uptime": "100%",
-            "timestamp": datetime.now().isoformat()
-        }
-        
-        return metrics
+        metrics_data = get_metrics()
+        return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
         
     except Exception as e:
         logger.error(f"Metrics hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/cache/stats")
+async def get_cache_stats():
+    """Cache statistics endpoint"""
+    try:
+        cache_stats = await cache_manager.get_stats()
+        db_stats = await db_manager.get_pool_stats()
+        
+        return {
+            "cache": cache_stats,
+            "database": db_stats,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cache stats hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/dupont-piotroski/{symbol}")

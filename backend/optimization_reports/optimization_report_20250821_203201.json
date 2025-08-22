@@ -1,0 +1,59 @@
+{
+  "report_timestamp": "2025-08-21T20:32:01.680437",
+  "optimization_summary": {
+    "total_optimizations": 0,
+    "successful_optimizations": 0,
+    "failed_optimizations": 0,
+    "current_optimization": null
+  },
+  "optimization_history": [],
+  "next_scheduled": [
+    {
+      "type": "monthly_retraining",
+      "scheduled_time": "2025-09-01T02:00:00",
+      "days_until": 10
+    },
+    {
+      "type": "weekly_hyperopt",
+      "scheduled_time": "2025-08-24T03:00:00",
+      "days_until": 2
+    }
+  ],
+  "configuration": {
+    "optimization_schedule": {
+      "monthly_retraining": true,
+      "retraining_day": 1,
+      "retraining_hour": 2,
+      "weekly_hyperopt": true,
+      "hyperopt_day": "sunday",
+      "hyperopt_hour": 3,
+      "daily_feature_optimization": false,
+      "feature_opt_hour": 4
+    },
+    "optimization_settings": {
+      "auto_optimize": true,
+      "performance_threshold": 0.85,
+      "improvement_threshold": 0.02,
+      "max_optimization_time_hours": 6,
+      "backup_before_optimization": true
+    },
+    "notification_settings": {
+      "email_notifications": false,
+      "slack_notifications": false,
+      "discord_notifications": false,
+      "webhook_url": null
+    },
+    "data_management": {
+      "keep_optimization_history_days": 90,
+      "max_backup_files": 10,
+      "auto_cleanup": true
+    }
+  },
+  "recommendations": [
+    "Increase optimization frequency for better model performance",
+    "Monitor optimization performance metrics",
+    "Implement A/B testing for optimization strategies",
+    "Consider ensemble diversity in optimization",
+    "Review feature engineering pipeline regularly"
+  ]
+}

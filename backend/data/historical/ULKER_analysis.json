@@ -1,0 +1,434 @@
+{
+  "symbol": "ULKER.IS",
+  "data_period": {
+    "start_date": "2023-08-21T00:00:00+03:00",
+    "end_date": "2025-08-21T00:00:00+03:00",
+    "total_days": 501,
+    "data_points": 501
+  },
+  "technical_analysis": {
+    "signals": {
+      "trend": "bullish",
+      "rsi": "overbought",
+      "macd": "bullish",
+      "bollinger": "middle",
+      "volume": "high"
+    },
+    "current_values": {
+      "price": 120.19999694824219,
+      "rsi": 73.60404381052926,
+      "macd": 2.235780120071041,
+      "sma_20": 113.63000030517578,
+      "sma_50": 109.1669482421875,
+      "sma_200": 107.17368576049805
+    },
+    "support_resistance": {
+      "resistance": [
+        174.63922654407577,
+        161.68243355439094,
+        147.8001300197306,
+        131.23393178296305,
+        117.5367377713981
+      ],
+      "support": [
+        65.57069453643727,
+        67.0977480501553,
+        90.41999613242184,
+        92.27096350035028,
+        92.36351776123047
+      ]
+    },
+    "volume_analysis": {
+      "current_ratio": 1.6334362839742735,
+      "avg_volume": 8118210.75
+    }
+  },
+  "accuracy_metrics": {
+    "direction_accuracy": 0.498,
+    "volatility_accuracy": 0.6669835657132694,
+    "trend_accuracy": 0.5129740518962076,
+    "rsi_accuracy": 0.2055888223552894,
+    "macd_accuracy": 0.5548902195608783,
+    "combined_accuracy": 0.4876873319051289,
+    "volatility": 0.4992873159185027,
+    "total_signals": 500
+  },
+  "drawdown_analysis": {
+    "max_drawdown": -0.4671649629325711,
+    "avg_drawdown": -0.07438170382433779,
+    "avg_duration": 21.136363636363637,
+    "avg_recovery_time": 5.761904761904762,
+    "total_drawdowns": 22,
+    "current_drawdown": -0.3065793575014194,
+    "drawdown_periods": [
+      {
+        "start_idx": 1,
+        "bottom_idx": 1,
+        "end_idx": 2,
+        "max_drawdown": -0.013084077875945736,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 4,
+        "bottom_idx": 4,
+        "end_idx": 5,
+        "max_drawdown": -0.02172091299279652,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 6,
+        "bottom_idx": 6,
+        "end_idx": 7,
+        "max_drawdown": -0.008130060050049183,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 10,
+        "bottom_idx": 11,
+        "end_idx": 13,
+        "max_drawdown": -0.04638838016250449,
+        "duration": 3,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 15,
+        "bottom_idx": 18,
+        "end_idx": 24,
+        "max_drawdown": -0.1967669222753206,
+        "duration": 9,
+        "recovery_time": 6
+      },
+      {
+        "start_idx": 25,
+        "bottom_idx": 49,
+        "end_idx": 118,
+        "max_drawdown": -0.2583119932836296,
+        "duration": 93,
+        "recovery_time": 69
+      },
+      {
+        "start_idx": 119,
+        "bottom_idx": 119,
+        "end_idx": 120,
+        "max_drawdown": -0.025515143905693177,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 121,
+        "bottom_idx": 121,
+        "end_idx": 122,
+        "max_drawdown": -0.004578780226475688,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 123,
+        "bottom_idx": 139,
+        "end_idx": 142,
+        "max_drawdown": -0.1041292825136034,
+        "duration": 19,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 143,
+        "bottom_idx": 143,
+        "end_idx": 144,
+        "max_drawdown": -0.022826980961267302,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 145,
+        "bottom_idx": 159,
+        "end_idx": 172,
+        "max_drawdown": -0.13754328189721157,
+        "duration": 27,
+        "recovery_time": 13
+      },
+      {
+        "start_idx": 173,
+        "bottom_idx": 174,
+        "end_idx": 176,
+        "max_drawdown": -0.031759607757391506,
+        "duration": 3,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 177,
+        "bottom_idx": 178,
+        "end_idx": 180,
+        "max_drawdown": -0.028691977838810966,
+        "duration": 3,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 181,
+        "bottom_idx": 182,
+        "end_idx": 183,
+        "max_drawdown": -0.025854845004038524,
+        "duration": 2,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 187,
+        "bottom_idx": 187,
+        "end_idx": 190,
+        "max_drawdown": -0.007246357765117144,
+        "duration": 3,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 191,
+        "bottom_idx": 191,
+        "end_idx": 193,
+        "max_drawdown": -0.025928425833730565,
+        "duration": 2,
+        "recovery_time": 2
+      },
+      {
+        "start_idx": 194,
+        "bottom_idx": 195,
+        "end_idx": 196,
+        "max_drawdown": -0.048117116567104476,
+        "duration": 2,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 198,
+        "bottom_idx": 198,
+        "end_idx": 199,
+        "max_drawdown": -0.016677715043820054,
+        "duration": 1,
+        "recovery_time": 1
+      },
+      {
+        "start_idx": 200,
+        "bottom_idx": 203,
+        "end_idx": 206,
+        "max_drawdown": -0.07395901614230865,
+        "duration": 6,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 207,
+        "bottom_idx": 210,
+        "end_idx": 214,
+        "max_drawdown": -0.04817863035684205,
+        "duration": 7,
+        "recovery_time": 4
+      },
+      {
+        "start_idx": 217,
+        "bottom_idx": 218,
+        "end_idx": 221,
+        "max_drawdown": -0.023823012749198878,
+        "duration": 4,
+        "recovery_time": 3
+      },
+      {
+        "start_idx": 224,
+        "bottom_idx": 312,
+        "end_idx": 499,
+        "max_drawdown": -0.4671649629325711,
+        "duration": 275,
+        "recovery_time": null
+      }
+    ]
+  },
+  "trend_analysis": {
+    "current_trend": "uptrend",
+    "trend_periods": [
+      {
+        "trend": "sideways",
+        "start_idx": 20,
+        "end_idx": 50,
+        "duration": 30,
+        "price_change": -8.51735074838401
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 50,
+        "end_idx": 54,
+        "duration": 4,
+        "price_change": 13.931025684292106
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 54,
+        "end_idx": 57,
+        "duration": 3,
+        "price_change": 1.69492083639435
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 57,
+        "end_idx": 69,
+        "duration": 12,
+        "price_change": 6.250000613367666
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 69,
+        "end_idx": 81,
+        "duration": 12,
+        "price_change": -14.789913637833093
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 81,
+        "end_idx": 85,
+        "duration": 4,
+        "price_change": 2.9585800740791326
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 85,
+        "end_idx": 92,
+        "duration": 7,
+        "price_change": 2.234990246053808
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 92,
+        "end_idx": 111,
+        "duration": 19,
+        "price_change": 11.242974222415736
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 111,
+        "end_idx": 118,
+        "duration": 7,
+        "price_change": 8.927565850005726
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 118,
+        "end_idx": 160,
+        "duration": 42,
+        "price_change": 2.783502070603817
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 160,
+        "end_idx": 178,
+        "duration": 18,
+        "price_change": 17.652962509115984
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 178,
+        "end_idx": 246,
+        "duration": 68,
+        "price_change": 41.60273085168901
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 246,
+        "end_idx": 252,
+        "duration": 6,
+        "price_change": -12.10114898077872
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 252,
+        "end_idx": 337,
+        "duration": 85,
+        "price_change": -25.068490149614558
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 337,
+        "end_idx": 357,
+        "duration": 20,
+        "price_change": 5.301646426493289
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 357,
+        "end_idx": 363,
+        "duration": 6,
+        "price_change": 5.555555158002438
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 363,
+        "end_idx": 372,
+        "duration": 9,
+        "price_change": 0.7401330117491836
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 372,
+        "end_idx": 385,
+        "duration": 13,
+        "price_change": -7.183674562591327
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 385,
+        "end_idx": 397,
+        "duration": 12,
+        "price_change": 10.466136641045095
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 397,
+        "end_idx": 412,
+        "duration": 15,
+        "price_change": -13.216558628317712
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 412,
+        "end_idx": 416,
+        "duration": 4,
+        "price_change": -0.5504572585060973
+      },
+      {
+        "trend": "downtrend",
+        "start_idx": 416,
+        "end_idx": 445,
+        "duration": 29,
+        "price_change": -2.675281039267129
+      },
+      {
+        "trend": "sideways",
+        "start_idx": 445,
+        "end_idx": 477,
+        "duration": 32,
+        "price_change": 15.22060468469713
+      },
+      {
+        "trend": "uptrend",
+        "start_idx": 477,
+        "end_idx": 500,
+        "duration": 23,
+        "price_change": 6.844441731770834
+      }
+    ],
+    "uptrends": 8,
+    "downtrends": 4,
+    "sideways_periods": 12,
+    "avg_uptrend_duration": 21.875,
+    "avg_downtrend_duration": 36.25,
+    "avg_uptrend_gain": 6.659450297441037,
+    "avg_downtrend_loss": -2.562699088274572
+  },
+  "volatility_analysis": {
+    "current_volatility": 0.24829288800083085,
+    "avg_volatility": 0.4693429881495411,
+    "volatility_std": 0.15472213410301913,
+    "low_vol_periods": 159,
+    "medium_vol_periods": 158,
+    "high_vol_periods": 164,
+    "volatility_clustering": 0,
+    "volatility_persistence": 0,
+    "volatility_trend": "decreasing"
+  },
+  "timestamp": "2025-08-21T21:58:48.797277"
+}

@@ -13,7 +13,8 @@ import requests
 import json
 from scipy import stats
 from scipy.signal import find_peaks
-import talib
+# TA-Lib yerine ta kütüphanesi kullan
+import ta
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
