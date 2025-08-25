@@ -125,6 +125,10 @@ _lstm_stop_event: Optional[asyncio.Event] = None
 _lstm_interval_min: int = 240
 _lstm_symbol: str = "SISE.IS"
 
+# Pattern scan cache (TTL)
+_pattern_cache: dict = {}
+_pattern_cache_ttl_sec: int = 900  # 15 dakika
+
 async def _lstm_scheduler_loop():
     global _lstm_stop_event, _lstm_interval_min, _lstm_symbol
     try:
@@ -603,23 +607,30 @@ async def get_health_summary():
 
 @app.get("/analysis/patterns/{symbol}")
 async def get_technical_patterns(symbol: str, timeframe: str = "1d", limit: int = 50):
-    """Sembol için teknik formasyon tespiti"""
+    """Sembol için teknik formasyon tespiti (optimized + cached)"""
     try:
-        from analysis.pattern_detection import TechnicalPatternEngine
-        import yfinance as yf
+        # Cache key
+        cache_key = (symbol, timeframe, limit)
+        now = time.time()
+        cached = _pattern_cache.get(cache_key)
+        if cached and now - cached['ts'] < _pattern_cache_ttl_sec:
+            return cached['data']
         
-        # Veri çek
-        ticker = yf.Ticker(symbol)
-        df = ticker.history(period=f"{limit}d", interval=timeframe)
+        # Veri çek (LivePriceLayer varsa ona öncelik, değilse yfinance)
+        import pandas as pd
+        if 'live_price_layer' in globals() and live_price_layer is not None:
+            # Live layer sadece anlık verir; geçmiş için yfinance gerekli
+            df = await _fetch_history_async(symbol, period=f"{limit}d", interval=timeframe)
+        else:
+            df = await _fetch_history_async(symbol, period=f"{limit}d", interval=timeframe)
         
-        if df.empty:
+        if df is None or df.empty:
             raise HTTPException(status_code=404, detail=f"{symbol} verisi bulunamadı")
         
-        # Pattern engine ile tara
-        engine = TechnicalPatternEngine()
-        patterns = engine.scan_all_patterns(df, symbol)
+        # Pattern tara (async executor)
+        patterns = await _scan_patterns_async(df, symbol)
         
-        # Pattern'ları JSON serializable yap
+        # JSON serializable
         pattern_data = []
         for pattern in patterns:
             pattern_data.append({
@@ -632,11 +643,11 @@ async def get_technical_patterns(symbol: str, timeframe: str = "1d", limit: int 
                 'stop_loss': pattern.stop_loss,
                 'take_profit': pattern.take_profit,
                 'risk_reward': pattern.risk_reward,
-                'timestamp': pattern.timestamp.isoformat(),
+                'timestamp': pattern.timestamp.isoformat() if getattr(pattern, 'timestamp', None) else datetime.now().isoformat(),
                 'description': pattern.description
             })
         
-        return {
+        resp = {
             'symbol': symbol,
             'timeframe': timeframe,
             'patterns': pattern_data,
@@ -644,68 +655,86 @@ async def get_technical_patterns(symbol: str, timeframe: str = "1d", limit: int 
             'timestamp': datetime.now().isoformat()
         }
         
+        # Cache yaz
+        _pattern_cache[cache_key] = {'ts': now, 'data': resp}
+        
+        return resp
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Teknik formasyon hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/analysis/patterns/scan/bist100")
-async def scan_bist100_patterns():
-    """BIST100'de teknik formasyon taraması"""
+async def scan_bist100_patterns(max_symbols: int = 20, period: str = "60d", interval: str = "1d"):
+    """BIST100'de teknik formasyon taraması (parallel + cached)"""
     try:
-        from analysis.pattern_detection import TechnicalPatternEngine
-        import yfinance as yf
-        
-        # BIST100 sembolleri
-        with open("data/bist100.json", 'r', encoding='utf-8') as f:
-            import json
+        import os, json
+        path = os.path.join("data", "bist100.json")
+        with open(path, 'r', encoding='utf-8') as f:
             bist100 = json.load(f)
         
-        engine = TechnicalPatternEngine()
-        all_patterns = []
+        symbols = [s['symbol'] for s in bist100.get('symbols', [])][:max_symbols]
         
-        # İlk 10 sembolü tara (test için)
-        for symbol_info in bist100['symbols'][:10]:
-            symbol = symbol_info['symbol']
-            
-            try:
-                # Veri çek
-                ticker = yf.Ticker(symbol)
-                df = ticker.history(period="30d", interval="1d")
-                
-                if not df.empty:
-                    patterns = engine.scan_all_patterns(df, symbol)
-                    all_patterns.extend(patterns)
-                    
-            except Exception as e:
-                logger.warning(f"{symbol} pattern tarama hatası: {e}")
+        # Cache key
+        cache_key = ("BIST_SCAN", tuple(symbols), period, interval)
+        now = time.time()
+        cached = _pattern_cache.get(cache_key)
+        if cached and now - cached['ts'] < _pattern_cache_ttl_sec:
+            return cached['data']
+        
+        # Parallel fetch histories
+        fetch_tasks = [
+            _fetch_history_async(sym, period=period, interval=interval) for sym in symbols
+        ]
+        histories = await asyncio.gather(*fetch_tasks, return_exceptions=True)
+        
+        # Parallel scan
+        scan_tasks = []
+        valid_pairs = []
+        for sym, df in zip(symbols, histories):
+            if isinstance(df, Exception) or df is None or df.empty:
+                logger.warning(f"{sym} veri boş/hatalı, atlanıyor")
                 continue
+            valid_pairs.append((sym, df))
+            scan_tasks.append(_scan_patterns_async(df, sym))
         
-        # Pattern'ları JSON serializable yap
-        pattern_data = []
-        for pattern in all_patterns:
-            pattern_data.append({
-                'symbol': pattern.symbol,
-                'pattern_type': pattern.pattern_type,
-                'pattern_name': pattern.pattern_name,
-                'confidence': pattern.confidence,
-                'direction': pattern.direction,
-                'entry_price': pattern.entry_price,
-                'stop_loss': pattern.stop_loss,
-                'take_profit': pattern.take_profit,
-                'risk_reward': pattern.risk_reward,
-                'timestamp': pattern.timestamp.isoformat(),
-                'description': pattern.description
-            })
+        scan_results = await asyncio.gather(*scan_tasks, return_exceptions=True)
         
-        # Güven skoruna göre sırala
-        pattern_data.sort(key=lambda x: x['confidence'], reverse=True)
+        # Collect
+        all_patterns = []
+        for (sym, _), res in zip(valid_pairs, scan_results):
+            if isinstance(res, Exception):
+                logger.warning(f"{sym} pattern tarama hatası: {res}")
+                continue
+            for p in res:
+                all_patterns.append({
+                    'symbol': p.symbol,
+                    'pattern_type': p.pattern_type,
+                    'pattern_name': p.pattern_name,
+                    'confidence': p.confidence,
+                    'direction': p.direction,
+                    'entry_price': p.entry_price,
+                    'stop_loss': p.stop_loss,
+                    'take_profit': p.take_profit,
+                    'risk_reward': p.risk_reward,
+                    'timestamp': p.timestamp.isoformat() if getattr(p, 'timestamp', None) else datetime.now().isoformat(),
+                    'description': p.description
+                })
         
-        return {
-            'total_symbols_scanned': 10,
-            'total_patterns_found': len(pattern_data),
-            'patterns': pattern_data,
+        # Sort by confidence desc
+        all_patterns.sort(key=lambda x: x['confidence'], reverse=True)
+        
+        resp = {
+            'total_symbols_scanned': len(valid_pairs),
+            'total_patterns_found': len(all_patterns),
+            'patterns': all_patterns,
             'timestamp': datetime.now().isoformat()
         }
+        
+        _pattern_cache[cache_key] = {'ts': now, 'data': resp}
+        return resp
         
     except Exception as e:
         logger.error(f"BIST100 pattern tarama hatası: {e}")
@@ -2162,6 +2191,22 @@ async def global_exception_handler(request, exc):
             "timestamp": datetime.now().isoformat()
         }
     )
+
+async def _fetch_history_async(symbol: str, period: str, interval: str):
+    import yfinance as yf
+    import pandas as pd
+    loop = asyncio.get_running_loop()
+    def _fetch():
+        return yf.Ticker(symbol).history(period=period, interval=interval)
+    return await loop.run_in_executor(None, _fetch)
+
+async def _scan_patterns_async(df, symbol: str):
+    from analysis.pattern_detection import TechnicalPatternEngine
+    engine = TechnicalPatternEngine()
+    loop = asyncio.get_running_loop()
+    def _scan():
+        return engine.scan_all_patterns(df, symbol)
+    return await loop.run_in_executor(None, _scan)
 
 if __name__ == "__main__":
     # Development server
