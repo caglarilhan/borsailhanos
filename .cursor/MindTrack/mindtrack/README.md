@@ -1,67 +1,91 @@
-Setup
-1) .env.local
+# MindTrack - Therapist Practice Management SaaS
+
+Complete MVP with Google Calendar OAuth, Zoom link generation, and SMS reminders.
+
+## Features
+
+### ✅ Sprint 1 (MVP)
+- **Clients**: CRUD with phone/email fields
+- **Appointments**: Scheduling with status management
+- **Notes**: SOAP/BIRP/DAP with AES-GCM encryption
+- **Billing**: Invoices with CPT codes and status tracking
+- **Auth**: Magic link authentication with Supabase
+- **Email Reminders**: 24h before appointments (Resend)
+
+### ✅ Sprint 2 (Calendar Integration)
+- **Google Calendar OAuth**: Connect and sync appointments
+- **Calendar Sync Button**: One-click Google integration
+- **OAuth Flow**: Secure token management
+
+### ✅ Sprint 3 (Communication)
+- **Zoom Links**: Auto-generate meeting links
+- **Google Meet**: Alternative video call option
+- **SMS Reminders**: Twilio integration for text notifications
+- **Tele Provider Selection**: Zoom, Google Meet, or custom URLs
+
+## Setup
+
+### 1. Environment Variables (.env.local)
+```bash
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=...
 NEXT_PUBLIC_SUPABASE_ANON_KEY=...
 NEXT_PUBLIC_ENCRYPTION_KEY=base64-32bytes
+
+# Email (Resend)
 RESEND_API_KEY=...
 RESEND_FROM=reminder@mindtrack.app
+
+# SMS (Twilio)
+TWILIO_ACCOUNT_SID=...
+TWILIO_AUTH_TOKEN=...
+TWILIO_PHONE_NUMBER=...
+
+# Cron
 CRON_SECRET=some-secret
 
-# Google Calendar OAuth (Sprint 2)
+# Google Calendar OAuth
 GOOGLE_CLIENT_ID=...
 GOOGLE_CLIENT_SECRET=...
 GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google
-
-2) Supabase SQL (owner_id + RLS)
-- Run supabase/schema.sql then supabase/policies.sql
-
-3) Dev
-cd mindtrack && npm run dev
-
-Cron (Vercel)
-- Add a Vercel Cron to call GET /api/reminders daily at 09:00
-- Pass header Authorization: Bearer $CRON_SECRET via Vercel Secret / Env
-
-Google Calendar Setup
-1. Go to Google Cloud Console
-2. Create project or select existing
-3. Enable Google Calendar API
-4. Create OAuth 2.0 credentials
-5. Add http://localhost:3000/api/auth/google to authorized redirect URIs
-6. Copy Client ID and Secret to .env.local
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
-
-## Getting Started
-
-First, run the development server:
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. Supabase Database
+Run SQL files in order:
+1. `supabase/schema.sql` - Tables with owner_id + triggers
+2. `supabase/policies.sql` - Row Level Security (RLS)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 3. Development
+```bash
+cd mindtrack
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## API Endpoints
 
-## Learn More
+- `GET /api/reminders` - Email reminders for appointments (24h ahead)
+- `GET /api/auth/google` - Google OAuth callback
 
-To learn more about Next.js, take a look at the following resources:
+## Database Schema
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **clients**: id, owner_id, name, phone, email, insurance, status
+- **appointments**: id, owner_id, client_id, date, time, status, tele_link
+- **notes**: id, owner_id, client_id, type, content_encrypted
+- **invoices**: id, owner_id, client_id, amount, cpt_code, status
+- **files**: id, owner_id, client_id, file_url, type
+- **audit_logs**: id, owner_id, action, entity, meta
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Security Features
 
-## Deploy on Vercel
+- **Row Level Security (RLS)**: Users only see their own data
+- **AES-GCM Encryption**: Notes content encrypted at rest
+- **Owner ID Triggers**: Automatic user association
+- **Audit Logging**: Track all data access
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Next Steps (Sprint 4+)
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **AI Note Assistant**: Whisper + GPT integration
+- **Multi-language**: EN, TR, DE, FR, ES
+- **White-label**: Multi-user clinic mode
+- **Outcome Tracking**: PHQ-9, GAD-7, BDI assessments
