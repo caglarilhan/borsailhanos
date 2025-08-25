@@ -41,6 +41,11 @@ try:
     from firestore_schema import FirestoreSchema
     from config import config
     from bist100_scanner import BIST100Scanner
+    
+    # PRD v2.0 Yeni Modüller
+    from live_price_layer import LivePriceLayer
+    from mcdm_ranking import MCDMRanking
+    
 except ImportError as e:
     print(f"⚠️ Import hatası: {e}")
 
@@ -162,6 +167,7 @@ async def startup_event():
     global websocket_connector, topsis_ranking, fundamental_analyzer
     global technical_engine, ai_ensemble, rl_agent, sentiment_engine
     global dupont_analyzer, macro_detector, backtest_engine, performance_tracker, accuracy_optimizer, firestore_schema
+    global live_price_layer, mcdm_ranking
     
     try:
         logger.info("🚀 BIST AI Smart Trader başlatılıyor...")
@@ -243,6 +249,22 @@ async def startup_event():
         except Exception as e:
             logger.warning(f"Accuracy Optimizer hatası: {e}")
             accuracy_optimizer = None
+        
+        # PRD v2.0 Yeni Modüller
+        try:
+            live_price_layer = LivePriceLayer()
+            await live_price_layer.start()
+            logger.info("✅ Live Price Layer başlatıldı")
+        except Exception as e:
+            logger.warning(f"Live Price Layer hatası: {e}")
+            live_price_layer = None
+            
+        try:
+            mcdm_ranking = MCDMRanking()
+            logger.info("✅ MCDM Ranking başlatıldı")
+        except Exception as e:
+            logger.warning(f"MCDM Ranking hatası: {e}")
+            mcdm_ranking = None
         
         # WebSocket connector (demo mode)
         websocket_connector = RealTimeDataPipeline(
@@ -1085,23 +1107,48 @@ async def health_check():
 
 @app.get("/prices")
 async def get_prices():
-    """Güncel fiyat verileri"""
+    """Güncel fiyat verileri (PRD v2.0 - Live Price Layer)"""
     try:
-        if websocket_connector is None:
-            raise HTTPException(status_code=503, detail="WebSocket connector hazır değil")
+        if 'live_price_layer' not in globals() or live_price_layer is None:
+            raise HTTPException(status_code=503, detail="Live Price Layer hazır değil")
         
-        prices = websocket_connector.get_all_prices()
-        latency_stats = websocket_connector.get_latency_stats()
+        prices = await live_price_layer.get_all_prices()
+        metrics = live_price_layer.get_performance_metrics()
         
         return {
             "prices": prices,
-            "latency": latency_stats,
+            "performance_metrics": metrics,
             "timestamp": datetime.now().isoformat(),
-            "total_symbols": len(prices)
+            "total_symbols": len(prices),
+            "source": "PRD_v2_0_Live_Price_Layer"
         }
         
     except Exception as e:
         logger.error(f"Fiyat verisi hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/prices/live")
+async def get_live_prices():
+    """Canlı fiyat verileri - WebSocket real-time"""
+    try:
+        if 'live_price_layer' not in globals() or live_price_layer is None:
+            raise HTTPException(status_code=503, detail="Live Price Layer hazır değil")
+        
+        # Real-time prices from cache
+        real_time_prices = {}
+        for symbol, data in live_price_layer.price_cache.items():
+            if time.time() - live_price_layer.last_update.get(symbol, 0) < 60:  # 1 dakika içinde
+                real_time_prices[symbol] = data
+        
+        return {
+            "real_time_prices": real_time_prices,
+            "cache_size": len(live_price_layer.price_cache),
+            "active_connections": live_price_layer.is_connected,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Canlı fiyat hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/prices/{symbol}")
@@ -1273,7 +1320,7 @@ async def get_signals(
 
 @app.get("/ranking")
 async def get_stock_ranking(top_n: int = 10):
-    """Grey TOPSIS + Entropi ile hisse sıralaması"""
+    """Grey TOPSIS + Entropi ile hisse sıralaması (Legacy)"""
     try:
         if topsis_ranking is None:
             raise HTTPException(status_code=503, detail="TOPSIS ranking hazır değil")
@@ -1299,6 +1346,68 @@ async def get_stock_ranking(top_n: int = 10):
         
     except Exception as e:
         logger.error(f"Ranking hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ranking/mcdm")
+async def get_mcdm_ranking(market: str = "BIST", top_n: int = 10):
+    """PRD v2.0 - MCDM Ranking (Grey TOPSIS + Entropi)"""
+    try:
+        if 'mcdm_ranking' not in globals() or mcdm_ranking is None:
+            raise HTTPException(status_code=503, detail="MCDM Ranking hazır değil")
+        
+        if market.upper() == "BIST":
+            results = mcdm_ranking.get_bist_ranking()
+        elif market.upper() == "US":
+            results = mcdm_ranking.get_us_ranking()
+        elif market.upper() == "COMBINED":
+            results = mcdm_ranking.get_combined_ranking()
+        else:
+            raise HTTPException(status_code=400, detail="Geçersiz market. BIST, US veya COMBINED kullanın")
+        
+        if not results:
+            raise HTTPException(status_code=503, detail=f"{market} ranking verisi bulunamadı")
+        
+        # Top N results
+        top_results = results['ranking'][:top_n]
+        
+        return {
+            "market": market,
+            "ranking": top_results,
+            "total_symbols": results['total_symbols'],
+            "timestamp": results['timestamp'],
+            "source": "PRD_v2_0_MCDM_Ranking"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"MCDM Ranking hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/ranking/mcdm/export/{market}")
+async def export_mcdm_ranking(market: str, format: str = "csv"):
+    """MCDM Ranking sonuçlarını export et"""
+    try:
+        if 'mcdm_ranking' not in globals() or mcdn_ranking is None:
+            raise HTTPException(status_code=503, detail="MCDM Ranking hazır değil")
+        
+        if format.lower() == "csv":
+            filename = mcdm_ranking.export_ranking_to_csv(market)
+            if filename:
+                return FileResponse(
+                    filename,
+                    media_type='text/csv',
+                    filename=f"{market}_ranking_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+                )
+            else:
+                raise HTTPException(status_code=500, detail="CSV export hatası")
+        else:
+            raise HTTPException(status_code=500, detail="Sadece CSV format destekleniyor")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Export hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/portfolio/{user_id}")
