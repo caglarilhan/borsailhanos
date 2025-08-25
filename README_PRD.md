@@ -1,6 +1,6 @@
 📑 PRD v1.0 — "BIST AI Kazanç Asistanı"
 
-(0 ₺ bütçeyle başlatılacak, Flutter + Railway + Firestore tabanlı, yapay zekâ destekli mobil yatırım danışmanı)
+(0 ₺ bütçeyle başlatılacak, Flutter + GitHub + Firestore tabanlı, yapay zekâ destekli mobil yatırım danışmanı)
 
 ⸻
 
@@ -52,7 +52,7 @@ Kullanıcı Feedback Loop	👍/👎 sinyal → model weight	P2
 Katman	Stack	0 ₺ Gerekçesi
 Frontend	Flutter (Android + Web build)	Tek codebase, offline, FCM
 Realtime Data	Finnhub WS, financelib REST	Free key, ≤ 30 sembol
-Backend	FastAPI (Railway Free dyno 512 MB)	Cron + WS worker
+Backend	FastAPI (GitHub Actions + Local)	Cron + WS worker
 AI Katmanı	LightGBM, Keras-LSTM, TrendMaster, TimeGPT (Free 1 k/ay)	Eğitim Colab Free, inference CPU
 DRL	FinRL (Pazar GPU T4 eğitim)	Drive ağırlık, JSON weight
 Storage	Firestore Spark (1 GB)	Sinyal + metrik + cache

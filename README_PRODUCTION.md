@@ -45,16 +45,14 @@ cd backend
 ./deploy.sh
 ```
 
-#### **Railway ile Cloud Deployment:**
+#### **GitHub Actions ile Cloud Deployment:**
 ```bash
-# Railway CLI kur
-npm install -g @railway/cli
+# GitHub Secrets ayarla
+# Repository Settings > Secrets and variables > Actions
+# Gerekli environment variables'ları ekle
 
-# Login ol
-railway login
-
-# Deploy et
-railway up
+# Otomatik deployment
+# Her push'ta GitHub Actions workflow çalışır
 ```
 
 #### **Vercel ile Cloud Deployment:**
@@ -97,7 +95,7 @@ flutter build ios --release
 ## 🌐 **Production URL'leri**
 
 ### **Backend Services:**
-- **API:** http://localhost:8000 (Docker) / https://your-railway-app.railway.app (Railway)
+- **API:** http://localhost:8000 (Docker) / https://your-github-app.vercel.app (Vercel)
 - **Nginx:** http://localhost:80 (Docker)
 - **Prometheus:** http://localhost:9090
 - **Grafana:** http://localhost:3000 (admin/admin)
@@ -217,10 +215,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: Deploy to Railway
+      - name: Deploy to Vercel
         run: |
-          npm install -g @railway/cli
-          railway up --token ${{ secrets.RAILWAY_TOKEN }}
+          npm install -g vercel
+          vercel --prod --token ${{ secrets.VERCEL_TOKEN }}
 
   deploy-frontend:
     runs-on: ubuntu-latest

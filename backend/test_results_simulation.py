@@ -182,7 +182,7 @@ def simulate_test_results():
     print(f"{'='*40}")
     
     if success_rate >= 80:
-        print("1. 🚀 Production deployment (Railway)")
+        print("1. 🚀 Production deployment (GitHub Actions + Vercel)")
         print("2. ⚡ API endpoints oluştur (/predict, /signals)")
         print("3. 📊 Monitoring sistemi kur (Prometheus + Grafana)")
         print("4. 📱 Flutter frontend geliştir")

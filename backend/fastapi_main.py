@@ -1,7 +1,7 @@
 """
 PRD v2.0 - FastAPI Ana Uygulama
 /signals ve /prices endpoints, Firestore entegrasyonu
-Railway deploy için hazır
+GitHub Actions + Vercel deploy için hazır
 """
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks, Request
