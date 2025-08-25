@@ -7,6 +7,7 @@ import NotesTab from "@/components/tabs/notes-tab";
 import InvoicesTab from "@/components/tabs/invoices-tab";
 import AuthGate from "@/components/auth/auth-gate";
 import SignOutButton from "@/components/auth/signout-button";
+import CalendarSyncButton from "@/components/calendar/calendar-sync-button";
 
 export default function Home() {
   return (
@@ -17,7 +18,10 @@ export default function Home() {
             <h1 className="text-2xl font-semibold">MindTrack</h1>
             <p className="text-muted-foreground">Clients, Appointments, Notes, Billing</p>
           </div>
-          <SignOutButton />
+          <div className="flex items-center gap-2">
+            <CalendarSyncButton />
+            <SignOutButton />
+          </div>
         </div>
         <Tabs defaultValue="clients" className="w-full">
           <TabsList className="grid grid-cols-4 w-full">

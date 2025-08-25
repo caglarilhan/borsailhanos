@@ -26,8 +26,9 @@ export default function AppointmentsTab() {
       if (e2) throw e2;
       setAppointments((appts as unknown as Appointment[]) ?? []);
       setClients((cls as unknown as Client[]) ?? []);
-    } catch (e: any) {
-      setError(e.message ?? "Load failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Load failed";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -47,8 +48,9 @@ export default function AppointmentsTab() {
       setTime("");
       setClientId("");
       fetchAll();
-    } catch (e: any) {
-      setError(e.message ?? "Insert failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Insert failed";
+      setError(errorMessage);
     }
   };
 
@@ -57,8 +59,9 @@ export default function AppointmentsTab() {
       const { error: err } = await supabase.from("appointments").update({ status: "cancelled" }).eq("id", id);
       if (err) throw err;
       fetchAll();
-    } catch (e: any) {
-      setError(e.message ?? "Cancel failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Cancel failed";
+      setError(errorMessage);
     }
   };
 

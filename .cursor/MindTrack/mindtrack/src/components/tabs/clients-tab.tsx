@@ -21,8 +21,9 @@ export default function ClientsTab() {
         .order("created_at", { ascending: false });
       if (err) throw err;
       setClients((data as unknown as Client[]) ?? []);
-    } catch (e: any) {
-      setError(e.message ?? "Unknown error");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Unknown error";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -36,12 +37,13 @@ export default function ClientsTab() {
     e.preventDefault();
     if (!name.trim()) return;
     try {
-      const { error: err } = await supabase.from("clients").insert({ name });
+      const { error: err } = await supabase.from("clients").insert({ name, user_id: (await supabase.auth.getUser()).data.user?.id });
       if (err) throw err;
       setName("");
       fetchClients();
-    } catch (e: any) {
-      setError(e.message ?? "Insert failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Insert failed";
+      setError(errorMessage);
     }
   };
 
@@ -53,8 +55,9 @@ export default function ClientsTab() {
         .eq("id", id);
       if (err) throw err;
       fetchClients();
-    } catch (e: any) {
-      setError(e.message ?? "Delete failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Delete failed";
+      setError(errorMessage);
     }
   };
 

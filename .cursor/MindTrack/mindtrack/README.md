@@ -7,6 +7,11 @@ RESEND_API_KEY=...
 RESEND_FROM=reminder@mindtrack.app
 CRON_SECRET=some-secret
 
+# Google Calendar OAuth (Sprint 2)
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+GOOGLE_REDIRECT_URI=http://localhost:3000/api/auth/google
+
 2) Supabase SQL (owner_id + RLS)
 - Run supabase/schema.sql then supabase/policies.sql
 
@@ -16,6 +21,14 @@ cd mindtrack && npm run dev
 Cron (Vercel)
 - Add a Vercel Cron to call GET /api/reminders daily at 09:00
 - Pass header Authorization: Bearer $CRON_SECRET via Vercel Secret / Env
+
+Google Calendar Setup
+1. Go to Google Cloud Console
+2. Create project or select existing
+3. Enable Google Calendar API
+4. Create OAuth 2.0 credentials
+5. Add http://localhost:3000/api/auth/google to authorized redirect URIs
+6. Copy Client ID and Secret to .env.local
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started

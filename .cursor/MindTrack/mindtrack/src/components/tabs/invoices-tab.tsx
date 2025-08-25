@@ -26,8 +26,9 @@ export default function InvoicesTab() {
       if (e2) throw e2;
       setInvoices((inv as unknown as Invoice[]) ?? []);
       setClients((cls as unknown as Client[]) ?? []);
-    } catch (e: any) {
-      setError(e.message ?? "Load failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Load failed";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -48,8 +49,9 @@ export default function InvoicesTab() {
       setAmount("");
       setCpt("");
       fetchAll();
-    } catch (e: any) {
-      setError(e.message ?? "Insert failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Insert failed";
+      setError(errorMessage);
     }
   };
 
@@ -58,8 +60,9 @@ export default function InvoicesTab() {
       const { error: err } = await supabase.from("invoices").update({ status: "paid" }).eq("id", id);
       if (err) throw err;
       fetchAll();
-    } catch (e: any) {
-      setError(e.message ?? "Update failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Update failed";
+      setError(errorMessage);
     }
   };
 
@@ -68,8 +71,9 @@ export default function InvoicesTab() {
       const { error: err } = await supabase.from("invoices").update({ status: "void" }).eq("id", id);
       if (err) throw err;
       fetchAll();
-    } catch (e: any) {
-      setError(e.message ?? "Update failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Update failed";
+      setError(errorMessage);
     }
   };
 
@@ -130,7 +134,7 @@ export default function InvoicesTab() {
               })}
               {invoices.length === 0 && (
                 <tr>
-                  <td className="p-4 text-muted-foreground" colSpan={5}>No invoices</td>
+                  <td className="p-2 text-muted-foreground" colSpan={5}>No invoices</td>
                 </tr>
               )}
             </tbody>

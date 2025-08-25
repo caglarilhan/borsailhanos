@@ -32,8 +32,9 @@ export default function NotesTab() {
       if (e2) throw e2;
       setNotes((ns as unknown as Note[]) ?? []);
       setClients((cls as unknown as Client[]) ?? []);
-    } catch (e: any) {
-      setError(e.message ?? "Load failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Load failed";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -58,8 +59,9 @@ export default function NotesTab() {
       setType("SOAP");
       setContent("");
       fetchAll();
-    } catch (e: any) {
-      setError(e.message ?? "Insert failed");
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : "Insert failed";
+      setError(errorMessage);
     }
   };
 
@@ -77,7 +79,7 @@ export default function NotesTab() {
         </div>
         <div>
           <label className="text-xs block mb-1">Type</label>
-          <select value={type} onChange={(e) => setType(e.target.value as any)} className="border rounded px-3 py-2 w-full">
+          <select value={type} onChange={(e) => setType(e.target.value as typeof NOTE_TYPES[number])} className="border rounded px-3 py-2 w-full">
             {NOTE_TYPES.map((t) => (
               <option key={t} value={t}>{t}</option>
             ))}

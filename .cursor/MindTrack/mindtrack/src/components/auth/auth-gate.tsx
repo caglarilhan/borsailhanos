@@ -34,7 +34,7 @@ export default function AuthGate({ children }: { children: React.ReactNode }) {
         <h2 className="text-xl font-semibold mb-3">Giriş</h2>
         <p className="text-sm text-muted-foreground mb-4">E-mail ile magic link gönderelim.</p>
         <Auth
-          supabaseClient={supabase as any}
+          supabaseClient={supabase as unknown as Parameters<typeof Auth>[0]['supabaseClient']}
           appearance={{ theme: ThemeSupa }}
           providers={[]}
           view="magic_link"

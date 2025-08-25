@@ -26,7 +26,7 @@ export async function GET() {
   if (!appts || appts.length === 0) return NextResponse.json({ sent: 0 });
 
   // Fetch client emails
-  const clientIds = Array.from(new Set(appts.map((a: any) => a.client_id)));
+  const clientIds = Array.from(new Set(appts.map((a: { client_id: string }) => a.client_id)));
   const { data: clients, error: e2 } = await supabase
     .from("clients")
     .select("id, name, email")
@@ -34,8 +34,8 @@ export async function GET() {
   if (e2) return NextResponse.json({ error: e2.message }, { status: 500 });
 
   let sent = 0;
-  for (const appt of appts as any[]) {
-    const c = clients?.find((x: any) => x.id === appt.client_id);
+  for (const appt of appts as Array<{ client_id: string; date: string; time: string }>) {
+    const c = clients?.find((x: { id: string }) => x.id === appt.client_id);
     if (!c?.email) continue;
     const subject = `Appointment Reminder`;
     const text = `Hi ${c.name || "there"}, this is a reminder for your appointment on ${appt.date} at ${appt.time}.`;
