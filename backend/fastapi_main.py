@@ -42,9 +42,9 @@ try:
     from config import config
     from bist100_scanner import BIST100Scanner
     
-    # PRD v2.0 Yeni Modüller
+    # PRD v2.0 Yeni Modüller (OPTIMIZED)
     from live_price_layer import LivePriceLayer
-    from mcdm_ranking import MCDMRanking
+    from mcdm_ranking import OptimizedMCDMRanking as MCDMRanking
     
 except ImportError as e:
     print(f"⚠️ Import hatası: {e}")
