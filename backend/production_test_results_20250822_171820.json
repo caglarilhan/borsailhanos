@@ -1,0 +1,77 @@
+{
+  "data_pipeline": {
+    "status": "PASS",
+    "tests": [
+      {
+        "name": "Health Check",
+        "status": "PASS",
+        "message": "Health endpoint working",
+        "duration": 6.800275
+      },
+      {
+        "name": "Metrics Endpoint",
+        "status": "PASS",
+        "message": "Metrics endpoint working",
+        "duration": 0.746796
+      },
+      {
+        "name": "Cache Stats",
+        "status": "PASS",
+        "message": "Cache stats working",
+        "duration": 0.129677
+      }
+    ]
+  },
+  "api_endpoints": {
+    "status": "PARTIAL",
+    "tests": [
+      {
+        "name": "Dashboard",
+        "status": "PASS",
+        "message": "Dashboard working",
+        "duration": 0.260904
+      },
+      {
+        "name": "AI Models Status",
+        "status": "FAIL",
+        "message": "HTTPConnectionPool(host='localhost', port=8001): Read timed out. (read timeout=10)",
+        "duration": 0
+      },
+      {
+        "name": "AI Ensemble Prediction",
+        "status": "FAIL",
+        "message": "HTTP 500",
+        "duration": 2.479575
+      },
+      {
+        "name": "AI Macro Regime",
+        "status": "PASS",
+        "message": "AI Macro regime working",
+        "duration": 0.083316
+      }
+    ]
+  },
+  "performance": {
+    "status": "PASS",
+    "tests": [
+      {
+        "name": "Response Time",
+        "status": "PASS",
+        "message": "0.1738s (GOOD)",
+        "duration": 0.17381882667541504
+      },
+      {
+        "name": "Memory Usage",
+        "status": "PASS",
+        "message": "22.34MB (EXCELLENT)",
+        "duration": 22.34375
+      },
+      {
+        "name": "CPU Usage",
+        "status": "PASS",
+        "message": "99.00% (HIGH)",
+        "duration": 99.0
+      }
+    ]
+  }
+}

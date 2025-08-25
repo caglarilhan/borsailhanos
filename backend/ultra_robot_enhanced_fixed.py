@@ -99,6 +99,56 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
         
         # Performance tracker
         self.performance_tracker = EnhancedPerformanceTracker()
+        
+        # Alternative Data Manager (SPRINT 1 entegrasyonu)
+        try:
+            from alternative_data_manager import AlternativeDataManager, AlternativeDataConfig
+            config = AlternativeDataConfig(
+                finnhub_api_key="",  # TODO: Environment variable'dan al
+                yahoo_fallback=True,
+                kap_oda_enabled=True,
+                news_sentiment_enabled=True
+            )
+            self.alternative_data_manager = AlternativeDataManager(config)
+            logger.info("✅ Alternative Data Manager entegre edildi")
+        except Exception as e:
+            logger.warning(f"⚠️ Alternative Data Manager entegrasyon hatası: {e}")
+            self.alternative_data_manager = None
+        
+        # Advanced Feature Engineering (SPRINT 2 entegrasyonu)
+        try:
+            from advanced_feature_engineering_v2 import AdvancedFeatureEngineer
+            self.advanced_feature_engineer = AdvancedFeatureEngineer()
+            logger.info("✅ Advanced Feature Engineering entegre edildi")
+        except Exception as e:
+            logger.warning(f"⚠️ Advanced Feature Engineering entegrasyon hatası: {e}")
+            self.advanced_feature_engineer = None
+        
+        # Sentiment & News Analysis (SPRINT 3 entegrasyonu)
+        try:
+            from sentiment_news_analyzer import SentimentNewsAnalyzer
+            self.sentiment_analyzer = SentimentNewsAnalyzer()
+            logger.info("✅ Sentiment & News Analysis entegre edildi")
+        except Exception as e:
+            logger.warning(f"⚠️ Sentiment & News Analysis entegrasyon hatası: {e}")
+            self.sentiment_analyzer = None
+        
+        # Advanced Ensemble Optimization (SPRINT 4 entegrasyonu)
+        try:
+            from advanced_ensemble_optimizer import AdvancedEnsembleOptimizer, EnsembleConfig
+            config = EnsembleConfig(
+                stacking_enabled=True,
+                dynamic_weighting=True,
+                model_diversity=True,
+                cross_validation_folds=5,
+                time_series_split=True,
+                performance_threshold=0.7
+            )
+            self.ensemble_optimizer = AdvancedEnsembleOptimizer(config)
+            logger.info("✅ Advanced Ensemble Optimization entegre edildi")
+        except Exception as e:
+            logger.warning(f"⚠️ Advanced Ensemble Optimization entegrasyon hatası: {e}")
+            self.ensemble_optimizer = None
     
     def create_enhanced_strategy(self, symbol: str, timeframes: List[TimeFrame]) -> Dict:
         """Gelişmiş strateji oluştur"""
@@ -134,7 +184,7 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
             return {"error": str(e)}
     
     def _train_ai_models(self, symbol: str, timeframes: List[TimeFrame]) -> None:
-        """AI modelleri eğit"""
+        """AI modelleri eğit (Advanced Features ile)"""
         try:
             logger.info(f"🧠 {symbol} için AI modelleri eğitiliyor...")
             
@@ -142,6 +192,83 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
             for timeframe in timeframes:
                 data = self._get_market_data_fixed(symbol, timeframe)
                 if not data.empty:
+                    # Advanced features ekle
+                    if hasattr(self, 'advanced_feature_engineer') and self.advanced_feature_engineer:
+                        try:
+                            # Market data'yı DataFrame'e çevir
+                            if isinstance(data, pd.DataFrame):
+                                # Advanced features oluştur (sync wrapper)
+                                try:
+                                    # Async fonksiyonu sync olarak çağır
+                                    import asyncio
+                                    loop = asyncio.new_event_loop()
+                                    asyncio.set_event_loop(loop)
+                                    advanced_features = loop.run_until_complete(
+                                        self.advanced_feature_engineer.create_advanced_features(symbol, data)
+                                    )
+                                    loop.close()
+                                except Exception as e:
+                                    logger.warning(f"⚠️ Advanced features async hatası: {e}")
+                                    advanced_features = None
+                                if advanced_features:
+                                    logger.info(f"✅ {symbol} için advanced features oluşturuldu")
+                                    
+                                    # Features'ları data'ya ekle
+                                    data['order_flow_imbalance'] = advanced_features.order_flow_imbalance
+                                    data['volume_profile'] = advanced_features.volume_profile
+                                    data['price_impact'] = advanced_features.price_impact
+                                    data['garch_volatility'] = advanced_features.garch_volatility
+                                    data['volatility_clustering'] = advanced_features.volatility_clustering
+                                    data['realized_volatility'] = advanced_features.realized_volatility
+                                    data['sector_rotation'] = advanced_features.sector_rotation
+                                    data['market_breadth'] = advanced_features.market_breadth
+                                    data['beta'] = advanced_features.beta
+                                    data['supertrend'] = advanced_features.supertrend
+                                    data['fibonacci_retracement'] = advanced_features.fibonacci_retracement
+                                    
+                                    # Pivot points
+                                    if advanced_features.pivot_points:
+                                        data['pivot_position'] = advanced_features.pivot_points.get('position', 0.5)
+                                    
+                                    logger.info(f"✅ Advanced features data'ya eklendi")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Advanced features hatası: {e}")
+                    
+                    # Sentiment analysis ekle
+                    if hasattr(self, 'sentiment_analyzer') and self.sentiment_analyzer:
+                        try:
+                            # Company name (symbol'den çıkar)
+                            company_name = symbol.replace('.IS', '')
+                            
+                            # Sentiment analysis yap (sync wrapper)
+                            try:
+                                import asyncio
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                                sentiment_result = loop.run_until_complete(
+                                    self.sentiment_analyzer.analyze_company_sentiment(symbol, company_name)
+                                )
+                                loop.close()
+                            except Exception as e:
+                                logger.warning(f"⚠️ Sentiment analysis async hatası: {e}")
+                                sentiment_result = None
+                            if sentiment_result:
+                                logger.info(f"✅ {symbol} için sentiment analysis tamamlandı")
+                                
+                                # Sentiment features'ları data'ya ekle
+                                data['overall_sentiment'] = sentiment_result.overall_sentiment
+                                data['news_sentiment_score'] = sentiment_result.news_sentiment_score
+                                data['event_sentiment_score'] = sentiment_result.event_sentiment_score
+                                data['sentiment_confidence'] = sentiment_result.confidence
+                                
+                                # Sentiment label'ı numeric'e çevir
+                                sentiment_label_map = {'positive': 1.0, 'neutral': 0.0, 'negative': -1.0}
+                                data['sentiment_label_numeric'] = sentiment_label_map.get(sentiment_result.sentiment_label, 0.0)
+                                
+                                logger.info(f"✅ Sentiment features data'ya eklendi")
+                        except Exception as e:
+                            logger.warning(f"⚠️ Sentiment analysis hatası: {e}")
+                    
                     # Momentum modeli
                     self.ai_models["momentum"] = self._train_momentum_model(data)
                     
@@ -159,13 +286,113 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
             
             logger.info(f"✅ AI modelleri eğitildi")
             
+            # Ensemble optimization (SPRINT 4)
+            if hasattr(self, 'ensemble_optimizer') and self.ensemble_optimizer:
+                try:
+                    logger.info(f"🔧 {symbol} için ensemble optimization başlıyor...")
+                    
+                    # Feature matrix oluştur
+                    feature_columns = [col for col in data.columns if col not in ['Open', 'High', 'Low', 'Close', 'Volume']]
+                    if feature_columns:
+                        X = data[feature_columns].dropna().values
+                        y = data['Close'].pct_change().dropna().values
+                        
+                        # Align data
+                        min_len = min(len(X), len(y))
+                        if min_len > 20:
+                            X = X[:min_len]
+                            y = y[:min_len]
+                            
+                            # Ensemble optimization (sync wrapper)
+                            try:
+                                import asyncio
+                                loop = asyncio.new_event_loop()
+                                asyncio.set_event_loop(loop)
+                                
+                                # Train models
+                                loop.run_until_complete(self.ensemble_optimizer.train_all_models(X, y))
+                                
+                                # Ensemble prediction
+                                market_regime = "normal"  # TODO: Market regime detection
+                                ensemble_result = loop.run_until_complete(
+                                    self.ensemble_optimizer.predict_ensemble(X, symbol, market_regime)
+                                )
+                                
+                                loop.close()
+                            except Exception as e:
+                                logger.warning(f"⚠️ Ensemble optimization async hatası: {e}")
+                                ensemble_result = None
+                            
+                            if ensemble_result:
+                                logger.info(f"✅ {symbol} için ensemble optimization tamamlandı")
+                                logger.info(f"   Tahmin: {ensemble_result.prediction:.6f}")
+                                logger.info(f"   Güven: {ensemble_result.confidence:.4f}")
+                            else:
+                                logger.warning(f"⚠️ {symbol} için ensemble optimization başarısız")
+                        else:
+                            logger.warning(f"⚠️ {symbol} için yeterli veri yok (min: 20, mevcut: {min_len})")
+                    else:
+                        logger.warning(f"⚠️ {symbol} için feature columns bulunamadı")
+                        
+                except Exception as e:
+                    logger.warning(f"⚠️ Ensemble optimization hatası: {e}")
+            
         except Exception as e:
             logger.error(f"❌ AI model eğitimi hatası: {e}")
     
     def _get_market_data_fixed(self, symbol: str, timeframe: TimeFrame) -> pd.DataFrame:
-        """Market verisi çek (düzeltilmiş)"""
+        """Market verisi çek (Alternative Data Manager ile entegre)"""
         try:
-            # Yahoo Finance'dan veri
+            # Alternative Data Manager kullan
+            if hasattr(self, 'alternative_data_manager'):
+                try:
+                    # Comprehensive data al (async wrapper)
+                    import asyncio
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    comprehensive_data = loop.run_until_complete(
+                        self.alternative_data_manager.get_comprehensive_stock_data(symbol)
+                    )
+                    loop.close()
+                    if comprehensive_data:
+                        logger.info(f"✅ Alternative Data Manager'dan veri alındı: {symbol}")
+                        
+                        # Yahoo Finance fallback ile historical data
+                        stock = yf.Ticker(symbol)
+                        
+                        # Zaman dilimine göre period ayarla
+                        if timeframe in [TimeFrame.M1, TimeFrame.M5, TimeFrame.M15, TimeFrame.M30]:
+                            period = "60d"  # Son 60 gün
+                        elif timeframe in [TimeFrame.H1, TimeFrame.H4]:
+                            period = "2y"   # Son 2 yıl
+                        else:
+                            period = "5y"   # Son 5 yıl
+                        
+                        # Historical data çek
+                        data = stock.history(period=period, interval=timeframe.value)
+                        
+                        if not data.empty:
+                            # Alternative data bilgilerini ekle
+                            data['alternative_price'] = comprehensive_data.price
+                            data['alternative_volume'] = comprehensive_data.volume
+                            data['alternative_sector'] = comprehensive_data.sector
+                            data['alternative_pe_ratio'] = comprehensive_data.pe_ratio
+                            data['alternative_pb_ratio'] = comprehensive_data.pb_ratio
+                            data['alternative_dividend_yield'] = comprehensive_data.dividend_yield
+                            data['alternative_confidence'] = comprehensive_data.confidence
+                            data['alternative_data_source'] = comprehensive_data.data_source
+                            
+                            logger.info(f"✅ {timeframe.value}: {len(data)} veri noktası + Alternative Data")
+                            return data
+                        else:
+                            logger.warning(f"⚠️ {timeframe.value}: Historical veri bulunamadı")
+                            return pd.DataFrame()
+                    else:
+                        logger.warning(f"⚠️ Alternative Data Manager'dan veri alınamadı, fallback kullanılıyor")
+                except Exception as e:
+                    logger.warning(f"⚠️ Alternative Data Manager hatası: {e}, fallback kullanılıyor")
+            
+            # Fallback: Orijinal Yahoo Finance yöntemi
             stock = yf.Ticker(symbol)
             
             # Zaman dilimine göre period ayarla
@@ -180,7 +407,7 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
             data = stock.history(period=period, interval=timeframe.value)
             
             if not data.empty:
-                logger.info(f"✅ {timeframe.value}: {len(data)} veri noktası")
+                logger.info(f"✅ {timeframe.value}: {len(data)} veri noktası (fallback)")
                 return data
             else:
                 logger.warning(f"⚠️ {timeframe.value}: Veri bulunamadı")

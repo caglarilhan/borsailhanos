@@ -1,0 +1,51 @@
+{
+  "overall_status": "PASS",
+  "passed_tests": 3,
+  "total_tests": 3,
+  "duration": 37.97576713562012,
+  "test_results": {
+    "initialization": {
+      "status": "PASS",
+      "modules_status": {
+        "alternative_data_manager": true,
+        "advanced_feature_engineer": true,
+        "sentiment_analyzer": true,
+        "ensemble_optimizer": true
+      },
+      "all_modules_loaded": true
+    },
+    "data_integration": {
+      "status": "PASS",
+      "symbol": "GARAN.IS",
+      "data_points": 1251,
+      "alternative_features_count": 8,
+      "available_features": [
+        "alternative_price",
+        "alternative_volume",
+        "alternative_sector",
+        "alternative_pe_ratio",
+        "alternative_pb_ratio",
+        "alternative_dividend_yield",
+        "alternative_confidence",
+        "alternative_data_source"
+      ]
+    },
+    "strategy_creation": {
+      "status": "PASS",
+      "symbol": "GARAN.IS",
+      "strategy_keys": [
+        "symbol",
+        "timeframes",
+        "signals",
+        "portfolio_allocation",
+        "risk_management",
+        "performance_tracking",
+        "enhanced_config",
+        "ai_models",
+        "portfolio_optimization",
+        "performance_targets"
+      ],
+      "has_error": false
+    }
+  }
+}

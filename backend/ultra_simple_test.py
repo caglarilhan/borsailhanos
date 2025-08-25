@@ -1,39 +1,57 @@
 #!/usr/bin/env python3
-"""Ultra basit test scripti - sadece temel işlemler"""
+"""
+🚀 ULTRA SIMPLE TEST - Çalışan sistem
+"""
 
-print("🚀 Ultra Basit Test Başlatılıyor...")
+print("🚀 BIST AI Smart Trader - Ultra Simple Test")
+print("=" * 50)
+
+# Test 1: Basic imports
+try:
+    import numpy as np
+    print("✅ NumPy: OK")
+except ImportError as e:
+    print(f"❌ NumPy: {e}")
 
 try:
-    print("1️⃣ Import testleri...")
     import pandas as pd
-    print("   ✅ pandas OK")
+    print("✅ Pandas: OK")
+except ImportError as e:
+    print(f"❌ Pandas: {e}")
+
+try:
+    import sklearn
+    print("✅ Scikit-learn: OK")
+except ImportError as e:
+    print(f"❌ Scikit-learn: {e}")
+
+# Test 2: Simple calculation
+try:
+    # Create simple data
+    data = np.random.randn(100, 5)
+    target = np.random.randn(100)
     
-    import numpy as np
-    print("   ✅ numpy OK")
+    print(f"📊 Data shape: {data.shape}")
+    print(f"📊 Target shape: {target.shape}")
     
-    print("2️⃣ Basit hesaplama...")
-    a = 10
-    b = 20
-    c = a + b
-    print(f"   ✅ {a} + {b} = {c}")
+    # Simple model
+    from sklearn.linear_model import LinearRegression
+    model = LinearRegression()
+    model.fit(data, target)
     
-    print("3️⃣ Basit DataFrame...")
-    df = pd.DataFrame({
-        'A': [1, 2, 3],
-        'B': [4, 5, 6]
-    })
-    print(f"   ✅ DataFrame oluşturuldu: {df.shape}")
+    # Predict
+    pred = model.predict(data)
     
-    print("4️⃣ Basit numpy işlem...")
-    arr = np.array([1, 2, 3, 4, 5])
-    mean_val = np.mean(arr)
-    print(f"   ✅ Array mean: {mean_val}")
+    # Calculate accuracy (simple correlation)
+    correlation = np.corrcoef(target, pred)[0, 1]
+    accuracy = (correlation + 1) / 2  # Convert to 0-1 scale
     
-    print("\n🎉 TÜM TESTLER BAŞARILI!")
-    print("✅ Sistem çalışıyor!")
+    print(f"🎯 Model accuracy: {accuracy*100:.1f}%")
+    print("✅ Simple test başarılı!")
     
 except Exception as e:
-    print(f"\n❌ HATA: {e}")
-    print("❌ Sistem çalışmıyor!")
+    print(f"❌ Test hatası: {e}")
     import traceback
     traceback.print_exc()
+
+print("\n🎯 Ultra Simple Test tamamlandı!")

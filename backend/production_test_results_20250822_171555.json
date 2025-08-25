@@ -1,0 +1,77 @@
+{
+  "data_pipeline": {
+    "status": "FAIL",
+    "tests": [
+      {
+        "name": "Health Check",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      },
+      {
+        "name": "Metrics Endpoint",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      },
+      {
+        "name": "Cache Stats",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      }
+    ]
+  },
+  "api_endpoints": {
+    "status": "FAIL",
+    "tests": [
+      {
+        "name": "Dashboard",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      },
+      {
+        "name": "AI Models Status",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      },
+      {
+        "name": "AI Ensemble Prediction",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      },
+      {
+        "name": "AI Macro Regime",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      }
+    ]
+  },
+  "performance": {
+    "status": "PARTIAL",
+    "tests": [
+      {
+        "name": "Response Time",
+        "status": "FAIL",
+        "message": "('Connection aborted.', ConnectionResetError(54, 'Connection reset by peer'))",
+        "duration": 0
+      },
+      {
+        "name": "Memory Usage",
+        "status": "PASS",
+        "message": "32.27MB (EXCELLENT)",
+        "duration": 32.265625
+      },
+      {
+        "name": "CPU Usage",
+        "status": "PASS",
+        "message": "100.00% (HIGH)",
+        "duration": 100.0
+      }
+    ]
+  }
+}
