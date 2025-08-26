@@ -31,7 +31,8 @@
     "billing": "Billing",
     "calendar": "Calendar",
     "clinic": "Clinic",
-    "assessments": "Assessments"
+    "assessments": "Assessments",
+    "analytics": "Analytics"
   },
   "clients": {
     "title": "Clients",
@@ -219,5 +220,36 @@
     "generationFailed": "AI note generation failed",
     "enhancementFailed": "AI enhancement failed",
     "transcriptionFailed": "Audio transcription failed"
+  },
+  "analytics": {
+    "title": "Analytics & Reporting",
+    "description": "Track your practice performance with detailed analytics and insights",
+    "totalClients": "Total Clients",
+    "totalAppointments": "Total Appointments",
+    "totalRevenue": "Total Revenue",
+    "noShowRate": "No-Show Rate",
+    "clientRetention": "Client Retention",
+    "averageSessionDuration": "Avg Session Duration",
+    "completionRate": "Completion Rate",
+    "refresh": "Refresh",
+    "loading": "Loading...",
+    "errorTitle": "Error Loading Analytics",
+    "retry": "Try Again",
+    "quickActions": "Quick Actions",
+    "exportReport": "Export Report",
+    "exportReportDesc": "Download PDF or CSV reports",
+    "trendAnalysis": "Trend Analysis",
+    "trendAnalysisDesc": "View performance trends over time",
+    "kpiDashboard": "KPI Dashboard",
+    "kpiDashboardDesc": "Monitor key performance indicators",
+    "insights": "AI Insights",
+    "highNoShowRate": "High No-Show Rate",
+    "highNoShowRateDesc": "Your no-show rate is {rate}%, which is above the recommended 20%. Consider implementing better reminder systems.",
+    "lowRetentionRate": "Low Client Retention",
+    "lowRetentionRateDesc": "Client retention rate is {rate}%, below the recommended 70%. Focus on improving client satisfaction and follow-up.",
+    "newClientsGrowth": "New Client Growth",
+    "newClientsGrowthDesc": "Great! You've added {count} new clients this period. Keep up the momentum!",
+    "revenueSummary": "Revenue Summary",
+    "revenueSummaryDesc": "Generated ${revenue} from {sessions} completed sessions this period."
   }
 }

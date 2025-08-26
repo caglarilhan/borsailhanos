@@ -25,11 +25,14 @@
   },
   "navigation": {
     "dashboard": "Dashboard",
-    "clients": "Klienten",
+    "clients": "Kunden",
     "appointments": "Termine",
     "notes": "Notizen",
     "billing": "Abrechnung",
-    "calendar": "Kalender"
+    "calendar": "Kalender",
+    "clinic": "Klinik",
+    "assessments": "Bewertungen",
+    "analytics": "Analytik"
   },
   "clients": {
     "title": "Klienten",
@@ -145,5 +148,36 @@
     "generationFailed": "KI-Notizgenerierung fehlgeschlagen",
     "enhancementFailed": "KI-Verbesserung fehlgeschlagen",
     "transcriptionFailed": "Audio-Transkription fehlgeschlagen"
+  },
+  "analytics": {
+    "title": "Analytik & Berichterstattung",
+    "description": "Verfolgen Sie Ihre Praxisleistung mit detaillierten Analysen und Einblicken",
+    "totalClients": "Gesamtkunden",
+    "totalAppointments": "Gesamttermine",
+    "totalRevenue": "Gesamteinnahmen",
+    "noShowRate": "Nichterscheinungsrate",
+    "clientRetention": "Kundenbindung",
+    "averageSessionDuration": "Durchschnittliche Sitzungsdauer",
+    "completionRate": "Abschlussrate",
+    "refresh": "Aktualisieren",
+    "loading": "Lädt...",
+    "errorTitle": "Fehler beim Laden der Analytik",
+    "retry": "Erneut versuchen",
+    "quickActions": "Schnellaktionen",
+    "exportReport": "Bericht exportieren",
+    "exportReportDesc": "PDF- oder CSV-Berichte herunterladen",
+    "trendAnalysis": "Trendanalyse",
+    "trendAnalysisDesc": "Leistungstrends im Zeitverlauf anzeigen",
+    "kpiDashboard": "KPI-Dashboard",
+    "kpiDashboardDesc": "Wichtige Leistungskennzahlen überwachen",
+    "insights": "KI-Einblicke",
+    "highNoShowRate": "Hohe Nichterscheinungsrate",
+    "highNoShowRateDesc": "Ihre Nichterscheinungsrate beträgt {rate}%, was über der empfohlenen 20% liegt. Erwägen Sie bessere Erinnerungssysteme.",
+    "lowRetentionRate": "Niedrige Kundenbindung",
+    "lowRetentionRateDesc": "Die Kundenbindungsrate beträgt {rate}%, unter der empfohlenen 70%. Konzentrieren Sie sich auf Kundenzufriedenheit und Nachbetreuung.",
+    "newClientsGrowth": "Neukundenwachstum",
+    "newClientsGrowthDesc": "Großartig! Sie haben {count} neue Kunden in diesem Zeitraum hinzugefügt. Behalten Sie den Schwung bei!",
+    "revenueSummary": "Einnahmenübersicht",
+    "revenueSummaryDesc": "Sie haben ${revenue} aus {sessions} abgeschlossenen Sitzungen in diesem Zeitraum generiert."
   }
 }

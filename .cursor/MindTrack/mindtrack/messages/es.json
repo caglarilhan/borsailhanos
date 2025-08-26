@@ -31,7 +31,8 @@
     "billing": "Facturación",
     "calendar": "Calendario",
     "clinic": "Clínica",
-    "assessments": "Evaluaciones"
+    "assessments": "Evaluaciones",
+    "analytics": "Analíticas"
   },
   "clients": {
     "title": "Clientes",
@@ -219,5 +220,36 @@
     "generationFailed": "Falló la generación de nota IA",
     "enhancementFailed": "Falló la mejora IA",
     "transcriptionFailed": "Falló la transcripción de audio"
+  },
+  "analytics": {
+    "title": "Analíticas y Reportes",
+    "description": "Rastrea el rendimiento de tu práctica con analíticas detalladas e insights",
+    "totalClients": "Total de Clientes",
+    "totalAppointments": "Total de Citas",
+    "totalRevenue": "Ingresos Totales",
+    "noShowRate": "Tasa de No-Show",
+    "clientRetention": "Retención de Clientes",
+    "averageSessionDuration": "Duración Promedio de Sesión",
+    "completionRate": "Tasa de Finalización",
+    "refresh": "Actualizar",
+    "loading": "Cargando...",
+    "errorTitle": "Error al Cargar Analíticas",
+    "retry": "Intentar de Nuevo",
+    "quickActions": "Acciones Rápidas",
+    "exportReport": "Exportar Reporte",
+    "exportReportDesc": "Descargar reportes PDF o CSV",
+    "trendAnalysis": "Análisis de Tendencias",
+    "trendAnalysisDesc": "Ver tendencias de rendimiento a lo largo del tiempo",
+    "kpiDashboard": "Panel de KPI",
+    "kpiDashboardDesc": "Monitorear indicadores clave de rendimiento",
+    "insights": "Insights de IA",
+    "highNoShowRate": "Alta Tasa de No-Show",
+    "highNoShowRateDesc": "Tu tasa de no-show es {rate}%, que está por encima del 20% recomendado. Considera implementar mejores sistemas de recordatorios.",
+    "lowRetentionRate": "Baja Retención de Clientes",
+    "lowRetentionRateDesc": "La tasa de retención de clientes es {rate}%, por debajo del 70% recomendado. Enfócate en mejorar la satisfacción del cliente y el seguimiento.",
+    "newClientsGrowth": "Crecimiento de Nuevos Clientes",
+    "newClientsGrowthDesc": "¡Excelente! Has agregado {count} nuevos clientes este período. ¡Mantén el impulso!",
+    "revenueSummary": "Resumen de Ingresos",
+    "revenueSummaryDesc": "Generaste ${revenue} de {sessions} sesiones completadas este período."
   }
 }

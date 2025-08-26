@@ -31,7 +31,8 @@
     "billing": "Faturalama",
     "calendar": "Takvim",
     "clinic": "Klinik",
-    "assessments": "Değerlendirmeler"
+    "assessments": "Değerlendirmeler",
+    "analytics": "Analitik"
   },
   "clients": {
     "title": "Danışanlar",
@@ -215,9 +216,40 @@
     "syncError": "Takvim senkronizasyonu başarısız"
   },
   "ai": {
-    "title": "AI Asistan",
+    "title": "Yapay Zeka Asistanı",
     "generationFailed": "AI not üretimi başarısız",
-    "enhancementFailed": "AI iyileştirme başarısız",
+    "enhancementFailed": "AI geliştirme başarısız",
     "transcriptionFailed": "Ses transkripsiyonu başarısız"
+  },
+  "analytics": {
+    "title": "Analitik ve Raporlama",
+    "description": "Pratik performansınızı detaylı analitik ve içgörülerle takip edin",
+    "totalClients": "Toplam Danışan",
+    "totalAppointments": "Toplam Randevu",
+    "totalRevenue": "Toplam Gelir",
+    "noShowRate": "Gelmeme Oranı",
+    "clientRetention": "Danışan Tutma",
+    "averageSessionDuration": "Ortalama Seans Süresi",
+    "completionRate": "Tamamlama Oranı",
+    "refresh": "Yenile",
+    "loading": "Yükleniyor...",
+    "errorTitle": "Analitik Yükleme Hatası",
+    "retry": "Tekrar Dene",
+    "quickActions": "Hızlı İşlemler",
+    "exportReport": "Rapor Dışa Aktar",
+    "exportReportDesc": "PDF veya CSV raporları indir",
+    "trendAnalysis": "Trend Analizi",
+    "trendAnalysisDesc": "Zaman içindeki performans trendlerini görüntüle",
+    "kpiDashboard": "KPI Paneli",
+    "kpiDashboardDesc": "Anahtar performans göstergelerini izle",
+    "insights": "AI İçgörüleri",
+    "highNoShowRate": "Yüksek Gelmeme Oranı",
+    "highNoShowRateDesc": "Gelmeme oranınız %{rate}, önerilen %20'nin üzerinde. Daha iyi hatırlatma sistemleri uygulamayı düşünün.",
+    "lowRetentionRate": "Düşük Danışan Tutma",
+    "lowRetentionRateDesc": "Danışan tutma oranı %{rate}, önerilen %70'in altında. Danışan memnuniyeti ve takip üzerine odaklanın.",
+    "newClientsGrowth": "Yeni Danışan Büyümesi",
+    "newClientsGrowthDesc": "Harika! Bu dönemde {count} yeni danışan eklediniz. Momentumu koruyun!",
+    "revenueSummary": "Gelir Özeti",
+    "revenueSummaryDesc": "Bu dönemde {sessions} tamamlanan seanstan ${revenue} gelir elde ettiniz."
   }
 }

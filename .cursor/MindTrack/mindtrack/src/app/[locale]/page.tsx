@@ -8,6 +8,7 @@ import { CalendarSyncButton } from "@/components/calendar/calendar-sync-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ClinicSettings } from "@/components/clinic/clinic-settings";
 import { AssessmentForm } from "@/components/assessments/assessment-form";
+import AnalyticsTab from "@/components/tabs/analytics-tab";
 
 export default function HomePage() {
   return (
@@ -37,6 +38,7 @@ export default function HomePage() {
               <TabsTrigger value="billing">Billing</TabsTrigger>
               <TabsTrigger value="clinic">Clinic</TabsTrigger>
               <TabsTrigger value="assessments">Assessments</TabsTrigger>
+              <TabsTrigger value="analytics">Analytics</TabsTrigger>
             </TabsList>
 
             <TabsContent value="clients" className="space-y-4">
@@ -78,6 +80,10 @@ export default function HomePage() {
                   console.log('Assessment cancelled');
                 }}
               />
+            </TabsContent>
+
+            <TabsContent value="analytics" className="space-y-4">
+              <AnalyticsTab />
             </TabsContent>
           </Tabs>
         </main>
