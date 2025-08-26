@@ -30,7 +30,8 @@
     "notes": "Notes",
     "billing": "Billing",
     "calendar": "Calendar",
-    "clinic": "Clinic"
+    "clinic": "Clinic",
+    "assessments": "Assessments"
   },
   "clients": {
     "title": "Clients",
@@ -165,6 +166,36 @@
     "totalInvoices": "Total Invoices",
     "activeMembers": "Active Members",
     "monthlyRevenue": "Monthly Revenue"
+  },
+  "assessments": {
+    "title": "Outcome Tracking",
+    "addAssessment": "Add Assessment",
+    "assessmentType": "Assessment Type",
+    "client": "Client",
+    "score": "Score",
+    "severity": "Severity",
+    "notes": "Notes",
+    "notesPlaceholder": "Additional clinical notes...",
+    "question": "Question",
+    "of": "of",
+    "previous": "Previous",
+    "next": "Next",
+    "complete": "Complete Assessment",
+    "submitting": "Submitting...",
+    "summary": "Assessment Summary",
+    "totalScore": "Total Score",
+    "cancel": "Cancel",
+    "noAssessments": "No assessments found",
+    "viewHistory": "View History",
+    "progressChart": "Progress Chart",
+    "assessmentHistory": "Assessment History",
+    "date": "Date",
+    "type": "Type",
+    "result": "Result",
+    "trend": "Trend",
+    "improving": "Improving",
+    "stable": "Stable",
+    "declining": "Declining"
   },
   "auth": {
     "signIn": "Sign In",

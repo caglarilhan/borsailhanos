@@ -30,7 +30,8 @@
     "notes": "Notlar",
     "billing": "Faturalama",
     "calendar": "Takvim",
-    "clinic": "Klinik"
+    "clinic": "Klinik",
+    "assessments": "Değerlendirmeler"
   },
   "clients": {
     "title": "Danışanlar",
@@ -165,6 +166,36 @@
     "totalInvoices": "Toplam Fatura",
     "activeMembers": "Aktif Üyeler",
     "monthlyRevenue": "Aylık Gelir"
+  },
+  "assessments": {
+    "title": "Sonuç Takibi",
+    "addAssessment": "Değerlendirme Ekle",
+    "assessmentType": "Değerlendirme Türü",
+    "client": "Danışan",
+    "score": "Puan",
+    "severity": "Şiddet",
+    "notes": "Notlar",
+    "notesPlaceholder": "Ek klinik notlar...",
+    "question": "Soru",
+    "of": "/",
+    "previous": "Önceki",
+    "next": "Sonraki",
+    "complete": "Değerlendirmeyi Tamamla",
+    "submitting": "Gönderiliyor...",
+    "summary": "Değerlendirme Özeti",
+    "totalScore": "Toplam Puan",
+    "cancel": "İptal",
+    "noAssessments": "Değerlendirme bulunamadı",
+    "viewHistory": "Geçmişi Görüntüle",
+    "progressChart": "İlerleme Grafiği",
+    "assessmentHistory": "Değerlendirme Geçmişi",
+    "date": "Tarih",
+    "type": "Tür",
+    "result": "Sonuç",
+    "trend": "Trend",
+    "improving": "İyileşiyor",
+    "stable": "Stabil",
+    "declining": "Kötüleşiyor"
   },
   "auth": {
     "signIn": "Giriş Yap",

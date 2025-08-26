@@ -7,6 +7,7 @@ import { InvoicesTab } from "@/components/tabs/invoices-tab";
 import { CalendarSyncButton } from "@/components/calendar/calendar-sync-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { ClinicSettings } from "@/components/clinic/clinic-settings";
+import { AssessmentForm } from "@/components/assessments/assessment-form";
 
 export default function HomePage() {
   return (
@@ -29,12 +30,13 @@ export default function HomePage() {
         {/* Main Content */}
         <main className="container mx-auto px-6 py-8">
           <Tabs defaultValue="clients" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="clients">Clients</TabsTrigger>
               <TabsTrigger value="appointments">Appointments</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="billing">Billing</TabsTrigger>
               <TabsTrigger value="clinic">Clinic</TabsTrigger>
+              <TabsTrigger value="assessments">Assessments</TabsTrigger>
             </TabsList>
 
             <TabsContent value="clients" className="space-y-4">
@@ -61,6 +63,20 @@ export default function HomePage() {
                   // TODO: Implement save functionality
                 }}
                 loading={false}
+              />
+            </TabsContent>
+
+            <TabsContent value="assessments" className="space-y-4">
+              <AssessmentForm 
+                clientId="demo-client"
+                clientName="Demo Client"
+                onComplete={async (assessment) => {
+                  console.log('Assessment completed:', assessment);
+                  // TODO: Implement save functionality
+                }}
+                onCancel={() => {
+                  console.log('Assessment cancelled');
+                }}
               />
             </TabsContent>
           </Tabs>
