@@ -6,6 +6,7 @@ import { NotesTab } from "@/components/tabs/notes-tab";
 import { InvoicesTab } from "@/components/tabs/invoices-tab";
 import { CalendarSyncButton } from "@/components/calendar/calendar-sync-button";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { ClinicSettings } from "@/components/clinic/clinic-settings";
 
 export default function HomePage() {
   return (
@@ -28,11 +29,12 @@ export default function HomePage() {
         {/* Main Content */}
         <main className="container mx-auto px-6 py-8">
           <Tabs defaultValue="clients" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="clients">Clients</TabsTrigger>
               <TabsTrigger value="appointments">Appointments</TabsTrigger>
               <TabsTrigger value="notes">Notes</TabsTrigger>
               <TabsTrigger value="billing">Billing</TabsTrigger>
+              <TabsTrigger value="clinic">Clinic</TabsTrigger>
             </TabsList>
 
             <TabsContent value="clients" className="space-y-4">
@@ -49,6 +51,17 @@ export default function HomePage() {
 
             <TabsContent value="billing" className="space-y-4">
               <InvoicesTab />
+            </TabsContent>
+
+            <TabsContent value="clinic" className="space-y-4">
+              <ClinicSettings 
+                clinic={undefined}
+                onSave={async (settings) => {
+                  console.log('Saving clinic settings:', settings);
+                  // TODO: Implement save functionality
+                }}
+                loading={false}
+              />
             </TabsContent>
           </Tabs>
         </main>
