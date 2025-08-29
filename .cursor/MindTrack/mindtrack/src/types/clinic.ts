@@ -12,6 +12,23 @@ export interface Clinic {
   address?: string;
   timezone: string;
   currency: string;
+  // US Healthcare System fields
+  npi?: string;
+  ein?: string;
+  taxonomy_code?: string;
+  facility_npi?: string;
+  license_number?: string;
+  license_state?: string;
+  license_expiry?: string;
+  default_pos_code: string;
+  default_telehealth_modifier: string;
+  default_cpt_codes: string[];
+  default_icd_codes: string[];
+  hipaa_notice_consent: boolean;
+  tpo_consent: boolean;
+  telehealth_consent: boolean;
+  sms_consent: boolean;
+  email_consent: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -41,6 +58,23 @@ export interface ClinicSettings {
   address?: string;
   timezone: string;
   currency: string;
+  // US Healthcare System fields
+  npi?: string;
+  ein?: string;
+  taxonomy_code?: string;
+  facility_npi?: string;
+  license_number?: string;
+  license_state?: string;
+  license_expiry?: string;
+  default_pos_code: string;
+  default_telehealth_modifier: string;
+  default_cpt_codes: string[];
+  default_icd_codes: string[];
+  hipaa_notice_consent: boolean;
+  tpo_consent: boolean;
+  telehealth_consent: boolean;
+  sms_consent: boolean;
+  email_consent: boolean;
 }
 
 export interface CreateClinicRequest {
@@ -55,6 +89,23 @@ export interface CreateClinicRequest {
   address?: string;
   timezone?: string;
   currency?: string;
+  // US Healthcare System fields
+  npi?: string;
+  ein?: string;
+  taxonomy_code?: string;
+  facility_npi?: string;
+  license_number?: string;
+  license_state?: string;
+  license_expiry?: string;
+  default_pos_code?: string;
+  default_telehealth_modifier?: string;
+  default_cpt_codes?: string[];
+  default_icd_codes?: string[];
+  hipaa_notice_consent?: boolean;
+  tpo_consent?: boolean;
+  telehealth_consent?: boolean;
+  sms_consent?: boolean;
+  email_consent?: boolean;
 }
 
 export interface InviteMemberRequest {

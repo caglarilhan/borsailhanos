@@ -1,14 +1,16 @@
 import { notFound } from 'next/navigation';
-import { getRequestConfig } from 'next-intl/server';
 
-// Desteklenen diller
+// Geçici shim: next-intl/server yerine minimal getRequestConfig
+type GetRequestConfigParams = { locale?: string };
+function getRequestConfig<T>(handler: (params: GetRequestConfigParams) => T | Promise<T>): (params: GetRequestConfigParams) => T | Promise<T> {
+  return handler;
+}
+
 export const locales = ['en', 'tr', 'de', 'es'] as const;
 export type Locale = typeof locales[number];
 
-// Varsayılan dil
 export const defaultLocale: Locale = 'en';
 
-// Dil bilgileri
 export const localeInfo = {
   en: { name: 'English', flag: '🇺🇸', nativeName: 'English' },
   tr: { name: 'Turkish', flag: '🇹🇷', nativeName: 'Türkçe' },
@@ -17,10 +19,11 @@ export const localeInfo = {
 };
 
 export default getRequestConfig(async ({ locale }) => {
-  // Desteklenmeyen dil için 404
-  if (!locales.includes(locale as Locale)) notFound();
+  const currentLocale = (locale ?? defaultLocale) as string;
+  if (!locales.includes(currentLocale as Locale)) notFound();
 
   return {
-    messages: (await import(`./messages/${locale}.json`)).default
+    locale: currentLocale,
+    messages: (await import(`./messages/${currentLocale}.json`)).default
   };
 });

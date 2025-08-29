@@ -8,6 +8,18 @@ export interface Client {
   phone: string | null;
   insurance: string | null;
   status: "active" | "inactive" | string;
+  // US Healthcare System fields
+  insurance_payer?: string;
+  insurance_policy_number?: string;
+  insurance_group_number?: string;
+  insurance_payer_id?: string;
+  coverage_type?: string;
+  prior_authorization_required?: boolean;
+  emergency_contact_name?: string;
+  emergency_contact_phone?: string;
+  emergency_contact_relationship?: string;
+  e_signature_consent?: boolean;
+  e_signature_date?: string;
   created_at: string;
 }
 
@@ -40,6 +52,14 @@ export interface Invoice {
   cpt_code: string | null;
   pdf_url: string | null;
   status: "unpaid" | "paid" | "void" | string;
+  // US Healthcare System fields
+  cpt_codes?: string[];
+  icd_codes?: string[];
+  modifier_codes?: string[];
+  pos_code?: string;
+  diagnosis_pointers?: string[];
+  superbill_generated?: boolean;
+  superbill_url?: string;
   created_at: string;
 }
 

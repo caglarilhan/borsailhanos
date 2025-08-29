@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { generateAuthUrl } from "@/lib/google-calendar";
 
 export default function CalendarSyncButton() {
   const [loading, setLoading] = React.useState(false);
@@ -9,8 +8,10 @@ export default function CalendarSyncButton() {
   const handleSync = async () => {
     setLoading(true);
     try {
-      const authUrl = generateAuthUrl();
-      window.location.href = authUrl;
+      const res = await fetch('/api/google/auth-url');
+      if (!res.ok) throw new Error('Failed to get auth url');
+      const { url } = await res.json();
+      window.location.href = url;
     } catch (error) {
       console.error("Calendar sync error:", error);
       alert("Failed to start calendar sync");
