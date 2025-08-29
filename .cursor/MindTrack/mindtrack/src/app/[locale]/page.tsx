@@ -20,11 +20,12 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
             <TabsTrigger value="telehealth">Telehealth</TabsTrigger>
+            <TabsTrigger value="research">Research</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -135,6 +136,45 @@ export default function HomePage() {
                   <div>• HIPAA compliance</div>
                   <div>• Secure storage</div>
                   <div>• Privacy protection</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="research" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🔬 Research & Analytics</h2>
+              <p className="text-gray-600">Evidence-based practice and clinical research support</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📊 Clinical Outcomes</h3>
+                <p className="text-gray-600 mb-4">Treatment effectiveness and patient outcomes</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Treatment effectiveness tracking</div>
+                  <div>• Patient outcome analysis</div>
+                  <div>• Evidence-based practice</div>
+                  <div>• Statistical analysis</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🧪 Research Studies</h3>
+                <p className="text-gray-600 mb-4">Clinical trials and research methodology</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Study design & methodology</div>
+                  <div>• Sample size calculation</div>
+                  <div>• Power analysis</div>
+                  <div>• Quality assessment</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📈 Population Health</h3>
+                <p className="text-gray-600 mb-4">Population-level health analytics</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Population health trends</div>
+                  <div>• Risk factor analysis</div>
+                  <div>• Health disparities</div>
+                  <div>• Preventive strategies</div>
                 </div>
               </div>
             </div>
