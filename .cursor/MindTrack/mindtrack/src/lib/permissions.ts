@@ -73,7 +73,7 @@ export type Permission =
   | 'system:audit'           // Audit logları görüntüle
   | 'system:backup'          // Backup oluştur
   | 'system:restore'         // Backup geri yükle
-  | 'system:config';          // Sistem ayarlarını değiştir
+  | 'system:config'          // Sistem ayarlarını değiştir
 
 /**
  * Permission Groups - İzin grupları

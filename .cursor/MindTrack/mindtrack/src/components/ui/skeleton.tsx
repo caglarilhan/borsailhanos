@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   // Extends HTML div attributes
+  className?: string;
 }
 
 export function Skeleton({ className, ...props }: SkeletonProps) {
