@@ -20,12 +20,13 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
             <TabsTrigger value="telehealth">Telehealth</TabsTrigger>
             <TabsTrigger value="research">Research</TabsTrigger>
+            <TabsTrigger value="security">Security</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -175,6 +176,45 @@ export default function HomePage() {
                   <div>• Risk factor analysis</div>
                   <div>• Health disparities</div>
                   <div>• Preventive strategies</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="security" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🔒 Security & Compliance</h2>
+              <p className="text-gray-600">Advanced security features and compliance management</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-red-50 to-orange-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🔐 Multi-Factor Authentication</h3>
+                <p className="text-gray-600 mb-4">Enhanced security with MFA</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• TOTP authenticator apps</div>
+                  <div>• SMS & email verification</div>
+                  <div>• Hardware security keys</div>
+                  <div>• Biometric authentication</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🛡️ Security Policies</h3>
+                <p className="text-gray-600 mb-4">Comprehensive security policies</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Password requirements</div>
+                  <div>• Session management</div>
+                  <div>• Access controls</div>
+                  <div>• Risk assessment</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📊 Compliance Monitoring</h3>
+                <p className="text-gray-600 mb-4">HIPAA and regulatory compliance</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Real-time monitoring</div>
+                  <div>• Audit logging</div>
+                  <div>• Compliance reports</div>
+                  <div>• Risk mitigation</div>
                 </div>
               </div>
             </div>
