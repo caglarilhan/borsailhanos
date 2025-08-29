@@ -1,6 +1,20 @@
-import { redirect } from 'next/navigation';
-import { defaultLocale } from '@/i18n';
+import type { Metadata } from "next";
 
-export default function RootLayout() {
-  redirect(`/${defaultLocale}`);
+export const metadata: Metadata = {
+  title: "MindTrack",
+  description: "Therapist Practice Management",
+};
+
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+      </body>
+    </html>
+  );
 }

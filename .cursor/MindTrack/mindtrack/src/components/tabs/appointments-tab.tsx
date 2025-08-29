@@ -4,7 +4,6 @@ import * as React from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabaseClient";
 import type { Appointment, Client } from "@/types/domain";
 import { generateTeleLink } from "@/lib/zoom";
-import { sendSMSReminder, formatAppointmentReminder } from "@/lib/sms";
 
 export default function AppointmentsTab() {
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
@@ -92,14 +91,14 @@ export default function AppointmentsTab() {
     }
 
     try {
-      const message = formatAppointmentReminder(
-        client.name || "there",
-        appointment.date,
-        appointment.time,
-        appointment.tele_link
-      );
-      
-      await sendSMSReminder(client.phone, message);
+      const message = `Hi ${client.name || 'there'}, reminder for your appointment on ${appointment.date} at ${appointment.time}.${appointment.tele_link ? ` Join here: ${appointment.tele_link}` : ''}`;
+
+      const res = await fetch('/api/sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: client.phone, message })
+      });
+      if (!res.ok) throw new Error('SMS sending failed');
       setError(null);
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : "SMS sending failed";
