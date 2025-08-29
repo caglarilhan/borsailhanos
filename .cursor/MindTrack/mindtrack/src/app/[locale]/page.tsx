@@ -20,10 +20,11 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
+            <TabsTrigger value="telehealth">Telehealth</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -95,6 +96,45 @@ export default function HomePage() {
                   <div>• Anomaly detection</div>
                   <div>• Performance forecasting</div>
                   <div>• Risk assessment</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="telehealth" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🌐 Telehealth & Virtual Care</h2>
+              <p className="text-gray-600">Uzaktan sağlık hizmetleri ve sanal bakım</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📹 Video Conference</h3>
+                <p className="text-gray-600 mb-4">HD video konferans ve screen sharing</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• HD video & audio</div>
+                  <div>• Screen sharing</div>
+                  <div>• Recording & chat</div>
+                  <div>• Security controls</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">⏰ Virtual Waiting Room</h3>
+                <p className="text-gray-600 mb-4">Sanal bekleme odası ve connection test</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Connection testing</div>
+                  <div>• Pre-session forms</div>
+                  <div>• Wait time estimates</div>
+                  <div>• Security info</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🔒 HIPAA Compliant</h3>
+                <p className="text-gray-600 mb-4">Güvenli ve uyumlu telehealth</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• End-to-end encryption</div>
+                  <div>• HIPAA compliance</div>
+                  <div>• Secure storage</div>
+                  <div>• Privacy protection</div>
                 </div>
               </div>
             </div>
