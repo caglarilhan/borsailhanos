@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-8">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -38,6 +38,7 @@ export default function HomePage() {
             <TabsTrigger value="research">Research</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="smart-scheduling">Smart Scheduling</TabsTrigger>
+            <TabsTrigger value="payment">Payment</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -265,6 +266,45 @@ export default function HomePage() {
                   <div>• Patient satisfaction</div>
                   <div>• Therapist utilization</div>
                   <div>• Predictive analytics</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="payment" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">💳 Payment Integration</h2>
+              <p className="text-gray-600">Secure payment processing and subscription management</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-green-50 to-blue-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">💳 Payment Methods</h3>
+                <p className="text-gray-600 mb-4">Multiple payment options and secure processing</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Credit/debit cards</div>
+                  <div>• Digital wallets</div>
+                  <div>• Bank transfers</div>
+                  <div>• PCI compliance</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📊 Revenue Analytics</h3>
+                <p className="text-gray-600 mb-4">Real-time revenue tracking and insights</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Monthly revenue tracking</div>
+                  <div>• Subscription management</div>
+                  <div>• Payment success rates</div>
+                  <div>• Revenue growth metrics</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🔒 Secure Processing</h3>
+                <p className="text-gray-600 mb-4">Enterprise-grade security and compliance</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Stripe & PayPal integration</div>
+                  <div>• Webhook handling</div>
+                  <div>• Fraud protection</div>
+                  <div>• Audit logging</div>
                 </div>
               </div>
             </div>
