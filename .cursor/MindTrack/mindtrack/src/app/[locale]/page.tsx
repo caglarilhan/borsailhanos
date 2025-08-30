@@ -30,6 +30,7 @@ import { AdvancedDataAnalyticsBI } from "@/components/analytics/advanced-data-an
 import { HIPAAComplianceLegalHub } from "@/components/compliance/hipaa-compliance-legal-hub";
 import { InsuranceBillingIntegration } from "@/components/billing/insurance-billing-integration";
 import { AIPoweredDiagnosticSupport } from "@/components/ai/ai-powered-diagnostic-support";
+import { TelepsychiatryVirtualCare } from "@/components/telehealth/telepsychiatry-virtual-care";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -51,7 +52,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-36">
+                        <TabsList className="grid w-full grid-cols-37">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -88,6 +89,7 @@ export default function HomePage() {
               <TabsTrigger value="hipaa-compliance">HIPAA Compliance</TabsTrigger>
               <TabsTrigger value="insurance-billing">Insurance & Billing</TabsTrigger>
               <TabsTrigger value="ai-diagnostic">AI Diagnostic</TabsTrigger>
+              <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -714,6 +716,10 @@ export default function HomePage() {
 
           <TabsContent value="ai-diagnostic" className="space-y-6">
             <AIPoweredDiagnosticSupport />
+          </TabsContent>
+
+          <TabsContent value="telepsychiatry" className="space-y-6">
+            <TelepsychiatryVirtualCare />
           </TabsContent>
         </Tabs>
       </main>
