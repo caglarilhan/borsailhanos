@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-11">
+          <TabsList className="grid w-full grid-cols-12">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -42,6 +42,7 @@ export default function HomePage() {
             <TabsTrigger value="mobile">Mobile</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Advanced Analytics</TabsTrigger>
             <TabsTrigger value="security-compliance">Security & Compliance</TabsTrigger>
+            <TabsTrigger value="telehealth-video">Telehealth & Video</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -425,6 +426,45 @@ export default function HomePage() {
                   <div>• Key rotation management</div>
                   <div>• Secure data transmission</div>
                   <div>• Backup encryption</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="telehealth-video" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">📞 Telehealth & Video Conferencing</h2>
+              <p className="text-gray-600">Virtual healthcare delivery and remote patient care</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🎥 Video Sessions</h3>
+                <p className="text-gray-600 mb-4">HD video conferencing and session management</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• HD video and audio quality</div>
+                  <div>• Screen sharing capabilities</div>
+                  <div>• Session recording and storage</div>
+                  <div>• Real-time chat messaging</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🏥 Virtual Waiting Rooms</h3>
+                <p className="text-gray-600 mb-4">Patient queue management and wait time tracking</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Patient check-in system</div>
+                  <div>• Wait time estimates</div>
+                  <div>• Priority queue management</div>
+                  <div>• Real-time announcements</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">💊 E-Prescriptions</h3>
+                <p className="text-gray-600 mb-4">Digital prescription management and pharmacy integration</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Digital prescription creation</div>
+                  <div>• Pharmacy integration</div>
+                  <div>• Medication tracking</div>
+                  <div>• Compliance monitoring</div>
                 </div>
               </div>
             </div>
