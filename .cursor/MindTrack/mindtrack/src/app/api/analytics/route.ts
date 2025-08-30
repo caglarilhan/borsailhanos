@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
-import type { AnalyticsData, ReportConfig } from '@/types/analytics';
+import type { AnalyticsData } from '@/types/analytics';
+import { globalLRUCache } from '@/lib/utils';
+
+const ANALYTICS_TTL_MS = 60 * 1000; // 60s cache window per unique key
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,7 +32,14 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'No active clinic found' }, { status: 400 });
     }
 
-    const clinicId = clinicMember.clinic_id;
+    const clinicId = clinicMember.clinic_id as string;
+
+    // Cache key (scoped by user clinic, period and optional range)
+    const cacheKey = `analytics:${clinicId}:${period}:${startDate ?? ''}:${endDate ?? ''}`;
+    const cached = globalLRUCache.get(cacheKey) as AnalyticsData | undefined;
+    if (cached) {
+      return NextResponse.json(cached, { headers: { 'x-cache': 'HIT' } });
+    }
 
     // Calculate date range
     const now = new Date();
@@ -63,14 +73,16 @@ export async function GET(request: NextRequest) {
     const charts = await getChartData(supabase, clinicId, start, end, period);
 
     const analyticsData: AnalyticsData = {
-      period: period as any,
+      period: period as AnalyticsData['period'],
       startDate: start.toISOString(),
       endDate: end.toISOString(),
       metrics,
       charts
     };
 
-    return NextResponse.json(analyticsData);
+    globalLRUCache.set(cacheKey, analyticsData, ANALYTICS_TTL_MS);
+
+    return NextResponse.json(analyticsData, { headers: { 'x-cache': 'MISS' } });
   } catch (error) {
     console.error('Analytics API error:', error);
     return NextResponse.json(
@@ -96,8 +108,8 @@ async function getMetrics(supabase: any, clinicId: string, start: Date, end: Dat
     .lte('date', end.toISOString().split('T')[0]);
 
   const totalAppointments = appointments?.length || 0;
-  const completedAppointments = appointments?.filter(a => a.status === 'completed').length || 0;
-  const cancelledAppointments = appointments?.filter(a => a.status === 'cancelled').length || 0;
+  const completedAppointments = appointments?.filter((a: { status?: string }) => a.status === 'completed').length || 0;
+  const cancelledAppointments = appointments?.filter((a: { status?: string }) => a.status === 'cancelled').length || 0;
   const noShowRate = totalAppointments > 0 ? (cancelledAppointments / totalAppointments) * 100 : 0;
 
   // Get revenue
@@ -109,7 +121,7 @@ async function getMetrics(supabase: any, clinicId: string, start: Date, end: Dat
     .gte('created_at', start.toISOString())
     .lte('created_at', end.toISOString());
 
-  const totalRevenue = invoices?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
+  const totalRevenue = (invoices as Array<{ amount?: number }> | null)?.reduce((sum, inv) => sum + (inv.amount || 0), 0) || 0;
 
   // Get new clients in period
   const { count: newClientsThisPeriod } = await supabase
@@ -121,7 +133,7 @@ async function getMetrics(supabase: any, clinicId: string, start: Date, end: Dat
 
   // Get active clients (have appointments in period)
   const activeClients = new Set(
-    appointments?.map(a => a.client_id) || []
+    (appointments as Array<{ client_id?: string }> | null)?.map(a => a.client_id) || []
   ).size;
 
   return {
@@ -132,14 +144,14 @@ async function getMetrics(supabase: any, clinicId: string, start: Date, end: Dat
     noShowRate: Math.round(noShowRate * 100) / 100,
     totalRevenue,
     averageSessionDuration: 50, // Default 50 minutes
-    clientRetentionRate: totalClients > 0 ? (activeClients / totalClients) * 100 : 0,
+    clientRetentionRate: totalClients && totalClients > 0 ? (activeClients / totalClients) * 100 : 0,
     newClientsThisPeriod: newClientsThisPeriod || 0,
     activeClientsThisPeriod: activeClients
   };
 }
 
 async function getChartData(supabase: any, clinicId: string, start: Date, end: Date, period: string) {
-  const charts = [];
+  const charts = [] as Array<NonNullable<ReturnType<typeof getRevenueChart>> extends Promise<infer R> ? R : never>;
 
   // Revenue chart
   const revenueChart = await getRevenueChart(supabase, clinicId, start, end, period);
@@ -165,11 +177,11 @@ async function getRevenueChart(supabase: any, clinicId: string, start: Date, end
     .gte('created_at', start.toISOString())
     .lte('created_at', end.toISOString());
 
-  if (!invoices?.length) return null;
+  if (!(invoices as unknown[] | null)?.length) return null;
 
   // Group by period
   const revenueByPeriod: Record<string, number> = {};
-  invoices.forEach(invoice => {
+  (invoices as Array<{ created_at: string; amount?: number }>).forEach(invoice => {
     const date = new Date(invoice.created_at);
     let key: string;
     
@@ -221,11 +233,11 @@ async function getAppointmentsChart(supabase: any, clinicId: string, start: Date
     .gte('date', start.toISOString().split('T')[0])
     .lte('date', end.toISOString().split('T')[0]);
 
-  if (!appointments?.length) return null;
+  if (!(appointments as unknown[] | null)?.length) return null;
 
   // Group by status
   const statusCounts: Record<string, number> = {};
-  appointments.forEach(apt => {
+  (appointments as Array<{ status?: string }>).forEach(apt => {
     const status = apt.status || 'scheduled';
     statusCounts[status] = (statusCounts[status] || 0) + 1;
   });
@@ -253,10 +265,10 @@ async function getClientStatusChart(supabase: any, clinicId: string) {
     .select('status')
     .eq('clinic_id', clinicId);
 
-  if (!clients?.length) return null;
+  if (!(clients as unknown[] | null)?.length) return null;
 
   const statusCounts: Record<string, number> = {};
-  clients.forEach(client => {
+  (clients as Array<{ status?: string }>).forEach(client => {
     const status = client.status || 'active';
     statusCounts[status] = (statusCounts[status] || 0) + 1;
   });

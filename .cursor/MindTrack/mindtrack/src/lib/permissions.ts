@@ -74,6 +74,7 @@ export type Permission =
   | 'system:backup'          // Backup oluştur
   | 'system:restore'         // Backup geri yükle
   | 'system:config'          // Sistem ayarlarını değiştir
+;
 
 /**
  * Permission Groups - İzin grupları
@@ -288,10 +289,10 @@ export class PermissionChecker {
  * - Access control için declarative syntax
  */
 export function requirePermission(permission: Permission) {
-  return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+  return function (target: object, propertyKey: string, descriptor: PropertyDescriptor) {
     const originalMethod = descriptor.value;
     
-    descriptor.value = function (...args: any[]) {
+    descriptor.value = function (...args: unknown[]) {
       // Permission check logic burada implement edilebilir
       // Şu anda placeholder
       console.log(`Permission check for: ${permission}`);
@@ -345,14 +346,9 @@ export function PermissionGate({
   fallback = null, 
   userRole, 
   customPermissions 
-}: PermissionGateProps) {
+}: PermissionGateProps): React.ReactNode {
   const { hasPermission } = usePermissions(userRole, customPermissions);
-  
-  if (hasPermission(permission)) {
-    return <>{children}</>;
-  }
-  
-  return <>{fallback}</>;
+  return hasPermission(permission) ? children : (fallback ?? null);
 }
 
 /**
@@ -376,15 +372,13 @@ export function ProtectedRoute({
   userRole, 
   customPermissions, 
   redirectTo = '/unauthorized' 
-}: ProtectedRouteProps) {
+}: ProtectedRouteProps): React.ReactNode {
   const { hasAllPermissions } = usePermissions(userRole, customPermissions);
-  
   if (!hasAllPermissions(permissions)) {
     // Redirect logic burada implement edilebilir
-    return <div>Access Denied. Redirecting...</div>;
+    return 'Access Denied. Redirecting...';
   }
-  
-  return <>{children}</>;
+  return children;
 }
 
 

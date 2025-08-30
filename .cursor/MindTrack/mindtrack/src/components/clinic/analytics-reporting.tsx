@@ -13,6 +13,8 @@
 
 import * as React from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Chart } from "@/components/ui/chart";
 import { ChartExport } from "@/components/ui/chart-export";
@@ -286,10 +288,10 @@ interface ComplianceStatus {
  */
 interface AnalyticsReportingProps {
   data: AnalyticsData;
-  onGenerateReport: (type: string, filters?: any) => Promise<void>;
-  onExportData: (format: 'csv' | 'pdf' | 'excel', data: any) => Promise<void>;
+  onGenerateReport: (type: string, filters?: Record<string, unknown>) => Promise<void>;
+  onExportData: (format: 'csv' | 'pdf' | 'excel', data: unknown) => Promise<void>;
   onRefreshData: () => Promise<void>;
-  onFilterData: (filters: any) => Promise<void>;
+  onFilterData: (filters: Record<string, unknown>) => Promise<void>;
   loading?: boolean;
 }
 
@@ -322,7 +324,7 @@ export default function AnalyticsReporting({
   const [uiState, setUiState] = React.useState({
     activeTab: 'overview' as 'overview' | 'members' | 'groups' | 'permissions' | 'compliance' | 'reports',
     selectedPeriod: '30d' as '7d' | '30d' | '90d' | '1y' | 'all',
-    selectedFilters: {} as any,
+    selectedFilters: {} as Record<string, unknown>,
     showReportDialog: false,
     showExportDialog: false,
     selectedReportType: 'member' as string,

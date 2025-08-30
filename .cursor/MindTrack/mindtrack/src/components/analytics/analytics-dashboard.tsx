@@ -13,6 +13,7 @@
 
 import * as React from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -511,7 +512,7 @@ export default function AnalyticsDashboard({
                 <Label htmlFor="period" className="text-sm font-medium">Time Period</Label>
                 <Select
                   value={uiState.selectedPeriod}
-                  onValueChange={(value: any) => handlePeriodChange(value)}
+                  onValueChange={(value: 'daily' | 'weekly' | 'monthly' | 'yearly') => handlePeriodChange(value)}
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue />

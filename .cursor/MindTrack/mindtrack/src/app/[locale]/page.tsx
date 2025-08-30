@@ -7,10 +7,20 @@ import {
   DollarSign, 
   FileText
 } from "lucide-react";
+import * as React from "react";
+import { initWebVitalsReporting } from "@/lib/web-vitals-client";
+
+function WebVitalsInit() {
+  React.useEffect(() => {
+    initWebVitalsReporting();
+  }, []);
+  return null;
+}
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
+      <WebVitalsInit />
       {/* Header */}
       <PageHeader
         title="MindTrack"
@@ -20,13 +30,14 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
             <TabsTrigger value="telehealth">Telehealth</TabsTrigger>
             <TabsTrigger value="research">Research</TabsTrigger>
             <TabsTrigger value="security">Security</TabsTrigger>
+            <TabsTrigger value="smart-scheduling">Smart Scheduling</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -219,8 +230,47 @@ export default function HomePage() {
               </div>
             </div>
           </TabsContent>
+
+          <TabsContent value="smart-scheduling" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🧠 Smart Scheduling AI</h2>
+              <p className="text-gray-600">AI-powered appointment optimization and intelligent scheduling</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🤖 AI Analysis</h3>
+                <p className="text-gray-600 mb-4">Intelligent appointment matching and optimization</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Patient-therapist matching</div>
+                  <div>• Priority-based scheduling</div>
+                  <div>• Workload optimization</div>
+                  <div>• Risk assessment</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">⚡ Auto Scheduling</h3>
+                <p className="text-gray-600 mb-4">Automated appointment booking with AI confidence</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Confidence threshold control</div>
+                  <div>• Multiple scheduling modes</div>
+                  <div>• Conflict resolution</div>
+                  <div>• Manual override options</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-orange-50 to-red-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📊 Performance Insights</h3>
+                <p className="text-gray-600 mb-4">Real-time analytics and optimization metrics</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Scheduling efficiency</div>
+                  <div>• Patient satisfaction</div>
+                  <div>• Therapist utilization</div>
+                  <div>• Predictive analytics</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </>
   );
 }
