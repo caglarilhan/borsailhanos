@@ -33,6 +33,7 @@ import { AIPoweredDiagnosticSupport } from "@/components/ai/ai-powered-diagnosti
 import { TelepsychiatryVirtualCare } from "@/components/telehealth/telepsychiatry-virtual-care";
 import { ContinuingMedicalEducation } from "@/components/cme/continuing-medical-education";
 import PrescriptionManagementEPrescribing from "@/components/prescription/prescription-management-e-prescribing";
+import SpecializedMentalHealthTools from "@/components/mental-health/specialized-mental-health-tools";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -54,7 +55,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-39">
+                        <TabsList className="grid w-full grid-cols-40">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -94,6 +95,7 @@ export default function HomePage() {
               <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
               <TabsTrigger value="cme">CME</TabsTrigger>
               <TabsTrigger value="prescription-management">Prescription</TabsTrigger>
+              <TabsTrigger value="mental-health-tools">Mental Health</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -732,6 +734,10 @@ export default function HomePage() {
 
           <TabsContent value="prescription-management" className="space-y-6">
             <PrescriptionManagementEPrescribing />
+          </TabsContent>
+
+          <TabsContent value="mental-health-tools" className="space-y-6">
+            <SpecializedMentalHealthTools />
           </TabsContent>
         </Tabs>
       </main>
