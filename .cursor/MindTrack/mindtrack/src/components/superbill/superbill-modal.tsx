@@ -661,7 +661,7 @@ export default function SuperbillModal({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="02">02 - Telehealth (Patient's Home)</SelectItem>
+                  <SelectItem value="02">02 - Telehealth (Patient&apos;s Home)</SelectItem>
                   <SelectItem value="11">11 - Office</SelectItem>
                   <SelectItem value="12">12 - Home</SelectItem>
                   <SelectItem value="13">13 - Assisted Living Facility</SelectItem>

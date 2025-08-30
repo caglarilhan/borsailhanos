@@ -90,7 +90,8 @@ import {
   Cpu,
   HardDrive,
   Wifi,
-  Server
+  Server,
+  AlertTriangle
 } from "lucide-react";
 
 // Performance Monitoring & Optimization için gerekli interface'ler
