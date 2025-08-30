@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-8">
+          <TabsList className="grid w-full grid-cols-9">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -39,6 +39,7 @@ export default function HomePage() {
             <TabsTrigger value="security">Security</TabsTrigger>
             <TabsTrigger value="smart-scheduling">Smart Scheduling</TabsTrigger>
             <TabsTrigger value="payment">Payment</TabsTrigger>
+            <TabsTrigger value="mobile">Mobile</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -305,6 +306,45 @@ export default function HomePage() {
                   <div>• Webhook handling</div>
                   <div>• Fraud protection</div>
                   <div>• Audit logging</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="mobile" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">📱 Mobile Optimization</h2>
+              <p className="text-gray-600">Cross-platform mobile experience and performance optimization</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📱 Device Management</h3>
+                <p className="text-gray-600 mb-4">Multi-platform device monitoring and optimization</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• iOS & Android support</div>
+                  <div>• Tablet optimization</div>
+                  <div>• Performance monitoring</div>
+                  <div>• Battery optimization</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">⚡ Performance Metrics</h3>
+                <p className="text-gray-600 mb-4">Real-time performance tracking and optimization</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Load time optimization</div>
+                  <div>• Memory usage tracking</div>
+                  <div>• Network latency monitoring</div>
+                  <div>• User satisfaction metrics</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🔔 Push Notifications</h3>
+                <p className="text-gray-600 mb-4">Smart notification system and delivery tracking</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Appointment reminders</div>
+                  <div>• Message notifications</div>
+                  <div>• Delivery tracking</div>
+                  <div>• Priority management</div>
                 </div>
               </div>
             </div>
