@@ -14,6 +14,7 @@ import { GamificationEngagement } from "@/components/gamification/gamification-e
 import { AdvancedReporting } from "@/components/reporting/advanced-reporting";
 import { WorkflowAutomation } from "@/components/workflow/workflow-automation";
 import { TeamCollaboration } from "@/components/collaboration/team-collaboration";
+import { KnowledgeManagement } from "@/components/search/knowledge-management";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -35,7 +36,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-20">
+          <TabsList className="grid w-full grid-cols-21">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -56,6 +57,7 @@ export default function HomePage() {
             <TabsTrigger value="advanced-reporting">Advanced Reporting</TabsTrigger>
             <TabsTrigger value="workflow-automation">Workflow Automation</TabsTrigger>
             <TabsTrigger value="team-collaboration">Team Collaboration</TabsTrigger>
+            <TabsTrigger value="knowledge-management">Knowledge Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -618,6 +620,10 @@ export default function HomePage() {
 
           <TabsContent value="team-collaboration" className="space-y-6">
             <TeamCollaboration />
+          </TabsContent>
+
+          <TabsContent value="knowledge-management" className="space-y-6">
+            <KnowledgeManagement />
           </TabsContent>
         </Tabs>
       </main>
