@@ -13,6 +13,7 @@ import { PatientPortal } from "@/components/patient/patient-portal";
 import { GamificationEngagement } from "@/components/gamification/gamification-engagement";
 import { AdvancedReporting } from "@/components/reporting/advanced-reporting";
 import { WorkflowAutomation } from "@/components/workflow/workflow-automation";
+import { TeamCollaboration } from "@/components/collaboration/team-collaboration";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -34,7 +35,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-19">
+          <TabsList className="grid w-full grid-cols-20">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -54,6 +55,7 @@ export default function HomePage() {
             <TabsTrigger value="gamification">Gamification</TabsTrigger>
             <TabsTrigger value="advanced-reporting">Advanced Reporting</TabsTrigger>
             <TabsTrigger value="workflow-automation">Workflow Automation</TabsTrigger>
+            <TabsTrigger value="team-collaboration">Team Collaboration</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -612,6 +614,10 @@ export default function HomePage() {
 
           <TabsContent value="workflow-automation" className="space-y-6">
             <WorkflowAutomation />
+          </TabsContent>
+
+          <TabsContent value="team-collaboration" className="space-y-6">
+            <TeamCollaboration />
           </TabsContent>
         </Tabs>
       </main>
