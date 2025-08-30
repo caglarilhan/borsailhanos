@@ -22,6 +22,7 @@ import { DisasterRecovery } from "@/components/backup/disaster-recovery";
 import { SystemAdministration } from "@/components/admin/system-administration";
 import { MobileAppDevelopment } from "@/components/mobile/mobile-app-development";
 import { AdvancedSecurityFeatures } from "@/components/security/advanced-security-features";
+import { APIGatewayMicroservices } from "@/components/api/api-gateway-microservices";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -43,7 +44,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-28">
+                        <TabsList className="grid w-full grid-cols-29">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -72,6 +73,7 @@ export default function HomePage() {
               <TabsTrigger value="system-administration">System Admin</TabsTrigger>
               <TabsTrigger value="mobile-app-development">Mobile App</TabsTrigger>
               <TabsTrigger value="advanced-security">Advanced Security</TabsTrigger>
+              <TabsTrigger value="api-gateway">API Gateway</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -666,6 +668,10 @@ export default function HomePage() {
 
           <TabsContent value="advanced-security" className="space-y-6">
             <AdvancedSecurityFeatures />
+          </TabsContent>
+
+          <TabsContent value="api-gateway" className="space-y-6">
+            <APIGatewayMicroservices />
           </TabsContent>
         </Tabs>
       </main>
