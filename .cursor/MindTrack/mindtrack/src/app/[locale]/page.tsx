@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-9">
+          <TabsList className="grid w-full grid-cols-10">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -40,6 +40,7 @@ export default function HomePage() {
             <TabsTrigger value="smart-scheduling">Smart Scheduling</TabsTrigger>
             <TabsTrigger value="payment">Payment</TabsTrigger>
             <TabsTrigger value="mobile">Mobile</TabsTrigger>
+            <TabsTrigger value="advanced-analytics">Advanced Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -345,6 +346,45 @@ export default function HomePage() {
                   <div>• Message notifications</div>
                   <div>• Delivery tracking</div>
                   <div>• Priority management</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="advanced-analytics" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">📈 Advanced Analytics</h2>
+              <p className="text-gray-600">Business intelligence and predictive analytics for data-driven decisions</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🧠 Predictive Insights</h3>
+                <p className="text-gray-600 mb-4">AI-powered predictions and trend analysis</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Revenue forecasting</div>
+                  <div>• Patient churn prediction</div>
+                  <div>• Trend analysis</div>
+                  <div>• Risk assessment</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-teal-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📊 Business Metrics</h3>
+                <p className="text-gray-600 mb-4">Comprehensive business performance tracking</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Key performance indicators</div>
+                  <div>• Revenue analytics</div>
+                  <div>• Patient retention metrics</div>
+                  <div>• Operational efficiency</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📋 Custom Reports</h3>
+                <p className="text-gray-600 mb-4">Automated reporting and data visualization</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Automated report generation</div>
+                  <div>• Scheduled delivery</div>
+                  <div>• Interactive dashboards</div>
+                  <div>• Data export capabilities</div>
                 </div>
               </div>
             </div>
