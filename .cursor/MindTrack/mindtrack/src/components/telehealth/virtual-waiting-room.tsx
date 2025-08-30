@@ -250,7 +250,7 @@ export function VirtualWaitingRoom() {
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Virtual Waiting Room</h1>
-          <p className="text-gray-600">Welcome to MindTrack Telehealth. We'll be with you shortly.</p>
+          <p className="text-gray-600">Welcome to MindTrack Telehealth. We&apos;ll be with you shortly.</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

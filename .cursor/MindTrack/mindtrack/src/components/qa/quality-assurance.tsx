@@ -110,8 +110,8 @@ interface TestCase {
   }[];
   prerequisites: string[];
   testData: {
-    input: any;
-    expectedOutput: any;
+    input: Record<string, unknown>;
+    expectedOutput: Record<string, unknown>;
   };
   automation: {
     isAutomated: boolean;
