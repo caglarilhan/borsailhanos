@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-14">
+          <TabsList className="grid w-full grid-cols-15">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -45,6 +45,7 @@ export default function HomePage() {
             <TabsTrigger value="telehealth-video">Telehealth & Video</TabsTrigger>
             <TabsTrigger value="clinical-decision">Clinical Decision</TabsTrigger>
             <TabsTrigger value="notification-hub">Notification Hub</TabsTrigger>
+            <TabsTrigger value="data-integration">Data Integration</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -545,6 +546,45 @@ export default function HomePage() {
                   <div>• File and document sharing</div>
                   <div>• Message status tracking</div>
                   <div>• HIPAA-compliant communication</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="data-integration" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🔗 Data Integration & API Hub</h2>
+              <p className="text-gray-600">External system integrations and API management</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border border-blue-200 shadow-lg">
+                <h3 className="text-lg font-semibold mb-3 text-blue-900">🏥 External Systems</h3>
+                <p className="text-blue-700 mb-4">EHR, Lab, Pharmacy, and custom system integrations</p>
+                <div className="space-y-2 text-sm text-blue-600">
+                  <div>• FHIR, HL7, and custom API connections</div>
+                  <div>• Real-time data synchronization</div>
+                  <div>• Automated mapping and transformation</div>
+                  <div>• Connection health monitoring</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border border-green-200 shadow-lg">
+                <h3 className="text-lg font-semibold mb-3 text-green-900">🔌 API Management</h3>
+                <p className="text-green-700 mb-4">RESTful API endpoints and comprehensive documentation</p>
+                <div className="space-y-2 text-sm text-green-600">
+                  <div>• RESTful API design and implementation</div>
+                  <div>• Rate limiting and authentication</div>
+                  <div>• Interactive API documentation</div>
+                  <div>• Usage analytics and monitoring</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border border-purple-200 shadow-lg">
+                <h3 className="text-lg font-semibold mb-3 text-purple-900">⚡ Webhooks & Events</h3>
+                <p className="text-purple-700 mb-4">Event-driven integrations and real-time notifications</p>
+                <div className="space-y-2 text-sm text-purple-600">
+                  <div>• Real-time event processing</div>
+                  <div>• Webhook delivery and retry logic</div>
+                  <div>• Event filtering and routing</div>
+                  <div>• Integration event monitoring</div>
                 </div>
               </div>
             </div>
