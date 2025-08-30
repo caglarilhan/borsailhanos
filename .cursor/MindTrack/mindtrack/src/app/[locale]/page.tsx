@@ -35,6 +35,7 @@ import { ContinuingMedicalEducation } from "@/components/cme/continuing-medical-
 import PrescriptionManagementEPrescribing from "@/components/prescription/prescription-management-e-prescribing";
 import SpecializedMentalHealthTools from "@/components/mental-health/specialized-mental-health-tools";
 import HealthcareNetworkIntegration from "@/components/healthcare/healthcare-network-integration";
+import ClinicalResearchEvidenceBasedPractice from "@/components/research/clinical-research-evidence-based-practice";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -56,7 +57,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-41">
+                        <TabsList className="grid w-full grid-cols-42">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -98,6 +99,7 @@ export default function HomePage() {
               <TabsTrigger value="prescription-management">Prescription</TabsTrigger>
               <TabsTrigger value="mental-health-tools">Mental Health</TabsTrigger>
               <TabsTrigger value="healthcare-network">Healthcare Network</TabsTrigger>
+              <TabsTrigger value="clinical-research">Clinical Research</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -744,6 +746,10 @@ export default function HomePage() {
 
           <TabsContent value="healthcare-network" className="space-y-6">
             <HealthcareNetworkIntegration />
+          </TabsContent>
+
+          <TabsContent value="clinical-research" className="space-y-6">
+            <ClinicalResearchEvidenceBasedPractice />
           </TabsContent>
         </Tabs>
       </main>
