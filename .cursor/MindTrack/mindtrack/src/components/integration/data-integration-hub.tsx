@@ -721,10 +721,16 @@ export function DataIntegrationHub() {
     const runningSyncJobs = dataSyncJobs.filter(job => job.status === 'running').length;
     const totalWebhooks = webhooks.length;
     const activeWebhooks = webhooks.filter(webhook => webhook.status === 'active').length;
+    const totalMappings = dataMappings.length;
+    const activeMappings = dataMappings.filter(mapping => mapping.isActive).length;
     
     const totalRecords = externalSystems.reduce((sum, system) => sum + system.metrics.totalRecords, 0);
     const syncedRecords = externalSystems.reduce((sum, system) => sum + system.metrics.syncedRecords, 0);
     const syncRate = totalRecords > 0 ? Math.round((syncedRecords / totalRecords) * 100) : 0;
+    
+    const totalAPICalls = apiManagement.reduce((sum, api) => sum + api.usage.totalCalls, 0);
+    const successfulAPICalls = apiManagement.reduce((sum, api) => sum + api.usage.successfulCalls, 0);
+    const apiSuccessRate = totalAPICalls > 0 ? Math.round((successfulAPICalls / totalAPICalls) * 100) : 0;
     
     return {
       totalSystems,
@@ -736,11 +742,16 @@ export function DataIntegrationHub() {
       runningSyncJobs,
       totalWebhooks,
       activeWebhooks,
+      totalMappings,
+      activeMappings,
       totalRecords,
       syncedRecords,
-      syncRate
+      syncRate,
+      totalAPICalls,
+      successfulAPICalls,
+      apiSuccessRate
     };
-  }, [externalSystems, apiManagement, dataSyncJobs, webhooks]);
+  }, [externalSystems, apiManagement, dataSyncJobs, webhooks, dataMappings]);
 
   const metrics = calculateIntegrationMetrics();
 
@@ -752,16 +763,20 @@ export function DataIntegrationHub() {
           <h2 className="text-2xl font-bold text-gray-900">🔗 Data Integration & API Hub</h2>
           <p className="text-gray-600">External system integrations and API management</p>
         </div>
-        <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            <Network className="h-3 w-3 mr-1" />
-            {metrics.connectionRate}% Connected
-          </Badge>
-          <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            <Activity className="h-3 w-3 mr-1" />
-            {metrics.syncRate}% Sync Rate
-          </Badge>
-        </div>
+                 <div className="flex items-center space-x-2">
+           <Badge variant="outline" className="bg-green-50 text-green-700">
+             <Network className="h-3 w-3 mr-1" />
+             {metrics.connectionRate}% Connected
+           </Badge>
+           <Badge variant="outline" className="bg-blue-50 text-blue-700">
+             <Activity className="h-3 w-3 mr-1" />
+             {metrics.syncRate}% Sync Rate
+           </Badge>
+           <Badge variant="outline" className="bg-purple-50 text-purple-700">
+             <Link className="h-3 w-3 mr-1" />
+             {metrics.apiSuccessRate}% API Success
+           </Badge>
+         </div>
       </div>
 
       {/* Integration Overview - Entegrasyon Genel Bakış */}
@@ -1152,8 +1167,79 @@ export function DataIntegrationHub() {
               </div>
             ))}
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+                 </CardContent>
+       </Card>
+
+       {/* Data Mapping Management - Veri Eşleme Yönetimi */}
+       <Card className="border-2 border-teal-100 shadow-lg">
+         <CardHeader className="bg-gradient-to-r from-teal-50 to-cyan-50 border-b border-teal-200">
+           <CardTitle className="flex items-center">
+             <FileText className="h-5 w-5 mr-2 text-teal-600" />
+             <span className="text-teal-900">Data Mapping Management</span>
+           </CardTitle>
+           <CardDescription className="text-teal-700">
+             Field mapping and data transformation rules
+           </CardDescription>
+         </CardHeader>
+         <CardContent className="p-6">
+           <div className="space-y-4">
+             {dataMappings.map((mapping) => (
+               <div key={mapping.id} className="border border-teal-200 rounded-lg p-4 bg-white shadow-sm hover:shadow-md transition-shadow">
+                 <div className="flex items-center justify-between mb-3">
+                   <div>
+                     <div className="font-semibold text-teal-900">{mapping.name}</div>
+                     <div className="text-sm text-teal-600">
+                       {mapping.sourceSystem} → {mapping.targetSystem} • {mapping.mappingType}
+                     </div>
+                   </div>
+                   <div className="flex items-center space-x-2">
+                     <Badge variant={mapping.isActive ? 'default' : 'secondary'} className="bg-teal-100 text-teal-800">
+                       {mapping.isActive ? 'Active' : 'Inactive'}
+                     </Badge>
+                     <Badge variant="outline" className="border-teal-300 text-teal-700">
+                       v{mapping.version}
+                     </Badge>
+                   </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                     <h4 className="font-semibold text-sm mb-2 text-teal-800">Mapping Rules</h4>
+                     <div className="space-y-2">
+                       {mapping.rules.slice(0, 3).map((rule, index) => (
+                         <div key={index} className="text-sm text-teal-600 border-l-2 border-teal-300 pl-2">
+                           <div className="font-medium">{rule.sourceField} → {rule.targetField}</div>
+                           <div className="text-xs">Transformation: {rule.transformation}</div>
+                           {rule.required && <div className="text-xs text-red-600">Required</div>}
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                   
+                   <div>
+                     <h4 className="font-semibold text-sm mb-2 text-teal-800">Validation Rules</h4>
+                     <div className="space-y-1 text-sm text-teal-600">
+                       {mapping.validationRules.map((validation, index) => (
+                         <div key={index} className="flex items-center">
+                           <CheckCircle className="h-3 w-3 mr-1 text-teal-500" />
+                           {validation.field}: {validation.rule}
+                         </div>
+                       ))}
+                     </div>
+                     
+                     <h5 className="font-semibold text-sm mb-2 mt-3 text-teal-800">Status</h5>
+                     <div className="space-y-1 text-sm text-teal-600">
+                       <div>Active: {mapping.isActive ? 'Yes' : 'No'}</div>
+                       <div>Version: {mapping.version}</div>
+                       <div>Last Updated: {mapping.lastUpdated.toLocaleDateString()}</div>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+             ))}
+           </div>
+         </CardContent>
+       </Card>
+     </div>
+   );
+ }
