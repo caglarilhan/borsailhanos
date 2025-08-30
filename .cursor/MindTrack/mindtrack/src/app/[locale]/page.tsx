@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-13">
+          <TabsList className="grid w-full grid-cols-14">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -44,6 +44,7 @@ export default function HomePage() {
             <TabsTrigger value="security-compliance">Security & Compliance</TabsTrigger>
             <TabsTrigger value="telehealth-video">Telehealth & Video</TabsTrigger>
             <TabsTrigger value="clinical-decision">Clinical Decision</TabsTrigger>
+            <TabsTrigger value="notification-hub">Notification Hub</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -505,6 +506,45 @@ export default function HomePage() {
                   <div>• Relapse risk assessment</div>
                   <div>• Recovery timeline estimation</div>
                   <div>• Compliance monitoring</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="notification-hub" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🔔 Notification & Communication Hub</h2>
+              <p className="text-gray-600">Multi-channel communication and automated notification system</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📧 Multi-Channel Notifications</h3>
+                <p className="text-gray-600 mb-4">Email, SMS, Push, and In-app messaging</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Automated appointment reminders</div>
+                  <div>• Medication and treatment alerts</div>
+                  <div>• Custom notification templates</div>
+                  <div>• Delivery tracking and analytics</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">⚡ Automated Workflows</h3>
+                <p className="text-gray-600 mb-4">Smart triggers and automated communication</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Event-based triggers</div>
+                  <div>• Conditional messaging</div>
+                  <div>• Patient engagement tracking</div>
+                  <div>• Success rate monitoring</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">💬 In-App Messaging</h3>
+                <p className="text-gray-600 mb-4">Secure patient-therapist communication</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Real-time messaging threads</div>
+                  <div>• File and document sharing</div>
+                  <div>• Message status tracking</div>
+                  <div>• HIPAA-compliant communication</div>
                 </div>
               </div>
             </div>
