@@ -32,6 +32,7 @@ import { InsuranceBillingIntegration } from "@/components/billing/insurance-bill
 import { AIPoweredDiagnosticSupport } from "@/components/ai/ai-powered-diagnostic-support";
 import { TelepsychiatryVirtualCare } from "@/components/telehealth/telepsychiatry-virtual-care";
 import { ContinuingMedicalEducation } from "@/components/cme/continuing-medical-education";
+import PrescriptionManagementEPrescribing from "@/components/prescription/prescription-management-e-prescribing";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -53,7 +54,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-38">
+                        <TabsList className="grid w-full grid-cols-39">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -92,6 +93,7 @@ export default function HomePage() {
               <TabsTrigger value="ai-diagnostic">AI Diagnostic</TabsTrigger>
               <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
               <TabsTrigger value="cme">CME</TabsTrigger>
+              <TabsTrigger value="prescription-management">Prescription</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -726,6 +728,10 @@ export default function HomePage() {
 
           <TabsContent value="cme" className="space-y-6">
             <ContinuingMedicalEducation />
+          </TabsContent>
+
+          <TabsContent value="prescription-management" className="space-y-6">
+            <PrescriptionManagementEPrescribing />
           </TabsContent>
         </Tabs>
       </main>
