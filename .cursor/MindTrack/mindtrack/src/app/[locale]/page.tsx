@@ -25,6 +25,7 @@ import { AdvancedSecurityFeatures } from "@/components/security/advanced-securit
 import { APIGatewayMicroservices } from "@/components/api/api-gateway-microservices";
 import { CloudInfrastructureDevOps } from "@/components/devops/cloud-infrastructure-devops";
 import { BlockchainWeb3Integration } from "@/components/blockchain/blockchain-web3-integration";
+import { AIContentGenerationSEO } from "@/components/seo/ai-content-generation-seo";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -46,7 +47,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-31">
+                        <TabsList className="grid w-full grid-cols-32">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -78,6 +79,7 @@ export default function HomePage() {
               <TabsTrigger value="api-gateway">API Gateway</TabsTrigger>
               <TabsTrigger value="cloud-infrastructure">Cloud & DevOps</TabsTrigger>
               <TabsTrigger value="blockchain-web3">Blockchain</TabsTrigger>
+              <TabsTrigger value="ai-content-seo">AI Content & SEO</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -684,6 +686,10 @@ export default function HomePage() {
 
           <TabsContent value="blockchain-web3" className="space-y-6">
             <BlockchainWeb3Integration />
+          </TabsContent>
+
+          <TabsContent value="ai-content-seo" className="space-y-6">
+            <AIContentGenerationSEO />
           </TabsContent>
         </Tabs>
       </main>
