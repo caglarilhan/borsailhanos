@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-12">
+          <TabsList className="grid w-full grid-cols-13">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -43,6 +43,7 @@ export default function HomePage() {
             <TabsTrigger value="advanced-analytics">Advanced Analytics</TabsTrigger>
             <TabsTrigger value="security-compliance">Security & Compliance</TabsTrigger>
             <TabsTrigger value="telehealth-video">Telehealth & Video</TabsTrigger>
+            <TabsTrigger value="clinical-decision">Clinical Decision</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -464,6 +465,45 @@ export default function HomePage() {
                   <div>• Digital prescription creation</div>
                   <div>• Pharmacy integration</div>
                   <div>• Medication tracking</div>
+                  <div>• Compliance monitoring</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="clinical-decision" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🤖 AI-Powered Clinical Decision Support</h2>
+              <p className="text-gray-600">Evidence-based treatment recommendations and clinical decision support</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🧠 Treatment Recommendations</h3>
+                <p className="text-gray-600 mb-4">AI-powered evidence-based treatment suggestions</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Evidence-based recommendations</div>
+                  <div>• Clinical guideline integration</div>
+                  <div>• Risk-benefit analysis</div>
+                  <div>• Alternative treatment options</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">⚠️ Risk Assessment</h3>
+                <p className="text-gray-600 mb-4">AI-powered risk evaluation and safety planning</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Suicide risk assessment</div>
+                  <div>• Violence risk evaluation</div>
+                  <div>• Safety planning tools</div>
+                  <div>• Protective factor analysis</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📊 Outcome Predictions</h3>
+                <p className="text-gray-600 mb-4">AI-driven patient outcome forecasting</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• Treatment response prediction</div>
+                  <div>• Relapse risk assessment</div>
+                  <div>• Recovery timeline estimation</div>
                   <div>• Compliance monitoring</div>
                 </div>
               </div>
