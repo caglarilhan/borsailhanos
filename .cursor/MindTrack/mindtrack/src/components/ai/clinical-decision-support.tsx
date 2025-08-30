@@ -801,6 +801,8 @@ export function ClinicalDecisionSupport() {
     const highConfidenceRecommendations = treatmentRecommendations.filter(r => r.aiConfidence >= 80).length;
     const totalAssessments = riskAssessments.length;
     const criticalAssessments = riskAssessments.filter(a => a.riskLevel === 'critical').length;
+    const totalPredictions = patientOutcomePredictions.length;
+    const accuratePredictions = patientOutcomePredictions.filter(p => p.confidence >= 75).length;
     
     return {
       totalRecommendations,
@@ -808,9 +810,12 @@ export function ClinicalDecisionSupport() {
       confidenceRate: totalRecommendations > 0 ? Math.round((highConfidenceRecommendations / totalRecommendations) * 100) : 0,
       totalAssessments,
       criticalAssessments,
-      assessmentAccuracy: 94.2
+      assessmentAccuracy: 94.2,
+      totalPredictions,
+      accuratePredictions,
+      predictionAccuracy: totalPredictions > 0 ? Math.round((accuratePredictions / totalPredictions) * 100) : 0
     };
-  }, [treatmentRecommendations, riskAssessments]);
+  }, [treatmentRecommendations, riskAssessments, patientOutcomePredictions]);
 
   const aiMetrics = calculateAIMetrics();
 
@@ -834,8 +839,8 @@ export function ClinicalDecisionSupport() {
         </div>
       </div>
 
-      {/* AI System Overview - AI Sistem Genel Bakış */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+             {/* AI System Overview - AI Sistem Genel Bakış */}
+       <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">AI Recommendations</CardTitle>
@@ -875,18 +880,31 @@ export function ClinicalDecisionSupport() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">System Status</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">Active</div>
-            <p className="text-xs text-muted-foreground">
-              All AI models operational
-            </p>
-          </CardContent>
-        </Card>
+                 <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">Outcome Predictions</CardTitle>
+             <TrendingUp className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold">{aiMetrics.totalPredictions}</div>
+             <p className="text-xs text-muted-foreground">
+               {aiMetrics.accuratePredictions} accurate predictions
+             </p>
+           </CardContent>
+         </Card>
+
+         <Card>
+           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+             <CardTitle className="text-sm font-medium">System Status</CardTitle>
+             <Activity className="h-4 w-4 text-muted-foreground" />
+           </CardHeader>
+           <CardContent>
+             <div className="text-2xl font-bold text-green-600">Active</div>
+             <p className="text-xs text-muted-foreground">
+               All AI models operational
+             </p>
+           </CardContent>
+         </Card>
       </div>
 
       {/* Treatment Recommendations - Tedavi Önerileri */}
@@ -1213,8 +1231,116 @@ export function ClinicalDecisionSupport() {
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+                 </CardContent>
+       </Card>
+
+       {/* Clinical Decision History - Klinik Karar Geçmişi */}
+       <Card>
+         <CardHeader>
+           <CardTitle className="flex items-center justify-between">
+             <div className="flex items-center">
+               <FileText className="h-5 w-5 mr-2" />
+               Clinical Decision History
+             </div>
+             <Button
+               onClick={() => makeClinicalDecision('patient_001', 'treatment', 'Start new treatment protocol', {
+                 clinical: 'Based on patient assessment',
+                 evidence: 'Evidence-based guidelines',
+                 patient_preferences: 'Patient preferences considered',
+                 ai_insights: 'AI analysis completed'
+               })}
+               className="bg-purple-600 hover:bg-purple-700"
+               disabled={loading}
+             >
+               <Brain className="h-4 w-4 mr-2" />
+               Make Decision
+             </Button>
+           </CardTitle>
+           <CardDescription>
+             Historical clinical decisions with AI support and outcomes
+           </CardDescription>
+         </CardHeader>
+         <CardContent>
+           <div className="space-y-4">
+             {clinicalDecisions.map((decision) => (
+               <div key={decision.id} className="border rounded-lg p-4">
+                 <div className="flex items-center justify-between mb-3">
+                   <div>
+                     <div className="font-semibold">{decision.decisionType.toUpperCase()}</div>
+                     <div className="text-sm text-gray-600">
+                       Decision: {decision.decision} • Confidence: {decision.confidence}%
+                     </div>
+                   </div>
+                   <div className="flex items-center space-x-2">
+                     <Badge variant={decision.outcome.success ? 'default' : 'destructive'}>
+                       {decision.outcome.success ? 'Successful' : 'Failed'}
+                     </Badge>
+                     <Badge variant="outline">
+                       AI Support: {decision.aiSupport.confidence}%
+                     </Badge>
+                   </div>
+                 </div>
+                 
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                   <div>
+                     <h4 className="font-semibold text-sm mb-2">AI Support Details</h4>
+                     <div className="space-y-1 text-sm text-gray-600">
+                       <div>Model: {decision.aiSupport.model}</div>
+                       <div>Version: {decision.aiSupport.version}</div>
+                       <div>Used: {decision.aiSupport.used ? 'Yes' : 'No'}</div>
+                     </div>
+                     
+                     <h5 className="font-semibold text-sm mb-2 mt-3">AI Recommendations</h5>
+                     <ul className="space-y-1 text-sm text-gray-600">
+                       {decision.aiSupport.recommendations.slice(0, 3).map((rec, index) => (
+                         <li key={index} className="flex items-center">
+                           <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                           {rec}
+                         </li>
+                       ))}
+                     </ul>
+                   </div>
+                   
+                   <div>
+                     <h4 className="font-semibold text-sm mb-2">Outcome Analysis</h4>
+                     <div className="space-y-1 text-sm text-gray-600">
+                       <div>Predicted: {decision.outcome.predicted}</div>
+                       <div>Actual: {decision.outcome.actual || 'Pending'}</div>
+                       <div>Success: {decision.outcome.success ? 'Yes' : 'No'}</div>
+                       <div>Notes: {decision.outcome.notes}</div>
+                     </div>
+                     
+                     <h5 className="font-semibold text-sm mb-2 mt-3">Alternatives Considered</h5>
+                     <ul className="space-y-1 text-sm text-gray-600">
+                       {decision.alternatives.slice(0, 3).map((alt, index) => (
+                         <li key={index} className="flex items-center">
+                           <XCircle className="h-3 w-3 mr-1 text-gray-400" />
+                           {alt}
+                         </li>
+                       ))}
+                     </ul>
+                   </div>
+                 </div>
+                 
+                 <div className="mt-3 pt-3 border-t">
+                   <div className="flex items-center justify-between text-sm text-gray-600">
+                     <span>Created: {decision.createdAt.toLocaleDateString()}</span>
+                     <span>Updated: {decision.updatedAt.toLocaleDateString()}</span>
+                   </div>
+                 </div>
+               </div>
+             ))}
+             
+             {clinicalDecisions.length === 0 && (
+               <div className="text-center py-8">
+                 <FileText className="h-12 w-12 mx-auto mb-4 text-gray-400" />
+                 <p className="text-gray-500">No clinical decisions recorded</p>
+                 <p className="text-sm text-gray-400">Make AI-supported clinical decisions to get started</p>
+               </div>
+             )}
+           </div>
+         </CardContent>
+       </Card>
+     </div>
+   );
+ }
