@@ -16,6 +16,10 @@ import { WorkflowAutomation } from "@/components/workflow/workflow-automation";
 import { TeamCollaboration } from "@/components/collaboration/team-collaboration";
 import { KnowledgeManagement } from "@/components/search/knowledge-management";
 import { PredictiveAnalytics } from "@/components/ml/predictive-analytics";
+import { QualityAssurance } from "@/components/qa/quality-assurance";
+import { PerformanceMonitoring } from "@/components/performance/performance-monitoring";
+import { DisasterRecovery } from "@/components/backup/disaster-recovery";
+import { SystemAdministration } from "@/components/admin/system-administration";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -37,7 +41,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-22">
+                        <TabsList className="grid w-full grid-cols-26">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -60,6 +64,10 @@ export default function HomePage() {
             <TabsTrigger value="team-collaboration">Team Collaboration</TabsTrigger>
             <TabsTrigger value="knowledge-management">Knowledge Management</TabsTrigger>
             <TabsTrigger value="predictive-analytics">Predictive Analytics</TabsTrigger>
+            <TabsTrigger value="quality-assurance">Quality Assurance</TabsTrigger>
+            <TabsTrigger value="performance-monitoring">Performance</TabsTrigger>
+                          <TabsTrigger value="disaster-recovery">Backup & DR</TabsTrigger>
+              <TabsTrigger value="system-administration">System Admin</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -630,6 +638,22 @@ export default function HomePage() {
 
           <TabsContent value="predictive-analytics" className="space-y-6">
             <PredictiveAnalytics />
+          </TabsContent>
+
+          <TabsContent value="quality-assurance" className="space-y-6">
+            <QualityAssurance />
+          </TabsContent>
+
+          <TabsContent value="performance-monitoring" className="space-y-6">
+            <PerformanceMonitoring />
+          </TabsContent>
+
+          <TabsContent value="disaster-recovery" className="space-y-6">
+            <DisasterRecovery />
+          </TabsContent>
+
+          <TabsContent value="system-administration" className="space-y-6">
+            <SystemAdministration />
           </TabsContent>
         </Tabs>
       </main>
