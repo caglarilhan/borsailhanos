@@ -30,7 +30,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-10">
+          <TabsList className="grid w-full grid-cols-11">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -41,6 +41,7 @@ export default function HomePage() {
             <TabsTrigger value="payment">Payment</TabsTrigger>
             <TabsTrigger value="mobile">Mobile</TabsTrigger>
             <TabsTrigger value="advanced-analytics">Advanced Analytics</TabsTrigger>
+            <TabsTrigger value="security-compliance">Security & Compliance</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -385,6 +386,45 @@ export default function HomePage() {
                   <div>• Scheduled delivery</div>
                   <div>• Interactive dashboards</div>
                   <div>• Data export capabilities</div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="security-compliance" className="space-y-6">
+            <div className="text-center py-8">
+              <h2 className="text-2xl font-bold text-gray-900 mb-4">🔐 Security & Compliance Hub</h2>
+              <p className="text-gray-600">HIPAA compliance, data protection, and security management</p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="p-6 bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🛡️ Security Policies</h3>
+                <p className="text-gray-600 mb-4">HIPAA, GDPR, and security policy management</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• HIPAA compliance policies</div>
+                  <div>• Data encryption standards</div>
+                  <div>• Access control management</div>
+                  <div>• Audit trail implementation</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">📋 Compliance Audits</h3>
+                <p className="text-gray-600 mb-4">Regulatory compliance assessments and monitoring</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• HIPAA annual audits</div>
+                  <div>• GDPR compliance checks</div>
+                  <div>• Security vulnerability scans</div>
+                  <div>• Incident response tracking</div>
+                </div>
+              </div>
+              <div className="p-6 bg-gradient-to-br from-red-50 to-pink-50 rounded-lg border">
+                <h3 className="text-lg font-semibold mb-3">🔒 Data Protection</h3>
+                <p className="text-gray-600 mb-4">End-to-end encryption and data security</p>
+                <div className="space-y-2 text-sm text-gray-600">
+                  <div>• AES-256 encryption</div>
+                  <div>• Key rotation management</div>
+                  <div>• Secure data transmission</div>
+                  <div>• Backup encryption</div>
                 </div>
               </div>
             </div>
