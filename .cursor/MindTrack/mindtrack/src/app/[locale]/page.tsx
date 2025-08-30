@@ -20,6 +20,7 @@ import { QualityAssurance } from "@/components/qa/quality-assurance";
 import { PerformanceMonitoring } from "@/components/performance/performance-monitoring";
 import { DisasterRecovery } from "@/components/backup/disaster-recovery";
 import { SystemAdministration } from "@/components/admin/system-administration";
+import { MobileAppDevelopment } from "@/components/mobile/mobile-app-development";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -41,7 +42,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-26">
+                        <TabsList className="grid w-full grid-cols-27">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -68,6 +69,7 @@ export default function HomePage() {
             <TabsTrigger value="performance-monitoring">Performance</TabsTrigger>
                           <TabsTrigger value="disaster-recovery">Backup & DR</TabsTrigger>
               <TabsTrigger value="system-administration">System Admin</TabsTrigger>
+              <TabsTrigger value="mobile-app-development">Mobile App</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -654,6 +656,10 @@ export default function HomePage() {
 
           <TabsContent value="system-administration" className="space-y-6">
             <SystemAdministration />
+          </TabsContent>
+
+          <TabsContent value="mobile-app-development" className="space-y-6">
+            <MobileAppDevelopment />
           </TabsContent>
         </Tabs>
       </main>
