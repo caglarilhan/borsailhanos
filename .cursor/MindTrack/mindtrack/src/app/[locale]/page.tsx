@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import * as React from "react";
 import { initWebVitalsReporting } from "@/lib/web-vitals-client";
+import { PatientPortal } from "@/components/patient/patient-portal";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -30,7 +31,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-15">
+          <TabsList className="grid w-full grid-cols-16">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -46,6 +47,7 @@ export default function HomePage() {
             <TabsTrigger value="clinical-decision">Clinical Decision</TabsTrigger>
             <TabsTrigger value="notification-hub">Notification Hub</TabsTrigger>
             <TabsTrigger value="data-integration">Data Integration</TabsTrigger>
+            <TabsTrigger value="patient-portal">Patient Portal</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -588,6 +590,10 @@ export default function HomePage() {
                 </div>
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="patient-portal" className="space-y-6">
+            <PatientPortal />
           </TabsContent>
         </Tabs>
       </main>
