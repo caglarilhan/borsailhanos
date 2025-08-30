@@ -15,6 +15,7 @@ import { AdvancedReporting } from "@/components/reporting/advanced-reporting";
 import { WorkflowAutomation } from "@/components/workflow/workflow-automation";
 import { TeamCollaboration } from "@/components/collaboration/team-collaboration";
 import { KnowledgeManagement } from "@/components/search/knowledge-management";
+import { PredictiveAnalytics } from "@/components/ml/predictive-analytics";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -36,7 +37,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-21">
+          <TabsList className="grid w-full grid-cols-22">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -58,6 +59,7 @@ export default function HomePage() {
             <TabsTrigger value="workflow-automation">Workflow Automation</TabsTrigger>
             <TabsTrigger value="team-collaboration">Team Collaboration</TabsTrigger>
             <TabsTrigger value="knowledge-management">Knowledge Management</TabsTrigger>
+            <TabsTrigger value="predictive-analytics">Predictive Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -624,6 +626,10 @@ export default function HomePage() {
 
           <TabsContent value="knowledge-management" className="space-y-6">
             <KnowledgeManagement />
+          </TabsContent>
+
+          <TabsContent value="predictive-analytics" className="space-y-6">
+            <PredictiveAnalytics />
           </TabsContent>
         </Tabs>
       </main>
