@@ -11,6 +11,7 @@ import * as React from "react";
 import { initWebVitalsReporting } from "@/lib/web-vitals-client";
 import { PatientPortal } from "@/components/patient/patient-portal";
 import { GamificationEngagement } from "@/components/gamification/gamification-engagement";
+import { AdvancedReporting } from "@/components/reporting/advanced-reporting";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -32,7 +33,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-          <TabsList className="grid w-full grid-cols-17">
+          <TabsList className="grid w-full grid-cols-18">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -50,6 +51,7 @@ export default function HomePage() {
             <TabsTrigger value="data-integration">Data Integration</TabsTrigger>
             <TabsTrigger value="patient-portal">Patient Portal</TabsTrigger>
             <TabsTrigger value="gamification">Gamification</TabsTrigger>
+            <TabsTrigger value="advanced-reporting">Advanced Reporting</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -600,6 +602,10 @@ export default function HomePage() {
 
           <TabsContent value="gamification" className="space-y-6">
             <GamificationEngagement />
+          </TabsContent>
+
+          <TabsContent value="advanced-reporting" className="space-y-6">
+            <AdvancedReporting />
           </TabsContent>
         </Tabs>
       </main>
