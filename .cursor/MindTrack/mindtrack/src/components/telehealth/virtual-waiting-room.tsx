@@ -445,7 +445,7 @@ export function VirtualWaitingRoom() {
                         </div>
                         
                         {client.notes && (
-                          <p className="text-xs text-gray-600 mt-2 italic">"{client.notes}"</p>
+                          <p className="text-xs text-gray-600 mt-2 italic">&quot;{client.notes}&quot;</p>
                         )}
                       </div>
                     ))}

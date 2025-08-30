@@ -101,6 +101,8 @@ import {
   FileInfoCircle,
   FileAlertCircle
 } from "lucide-react";
+// Ensure Plus and Edit are imported for JSX usage
+import { Plus as PlusIcon, Edit as EditIcon } from "lucide-react";
 
 /**
  * Multi-Factor Authentication Setup Component - Güvenlik için kritik
@@ -480,7 +482,7 @@ export function MFASetup() {
                 
                 <div className="flex items-center gap-4">
                   <Button onClick={() => setShowSetupWizard(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                    <PlusIcon className="h-4 w-4 mr-2" />
                     Add MFA Method
                   </Button>
                   <Button variant="outline" onClick={generateComplianceReport}>
@@ -573,7 +575,7 @@ export function MFASetup() {
                       
                       <div className="flex items-center gap-2 mt-3">
                         <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4 mr-2" />
+                          <EditIcon className="h-4 w-4 mr-2" />
                           Edit
                         </Button>
                         <Button variant="outline" size="sm">
