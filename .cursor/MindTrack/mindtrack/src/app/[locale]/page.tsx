@@ -46,6 +46,10 @@ import WorkflowAutomationProcessManagement from "@/components/workflow/workflow-
 import RealTimeCollaborationTeamManagement from "@/components/collaboration/real-time-collaboration-team-management";
 import AdvancedSearchKnowledgeManagement from "@/components/search/advanced-search-knowledge-management";
 import PredictiveAnalyticsMachineLearning from "@/components/ml/predictive-analytics-machine-learning";
+import ClinicalDecisionSupport from "@/components/clinical/clinical-decision-support";
+import PatientOutcomeTracking from "@/components/outcomes/patient-outcome-tracking";
+import AcademicResearchIntegration from "@/components/academic/academic-research-integration";
+import SpecializedPracticeAreas from "@/components/specialized/specialized-practice-areas";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -67,7 +71,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-53">
+                        <TabsList className="grid w-full grid-cols-57">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -121,6 +125,10 @@ export default function HomePage() {
               <TabsTrigger value="real-time-collaboration">Real-time Collaboration</TabsTrigger>
               <TabsTrigger value="advanced-search">Advanced Search</TabsTrigger>
               <TabsTrigger value="predictive-analytics">Predictive Analytics</TabsTrigger>
+              <TabsTrigger value="clinical-decision-support">Clinical Decision</TabsTrigger>
+              <TabsTrigger value="patient-outcome-tracking">Patient Outcomes</TabsTrigger>
+              <TabsTrigger value="academic-research">Academic Research</TabsTrigger>
+              <TabsTrigger value="specialized-practice">Specialized Practice</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -815,6 +823,22 @@ export default function HomePage() {
 
           <TabsContent value="predictive-analytics" className="space-y-6">
             <PredictiveAnalyticsMachineLearning />
+          </TabsContent>
+
+          <TabsContent value="clinical-decision-support" className="space-y-6">
+            <ClinicalDecisionSupport />
+          </TabsContent>
+
+          <TabsContent value="patient-outcome-tracking" className="space-y-6">
+            <PatientOutcomeTracking />
+          </TabsContent>
+
+          <TabsContent value="academic-research" className="space-y-6">
+            <AcademicResearchIntegration />
+          </TabsContent>
+
+          <TabsContent value="specialized-practice" className="space-y-6">
+            <SpecializedPracticeAreas />
           </TabsContent>
         </Tabs>
       </main>
