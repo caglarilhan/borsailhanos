@@ -44,6 +44,7 @@ import CustomizablePracticeManagement from "@/components/practice/customizable-p
 import AdvancedReportingBusinessIntelligence from "@/components/reporting/advanced-reporting-business-intelligence";
 import WorkflowAutomationProcessManagement from "@/components/workflow/workflow-automation-process-management";
 import RealTimeCollaborationTeamManagement from "@/components/collaboration/real-time-collaboration-team-management";
+import AdvancedSearchKnowledgeManagement from "@/components/search/advanced-search-knowledge-management";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -65,7 +66,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-51">
+                        <TabsList className="grid w-full grid-cols-52">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -117,6 +118,7 @@ export default function HomePage() {
               <TabsTrigger value="advanced-reporting">Advanced Reporting</TabsTrigger>
               <TabsTrigger value="workflow-automation">Workflow Automation</TabsTrigger>
               <TabsTrigger value="real-time-collaboration">Real-time Collaboration</TabsTrigger>
+              <TabsTrigger value="advanced-search">Advanced Search</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -803,6 +805,10 @@ export default function HomePage() {
 
           <TabsContent value="real-time-collaboration" className="space-y-6">
             <RealTimeCollaborationTeamManagement />
+          </TabsContent>
+
+          <TabsContent value="advanced-search" className="space-y-6">
+            <AdvancedSearchKnowledgeManagement />
           </TabsContent>
         </Tabs>
       </main>
