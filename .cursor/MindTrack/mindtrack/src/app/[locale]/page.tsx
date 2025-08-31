@@ -21,7 +21,7 @@ import { PerformanceMonitoring } from "@/components/performance/performance-moni
 import { DisasterRecovery } from "@/components/backup/disaster-recovery";
 import { SystemAdministration } from "@/components/admin/system-administration";
 import { MobileAppDevelopment } from "@/components/mobile/mobile-app-development";
-import { AdvancedSecurityFeatures } from "@/components/security/advanced-security-features";
+import AdvancedSecurityFeatures from "@/components/security/advanced-security-features";
 import { APIGatewayMicroservices } from "@/components/api/api-gateway-microservices";
 import { CloudInfrastructureDevOps } from "@/components/devops/cloud-infrastructure-devops";
 import { BlockchainWeb3Integration } from "@/components/blockchain/blockchain-web3-integration";
@@ -60,7 +60,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-45">
+                        <TabsList className="grid w-full grid-cols-46">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -106,6 +106,7 @@ export default function HomePage() {
               <TabsTrigger value="financial-management">Financial</TabsTrigger>
               <TabsTrigger value="practice-analytics">Practice Analytics</TabsTrigger>
               <TabsTrigger value="professional-development">Professional Dev</TabsTrigger>
+              <TabsTrigger value="advanced-security-features">Security</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -768,6 +769,10 @@ export default function HomePage() {
 
           <TabsContent value="professional-development" className="space-y-6">
             <ProfessionalDevelopment />
+          </TabsContent>
+
+          <TabsContent value="advanced-security-features" className="space-y-6">
+            <AdvancedSecurityFeatures />
           </TabsContent>
         </Tabs>
       </main>
