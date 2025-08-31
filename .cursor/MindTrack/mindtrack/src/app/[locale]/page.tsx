@@ -40,6 +40,7 @@ import FinancialManagement from "@/components/financial/financial-management";
 import PracticeAnalyticsBusinessIntelligence from "@/components/analytics/practice-analytics-business-intelligence";
 import ProfessionalDevelopment from "@/components/professional/professional-development";
 import PopulationHealthManagement from "@/components/health/population-health-management";
+import CustomizablePracticeManagement from "@/components/practice/customizable-practice-management";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -61,7 +62,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-47">
+                        <TabsList className="grid w-full grid-cols-48">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -109,6 +110,7 @@ export default function HomePage() {
               <TabsTrigger value="professional-development">Professional Dev</TabsTrigger>
               <TabsTrigger value="advanced-security-features">Security</TabsTrigger>
               <TabsTrigger value="population-health">Population Health</TabsTrigger>
+              <TabsTrigger value="customizable-practice">Practice Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -779,6 +781,10 @@ export default function HomePage() {
 
           <TabsContent value="population-health" className="space-y-6">
             <PopulationHealthManagement />
+          </TabsContent>
+
+          <TabsContent value="customizable-practice" className="space-y-6">
+            <CustomizablePracticeManagement />
           </TabsContent>
         </Tabs>
       </main>
