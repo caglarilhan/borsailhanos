@@ -41,6 +41,7 @@ import PracticeAnalyticsBusinessIntelligence from "@/components/analytics/practi
 import ProfessionalDevelopment from "@/components/professional/professional-development";
 import PopulationHealthManagement from "@/components/health/population-health-management";
 import CustomizablePracticeManagement from "@/components/practice/customizable-practice-management";
+import AdvancedReportingBusinessIntelligence from "@/components/reporting/advanced-reporting-business-intelligence";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -62,7 +63,7 @@ export default function HomePage() {
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
         <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-48">
+                        <TabsList className="grid w-full grid-cols-49">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="ai">AI Assistant</TabsTrigger>
@@ -111,6 +112,7 @@ export default function HomePage() {
               <TabsTrigger value="advanced-security-features">Security</TabsTrigger>
               <TabsTrigger value="population-health">Population Health</TabsTrigger>
               <TabsTrigger value="customizable-practice">Practice Management</TabsTrigger>
+              <TabsTrigger value="advanced-reporting">Advanced Reporting</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -785,6 +787,10 @@ export default function HomePage() {
 
           <TabsContent value="customizable-practice" className="space-y-6">
             <CustomizablePracticeManagement />
+          </TabsContent>
+
+          <TabsContent value="advanced-reporting" className="space-y-6">
+            <AdvancedReportingBusinessIntelligence />
           </TabsContent>
         </Tabs>
       </main>
