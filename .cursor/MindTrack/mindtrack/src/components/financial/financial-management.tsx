@@ -878,3 +878,4 @@ export default function FinancialManagement() {
     </div>
   );
 }
+

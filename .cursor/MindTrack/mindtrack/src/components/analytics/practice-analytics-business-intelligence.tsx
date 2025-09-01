@@ -898,3 +898,4 @@ export default function PracticeAnalyticsBusinessIntelligence() {
     </div>
   );
 }
+

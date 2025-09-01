@@ -962,3 +962,4 @@ export default function ClinicalResearchEvidenceBasedPractice() {
     </div>
   );
 }
+

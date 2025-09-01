@@ -922,3 +922,4 @@ export function PaymentIntegration() {
     </div>
   );
 }
+

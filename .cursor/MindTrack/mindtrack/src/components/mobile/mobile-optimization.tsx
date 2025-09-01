@@ -976,3 +976,4 @@ export function MobileOptimization() {
     </div>
   );
 }
+
