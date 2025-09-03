@@ -52,6 +52,12 @@ import AcademicResearchIntegration from "@/components/academic/academic-research
 import SpecializedPracticeAreas from "@/components/specialized/specialized-practice-areas";
 // New American Psychiatry Components
 import AdvancedMedicationManagement from "@/components/medication/advanced-medication-management";
+import DrugInteractionsManagement from "@/components/medication/drug-interactions-management";
+import DrugDosageCalculators from "@/components/medication/drug-dosage-calculators";
+import MedicationTrackingReminders from "@/components/medication/medication-tracking-reminders";
+import MedicationSideEffectsTracking from "@/components/medication/medication-side-effects-tracking";
+import AdvancedGeneticTests from "@/components/genetic/advanced-genetic-tests";
+import PersonalizedMedicationRecommendations from "@/components/medication/personalized-medication-recommendations";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
@@ -136,6 +142,12 @@ export default function HomePage() {
                                   <TabsTrigger value="academic-research">Academic Research</TabsTrigger>
                     <TabsTrigger value="specialized-practice">Specialized Practice</TabsTrigger>
                     <TabsTrigger value="advanced-medication">Advanced Medication</TabsTrigger>
+                    <TabsTrigger value="drug-interactions">Drug Interactions</TabsTrigger>
+                    <TabsTrigger value="dosage-calculators">Dosage Calculators</TabsTrigger>
+                    <TabsTrigger value="medication-tracking">Medication Tracking</TabsTrigger>
+          <TabsTrigger value="side-effects-tracking">Side Effects Tracking</TabsTrigger>
+          <TabsTrigger value="advanced-genetic-tests">Advanced Genetic Tests</TabsTrigger>
+          <TabsTrigger value="personalized-recommendations">Personalized Recommendations</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -855,6 +867,27 @@ export default function HomePage() {
                     <TabsContent value="advanced-medication" className="space-y-6">
                       <AdvancedMedicationManagement />
                     </TabsContent>
+
+                    <TabsContent value="drug-interactions" className="space-y-6">
+                      <DrugInteractionsManagement />
+                    </TabsContent>
+
+                    <TabsContent value="dosage-calculators" className="space-y-6">
+                      <DrugDosageCalculators />
+                    </TabsContent>
+
+                            <TabsContent value="medication-tracking" className="space-y-6">
+          <MedicationTrackingReminders />
+        </TabsContent>
+        <TabsContent value="side-effects-tracking" className="space-y-6">
+          <MedicationSideEffectsTracking />
+        </TabsContent>
+        <TabsContent value="advanced-genetic-tests" className="space-y-6">
+          <AdvancedGeneticTests />
+        </TabsContent>
+        <TabsContent value="personalized-recommendations" className="space-y-6">
+          <PersonalizedMedicationRecommendations />
+        </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
                       <LaboratoryImagingManagement />
