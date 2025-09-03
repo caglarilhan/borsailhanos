@@ -50,6 +50,12 @@ import ClinicalDecisionSupport from "@/components/clinical/clinical-decision-sup
 import PatientOutcomeTracking from "@/components/outcomes/patient-outcome-tracking";
 import AcademicResearchIntegration from "@/components/academic/academic-research-integration";
 import SpecializedPracticeAreas from "@/components/specialized/specialized-practice-areas";
+// New American Psychiatry Components
+import AdvancedMedicationManagement from "@/components/medication/advanced-medication-management";
+import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
+import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
+import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
+import AcademicResearchManagement from "@/components/academic/academic-research-management";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -127,8 +133,13 @@ export default function HomePage() {
               <TabsTrigger value="predictive-analytics">Predictive Analytics</TabsTrigger>
               <TabsTrigger value="clinical-decision-support">Clinical Decision</TabsTrigger>
               <TabsTrigger value="patient-outcome-tracking">Patient Outcomes</TabsTrigger>
-              <TabsTrigger value="academic-research">Academic Research</TabsTrigger>
-              <TabsTrigger value="specialized-practice">Specialized Practice</TabsTrigger>
+                                  <TabsTrigger value="academic-research">Academic Research</TabsTrigger>
+                    <TabsTrigger value="specialized-practice">Specialized Practice</TabsTrigger>
+                    <TabsTrigger value="advanced-medication">Advanced Medication</TabsTrigger>
+                    <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
+                    <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
+                    <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
+                    <TabsTrigger value="academic-management">Academic Management</TabsTrigger>
           </TabsList>
 
           <TabsContent value="dashboard" className="space-y-6">
@@ -838,8 +849,28 @@ export default function HomePage() {
           </TabsContent>
 
           <TabsContent value="specialized-practice" className="space-y-6">
-            <SpecializedPracticeAreas />
-          </TabsContent>
+                                  <SpecializedPracticeAreas />
+                    </TabsContent>
+
+                    <TabsContent value="advanced-medication" className="space-y-6">
+                      <AdvancedMedicationManagement />
+                    </TabsContent>
+
+                    <TabsContent value="laboratory-imaging" className="space-y-6">
+                      <LaboratoryImagingManagement />
+                    </TabsContent>
+
+                    <TabsContent value="genetic-counseling" className="space-y-6">
+                      <GeneticCounselingManagement />
+                    </TabsContent>
+
+                    <TabsContent value="telepsychiatry" className="space-y-6">
+                      <TelepsychiatryManagement />
+                    </TabsContent>
+
+                    <TabsContent value="academic-management" className="space-y-6">
+                      <AcademicResearchManagement />
+                    </TabsContent>
         </Tabs>
       </main>
     </>

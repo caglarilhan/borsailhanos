@@ -236,10 +236,12 @@ npm run test:e2e
 ## 🌐 Internationalization
 
 Currently supported languages:
-- English (en) - Default
+- English (US) (en) - Default
+- Spanish (es) - Primary secondary language
 - Turkish (tr)
 - German (de)
-- Spanish (es)
+
+The application is optimized for American English and Spanish-speaking psychiatrists, with comprehensive localization for all clinical features including advanced medication management, laboratory integration, genetic counseling, telepsychiatry, and academic research.
 
 ## 🚀 Deployment
 
