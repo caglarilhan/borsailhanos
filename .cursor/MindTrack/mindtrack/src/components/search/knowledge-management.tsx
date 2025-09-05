@@ -69,29 +69,7 @@ import {
   ChevronRight,
   Play,
   Pause,
-  Stop,
-  RotateCcw,
-  GitBranch,
-  Layers,
-  Grid,
-  List,
-  Columns,
-  Rows,
-  FilterIcon,
-  Search as SearchIcon,
-  BookOpen as BookOpenIcon,
-  Tag as TagIcon,
-  FileText as FileTextIcon,
-  Database as DatabaseIcon,
-  BarChart,
-  PieChart,
-  LineChart,
-  ScatterChart,
-  AreaChart,
-  Table,
-  SortAsc as SortAscIcon,
-  SortDesc as SortDescIcon,
-  MoreHorizontal as MoreHorizontalIcon
+  Square
 } from "lucide-react";
 
 // Advanced Search & Knowledge Management için gerekli interface'ler

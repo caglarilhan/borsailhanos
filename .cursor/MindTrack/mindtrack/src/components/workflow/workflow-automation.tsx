@@ -12,7 +12,7 @@ import {
   Workflow, 
   Play, 
   Pause, 
-  Stop, 
+  Square, 
   Settings, 
   CheckCircle, 
   XCircle, 

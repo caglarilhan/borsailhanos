@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import crypto from 'crypto';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(url, key);
+}
 
 // Enhanced HIPAA Compliance Service
 class HIPAAComplianceService {
@@ -50,6 +51,7 @@ class HIPAAComplianceService {
   // Log HIPAA audit events
   async logAuditEvent(eventData: any) {
     try {
+      const supabase = getAdminClient();
       const { data, error } = await supabase
         .from('hipaa_audit_logs')
         .insert([{
@@ -76,6 +78,7 @@ class HIPAAComplianceService {
   // Check PHI access permissions
   async checkPHIAccess(userId: string, clientId: string, action: string): Promise<boolean> {
     try {
+      const supabase = getAdminClient();
       // Check if user has access to this client's data
       const { data: clientAccess, error: clientError } = await supabase
         .from('clients')
@@ -111,6 +114,7 @@ class HIPAAComplianceService {
   // Validate data retention policies
   async validateDataRetention(resourceType: string, resourceId: string): Promise<boolean> {
     try {
+      const supabase = getAdminClient();
       const retentionPolicies = {
         'clinical_notes': 7 * 365, // 7 years
         'medication_records': 7 * 365, // 7 years
@@ -144,6 +148,7 @@ class HIPAAComplianceService {
   // Detect suspicious activity
   async detectSuspiciousActivity(userId: string, action: string, resourceId: string): Promise<boolean> {
     try {
+      const supabase = getAdminClient();
       // Check for unusual access patterns
       const { data: recentActivity, error } = await supabase
         .from('hipaa_audit_logs')
@@ -191,6 +196,7 @@ class HIPAAComplianceService {
   // Generate HIPAA compliance report
   async generateComplianceReport(startDate: string, endDate: string): Promise<any> {
     try {
+      const supabase = getAdminClient();
       const { data: auditLogs, error } = await supabase
         .from('hipaa_audit_logs')
         .select('*')
@@ -300,6 +306,7 @@ const hipaaService = new HIPAAComplianceService();
 
 // API Routes
 export async function GET(request: NextRequest) {
+    const supabase = getAdminClient();
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
@@ -345,6 +352,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+    const supabase = getAdminClient();
   try {
     const body = await request.json();
     const { action, ...data } = body;

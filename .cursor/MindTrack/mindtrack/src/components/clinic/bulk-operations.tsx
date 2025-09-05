@@ -52,7 +52,8 @@ import {
   UserX,
   RefreshCw,
   BarChart3,
-  Activity
+  Activity,
+  Square
 } from "lucide-react";
 
 // Bulk operation types - Bu interface'ler bulk operations'ları tanımlar
@@ -411,7 +412,7 @@ export default function BulkOperations({
       in_progress: { color: 'bg-blue-100 text-blue-800', icon: RefreshCw },
       completed: { color: 'bg-green-100 text-green-800', icon: CheckCircle },
       failed: { color: 'bg-red-100 text-red-800', icon: AlertCircle },
-      cancelled: { color: 'bg-gray-100 text-gray-800', icon: Stop }
+      cancelled: { color: 'bg-gray-100 text-gray-800', icon: Square }
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
@@ -564,7 +565,7 @@ export default function BulkOperations({
                       onClick={() => onCancelOperation(operation.id)}
                       className="text-red-600 border-red-300 hover:bg-red-50"
                     >
-                      <Stop className="h-3 w-3 mr-1" />
+                      <Square className="h-3 w-3 mr-1" />
                       Cancel
                     </Button>
                   )}

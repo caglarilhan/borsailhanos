@@ -56,6 +56,10 @@ import DrugInteractionsManagement from "@/components/medication/drug-interaction
 import DrugDosageCalculators from "@/components/medication/drug-dosage-calculators";
 import MedicationTrackingReminders from "@/components/medication/medication-tracking-reminders";
 import MedicationSideEffectsTracking from "@/components/medication/medication-side-effects-tracking";
+import { AdvancedGeneticTests } from "@/components/genetic/advanced-genetic-tests";
+import { PersonalizedMedicationRecommendations } from "@/components/medication/personalized-medication-recommendations";
+import { AdvancedLabTracking } from "@/components/laboratory/advanced-lab-tracking";
+import { DrugLevelMonitoring } from "@/components/medication/drug-level-monitoring";
 import AdvancedGeneticTests from "@/components/genetic/advanced-genetic-tests";
 import PersonalizedMedicationRecommendations from "@/components/medication/personalized-medication-recommendations";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
@@ -150,6 +154,7 @@ export default function HomePage() {
           <TabsTrigger value="advanced-genetic-tests">Advanced Genetic Tests</TabsTrigger>
           <TabsTrigger value="personalized-recommendations">Personalized Recommendations</TabsTrigger>
           <TabsTrigger value="advanced-lab-tracking">Advanced Lab Tracking</TabsTrigger>
+          <TabsTrigger value="drug-level-monitoring">Drug Level Monitoring</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -892,6 +897,9 @@ export default function HomePage() {
         </TabsContent>
         <TabsContent value="advanced-lab-tracking" className="space-y-6">
           <AdvancedLabTracking />
+        </TabsContent>
+        <TabsContent value="drug-level-monitoring" className="space-y-6">
+          <DrugLevelMonitoring />
         </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">

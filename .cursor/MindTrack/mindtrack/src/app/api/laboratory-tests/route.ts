@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(url, key);
+}
 
 // GET /api/laboratory-tests - Get laboratory tests
 export async function GET(request: NextRequest) {
   try {
+    const supabase = getAdminClient();
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
     const clinicId = searchParams.get('clinicId');
@@ -69,6 +71,7 @@ export async function GET(request: NextRequest) {
 // POST /api/laboratory-tests - Create a new laboratory test
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getAdminClient();
     const body = await request.json();
     const {
       clientId,
@@ -158,6 +161,7 @@ export async function POST(request: NextRequest) {
 // PUT /api/laboratory-tests/[id] - Update a laboratory test
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = getAdminClient();
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -188,6 +192,7 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/laboratory-tests/[id] - Delete a laboratory test
 export async function DELETE(request: NextRequest) {
   try {
+    const supabase = getAdminClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
 
@@ -213,93 +218,83 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-// GET /api/laboratory-tests/abnormal - Get abnormal test results
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const clientId = searchParams.get('clientId');
-    const clinicId = searchParams.get('clinicId');
-    const daysBack = parseInt(searchParams.get('daysBack') || '30');
+// Helper: abnormal results
+async function getAbnormalResults(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const clientId = searchParams.get('clientId');
+  const clinicId = searchParams.get('clinicId');
+  const daysBack = parseInt(searchParams.get('daysBack') || '30');
 
-    let query = supabase
-      .from('laboratory_tests')
-      .select(`
-        *,
-        psychiatric_lab_tests (
-          id,
-          test_type,
-          medication_related,
-          medication_name,
-          result_value,
-          unit,
-          is_abnormal,
-          abnormality_type,
-          clinical_action
-        )
-      `)
-      .gte('test_date', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+  let query = supabase
+    .from('laboratory_tests')
+    .select(`
+      *,
+      psychiatric_lab_tests (
+        id,
+        test_type,
+        medication_related,
+        medication_name,
+        result_value,
+        unit,
+        is_abnormal,
+        abnormality_type,
+        clinical_action
+      )
+    `)
+    .gte('test_date', new Date(Date.now() - daysBack * 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
 
-    if (clientId) {
-      query = query.eq('client_id', clientId);
-    }
-
-    if (clinicId) {
-      query = query.eq('clinic_id', clinicId);
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    // Filter for abnormal results
-    const abnormalResults = data.filter(test => {
-      // Check if main test is abnormal
-      if (test.status === 'abnormal') return true;
-      
-      // Check psychiatric test data
-      if (test.psychiatric_lab_tests && test.psychiatric_lab_tests.length > 0) {
-        return test.psychiatric_lab_tests.some(psychTest => psychTest.is_abnormal);
-      }
-      
-      return false;
-    });
-
-    return NextResponse.json({ abnormalResults });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  if (clientId) {
+    query = query.eq('client_id', clientId);
   }
+  if (clinicId) {
+    query = query.eq('clinic_id', clinicId);
+  }
+
+  const { data, error } = await query;
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  const abnormalResults = data.filter(test => {
+    if (test.status === 'abnormal') return true;
+    if (test.psychiatric_lab_tests && test.psychiatric_lab_tests.length > 0) {
+      return test.psychiatric_lab_tests.some((psychTest: any) => psychTest.is_abnormal);
+    }
+    return false;
+  });
+
+  return NextResponse.json({ abnormalResults });
 }
 
-// GET /api/laboratory-tests/follow-up - Get tests requiring follow-up
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const clientId = searchParams.get('clientId');
-    const clinicId = searchParams.get('clinicId');
+// Helper: follow-up tests
+async function getFollowUpTests(request: NextRequest) {
+  const { searchParams } = new URL(request.url);
+  const clientId = searchParams.get('clientId');
+  const clinicId = searchParams.get('clinicId');
 
-    let query = supabase
-      .from('laboratory_tests')
-      .select('*')
-      .eq('follow_up_required', true);
+  let query = supabase
+    .from('laboratory_tests')
+    .select('*')
+    .eq('follow_up_required', true);
 
-    if (clientId) {
-      query = query.eq('client_id', clientId);
-    }
-
-    if (clinicId) {
-      query = query.eq('clinic_id', clinicId);
-    }
-
-    const { data, error } = await query.order('follow_up_date', { ascending: true });
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ followUpTests: data });
-  } catch (error) {
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  if (clientId) {
+    query = query.eq('client_id', clientId);
   }
+  if (clinicId) {
+    query = query.eq('clinic_id', clinicId);
+  }
+
+  const { data, error } = await query.order('follow_up_date', { ascending: true });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ followUpTests: data });
+}
+
+// Route multiplexer based on path query (fallback for legacy routes)
+export async function HEAD() {}
+export async function OPTIONS() {}
+
+export async function dynamic(request: NextRequest) {
+  const url = new URL(request.url);
+  const action = url.searchParams.get('action');
+  if (action === 'abnormal') return getAbnormalResults(request);
+  if (action === 'followup') return getFollowUpTests(request);
+  return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
 }

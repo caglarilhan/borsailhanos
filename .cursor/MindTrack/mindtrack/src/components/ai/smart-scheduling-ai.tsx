@@ -29,7 +29,7 @@ import {
   RefreshCw, 
   Play, 
   Pause, 
-  Stop, 
+  Square, 
   Plus, 
   Minus, 
   Edit, 
