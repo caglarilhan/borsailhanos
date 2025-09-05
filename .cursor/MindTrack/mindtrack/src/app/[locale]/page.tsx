@@ -71,6 +71,7 @@ import { TelehealthTelemedicineManagement } from "@/components/telehealth/telehe
 import { ElectronicHealthRecordsIntegration } from "@/components/ehr/electronic-health-records-integration";
 import { AdvancedSecurityCompliance } from "@/components/security/advanced-security-compliance";
 import { QualityMeasuresReporting } from "@/components/quality/quality-measures-reporting";
+import { PharmacogenomicsManagement } from "@/components/pharmacogenomics/pharmacogenomics-management";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
@@ -176,6 +177,7 @@ export default function HomePage() {
             <TabsTrigger value="electronic-health-records">Electronic Health Records</TabsTrigger>
             <TabsTrigger value="advanced-security">Advanced Security</TabsTrigger>
             <TabsTrigger value="quality-measures">Quality Measures</TabsTrigger>
+            <TabsTrigger value="pharmacogenomics">Pharmacogenomics</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -960,6 +962,9 @@ export default function HomePage() {
           </TabsContent>
           <TabsContent value="quality-measures" className="space-y-6">
             <QualityMeasuresReporting />
+          </TabsContent>
+          <TabsContent value="pharmacogenomics" className="space-y-6">
+            <PharmacogenomicsManagement />
           </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
