@@ -290,11 +290,3 @@ async function getFollowUpTests(request: NextRequest) {
 // Route multiplexer based on path query (fallback for legacy routes)
 export async function HEAD() {}
 export async function OPTIONS() {}
-
-export async function dynamic(request: NextRequest) {
-  const url = new URL(request.url);
-  const action = url.searchParams.get('action');
-  if (action === 'abnormal') return getAbnormalResults(request);
-  if (action === 'followup') return getFollowUpTests(request);
-  return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
-}

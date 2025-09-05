@@ -16,7 +16,6 @@ export async function GET() {
     const tomorrowStr = tomorrow.toISOString().split("T")[0];
 
     const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
 
