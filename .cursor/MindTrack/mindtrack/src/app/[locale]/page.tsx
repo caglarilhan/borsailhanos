@@ -62,6 +62,7 @@ import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imag
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
 import AcademicResearchManagement from "@/components/academic/academic-research-management";
+import AdvancedLabTracking from "@/components/laboratory/advanced-lab-tracking";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -148,6 +149,7 @@ export default function HomePage() {
           <TabsTrigger value="side-effects-tracking">Side Effects Tracking</TabsTrigger>
           <TabsTrigger value="advanced-genetic-tests">Advanced Genetic Tests</TabsTrigger>
           <TabsTrigger value="personalized-recommendations">Personalized Recommendations</TabsTrigger>
+          <TabsTrigger value="advanced-lab-tracking">Advanced Lab Tracking</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -887,6 +889,9 @@ export default function HomePage() {
         </TabsContent>
         <TabsContent value="personalized-recommendations" className="space-y-6">
           <PersonalizedMedicationRecommendations />
+        </TabsContent>
+        <TabsContent value="advanced-lab-tracking" className="space-y-6">
+          <AdvancedLabTracking />
         </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
