@@ -119,11 +119,13 @@ Deployment
 
 ⸻
 
-7. 💰 Fiyatlandırma
-	•	Freemium: 5 danışana kadar ücretsiz.
-	•	Pro: $15/ay → sınırsız danışan, PDF export, reminder.
-	•	Clinic: $50/ay → multi-user, admin panel.
-	•	Annual plan: %20 indirim.
+7. 💰 Fiyatlandırma (Optimized)
+	•	STARTER (Ücretsiz): 3 danışan, 10 randevu/ay, basic notes
+	•	PROFESSIONAL ($29/ay): Sınırsız danışan, AI notes, reminders, analytics
+	•	PRACTICE ($79/ay): Multi-user, advanced analytics, insurance billing, API
+	•	ENTERPRISE ($199/ay): White-label, custom integrations, priority support
+	•	Annual plan: %25 indirim (2 ay bedava)
+	•	Add-ons: AI Premium (+$15/ay), Telehealth (+$10/ay), Advanced Reports (+$20/ay)
 
 ⸻
 
@@ -165,5 +167,6 @@ Toplam (başlangıç)		$5–20/ay
 	•	Avrupa’da killer feature: GDPR uyumu + multi-language.
 	•	Başlangıç maliyeti: $5–20/ay, trafik artınca bile <$200/ay.
 
+kullanıcı psikiyatristler uygulamayı çok kolay anlayıp kullanabilmeli. direk çözüm odaklı kullanıcı dostu işi kolaylaştıran yaklaşımlar uygulamalıyız.
 ⸻
 
