@@ -67,6 +67,7 @@ import { ClinicalGuidelines } from "@/components/guidelines/clinical-guidelines"
 import { MedicationSafetyManagement } from "@/components/medication/medication-safety-management";
 import { PrescriptionSecurityManagement } from "@/components/medication/prescription-security-management";
 import { PatientEducationMaterials } from "@/components/education/patient-education-materials";
+import { PatientCommunicationManagement } from "@/components/communication/patient-communication-management";
 import AdvancedGeneticTests from "@/components/genetic/advanced-genetic-tests";
 import PersonalizedMedicationRecommendations from "@/components/medication/personalized-medication-recommendations";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
@@ -169,6 +170,7 @@ export default function HomePage() {
           <TabsTrigger value="medication-safety">Medication Safety</TabsTrigger>
           <TabsTrigger value="prescription-security">Prescription Security</TabsTrigger>
           <TabsTrigger value="patient-education">Patient Education</TabsTrigger>
+          <TabsTrigger value="patient-communication">Patient Communication</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -935,6 +937,9 @@ export default function HomePage() {
         </TabsContent>
         <TabsContent value="patient-education" className="space-y-6">
           <PatientEducationMaterials />
+        </TabsContent>
+        <TabsContent value="patient-communication" className="space-y-6">
+          <PatientCommunicationManagement />
         </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
