@@ -64,7 +64,7 @@ import {
   ChevronRight,
   Play,
   Pause,
-  Stop,
+  Square,
   RotateCcw,
   Save,
   Printer,

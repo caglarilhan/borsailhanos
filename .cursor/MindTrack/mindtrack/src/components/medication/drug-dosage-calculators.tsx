@@ -593,7 +593,7 @@ const DrugDosageCalculators: React.FC = () => {
                       <span>50-75% dose reduction</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>eGFR < 15:</span>
+                      <span>eGFR &lt; 15:</span>
                       <span>Contraindicated or 75% reduction</span>
                     </div>
                   </div>

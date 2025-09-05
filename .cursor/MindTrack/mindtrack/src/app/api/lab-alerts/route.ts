@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+  return createClient(url, key);
+}
 
 export async function GET(request: NextRequest) {
+    const supabase = getAdminClient();
   try {
+    const supabase = getAdminClient();
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patient_id');
     const status = searchParams.get('status');
@@ -25,7 +28,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+    const supabase = getAdminClient();
   try {
+    const supabase = getAdminClient();
     const body = await request.json();
     const { data, error } = await supabase.from('lab_critical_alerts').insert(body).select().single();
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -36,7 +41,9 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+    const supabase = getAdminClient();
   try {
+    const supabase = getAdminClient();
     const body = await request.json();
     const { id, ...update } = body;
     const { data, error } = await supabase.from('lab_critical_alerts').update(update).eq('id', id).select().single();
@@ -48,7 +55,9 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+    const supabase = getAdminClient();
   try {
+    const supabase = getAdminClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 });
@@ -62,6 +71,7 @@ export async function DELETE(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const supabase = getAdminClient();
     const body = await request.json();
     const { id, acknowledged_by } = body;
     if (!id || !acknowledged_by) return NextResponse.json({ error: 'id and acknowledged_by required' }, { status: 400 });

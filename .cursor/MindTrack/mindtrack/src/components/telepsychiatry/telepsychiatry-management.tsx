@@ -32,7 +32,7 @@ import {
   Share2,
   Play,
   Pause,
-  Stop
+  Square
 } from "lucide-react";
 
 interface TelepsychiatrySession {
@@ -455,7 +455,7 @@ const TelepsychiatryManagement: React.FC = () => {
                       )}
                       {session.status === 'in_progress' && (
                         <Button size="sm" variant="outline">
-                          <Stop className="h-3 w-3 mr-1" />
+                          <Square className="h-3 w-3 mr-1" />
                           End Session
                         </Button>
                       )}

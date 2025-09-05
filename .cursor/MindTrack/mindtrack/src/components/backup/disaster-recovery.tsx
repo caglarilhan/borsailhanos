@@ -16,7 +16,7 @@ import {
   RefreshCw, 
   Play, 
   Pause, 
-  Stop, 
+  Square, 
   Settings, 
   Eye, 
   Archive, 

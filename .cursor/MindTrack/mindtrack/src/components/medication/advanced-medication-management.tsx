@@ -155,7 +155,6 @@ import {
   BrainActivity,
   BrainWave,
   BrainScan,
-  BrainMri,
   BrainCt,
   BrainXray,
   BrainUltrasound,

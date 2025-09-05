@@ -87,7 +87,7 @@ import {
   FileMinus, 
   FileEdit, 
   FileSearch, 
-  FileDownload, 
+  FileDown, 
   FileUpload, 
   FileShare, 
   FileLock,
@@ -144,100 +144,7 @@ import {
   SortDesc,
   Stethoscope,
   ActivitySquare,
-  BrainCircuit,
-  Neuron,
-  Synapse,
-  CircuitBoard,
-  BrainActivity,
-  BrainWave,
-  BrainScan,
-  BrainMri,
-  BrainCt,
-  BrainXray,
-  BrainUltrasound,
-  BrainEeg,
-  BrainEmg,
-  BrainEcg,
-  BrainEeg2,
-  BrainEmg2,
-  BrainEcg2,
-  BrainEeg3,
-  BrainEmg3,
-  BrainEcg3,
-  BrainEeg4,
-  BrainEmg4,
-  BrainEcg4,
-  BrainEeg5,
-  BrainEmg5,
-  BrainEcg5,
-  AlertCircle,
-  ExclamationTriangle,
-  Lightbulb,
-  GraduationCap,
-  Award,
-  Trophy,
-  Medal,
-  Certificate,
-  ScrollText,
-  FileText,
-  FileSpreadsheet,
-  FileImage,
-  FileVideo,
-  FileAudio,
-  FileArchive,
-  FileCode,
-  FileJson,
-  FileXml,
-  FileCsv,
-  FilePdf,
-  FileWord,
-  FileExcel,
-  FilePowerpoint,
-  FileZip,
-  FileRar,
-  File7z,
-  FileTar,
-  FileGz,
-  FileBz2,
-  FileXz,
-  FileLzma,
-  FileLz4,
-  FileZstd,
-  FileBrotli,
-  FileLzop,
-  FileLzip,
-  FileLrzip,
-  FileLz,
-  FileLha,
-  FileLzh,
-  FileCab,
-  FileMsi,
-  FileDmg,
-  FileIso,
-  FileVhd,
-  FileVmdk,
-  FileOva,
-  FileOvf,
-  FileVbox,
-  FileVdi,
-  FileHdd,
-  FileQcow,
-  FileQcow2,
-  FileVhdx,
-  FileVmdx,
-  FileVmx,
-  FileVmtx,
-  FileOvf,
-  FileOva,
-  FileVbox,
-  FileVdi,
-  FileHdd,
-  FileQcow,
-  FileQcow2,
-  FileVhdx,
-  FileVmdx,
-  FileVmx,
-  FileVmtx
+  Brain as BrainIcon
 } from "lucide-react";
 
 // Interfaces for Laboratory Tests & Brain Imaging
@@ -617,14 +524,15 @@ const getRiskLevelColor = (riskLevel: string) => {
   }
 };
 
-const getImagingTypeIcon = (imagingType: string) => {
-  switch (imagingType) {
-    case 'mri': return BrainMri;
-    case 'ct': return BrainCt;
-    case 'pet': return BrainScan;
-    case 'eeg': return BrainEeg;
-    case 'fmri': return BrainActivity;
-    default: return Brain;
+// imaging icon mapping
+const getImagingIcon = (modality: string) => {
+  switch (modality) {
+    case 'mri': return BrainIcon;
+    case 'ct': return BrainIcon;
+    case 'xray': return BrainIcon;
+    case 'pet': return BrainIcon;
+    case 'eeg': return BrainIcon;
+    default: return BrainIcon;
   }
 };
 
@@ -898,7 +806,7 @@ export default function LaboratoryImagingManagement() {
 
                     <div className="flex gap-2 pt-2">
                       <Button variant="outline" size="sm">
-                        <FileDownload className="h-4 w-4 mr-1" />
+                        <FileDown className="h-4 w-4 mr-1" />
                         Download
                       </Button>
                       <Button variant="outline" size="sm">
@@ -928,7 +836,7 @@ export default function LaboratoryImagingManagement() {
             <CardContent>
               <div className="space-y-4">
                 {mockBrainImaging.map((imaging) => {
-                  const ImagingIcon = getImagingTypeIcon(imaging.imagingType);
+                  const ImagingIcon = getImagingIcon(imaging.imagingType);
                   return (
                     <div key={imaging.id} className="border rounded-lg p-4">
                       <div className="flex items-center justify-between mb-3">
@@ -967,7 +875,7 @@ export default function LaboratoryImagingManagement() {
                       </div>
                       <div className="flex gap-2 mt-3">
                         <Button variant="outline" size="sm">
-                          <FileDownload className="h-4 w-4 mr-1" />
+                          <FileDown className="h-4 w-4 mr-1" />
                           Report
                         </Button>
                         <Button variant="outline" size="sm">

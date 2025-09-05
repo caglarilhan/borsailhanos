@@ -16,7 +16,7 @@ import {
   Bug, 
   Play, 
   Pause, 
-  Stop, 
+  Square, 
   RefreshCw, 
   Settings, 
   Eye, 
