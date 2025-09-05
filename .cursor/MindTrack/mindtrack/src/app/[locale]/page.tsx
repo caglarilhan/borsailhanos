@@ -61,6 +61,7 @@ import { PersonalizedMedicationRecommendations } from "@/components/medication/p
 import { AdvancedLabTracking } from "@/components/laboratory/advanced-lab-tracking";
 import { DrugLevelMonitoring } from "@/components/medication/drug-level-monitoring";
 import { MedicationEffectivenessAnalysis } from "@/components/medication/medication-effectiveness-analysis";
+import { PatientOutcomeTracking } from "@/components/outcomes/patient-outcome-tracking";
 import AdvancedGeneticTests from "@/components/genetic/advanced-genetic-tests";
 import PersonalizedMedicationRecommendations from "@/components/medication/personalized-medication-recommendations";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
@@ -157,6 +158,7 @@ export default function HomePage() {
           <TabsTrigger value="advanced-lab-tracking">Advanced Lab Tracking</TabsTrigger>
           <TabsTrigger value="drug-level-monitoring">Drug Level Monitoring</TabsTrigger>
           <TabsTrigger value="medication-effectiveness">Medication Effectiveness</TabsTrigger>
+          <TabsTrigger value="patient-outcomes">Patient Outcomes</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -905,6 +907,9 @@ export default function HomePage() {
         </TabsContent>
         <TabsContent value="medication-effectiveness" className="space-y-6">
           <MedicationEffectivenessAnalysis />
+        </TabsContent>
+        <TabsContent value="patient-outcomes" className="space-y-6">
+          <PatientOutcomeTracking />
         </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
