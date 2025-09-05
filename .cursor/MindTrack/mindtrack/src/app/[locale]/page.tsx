@@ -69,6 +69,7 @@ import { PatientEducationMaterials } from "@/components/education/patient-educat
 import { PatientCommunicationManagement } from "@/components/communication/patient-communication-management";
 import { TelehealthTelemedicineManagement } from "@/components/telehealth/telehealth-telemedicine-management";
 import { ElectronicHealthRecordsIntegration } from "@/components/ehr/electronic-health-records-integration";
+import { AdvancedSecurityCompliance } from "@/components/security/advanced-security-compliance";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
@@ -172,6 +173,7 @@ export default function HomePage() {
             <TabsTrigger value="telehealth-telemedicine">Telehealth & Telemedicine</TabsTrigger>
             <TabsTrigger value="insurance-billing">Insurance & Billing</TabsTrigger>
             <TabsTrigger value="electronic-health-records">Electronic Health Records</TabsTrigger>
+            <TabsTrigger value="advanced-security">Advanced Security</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -950,6 +952,9 @@ export default function HomePage() {
           </TabsContent>
           <TabsContent value="electronic-health-records" className="space-y-6">
             <ElectronicHealthRecordsIntegration />
+          </TabsContent>
+          <TabsContent value="advanced-security" className="space-y-6">
+            <AdvancedSecurityCompliance />
           </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
