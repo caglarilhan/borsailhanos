@@ -7,14 +7,10 @@ function getAdminClient() {
   return createClient(url, key);
 }
 
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 // GET - Retrieve medication adherence data
 export async function GET(request: NextRequest) {
-    const supabase = getAdminClient();
   try {
+    const supabase = getAdminClient();
     const { searchParams } = new URL(request.url);
     const clientId = searchParams.get('clientId');
     const medicationId = searchParams.get('medicationId');

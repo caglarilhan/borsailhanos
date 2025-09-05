@@ -61,20 +61,17 @@ import { PersonalizedMedicationRecommendations } from "@/components/medication/p
 import { AdvancedLabTracking } from "@/components/laboratory/advanced-lab-tracking";
 import { DrugLevelMonitoring } from "@/components/medication/drug-level-monitoring";
 import { MedicationEffectivenessAnalysis } from "@/components/medication/medication-effectiveness-analysis";
-import { PatientOutcomeTracking } from "@/components/outcomes/patient-outcome-tracking";
 import { AIPoweredMedicationRecommendations } from "@/components/ai/ai-powered-medication-recommendations";
 import { ClinicalGuidelines } from "@/components/guidelines/clinical-guidelines";
 import { MedicationSafetyManagement } from "@/components/medication/medication-safety-management";
 import { PrescriptionSecurityManagement } from "@/components/medication/prescription-security-management";
 import { PatientEducationMaterials } from "@/components/education/patient-education-materials";
 import { PatientCommunicationManagement } from "@/components/communication/patient-communication-management";
-import AdvancedGeneticTests from "@/components/genetic/advanced-genetic-tests";
-import PersonalizedMedicationRecommendations from "@/components/medication/personalized-medication-recommendations";
+import { TelehealthTelemedicineManagement } from "@/components/telehealth/telehealth-telemedicine-management";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
 import AcademicResearchManagement from "@/components/academic/academic-research-management";
-import AdvancedLabTracking from "@/components/laboratory/advanced-lab-tracking";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -170,7 +167,8 @@ export default function HomePage() {
           <TabsTrigger value="medication-safety">Medication Safety</TabsTrigger>
           <TabsTrigger value="prescription-security">Prescription Security</TabsTrigger>
           <TabsTrigger value="patient-education">Patient Education</TabsTrigger>
-          <TabsTrigger value="patient-communication">Patient Communication</TabsTrigger>
+                      <TabsTrigger value="patient-communication">Patient Communication</TabsTrigger>
+            <TabsTrigger value="telehealth-telemedicine">Telehealth & Telemedicine</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -938,9 +936,12 @@ export default function HomePage() {
         <TabsContent value="patient-education" className="space-y-6">
           <PatientEducationMaterials />
         </TabsContent>
-        <TabsContent value="patient-communication" className="space-y-6">
-          <PatientCommunicationManagement />
-        </TabsContent>
+                  <TabsContent value="patient-communication" className="space-y-6">
+            <PatientCommunicationManagement />
+          </TabsContent>
+          <TabsContent value="telehealth-telemedicine" className="space-y-6">
+            <TelehealthTelemedicineManagement />
+          </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
                       <LaboratoryImagingManagement />

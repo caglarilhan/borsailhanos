@@ -7,9 +7,7 @@ function getAdminClient() {
   return createClient(url, key);
 }
 
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 // GET /api/medication-titrations - Get medication titrations
 export async function GET(request: NextRequest) {

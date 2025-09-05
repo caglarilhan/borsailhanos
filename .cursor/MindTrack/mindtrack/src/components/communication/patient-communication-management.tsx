@@ -23,7 +23,7 @@ import {
   Download,
   Eye,
   Send,
-  Template,
+  FileText,
   Settings,
   Bell,
   Globe,
