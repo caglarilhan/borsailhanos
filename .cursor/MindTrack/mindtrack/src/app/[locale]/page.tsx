@@ -169,6 +169,7 @@ export default function HomePage() {
           <TabsTrigger value="patient-education">Patient Education</TabsTrigger>
                       <TabsTrigger value="patient-communication">Patient Communication</TabsTrigger>
             <TabsTrigger value="telehealth-telemedicine">Telehealth & Telemedicine</TabsTrigger>
+            <TabsTrigger value="insurance-billing">Insurance & Billing</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -941,6 +942,9 @@ export default function HomePage() {
           </TabsContent>
           <TabsContent value="telehealth-telemedicine" className="space-y-6">
             <TelehealthTelemedicineManagement />
+          </TabsContent>
+          <TabsContent value="insurance-billing" className="space-y-6">
+            <InsuranceBillingIntegration />
           </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
