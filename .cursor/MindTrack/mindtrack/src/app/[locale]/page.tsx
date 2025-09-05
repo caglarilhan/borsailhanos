@@ -75,6 +75,7 @@ import { PharmacogenomicsManagement } from "@/components/pharmacogenomics/pharma
 import { MobileHealthManagement } from "@/components/mobile-health/mobile-health-management";
 import { ContinuingMedicalEducationManagement } from "@/components/cme/continuing-medical-education-management";
 import { InteroperabilityManagement } from "@/components/interoperability/interoperability-management";
+import { BusinessIntelligenceManagement } from "@/components/business-intelligence/business-intelligence-management";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
@@ -184,6 +185,7 @@ export default function HomePage() {
             <TabsTrigger value="mobile-health">Mobile Health</TabsTrigger>
             <TabsTrigger value="continuing-medical-education">CME</TabsTrigger>
             <TabsTrigger value="interoperability">Interoperability</TabsTrigger>
+            <TabsTrigger value="business-intelligence">Business Intelligence</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -980,6 +982,9 @@ export default function HomePage() {
           </TabsContent>
           <TabsContent value="interoperability" className="space-y-6">
             <InteroperabilityManagement />
+          </TabsContent>
+          <TabsContent value="business-intelligence" className="space-y-6">
+            <BusinessIntelligenceManagement />
           </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
