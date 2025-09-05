@@ -68,6 +68,7 @@ import { PrescriptionSecurityManagement } from "@/components/medication/prescrip
 import { PatientEducationMaterials } from "@/components/education/patient-education-materials";
 import { PatientCommunicationManagement } from "@/components/communication/patient-communication-management";
 import { TelehealthTelemedicineManagement } from "@/components/telehealth/telehealth-telemedicine-management";
+import { ElectronicHealthRecordsIntegration } from "@/components/ehr/electronic-health-records-integration";
 import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imaging-management";
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
@@ -170,6 +171,7 @@ export default function HomePage() {
                       <TabsTrigger value="patient-communication">Patient Communication</TabsTrigger>
             <TabsTrigger value="telehealth-telemedicine">Telehealth & Telemedicine</TabsTrigger>
             <TabsTrigger value="insurance-billing">Insurance & Billing</TabsTrigger>
+            <TabsTrigger value="electronic-health-records">Electronic Health Records</TabsTrigger>
                     <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
                     <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
                     <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
@@ -945,6 +947,9 @@ export default function HomePage() {
           </TabsContent>
           <TabsContent value="insurance-billing" className="space-y-6">
             <InsuranceBillingIntegration />
+          </TabsContent>
+          <TabsContent value="electronic-health-records" className="space-y-6">
+            <ElectronicHealthRecordsIntegration />
           </TabsContent>
 
                     <TabsContent value="laboratory-imaging" className="space-y-6">
