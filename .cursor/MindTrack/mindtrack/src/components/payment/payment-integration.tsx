@@ -9,6 +9,8 @@ import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useStripe } from "@/hooks/useStripe";
+import { SUBSCRIPTION_PLANS, formatPrice } from "@/lib/stripe";
 import { 
   CreditCard, 
   DollarSign, 
@@ -223,6 +225,15 @@ export function PaymentIntegration() {
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
   const [showCreatePlan, setShowCreatePlan] = useState(false);
   const [showGatewayConfig, setShowGatewayConfig] = useState(false);
+
+  // Stripe integration
+  const { 
+    subscription, 
+    loading: stripeLoading, 
+    createCheckoutSession, 
+    getSubscriptionStatus,
+    hasAccess 
+  } = useStripe();
 
   // Mock data initialization - Test verilerini yüklemek için
   useEffect(() => {
@@ -449,6 +460,25 @@ export function PaymentIntegration() {
       setLoading(false);
     }
   }, [paymentMethods.length]);
+
+  // Stripe checkout - Stripe ile ödeme işlemi
+  const handleStripeCheckout = useCallback(async (planId: string) => {
+    try {
+      // Mock user data - Gerçek uygulamada auth'dan gelecek
+      const userId = 'user_123';
+      const userEmail = 'user@example.com';
+      
+      await createCheckoutSession(
+        planId,
+        userId,
+        userEmail,
+        `${window.location.origin}/dashboard?success=true`,
+        `${window.location.origin}/pricing?canceled=true`
+      );
+    } catch (error) {
+      console.error('Stripe checkout error:', error);
+    }
+  }, [createCheckoutSession]);
 
   // Process payment - Ödeme işleme
   const processPayment = useCallback(async (
@@ -774,16 +804,16 @@ export function PaymentIntegration() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {paymentPlans.map((plan) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Object.values(SUBSCRIPTION_PLANS).map((plan) => (
               <div key={plan.id} className="border rounded-lg p-6 hover:bg-gray-50">
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold">{plan.name}</h3>
-                    <p className="text-gray-600">{plan.description}</p>
+                    <p className="text-gray-600">Perfect for {plan.id === 'starter' ? 'getting started' : plan.id === 'professional' ? 'individual therapists' : plan.id === 'practice' ? 'small practices' : 'large organizations'}</p>
                   </div>
                   <div className="text-right">
-                    <div className="text-2xl font-bold">${plan.amount}</div>
+                    <div className="text-2xl font-bold">{formatPrice(plan.price)}</div>
                     <div className="text-sm text-gray-600">per {plan.interval}</div>
                   </div>
                 </div>
@@ -798,12 +828,16 @@ export function PaymentIntegration() {
                 </div>
                 
                 <div className="flex items-center justify-between">
-                  <Badge variant={plan.isActive ? 'default' : 'secondary'}>
-                    {plan.isActive ? 'Active' : 'Inactive'}
+                  <Badge variant={subscription?.plan === plan.id ? 'default' : 'secondary'}>
+                    {subscription?.plan === plan.id ? 'Current Plan' : 'Available'}
                   </Badge>
-                  <Button size="sm" variant="outline">
-                    <Edit className="h-3 w-3 mr-1" />
-                    Edit Plan
+                  <Button 
+                    size="sm" 
+                    variant={subscription?.plan === plan.id ? 'outline' : 'default'}
+                    onClick={() => handleStripeCheckout(plan.id)}
+                    disabled={stripeLoading || subscription?.plan === plan.id}
+                  >
+                    {subscription?.plan === plan.id ? 'Current' : 'Subscribe'}
                   </Button>
                 </div>
               </div>

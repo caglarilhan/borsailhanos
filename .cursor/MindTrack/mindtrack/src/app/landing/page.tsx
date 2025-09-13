@@ -1,10 +1,22 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Star, Users, Shield, Zap, Brain, Calendar, FileText, DollarSign, Globe } from "lucide-react";
+import { CheckCircle, Star, Users, Shield, Zap, Brain, Calendar, FileText, DollarSign, Globe, Play } from "lucide-react";
 import Link from "next/link";
 
 export default function LandingPage() {
+  const handleDemoClick = () => {
+    // Demo video açma fonksiyonu
+    window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank');
+  };
+
+  const handleContactClick = () => {
+    // İletişim formu açma
+    window.location.href = 'mailto:contact@mindtrack.com?subject=Enterprise Inquiry';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
       {/* Header */}
@@ -16,10 +28,10 @@ export default function LandingPage() {
           </div>
           <div className="flex items-center space-x-4">
             <Link href="/auth/login">
-              <Button variant="ghost">Giriş Yap</Button>
+              <Button variant="ghost">Sign In</Button>
             </Link>
             <Link href="/auth/signup">
-              <Button className="bg-blue-600 hover:bg-blue-700">14 Gün Ücretsiz Dene</Button>
+              <Button className="bg-blue-600 hover:bg-blue-700">Start Free Trial</Button>
             </Link>
           </div>
         </div>
@@ -29,40 +41,40 @@ export default function LandingPage() {
       <section className="py-20 px-4">
         <div className="container mx-auto text-center">
           <Badge className="mb-4 bg-blue-100 text-blue-800 hover:bg-blue-200">
-            🎉 Yeni: AI Destekli Not Yazımı
+            🎉 New: AI-Powered Note Writing
           </Badge>
           <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
-            Psikiyatristler İçin
-            <span className="text-blue-600 block">Akıllı Klinik Yönetimi</span>
+            Smart Practice Management
+            <span className="text-blue-600 block">For Mental Health Professionals</span>
           </h1>
           <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-            HIPAA uyumlu, AI destekli, kullanımı kolay klinik yönetim sistemi. 
-            Not yazımından ödeme takibine kadar her şey tek platformda.
+            HIPAA-compliant, AI-powered, easy-to-use practice management system. 
+            Everything from note-taking to payment tracking in one platform.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
             <Link href="/auth/signup">
               <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-lg px-8 py-4">
                 <Zap className="mr-2 h-5 w-5" />
-                14 Gün Ücretsiz Dene
+                Start Free Trial
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-lg px-8 py-4">
-              <Calendar className="mr-2 h-5 w-5" />
-              Demo İzle
+            <Button size="lg" variant="outline" className="text-lg px-8 py-4" onClick={handleDemoClick}>
+              <Play className="mr-2 h-5 w-5" />
+              Watch Demo
             </Button>
           </div>
           <div className="flex items-center justify-center space-x-8 text-sm text-gray-500">
             <div className="flex items-center">
               <CheckCircle className="h-4 w-4 text-green-500 mr-1" />
-              Kurulum 5 dakika
+              Setup in 5 minutes
             </div>
             <div className="flex items-center">
               <Shield className="h-4 w-4 text-blue-500 mr-1" />
-              HIPAA Uyumlu
+              HIPAA Compliant
             </div>
             <div className="flex items-center">
               <Users className="h-4 w-4 text-purple-500 mr-1" />
-              1000+ Aktif Kullanıcı
+              1000+ Active Users
             </div>
           </div>
         </div>
@@ -73,10 +85,10 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Neden MindTrack?
+              Why Choose MindTrack?
             </h2>
             <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-              Karmaşık sistemlerle uğraşmayın. MindTrack ile odaklanmanız gereken tek şey hastalarınız.
+              Don't struggle with complex systems. With MindTrack, focus on what matters most - your patients.
             </p>
           </div>
           
@@ -86,9 +98,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-4">
                   <Brain className="h-6 w-6 text-blue-600" />
                 </div>
-                <CardTitle>AI Destekli Not Yazımı</CardTitle>
+                <CardTitle>AI-Powered Note Writing</CardTitle>
                 <CardDescription>
-                  Ses kaydından otomatik not oluşturma, SOAP/BIRP formatında AI destekli yazım
+                  Automatic note generation from voice recordings, AI-assisted writing in SOAP/BIRP format
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -98,9 +110,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mb-4">
                   <Calendar className="h-6 w-6 text-green-600" />
                 </div>
-                <CardTitle>Akıllı Randevu Yönetimi</CardTitle>
+                <CardTitle>Smart Appointment Management</CardTitle>
                 <CardDescription>
-                  Google/Outlook entegrasyonu, otomatik hatırlatmalar, Zoom link üretimi
+                  Google/Outlook integration, automatic reminders, Zoom link generation
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -110,9 +122,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mb-4">
                   <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
-                <CardTitle>Sigorta & Ödeme Entegrasyonu</CardTitle>
+                <CardTitle>Insurance & Payment Integration</CardTitle>
                 <CardDescription>
-                  Otomatik superbill oluşturma, sigorta claim submission, online ödeme
+                  Automatic superbill generation, insurance claim submission, online payments
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -122,7 +134,7 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mb-4">
                   <Shield className="h-6 w-6 text-orange-600" />
                 </div>
-                <CardTitle>HIPAA Uyumlu Güvenlik</CardTitle>
+                <CardTitle>HIPAA Compliant Security</CardTitle>
                 <CardDescription>
                   End-to-end encryption, audit logs, role-based access control
                 </CardDescription>
@@ -134,9 +146,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center mb-4">
                   <FileText className="h-6 w-6 text-red-600" />
                 </div>
-                <CardTitle>Gelişmiş Raporlama</CardTitle>
+                <CardTitle>Advanced Reporting</CardTitle>
                 <CardDescription>
-                  Hasta sonuçları takibi, gelir analizi, performans metrikleri
+                  Patient outcome tracking, revenue analytics, performance metrics
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -146,9 +158,9 @@ export default function LandingPage() {
                 <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mb-4">
                   <Globe className="h-6 w-6 text-indigo-600" />
                 </div>
-                <CardTitle>Çok Dilli Destek</CardTitle>
+                <CardTitle>Multi-Language Support</CardTitle>
                 <CardDescription>
-                  Türkçe, İngilizce, Almanca, İspanyolca dil desteği
+                  Support for Turkish, English, German, Spanish languages
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -161,10 +173,10 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Basit ve Şeffaf Fiyatlandırma
+              Simple & Transparent Pricing
             </h2>
             <p className="text-xl text-gray-600">
-              14 gün ücretsiz deneme. İstediğiniz zaman iptal edin.
+              14-day free trial. Cancel anytime.
             </p>
           </div>
 
@@ -173,54 +185,56 @@ export default function LandingPage() {
             <Card className="border-2 border-gray-200">
               <CardHeader className="text-center">
                 <CardTitle className="text-xl">STARTER</CardTitle>
-                <div className="text-3xl font-bold text-gray-900">Ücretsiz</div>
-                <CardDescription>Küçük pratikler için</CardDescription>
+                <div className="text-3xl font-bold text-gray-900">Free</div>
+                <CardDescription>For small practices</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>3 danışan</span>
+                  <span>3 clients</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>10 randevu/ay</span>
+                  <span>10 appointments/month</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Basit notlar</span>
+                  <span>Basic notes</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Email desteği</span>
+                  <span>Email support</span>
                 </div>
-                <Button className="w-full mt-6" variant="outline">
-                  Ücretsiz Başla
-                </Button>
+                <Link href="/auth/signup">
+                  <Button className="w-full mt-6" variant="outline">
+                    Get Started Free
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
             {/* Professional */}
             <Card className="border-2 border-blue-500 relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-blue-600 text-white">En Popüler</Badge>
+                <Badge className="bg-blue-600 text-white">Most Popular</Badge>
               </div>
               <CardHeader className="text-center">
                 <CardTitle className="text-xl">PROFESSIONAL</CardTitle>
                 <div className="text-3xl font-bold text-gray-900">$29</div>
-                <CardDescription>aylık</CardDescription>
+                <CardDescription>per month</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Sınırsız danışan</span>
+                  <span>Unlimited clients</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>AI not yazımı</span>
+                  <span>AI note writing</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Otomatik hatırlatmalar</span>
+                  <span>Automatic reminders</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
@@ -228,11 +242,13 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Öncelikli destek</span>
+                  <span>Priority support</span>
                 </div>
-                <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
-                  14 Gün Ücretsiz Dene
-                </Button>
+                <Link href="/auth/signup">
+                  <Button className="w-full mt-6 bg-blue-600 hover:bg-blue-700">
+                    Start Free Trial
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -241,7 +257,7 @@ export default function LandingPage() {
               <CardHeader className="text-center">
                 <CardTitle className="text-xl">PRACTICE</CardTitle>
                 <div className="text-3xl font-bold text-gray-900">$79</div>
-                <CardDescription>aylık</CardDescription>
+                <CardDescription>per month</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center">
@@ -250,23 +266,25 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Gelişmiş analytics</span>
+                  <span>Advanced analytics</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Sigorta entegrasyonu</span>
+                  <span>Insurance integration</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>API erişimi</span>
+                  <span>API access</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>7/24 destek</span>
+                  <span>24/7 support</span>
                 </div>
-                <Button className="w-full mt-6" variant="outline">
-                  14 Gün Ücretsiz Dene
-                </Button>
+                <Link href="/auth/signup">
+                  <Button className="w-full mt-6" variant="outline">
+                    Start Free Trial
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
 
@@ -275,7 +293,7 @@ export default function LandingPage() {
               <CardHeader className="text-center">
                 <CardTitle className="text-xl">ENTERPRISE</CardTitle>
                 <div className="text-3xl font-bold text-gray-900">$199</div>
-                <CardDescription>aylık</CardDescription>
+                <CardDescription>per month</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center">
@@ -284,11 +302,11 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Özel entegrasyonlar</span>
+                  <span>Custom integrations</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>Öncelikli destek</span>
+                  <span>Priority support</span>
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
@@ -296,10 +314,10 @@ export default function LandingPage() {
                 </div>
                 <div className="flex items-center">
                   <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <span>SLA garantisi</span>
+                  <span>SLA guarantee</span>
                 </div>
-                <Button className="w-full mt-6" variant="outline">
-                  İletişime Geç
+                <Button className="w-full mt-6" variant="outline" onClick={handleContactClick}>
+                  Contact Sales
                 </Button>
               </CardContent>
             </Card>
@@ -312,7 +330,7 @@ export default function LandingPage() {
         <div className="container mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold text-gray-900 mb-4">
-              Kullanıcılarımız Ne Diyor?
+              What Our Users Say
             </h2>
           </div>
           
@@ -325,7 +343,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-gray-600 mb-4">
-                  "MindTrack ile not yazma sürem %70 azaldı. AI destekli özellikler gerçekten işe yarıyor."
+                  "My note-writing time decreased by 70% with MindTrack. The AI-powered features really work."
                 </p>
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
@@ -333,7 +351,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <div className="font-semibold">Dr. Sarah Johnson</div>
-                    <div className="text-sm text-gray-500">Psikiyatrist, New York</div>
+                    <div className="text-sm text-gray-500">Psychiatrist, New York</div>
                   </div>
                 </div>
               </CardContent>
@@ -347,7 +365,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-gray-600 mb-4">
-                  "HIPAA uyumluluğu ve kullanım kolaylığı beni çok etkiledi. Mükemmel bir sistem."
+                  "HIPAA compliance and ease of use impressed me. It's a perfect system."
                 </p>
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3">
@@ -355,7 +373,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <div className="font-semibold">Dr. Michael Kim</div>
-                    <div className="text-sm text-gray-500">Psikolog, California</div>
+                    <div className="text-sm text-gray-500">Psychologist, California</div>
                   </div>
                 </div>
               </CardContent>
@@ -369,7 +387,7 @@ export default function LandingPage() {
                   ))}
                 </div>
                 <p className="text-gray-600 mb-4">
-                  "Sigorta entegrasyonu sayesinde claim süreçlerim çok hızlandı. Harika bir ürün!"
+                  "Insurance integration sped up my claim processes significantly. Amazing product!"
                 </p>
                 <div className="flex items-center">
                   <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
@@ -377,7 +395,7 @@ export default function LandingPage() {
                   </div>
                   <div>
                     <div className="font-semibold">Dr. Anna Lopez</div>
-                    <div className="text-sm text-gray-500">Klinik Direktörü, Texas</div>
+                    <div className="text-sm text-gray-500">Clinical Director, Texas</div>
                   </div>
                 </div>
               </CardContent>
@@ -390,22 +408,22 @@ export default function LandingPage() {
       <section className="py-20 px-4 bg-blue-600">
         <div className="container mx-auto text-center">
           <h2 className="text-4xl font-bold text-white mb-4">
-            Hemen Başlayın
+            Get Started Today
           </h2>
           <p className="text-xl text-blue-100 mb-8 max-w-2xl mx-auto">
-            14 gün ücretsiz deneme ile MindTrack'in gücünü keşfedin. 
-            Kredi kartı gerekmez, istediğiniz zaman iptal edin.
+            Discover the power of MindTrack with a 14-day free trial. 
+            No credit card required, cancel anytime.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/signup">
               <Button size="lg" className="bg-white text-blue-600 hover:bg-gray-100 text-lg px-8 py-4">
                 <Zap className="mr-2 h-5 w-5" />
-                Ücretsiz Deneme Başlat
+                Start Free Trial
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="text-white border-white hover:bg-blue-700 text-lg px-8 py-4">
-              <Calendar className="mr-2 h-5 w-5" />
-              Demo İzle
+            <Button size="lg" variant="outline" className="text-white border-white hover:bg-blue-700 text-lg px-8 py-4" onClick={handleDemoClick}>
+              <Play className="mr-2 h-5 w-5" />
+              Watch Demo
             </Button>
           </div>
         </div>
@@ -421,43 +439,43 @@ export default function LandingPage() {
                 <span className="text-xl font-bold">MindTrack</span>
               </div>
               <p className="text-gray-400">
-                Psikiyatristler için akıllı klinik yönetim sistemi.
+                Smart practice management system for mental health professionals.
               </p>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">Ürün</h3>
+              <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Özellikler</a></li>
-                <li><a href="#" className="hover:text-white">Fiyatlandırma</a></li>
-                <li><a href="#" className="hover:text-white">Entegrasyonlar</a></li>
+                <li><a href="#" className="hover:text-white">Features</a></li>
+                <li><a href="#" className="hover:text-white">Pricing</a></li>
+                <li><a href="#" className="hover:text-white">Integrations</a></li>
                 <li><a href="#" className="hover:text-white">API</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">Destek</h3>
+              <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Yardım Merkezi</a></li>
-                <li><a href="#" className="hover:text-white">İletişim</a></li>
-                <li><a href="#" className="hover:text-white">Topluluk</a></li>
-                <li><a href="#" className="hover:text-white">Durum</a></li>
+                <li><a href="#" className="hover:text-white">Help Center</a></li>
+                <li><a href="#" className="hover:text-white">Contact</a></li>
+                <li><a href="#" className="hover:text-white">Community</a></li>
+                <li><a href="#" className="hover:text-white">Status</a></li>
               </ul>
             </div>
             
             <div>
-              <h3 className="font-semibold mb-4">Şirket</h3>
+              <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-gray-400">
-                <li><a href="#" className="hover:text-white">Hakkımızda</a></li>
+                <li><a href="#" className="hover:text-white">About</a></li>
                 <li><a href="#" className="hover:text-white">Blog</a></li>
-                <li><a href="#" className="hover:text-white">Kariyer</a></li>
-                <li><a href="#" className="hover:text-white">Gizlilik</a></li>
+                <li><a href="#" className="hover:text-white">Careers</a></li>
+                <li><a href="#" className="hover:text-white">Privacy</a></li>
               </ul>
             </div>
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 MindTrack. Tüm hakları saklıdır.</p>
+            <p>&copy; 2024 MindTrack. All rights reserved.</p>
           </div>
         </div>
       </footer>
