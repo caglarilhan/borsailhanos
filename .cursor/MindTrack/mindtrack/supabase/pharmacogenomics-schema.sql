@@ -1,803 +1,299 @@
--- Pharmacogenomics Schema
--- Comprehensive pharmacogenomic testing and analysis for American psychiatrists
+-- Pharmacogenomics Integration Schema
+-- This schema stores genetic variants, drug-gene interactions, and personalized treatments
 
--- Genetic Variants
+-- Genetic Variants Table
 CREATE TABLE IF NOT EXISTS genetic_variants (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    variant_id VARCHAR(100) NOT NULL UNIQUE,
-    gene_symbol VARCHAR(50) NOT NULL,
-    gene_name VARCHAR(200) NOT NULL,
-    variant_name VARCHAR(100) NOT NULL,
-    rs_id VARCHAR(50), -- dbSNP reference
-    chromosome VARCHAR(10) NOT NULL,
-    position INTEGER NOT NULL,
-    reference_allele VARCHAR(10) NOT NULL,
-    alternate_allele VARCHAR(10) NOT NULL,
-    variant_type VARCHAR(50) NOT NULL, -- 'snp', 'indel', 'cnv', 'sv'
-    clinical_significance VARCHAR(50), -- 'pathogenic', 'likely_pathogenic', 'uncertain_significance', 'likely_benign', 'benign'
-    population_frequency DECIMAL(5,4), -- Allele frequency in population
-    functional_impact VARCHAR(50), -- 'high', 'moderate', 'low', 'modifier'
-    is_active BOOLEAN DEFAULT TRUE,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    gene VARCHAR(100) NOT NULL,
+    variant VARCHAR(100) NOT NULL,
+    rs_id VARCHAR(50),
+    chromosome VARCHAR(10),
+    position BIGINT,
+    genotype VARCHAR(100),
+    phenotype VARCHAR(100),
+    clinical_significance VARCHAR(50) DEFAULT 'uncertain' CHECK (clinical_significance IN ('benign', 'likely_benign', 'uncertain', 'likely_pathogenic', 'pathogenic')),
+    allele_frequency DECIMAL(8,6),
+    population VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Drug-Gene Interactions
+-- Drug-Gene Interactions Table
 CREATE TABLE IF NOT EXISTS drug_gene_interactions (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    interaction_id VARCHAR(100) NOT NULL UNIQUE,
-    drug_name VARCHAR(200) NOT NULL,
-    drug_id VARCHAR(100), -- RxNorm, NDC, or other drug identifier
-    gene_symbol VARCHAR(50) NOT NULL,
-    variant_id UUID REFERENCES genetic_variants(id),
-    interaction_type VARCHAR(50) NOT NULL, -- 'metabolizer', 'transporter', 'target', 'enzyme'
-    interaction_level VARCHAR(20) NOT NULL, -- 'level_1a', 'level_1b', 'level_2a', 'level_2b', 'level_3', 'level_4'
-    evidence_level VARCHAR(20) NOT NULL, -- 'strong', 'moderate', 'weak', 'insufficient'
-    clinical_guidance TEXT,
-    dosing_recommendation TEXT,
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    drug_name VARCHAR(255) NOT NULL,
+    gene VARCHAR(100) NOT NULL,
+    variant VARCHAR(100) NOT NULL,
+    interaction_type VARCHAR(50) NOT NULL CHECK (interaction_type IN ('metabolizer', 'transporter', 'target', 'enzyme')),
+    phenotype VARCHAR(100) NOT NULL,
+    recommendation TEXT NOT NULL,
+    evidence_level VARCHAR(10) NOT NULL CHECK (evidence_level IN ('A', 'B', 'C', 'D')),
+    clinical_action TEXT NOT NULL,
     alternative_drugs TEXT[],
-    contraindications TEXT[],
-    warnings TEXT[],
-    monitoring_recommendations TEXT[],
-    is_active BOOLEAN DEFAULT TRUE,
+    dosage_adjustment TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Patient Genetic Profiles
-CREATE TABLE IF NOT EXISTS patient_genetic_profiles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-    practitioner_id UUID NOT NULL REFERENCES users(id),
-    test_order_id UUID, -- Reference to genetic test order
-    test_date DATE NOT NULL,
-    test_lab VARCHAR(200),
-    test_method VARCHAR(100), -- 'pcr', 'sequencing', 'microarray', 'targeted_panel'
-    test_coverage TEXT[], -- Genes/variants tested
-    quality_score DECIMAL(5,2), -- Test quality score
-    interpretation_date DATE,
-    interpreted_by UUID REFERENCES users(id),
-    interpretation_notes TEXT,
-    clinical_relevance VARCHAR(50), -- 'high', 'moderate', 'low', 'unknown'
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Patient Genetic Variants
-CREATE TABLE IF NOT EXISTS patient_genetic_variants (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_genetic_profile_id UUID NOT NULL REFERENCES patient_genetic_profiles(id) ON DELETE CASCADE,
-    variant_id UUID NOT NULL REFERENCES genetic_variants(id),
-    genotype VARCHAR(10) NOT NULL, -- 'AA', 'AT', 'TT', etc.
-    allele_1 VARCHAR(10) NOT NULL,
-    allele_2 VARCHAR(10) NOT NULL,
-    zygosity VARCHAR(20) NOT NULL, -- 'homozygous_reference', 'heterozygous', 'homozygous_alternate'
-    variant_allele_frequency DECIMAL(5,4), -- For somatic variants
-    read_depth INTEGER, -- Sequencing read depth
-    quality_score DECIMAL(5,2), -- Variant call quality
-    is_pathogenic BOOLEAN DEFAULT FALSE,
-    clinical_significance VARCHAR(50),
+-- Pharmacogenomic Tests Table
+CREATE TABLE IF NOT EXISTS pharmacogenomic_tests (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    test_name VARCHAR(255) NOT NULL,
+    test_type VARCHAR(50) NOT NULL CHECK (test_type IN ('panel', 'single_gene', 'whole_genome')),
+    genes TEXT[] NOT NULL,
+    variants JSONB,
+    test_date TIMESTAMP WITH TIME ZONE NOT NULL,
+    lab_name VARCHAR(255) NOT NULL,
+    status VARCHAR(50) DEFAULT 'ordered' CHECK (status IN ('ordered', 'processing', 'completed', 'failed')),
+    results JSONB,
     interpretation TEXT,
+    recommendations TEXT[],
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Pharmacogenomic Recommendations
-CREATE TABLE IF NOT EXISTS pharmacogenomic_recommendations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    patient_genetic_profile_id UUID NOT NULL REFERENCES patient_genetic_profiles(id) ON DELETE CASCADE,
-    drug_name VARCHAR(200) NOT NULL,
-    drug_id VARCHAR(100),
-    gene_symbol VARCHAR(50) NOT NULL,
-    variant_id UUID REFERENCES genetic_variants(id),
-    interaction_level VARCHAR(20) NOT NULL,
-    recommendation_type VARCHAR(50) NOT NULL, -- 'dose_adjustment', 'drug_selection', 'monitoring', 'contraindication'
-    recommendation_text TEXT NOT NULL,
-    confidence_level VARCHAR(20) NOT NULL, -- 'high', 'moderate', 'low'
-    evidence_strength VARCHAR(20) NOT NULL, -- 'strong', 'moderate', 'weak'
-    clinical_guidelines TEXT[],
-    references TEXT[],
-    is_applied BOOLEAN DEFAULT FALSE,
-    applied_date TIMESTAMP WITH TIME ZONE,
-    applied_by UUID REFERENCES users(id),
-    application_notes TEXT,
+-- Personalized Treatments Table
+CREATE TABLE IF NOT EXISTS personalized_treatments (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    medication VARCHAR(255) NOT NULL,
+    gene VARCHAR(100) NOT NULL,
+    variant VARCHAR(100) NOT NULL,
+    phenotype VARCHAR(100) NOT NULL,
+    recommended_dosage TEXT NOT NULL,
+    alternative_medications TEXT[] NOT NULL,
+    contraindications TEXT[] NOT NULL,
+    monitoring_requirements TEXT[] NOT NULL,
+    risk_factors TEXT[] NOT NULL,
+    created_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Pharmacogenomic Test Orders
-CREATE TABLE IF NOT EXISTS pharmacogenomic_test_orders (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    order_id VARCHAR(100) NOT NULL UNIQUE,
-    patient_id UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
-    practitioner_id UUID NOT NULL REFERENCES users(id),
-    test_type VARCHAR(100) NOT NULL, -- 'comprehensive', 'targeted', 'single_gene', 'drug_specific'
-    test_panel TEXT[], -- Specific genes/variants to test
-    indication TEXT NOT NULL, -- Clinical indication for testing
-    test_lab VARCHAR(200),
-    lab_order_number VARCHAR(100),
-    order_date DATE NOT NULL,
-    expected_result_date DATE,
-    actual_result_date DATE,
-    order_status VARCHAR(20) DEFAULT 'ordered', -- 'ordered', 'sent_to_lab', 'in_progress', 'completed', 'cancelled'
-    result_status VARCHAR(20), -- 'pending', 'available', 'reviewed', 'interpreted'
-    cost DECIMAL(10,2),
-    insurance_coverage BOOLEAN,
-    prior_authorization_required BOOLEAN,
-    prior_authorization_obtained BOOLEAN,
-    consent_obtained BOOLEAN,
-    consent_date DATE,
-    notes TEXT,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Pharmacogenomic Reports
-CREATE TABLE IF NOT EXISTS pharmacogenomic_reports (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    report_id VARCHAR(100) NOT NULL UNIQUE,
-    patient_genetic_profile_id UUID NOT NULL REFERENCES patient_genetic_profiles(id) ON DELETE CASCADE,
-    report_type VARCHAR(50) NOT NULL, -- 'comprehensive', 'drug_specific', 'summary'
-    report_date DATE NOT NULL,
-    generated_by UUID REFERENCES users(id),
-    report_content TEXT NOT NULL,
-    executive_summary TEXT,
-    clinical_recommendations TEXT[],
-    drug_interactions TEXT[],
-    monitoring_recommendations TEXT[],
-    follow_up_recommendations TEXT[],
-    limitations TEXT[],
-    report_status VARCHAR(20) DEFAULT 'draft', -- 'draft', 'final', 'archived'
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Pharmacogenomic Guidelines
+-- Pharmacogenomic Guidelines Table
 CREATE TABLE IF NOT EXISTS pharmacogenomic_guidelines (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    guideline_id VARCHAR(100) NOT NULL UNIQUE,
-    guideline_name VARCHAR(200) NOT NULL,
-    guideline_version VARCHAR(20) NOT NULL,
-    organization VARCHAR(200) NOT NULL, -- 'CPIC', 'DPWG', 'FDA', 'EMA'
-    drug_name VARCHAR(200) NOT NULL,
-    gene_symbol VARCHAR(50) NOT NULL,
-    variant_name VARCHAR(100) NOT NULL,
-    phenotype VARCHAR(50) NOT NULL, -- 'poor_metabolizer', 'intermediate_metabolizer', 'normal_metabolizer', 'rapid_metabolizer', 'ultra_rapid_metabolizer'
-    recommendation_level VARCHAR(20) NOT NULL, -- 'strong', 'moderate', 'optional'
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    drug_name VARCHAR(255) NOT NULL,
+    gene VARCHAR(100) NOT NULL,
+    phenotype VARCHAR(100) NOT NULL,
+    recommendation_level VARCHAR(50) NOT NULL CHECK (recommendation_level IN ('strong', 'moderate', 'weak')),
     recommendation_text TEXT NOT NULL,
-    dosing_guidance TEXT,
+    dosage_adjustment TEXT,
     alternative_drugs TEXT[],
-    monitoring_recommendations TEXT[],
+    monitoring_requirements TEXT[],
     contraindications TEXT[],
-    evidence_level VARCHAR(20) NOT NULL, -- 'strong', 'moderate', 'weak'
-    last_updated DATE NOT NULL,
-    is_active BOOLEAN DEFAULT TRUE,
+    evidence_level VARCHAR(10) NOT NULL CHECK (evidence_level IN ('A', 'B', 'C', 'D')),
+    guideline_source VARCHAR(255),
+    last_updated TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Pharmacogenomic Analytics
+-- Pharmacogenomic Alerts Table
+CREATE TABLE IF NOT EXISTS pharmacogenomic_alerts (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    patient_id UUID NOT NULL,
+    medication VARCHAR(255) NOT NULL,
+    gene VARCHAR(100) NOT NULL,
+    variant VARCHAR(100) NOT NULL,
+    alert_type VARCHAR(50) NOT NULL CHECK (alert_type IN ('contraindication', 'dose_adjustment', 'monitoring', 'alternative_drug')),
+    alert_level VARCHAR(50) NOT NULL CHECK (alert_level IN ('critical', 'high', 'moderate', 'low')),
+    message TEXT NOT NULL,
+    recommendation TEXT NOT NULL,
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    read_at TIMESTAMP WITH TIME ZONE
+);
+
+-- Pharmacogenomic Analytics Table
 CREATE TABLE IF NOT EXISTS pharmacogenomic_analytics (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    analysis_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    analysis_period_months INTEGER NOT NULL DEFAULT 12,
-    practitioner_id UUID REFERENCES users(id),
-    total_tests_ordered INTEGER NOT NULL DEFAULT 0,
-    total_tests_completed INTEGER NOT NULL DEFAULT 0,
-    total_patients_tested INTEGER NOT NULL DEFAULT 0,
-    average_test_cost DECIMAL(10,2),
-    insurance_coverage_rate DECIMAL(5,2),
-    prior_authorization_rate DECIMAL(5,2),
-    test_completion_rate DECIMAL(5,2),
-    recommendation_adoption_rate DECIMAL(5,2),
-    drug_interaction_alerts INTEGER NOT NULL DEFAULT 0,
-    dose_adjustments_made INTEGER NOT NULL DEFAULT 0,
-    contraindications_identified INTEGER NOT NULL DEFAULT 0,
-    clinical_outcomes JSONB,
-    cost_effectiveness JSONB,
-    patient_satisfaction DECIMAL(5,2),
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    date DATE NOT NULL,
+    total_tests INTEGER DEFAULT 0,
+    completed_tests INTEGER DEFAULT 0,
+    pending_tests INTEGER DEFAULT 0,
+    failed_tests INTEGER DEFAULT 0,
+    total_variants INTEGER DEFAULT 0,
+    pathogenic_variants INTEGER DEFAULT 0,
+    drug_interactions_analyzed INTEGER DEFAULT 0,
+    personalized_treatments_generated INTEGER DEFAULT 0,
+    average_processing_time_days DECIMAL(5,2) DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Gene Information Table
+CREATE TABLE IF NOT EXISTS gene_information (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    gene_symbol VARCHAR(100) UNIQUE NOT NULL,
+    gene_name VARCHAR(255) NOT NULL,
+    chromosome VARCHAR(10) NOT NULL,
+    gene_start BIGINT,
+    gene_end BIGINT,
+    gene_description TEXT,
+    function_description TEXT,
+    associated_diseases TEXT[],
+    drug_targets TEXT[],
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
--- Indexes for performance
-CREATE INDEX IF NOT EXISTS idx_genetic_variants_gene_symbol ON genetic_variants(gene_symbol);
-CREATE INDEX IF NOT EXISTS idx_genetic_variants_chromosome ON genetic_variants(chromosome);
-CREATE INDEX IF NOT EXISTS idx_genetic_variants_position ON genetic_variants(position);
-CREATE INDEX IF NOT EXISTS idx_genetic_variants_clinical_significance ON genetic_variants(clinical_significance);
-CREATE INDEX IF NOT EXISTS idx_genetic_variants_active ON genetic_variants(is_active);
+-- Variant Information Table
+CREATE TABLE IF NOT EXISTS variant_information (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    rs_id VARCHAR(50) UNIQUE NOT NULL,
+    gene VARCHAR(100) NOT NULL,
+    variant_name VARCHAR(100) NOT NULL,
+    chromosome VARCHAR(10) NOT NULL,
+    position BIGINT NOT NULL,
+    reference_allele VARCHAR(10),
+    alternative_allele VARCHAR(10),
+    clinical_significance VARCHAR(50),
+    population_frequencies JSONB,
+    functional_impact VARCHAR(100),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+-- Indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_genetic_variants_patient_id ON genetic_variants(patient_id);
+CREATE INDEX IF NOT EXISTS idx_genetic_variants_gene ON genetic_variants(gene);
+CREATE INDEX IF NOT EXISTS idx_genetic_variants_variant ON genetic_variants(variant);
+CREATE INDEX IF NOT EXISTS idx_genetic_variants_significance ON genetic_variants(clinical_significance);
 
 CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_drug_name ON drug_gene_interactions(drug_name);
-CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_gene_symbol ON drug_gene_interactions(gene_symbol);
-CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_variant_id ON drug_gene_interactions(variant_id);
-CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_interaction_level ON drug_gene_interactions(interaction_level);
-CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_active ON drug_gene_interactions(is_active);
+CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_gene ON drug_gene_interactions(gene);
+CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_type ON drug_gene_interactions(interaction_type);
+CREATE INDEX IF NOT EXISTS idx_drug_gene_interactions_evidence ON drug_gene_interactions(evidence_level);
 
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_profiles_patient_id ON patient_genetic_profiles(patient_id);
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_profiles_practitioner_id ON patient_genetic_profiles(practitioner_id);
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_profiles_test_date ON patient_genetic_profiles(test_date);
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_profiles_active ON patient_genetic_profiles(is_active);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_tests_patient_id ON pharmacogenomic_tests(patient_id);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_tests_status ON pharmacogenomic_tests(status);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_tests_test_date ON pharmacogenomic_tests(test_date);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_tests_test_type ON pharmacogenomic_tests(test_type);
 
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_variants_profile_id ON patient_genetic_variants(patient_genetic_profile_id);
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_variants_variant_id ON patient_genetic_variants(variant_id);
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_variants_genotype ON patient_genetic_variants(genotype);
-CREATE INDEX IF NOT EXISTS idx_patient_genetic_variants_pathogenic ON patient_genetic_variants(is_pathogenic);
-
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_recommendations_profile_id ON pharmacogenomic_recommendations(patient_genetic_profile_id);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_recommendations_drug_name ON pharmacogenomic_recommendations(drug_name);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_recommendations_gene_symbol ON pharmacogenomic_recommendations(gene_symbol);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_recommendations_applied ON pharmacogenomic_recommendations(is_applied);
-
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_test_orders_patient_id ON pharmacogenomic_test_orders(patient_id);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_test_orders_practitioner_id ON pharmacogenomic_test_orders(practitioner_id);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_test_orders_order_date ON pharmacogenomic_test_orders(order_date);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_test_orders_status ON pharmacogenomic_test_orders(order_status);
-
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_reports_profile_id ON pharmacogenomic_reports(patient_genetic_profile_id);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_reports_type ON pharmacogenomic_reports(report_type);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_reports_date ON pharmacogenomic_reports(report_date);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_reports_status ON pharmacogenomic_reports(report_status);
+CREATE INDEX IF NOT EXISTS idx_personalized_treatments_patient_id ON personalized_treatments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_personalized_treatments_medication ON personalized_treatments(medication);
+CREATE INDEX IF NOT EXISTS idx_personalized_treatments_gene ON personalized_treatments(gene);
 
 CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_guidelines_drug_name ON pharmacogenomic_guidelines(drug_name);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_guidelines_gene_symbol ON pharmacogenomic_guidelines(gene_symbol);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_guidelines_organization ON pharmacogenomic_guidelines(organization);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_guidelines_active ON pharmacogenomic_guidelines(is_active);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_guidelines_gene ON pharmacogenomic_guidelines(gene);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_guidelines_evidence ON pharmacogenomic_guidelines(evidence_level);
 
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_analytics_date ON pharmacogenomic_analytics(analysis_date);
-CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_analytics_practitioner_id ON pharmacogenomic_analytics(practitioner_id);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_alerts_patient_id ON pharmacogenomic_alerts(patient_id);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_alerts_alert_type ON pharmacogenomic_alerts(alert_type);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_alerts_alert_level ON pharmacogenomic_alerts(alert_level);
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_alerts_is_read ON pharmacogenomic_alerts(is_read);
 
--- RLS Policies
+CREATE INDEX IF NOT EXISTS idx_pharmacogenomic_analytics_date ON pharmacogenomic_analytics(date);
+
+CREATE INDEX IF NOT EXISTS idx_gene_information_symbol ON gene_information(gene_symbol);
+CREATE INDEX IF NOT EXISTS idx_gene_information_chromosome ON gene_information(chromosome);
+
+CREATE INDEX IF NOT EXISTS idx_variant_information_rs_id ON variant_information(rs_id);
+CREATE INDEX IF NOT EXISTS idx_variant_information_gene ON variant_information(gene);
+CREATE INDEX IF NOT EXISTS idx_variant_information_chromosome ON variant_information(chromosome);
+
+-- Row Level Security (RLS) Policies
 ALTER TABLE genetic_variants ENABLE ROW LEVEL SECURITY;
 ALTER TABLE drug_gene_interactions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE patient_genetic_profiles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE patient_genetic_variants ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pharmacogenomic_recommendations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pharmacogenomic_test_orders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE pharmacogenomic_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pharmacogenomic_tests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE personalized_treatments ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pharmacogenomic_guidelines ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pharmacogenomic_alerts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE pharmacogenomic_analytics ENABLE ROW LEVEL SECURITY;
+ALTER TABLE gene_information ENABLE ROW LEVEL SECURITY;
+ALTER TABLE variant_information ENABLE ROW LEVEL SECURITY;
 
--- Genetic variants policies (system-wide read access)
+-- Policies for genetic_variants
 CREATE POLICY "Users can view genetic variants" ON genetic_variants
     FOR SELECT USING (true);
 
 CREATE POLICY "Users can insert genetic variants" ON genetic_variants
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+    FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update genetic variants" ON genetic_variants
-    FOR UPDATE USING (auth.uid() IS NOT NULL);
+    FOR UPDATE USING (true);
 
-CREATE POLICY "Users can delete genetic variants" ON genetic_variants
-    FOR DELETE USING (auth.uid() IS NOT NULL);
-
--- Drug-gene interactions policies (system-wide read access)
-CREATE POLICY "Users can view drug-gene interactions" ON drug_gene_interactions
+-- Policies for drug_gene_interactions
+CREATE POLICY "Users can view drug gene interactions" ON drug_gene_interactions
     FOR SELECT USING (true);
 
-CREATE POLICY "Users can insert drug-gene interactions" ON drug_gene_interactions
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can insert drug gene interactions" ON drug_gene_interactions
+    FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Users can update drug-gene interactions" ON drug_gene_interactions
-    FOR UPDATE USING (auth.uid() IS NOT NULL);
+CREATE POLICY "Users can update drug gene interactions" ON drug_gene_interactions
+    FOR UPDATE USING (true);
 
-CREATE POLICY "Users can delete drug-gene interactions" ON drug_gene_interactions
-    FOR DELETE USING (auth.uid() IS NOT NULL);
+-- Policies for pharmacogenomic_tests
+CREATE POLICY "Users can view pharmacogenomic tests" ON pharmacogenomic_tests
+    FOR SELECT USING (true);
 
--- Patient genetic profiles policies
-CREATE POLICY "Users can view genetic profiles for their patients" ON patient_genetic_profiles
-    FOR SELECT USING (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) OR practitioner_id = auth.uid()
-    );
+CREATE POLICY "Users can insert pharmacogenomic tests" ON pharmacogenomic_tests
+    FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Users can insert genetic profiles for their patients" ON patient_genetic_profiles
-    FOR INSERT WITH CHECK (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) AND practitioner_id = auth.uid()
-    );
+CREATE POLICY "Users can update pharmacogenomic tests" ON pharmacogenomic_tests
+    FOR UPDATE USING (true);
 
-CREATE POLICY "Users can update genetic profiles for their patients" ON patient_genetic_profiles
-    FOR UPDATE USING (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) OR practitioner_id = auth.uid()
-    );
+-- Policies for personalized_treatments
+CREATE POLICY "Users can view personalized treatments" ON personalized_treatments
+    FOR SELECT USING (true);
 
-CREATE POLICY "Users can delete genetic profiles for their patients" ON patient_genetic_profiles
-    FOR DELETE USING (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) OR practitioner_id = auth.uid()
-    );
+CREATE POLICY "Users can insert personalized treatments" ON personalized_treatments
+    FOR INSERT WITH CHECK (true);
 
--- Patient genetic variants policies
-CREATE POLICY "Users can view genetic variants for their patients" ON patient_genetic_variants
-    FOR SELECT USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
+CREATE POLICY "Users can update personalized treatments" ON personalized_treatments
+    FOR UPDATE USING (true);
 
-CREATE POLICY "Users can insert genetic variants for their patients" ON patient_genetic_variants
-    FOR INSERT WITH CHECK (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) AND practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can update genetic variants for their patients" ON patient_genetic_variants
-    FOR UPDATE USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can delete genetic variants for their patients" ON patient_genetic_variants
-    FOR DELETE USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
--- Pharmacogenomic recommendations policies
-CREATE POLICY "Users can view recommendations for their patients" ON pharmacogenomic_recommendations
-    FOR SELECT USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can insert recommendations for their patients" ON pharmacogenomic_recommendations
-    FOR INSERT WITH CHECK (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) AND practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can update recommendations for their patients" ON pharmacogenomic_recommendations
-    FOR UPDATE USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can delete recommendations for their patients" ON pharmacogenomic_recommendations
-    FOR DELETE USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
--- Pharmacogenomic test orders policies
-CREATE POLICY "Users can view test orders for their patients" ON pharmacogenomic_test_orders
-    FOR SELECT USING (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) OR practitioner_id = auth.uid()
-    );
-
-CREATE POLICY "Users can insert test orders for their patients" ON pharmacogenomic_test_orders
-    FOR INSERT WITH CHECK (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) AND practitioner_id = auth.uid()
-    );
-
-CREATE POLICY "Users can update test orders for their patients" ON pharmacogenomic_test_orders
-    FOR UPDATE USING (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) OR practitioner_id = auth.uid()
-    );
-
-CREATE POLICY "Users can delete test orders for their patients" ON pharmacogenomic_test_orders
-    FOR DELETE USING (
-        patient_id IN (
-            SELECT id FROM clients WHERE owner_id = auth.uid()
-        ) OR practitioner_id = auth.uid()
-    );
-
--- Pharmacogenomic reports policies
-CREATE POLICY "Users can view reports for their patients" ON pharmacogenomic_reports
-    FOR SELECT USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can insert reports for their patients" ON pharmacogenomic_reports
-    FOR INSERT WITH CHECK (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) AND practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can update reports for their patients" ON pharmacogenomic_reports
-    FOR UPDATE USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
-CREATE POLICY "Users can delete reports for their patients" ON pharmacogenomic_reports
-    FOR DELETE USING (
-        patient_genetic_profile_id IN (
-            SELECT id FROM patient_genetic_profiles 
-            WHERE patient_id IN (
-                SELECT id FROM clients WHERE owner_id = auth.uid()
-            ) OR practitioner_id = auth.uid()
-        )
-    );
-
--- Pharmacogenomic guidelines policies (system-wide read access)
+-- Policies for pharmacogenomic_guidelines
 CREATE POLICY "Users can view pharmacogenomic guidelines" ON pharmacogenomic_guidelines
     FOR SELECT USING (true);
 
 CREATE POLICY "Users can insert pharmacogenomic guidelines" ON pharmacogenomic_guidelines
-    FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
+    FOR INSERT WITH CHECK (true);
 
 CREATE POLICY "Users can update pharmacogenomic guidelines" ON pharmacogenomic_guidelines
-    FOR UPDATE USING (auth.uid() IS NOT NULL);
+    FOR UPDATE USING (true);
 
-CREATE POLICY "Users can delete pharmacogenomic guidelines" ON pharmacogenomic_guidelines
-    FOR DELETE USING (auth.uid() IS NOT NULL);
+-- Policies for pharmacogenomic_alerts
+CREATE POLICY "Users can view pharmacogenomic alerts" ON pharmacogenomic_alerts
+    FOR SELECT USING (true);
 
--- Pharmacogenomic analytics policies
-CREATE POLICY "Users can view their own analytics" ON pharmacogenomic_analytics
-    FOR SELECT USING (practitioner_id = auth.uid() OR practitioner_id IS NULL);
+CREATE POLICY "Users can insert pharmacogenomic alerts" ON pharmacogenomic_alerts
+    FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Users can insert their own analytics" ON pharmacogenomic_analytics
-    FOR INSERT WITH CHECK (practitioner_id = auth.uid() OR practitioner_id IS NULL);
+CREATE POLICY "Users can update pharmacogenomic alerts" ON pharmacogenomic_alerts
+    FOR UPDATE USING (true);
 
-CREATE POLICY "Users can update their own analytics" ON pharmacogenomic_analytics
-    FOR UPDATE USING (practitioner_id = auth.uid() OR practitioner_id IS NULL);
+-- Policies for pharmacogenomic_analytics
+CREATE POLICY "Users can view pharmacogenomic analytics" ON pharmacogenomic_analytics
+    FOR SELECT USING (true);
 
-CREATE POLICY "Users can delete their own analytics" ON pharmacogenomic_analytics
-    FOR DELETE USING (practitioner_id = auth.uid() OR practitioner_id IS NULL);
+CREATE POLICY "Users can insert pharmacogenomic analytics" ON pharmacogenomic_analytics
+    FOR INSERT WITH CHECK (true);
 
--- Functions for Pharmacogenomics
+-- Policies for gene_information
+CREATE POLICY "Users can view gene information" ON gene_information
+    FOR SELECT USING (true);
 
--- Function to generate pharmacogenomic recommendations
-CREATE OR REPLACE FUNCTION generate_pharmacogenomic_recommendations(
-    p_patient_genetic_profile_id UUID
-)
-RETURNS TABLE (
-    drug_name VARCHAR(200),
-    gene_symbol VARCHAR(50),
-    interaction_level VARCHAR(20),
-    recommendation_type VARCHAR(50),
-    recommendation_text TEXT,
-    confidence_level VARCHAR(20),
-    evidence_strength VARCHAR(20)
-) AS $$
-DECLARE
-    v_patient_variants RECORD;
-    v_drug_interaction RECORD;
-BEGIN
-    -- Get patient's genetic variants
-    FOR v_patient_variants IN
-        SELECT 
-            pgv.variant_id,
-            pgv.genotype,
-            pgv.zygosity,
-            gv.gene_symbol,
-            gv.variant_name,
-            gv.clinical_significance
-        FROM patient_genetic_variants pgv
-        JOIN genetic_variants gv ON pgv.variant_id = gv.id
-        WHERE pgv.patient_genetic_profile_id = p_patient_genetic_profile_id
-    LOOP
-        -- Find drug-gene interactions for this variant
-        FOR v_drug_interaction IN
-            SELECT 
-                dgi.drug_name,
-                dgi.gene_symbol,
-                dgi.interaction_level,
-                dgi.evidence_level,
-                dgi.clinical_guidance,
-                dgi.dosing_recommendation,
-                dgi.alternative_drugs,
-                dgi.contraindications,
-                dgi.warnings,
-                dgi.monitoring_recommendations
-            FROM drug_gene_interactions dgi
-            WHERE dgi.variant_id = v_patient_variants.variant_id
-            AND dgi.is_active = TRUE
-        LOOP
-            -- Generate recommendations based on interaction level
-            CASE v_drug_interaction.interaction_level
-                WHEN 'level_1a', 'level_1b' THEN
-                    RETURN QUERY
-                    SELECT 
-                        v_drug_interaction.drug_name,
-                        v_drug_interaction.gene_symbol,
-                        v_drug_interaction.interaction_level,
-                        'dose_adjustment'::VARCHAR(50),
-                        COALESCE(v_drug_interaction.dosing_recommendation, v_drug_interaction.clinical_guidance),
-                        'high'::VARCHAR(20),
-                        v_drug_interaction.evidence_level;
-                WHEN 'level_2a', 'level_2b' THEN
-                    RETURN QUERY
-                    SELECT 
-                        v_drug_interaction.drug_name,
-                        v_drug_interaction.gene_symbol,
-                        v_drug_interaction.interaction_level,
-                        'monitoring'::VARCHAR(50),
-                        COALESCE(v_drug_interaction.monitoring_recommendations[1], v_drug_interaction.clinical_guidance),
-                        'moderate'::VARCHAR(20),
-                        v_drug_interaction.evidence_level;
-                WHEN 'level_3' THEN
-                    RETURN QUERY
-                    SELECT 
-                        v_drug_interaction.drug_name,
-                        v_drug_interaction.gene_symbol,
-                        v_drug_interaction.interaction_level,
-                        'drug_selection'::VARCHAR(50),
-                        COALESCE(v_drug_interaction.alternative_drugs[1], v_drug_interaction.clinical_guidance),
-                        'moderate'::VARCHAR(20),
-                        v_drug_interaction.evidence_level;
-                WHEN 'level_4' THEN
-                    RETURN QUERY
-                    SELECT 
-                        v_drug_interaction.drug_name,
-                        v_drug_interaction.gene_symbol,
-                        v_drug_interaction.interaction_level,
-                        'contraindication'::VARCHAR(50),
-                        COALESCE(v_drug_interaction.contraindications[1], v_drug_interaction.warnings[1]),
-                        'low'::VARCHAR(20),
-                        v_drug_interaction.evidence_level;
-            END CASE;
-        END LOOP;
-    END LOOP;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE POLICY "Users can insert gene information" ON gene_information
+    FOR INSERT WITH CHECK (true);
 
--- Function to generate pharmacogenomic analytics
-CREATE OR REPLACE FUNCTION generate_pharmacogenomic_analytics(
-    p_analysis_date DATE DEFAULT CURRENT_DATE,
-    p_analysis_period_months INTEGER DEFAULT 12,
-    p_practitioner_id UUID DEFAULT NULL
-)
-RETURNS JSONB AS $$
-DECLARE
-    v_start_date DATE;
-    v_analytics JSONB;
-BEGIN
-    v_start_date := p_analysis_date - INTERVAL '1 month' * p_analysis_period_months;
-    
-    SELECT jsonb_build_object(
-        'analysis_date', p_analysis_date,
-        'analysis_period_months', p_analysis_period_months,
-        'practitioner_id', p_practitioner_id,
-        'total_tests_ordered', (
-            SELECT COUNT(*) FROM pharmacogenomic_test_orders
-            WHERE order_date >= v_start_date
-            AND (p_practitioner_id IS NULL OR practitioner_id = p_practitioner_id)
-        ),
-        'total_tests_completed', (
-            SELECT COUNT(*) FROM pharmacogenomic_test_orders
-            WHERE order_date >= v_start_date
-            AND order_status = 'completed'
-            AND (p_practitioner_id IS NULL OR practitioner_id = p_practitioner_id)
-        ),
-        'total_patients_tested', (
-            SELECT COUNT(DISTINCT patient_id) FROM pharmacogenomic_test_orders
-            WHERE order_date >= v_start_date
-            AND (p_practitioner_id IS NULL OR practitioner_id = p_practitioner_id)
-        ),
-        'average_test_cost', (
-            SELECT AVG(cost) FROM pharmacogenomic_test_orders
-            WHERE order_date >= v_start_date
-            AND (p_practitioner_id IS NULL OR practitioner_id = p_practitioner_id)
-        ),
-        'insurance_coverage_rate', (
-            SELECT 
-                CASE 
-                    WHEN COUNT(*) > 0 THEN 
-                        COUNT(CASE WHEN insurance_coverage = TRUE THEN 1 END)::DECIMAL / COUNT(*)::DECIMAL
-                    ELSE 0
-                END
-            FROM pharmacogenomic_test_orders
-            WHERE order_date >= v_start_date
-            AND (p_practitioner_id IS NULL OR practitioner_id = p_practitioner_id)
-        ),
-        'test_completion_rate', (
-            SELECT 
-                CASE 
-                    WHEN COUNT(*) > 0 THEN 
-                        COUNT(CASE WHEN order_status = 'completed' THEN 1 END)::DECIMAL / COUNT(*)::DECIMAL
-                    ELSE 0
-                END
-            FROM pharmacogenomic_test_orders
-            WHERE order_date >= v_start_date
-            AND (p_practitioner_id IS NULL OR practitioner_id = p_practitioner_id)
-        ),
-        'recommendation_adoption_rate', (
-            SELECT 
-                CASE 
-                    WHEN COUNT(*) > 0 THEN 
-                        COUNT(CASE WHEN is_applied = TRUE THEN 1 END)::DECIMAL / COUNT(*)::DECIMAL
-                    ELSE 0
-                END
-            FROM pharmacogenomic_recommendations
-            WHERE created_at >= v_start_date
-            AND (p_practitioner_id IS NULL OR 
-                patient_genetic_profile_id IN (
-                    SELECT id FROM patient_genetic_profiles 
-                    WHERE practitioner_id = p_practitioner_id
-                ))
-        ),
-        'drug_interaction_alerts', (
-            SELECT COUNT(*) FROM pharmacogenomic_recommendations
-            WHERE created_at >= v_start_date
-            AND recommendation_type = 'dose_adjustment'
-            AND (p_practitioner_id IS NULL OR 
-                patient_genetic_profile_id IN (
-                    SELECT id FROM patient_genetic_profiles 
-                    WHERE practitioner_id = p_practitioner_id
-                ))
-        ),
-        'dose_adjustments_made', (
-            SELECT COUNT(*) FROM pharmacogenomic_recommendations
-            WHERE created_at >= v_start_date
-            AND recommendation_type = 'dose_adjustment'
-            AND is_applied = TRUE
-            AND (p_practitioner_id IS NULL OR 
-                patient_genetic_profile_id IN (
-                    SELECT id FROM patient_genetic_profiles 
-                    WHERE practitioner_id = p_practitioner_id
-                ))
-        ),
-        'contraindications_identified', (
-            SELECT COUNT(*) FROM pharmacogenomic_recommendations
-            WHERE created_at >= v_start_date
-            AND recommendation_type = 'contraindication'
-            AND (p_practitioner_id IS NULL OR 
-                patient_genetic_profile_id IN (
-                    SELECT id FROM patient_genetic_profiles 
-                    WHERE practitioner_id = p_practitioner_id
-                ))
-        ),
-        'clinical_outcomes', (
-            SELECT jsonb_build_object(
-                'improved_response_rate', 75.0, -- Mock data
-                'reduced_adverse_events', 60.0, -- Mock data
-                'better_treatment_adherence', 80.0 -- Mock data
-            )
-        ),
-        'cost_effectiveness', (
-            SELECT jsonb_build_object(
-                'cost_per_adverse_event_prevented', 2500.0, -- Mock data
-                'savings_per_patient', 1200.0, -- Mock data
-                'roi_percentage', 180.0 -- Mock data
-            )
-        )
-    ) INTO v_analytics;
-    
-    RETURN v_analytics;
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+CREATE POLICY "Users can update gene information" ON gene_information
+    FOR UPDATE USING (true);
 
--- Function to update pharmacogenomic analytics
-CREATE OR REPLACE FUNCTION update_pharmacogenomic_analytics(
-    p_analysis_date DATE DEFAULT CURRENT_DATE,
-    p_analysis_period_months INTEGER DEFAULT 12,
-    p_practitioner_id UUID DEFAULT NULL
-)
-RETURNS VOID AS $$
-DECLARE
-    v_analytics JSONB;
-BEGIN
-    SELECT generate_pharmacogenomic_analytics(p_analysis_date, p_analysis_period_months, p_practitioner_id) INTO v_analytics;
-    
-    INSERT INTO pharmacogenomic_analytics (
-        analysis_date,
-        analysis_period_months,
-        practitioner_id,
-        total_tests_ordered,
-        total_tests_completed,
-        total_patients_tested,
-        average_test_cost,
-        insurance_coverage_rate,
-        prior_authorization_rate,
-        test_completion_rate,
-        recommendation_adoption_rate,
-        drug_interaction_alerts,
-        dose_adjustments_made,
-        contraindications_identified,
-        clinical_outcomes,
-        cost_effectiveness
-    ) VALUES (
-        p_analysis_date,
-        p_analysis_period_months,
-        p_practitioner_id,
-        (v_analytics->>'total_tests_ordered')::INTEGER,
-        (v_analytics->>'total_tests_completed')::INTEGER,
-        (v_analytics->>'total_patients_tested')::INTEGER,
-        (v_analytics->>'average_test_cost')::DECIMAL(10,2),
-        (v_analytics->>'insurance_coverage_rate')::DECIMAL(5,2),
-        0.0, -- Mock data for prior authorization rate
-        (v_analytics->>'test_completion_rate')::DECIMAL(5,2),
-        (v_analytics->>'recommendation_adoption_rate')::DECIMAL(5,2),
-        (v_analytics->>'drug_interaction_alerts')::INTEGER,
-        (v_analytics->>'dose_adjustments_made')::INTEGER,
-        (v_analytics->>'contraindications_identified')::INTEGER,
-        v_analytics->'clinical_outcomes',
-        v_analytics->'cost_effectiveness'
-    )
-    ON CONFLICT (analysis_date, practitioner_id) 
-    DO UPDATE SET
-        analysis_period_months = EXCLUDED.analysis_period_months,
-        total_tests_ordered = EXCLUDED.total_tests_ordered,
-        total_tests_completed = EXCLUDED.total_tests_completed,
-        total_patients_tested = EXCLUDED.total_patients_tested,
-        average_test_cost = EXCLUDED.average_test_cost,
-        insurance_coverage_rate = EXCLUDED.insurance_coverage_rate,
-        prior_authorization_rate = EXCLUDED.prior_authorization_rate,
-        test_completion_rate = EXCLUDED.test_completion_rate,
-        recommendation_adoption_rate = EXCLUDED.recommendation_adoption_rate,
-        drug_interaction_alerts = EXCLUDED.drug_interaction_alerts,
-        dose_adjustments_made = EXCLUDED.dose_adjustments_made,
-        contraindications_identified = EXCLUDED.contraindications_identified,
-        clinical_outcomes = EXCLUDED.clinical_outcomes,
-        cost_effectiveness = EXCLUDED.cost_effectiveness,
-        updated_at = NOW();
-END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+-- Policies for variant_information
+CREATE POLICY "Users can view variant information" ON variant_information
+    FOR SELECT USING (true);
 
--- Trigger to update analytics when new test is ordered
-CREATE OR REPLACE FUNCTION trigger_update_pharmacogenomic_analytics()
-RETURNS TRIGGER AS $$
-BEGIN
-    PERFORM update_pharmacogenomic_analytics();
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+CREATE POLICY "Users can insert variant information" ON variant_information
+    FOR INSERT WITH CHECK (true);
 
-CREATE TRIGGER pharmacogenomic_analytics_trigger
-    AFTER INSERT OR UPDATE ON pharmacogenomic_test_orders
-    FOR EACH ROW
-    EXECUTE FUNCTION trigger_update_pharmacogenomic_analytics();
+CREATE POLICY "Users can update variant information" ON variant_information
+    FOR UPDATE USING (true);
 
--- Trigger to update updated_at timestamp
-CREATE OR REPLACE FUNCTION update_pharmacogenomic_updated_at()
+-- Functions for updating timestamps
+CREATE OR REPLACE FUNCTION update_genetic_variants_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.updated_at = NOW();
@@ -805,48 +301,97 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER genetic_variants_updated_at
+CREATE OR REPLACE FUNCTION update_drug_gene_interactions_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_pharmacogenomic_tests_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_personalized_treatments_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_pharmacogenomic_guidelines_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_gene_information_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION update_variant_information_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Triggers for updating timestamps
+CREATE TRIGGER trigger_update_genetic_variants_updated_at
     BEFORE UPDATE ON genetic_variants
     FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
+    EXECUTE FUNCTION update_genetic_variants_updated_at();
 
-CREATE TRIGGER drug_gene_interactions_updated_at
+CREATE TRIGGER trigger_update_drug_gene_interactions_updated_at
     BEFORE UPDATE ON drug_gene_interactions
     FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
+    EXECUTE FUNCTION update_drug_gene_interactions_updated_at();
 
-CREATE TRIGGER patient_genetic_profiles_updated_at
-    BEFORE UPDATE ON patient_genetic_profiles
+CREATE TRIGGER trigger_update_pharmacogenomic_tests_updated_at
+    BEFORE UPDATE ON pharmacogenomic_tests
     FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
+    EXECUTE FUNCTION update_pharmacogenomic_tests_updated_at();
 
-CREATE TRIGGER patient_genetic_variants_updated_at
-    BEFORE UPDATE ON patient_genetic_variants
+CREATE TRIGGER trigger_update_personalized_treatments_updated_at
+    BEFORE UPDATE ON personalized_treatments
     FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
+    EXECUTE FUNCTION update_personalized_treatments_updated_at();
 
-CREATE TRIGGER pharmacogenomic_recommendations_updated_at
-    BEFORE UPDATE ON pharmacogenomic_recommendations
-    FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
-
-CREATE TRIGGER pharmacogenomic_test_orders_updated_at
-    BEFORE UPDATE ON pharmacogenomic_test_orders
-    FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
-
-CREATE TRIGGER pharmacogenomic_reports_updated_at
-    BEFORE UPDATE ON pharmacogenomic_reports
-    FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
-
-CREATE TRIGGER pharmacogenomic_guidelines_updated_at
+CREATE TRIGGER trigger_update_pharmacogenomic_guidelines_updated_at
     BEFORE UPDATE ON pharmacogenomic_guidelines
     FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
+    EXECUTE FUNCTION update_pharmacogenomic_guidelines_updated_at();
 
-CREATE TRIGGER pharmacogenomic_analytics_updated_at
-    BEFORE UPDATE ON pharmacogenomic_analytics
+CREATE TRIGGER trigger_update_gene_information_updated_at
+    BEFORE UPDATE ON gene_information
     FOR EACH ROW
-    EXECUTE FUNCTION update_pharmacogenomic_updated_at();
+    EXECUTE FUNCTION update_gene_information_updated_at();
 
+CREATE TRIGGER trigger_update_variant_information_updated_at
+    BEFORE UPDATE ON variant_information
+    FOR EACH ROW
+    EXECUTE FUNCTION update_variant_information_updated_at();
+
+-- Comments for documentation
+COMMENT ON TABLE genetic_variants IS 'Stores patient genetic variants with clinical significance';
+COMMENT ON TABLE drug_gene_interactions IS 'Stores drug-gene interaction data and recommendations';
+COMMENT ON TABLE pharmacogenomic_tests IS 'Stores pharmacogenomic test orders and results';
+COMMENT ON TABLE personalized_treatments IS 'Stores personalized treatment plans based on genetics';
+COMMENT ON TABLE pharmacogenomic_guidelines IS 'Stores clinical guidelines for pharmacogenomic decisions';
+COMMENT ON TABLE pharmacogenomic_alerts IS 'Stores alerts for pharmacogenomic interactions';
+COMMENT ON TABLE pharmacogenomic_analytics IS 'Stores daily analytics for pharmacogenomic data';
+COMMENT ON TABLE gene_information IS 'Stores reference information about genes';
+COMMENT ON TABLE variant_information IS 'Stores reference information about genetic variants';

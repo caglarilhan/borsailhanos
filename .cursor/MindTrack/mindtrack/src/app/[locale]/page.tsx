@@ -84,6 +84,7 @@ import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry
 import AcademicResearchManagement from "@/components/academic/academic-research-management";
 import AIClinicalDecisionSupport from "@/components/ai/ai-clinical-decision-support";
 import AdvancedLaboratoryIntegration from "@/components/laboratory/advanced-laboratory-integration";
+import PharmacogenomicsIntegration from "@/components/pharmacogenomics/pharmacogenomics-integration";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -166,6 +167,7 @@ export default function HomePage() {
     { value: "ai-clinical-decision", label: "AI Clinical Decision" },
     { value: "mobile-app", label: "Mobile App" },
     { value: "lab-integration", label: "Lab Integration" },
+    { value: "pharmacogenomics", label: "Pharmacogenomics" },
     { value: "gamification", label: "Gamification" },
     { value: "notification-hub", label: "Notifications" },
     { value: "research", label: "Research" },
@@ -1052,6 +1054,10 @@ export default function HomePage() {
 
           <TabsContent value="lab-integration" className="space-y-6">
             <AdvancedLaboratoryIntegration />
+          </TabsContent>
+
+          <TabsContent value="pharmacogenomics" className="space-y-6">
+            <PharmacogenomicsIntegration />
           </TabsContent>
 
           <TabsContent value="telepsychiatry" className="space-y-6">
