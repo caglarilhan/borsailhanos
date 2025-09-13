@@ -1,0 +1,160 @@
+{
+  "start_time": "2025-08-29T07:27:34.867953",
+  "modules_tested": [
+    {
+      "module": "WebSocket Layer",
+      "status": "PASS",
+      "tests": [
+        {
+          "test": "Mock Mode Creation",
+          "status": "PASS",
+          "time": 2.09808349609375e-05,
+          "details": "Mock WebSocket layer başarıyla oluşturuldu"
+        },
+        {
+          "test": "Connection Test",
+          "status": "PASS",
+          "time": 7.867813110351562e-06,
+          "details": "Mock bağlantı başarılı"
+        },
+        {
+          "test": "Subscription Test",
+          "status": "PASS",
+          "time": 1.5020370483398438e-05,
+          "details": "3 sembol subscribe edildi"
+        },
+        {
+          "test": "Mock Streaming Test",
+          "status": "PASS",
+          "time": 5.001311779022217,
+          "details": "Mock fiyat verisi başarıyla alındı"
+        }
+      ],
+      "performance": {
+        "creation_time": 2.09808349609375e-05,
+        "connection_time": 7.867813110351562e-06,
+        "subscription_time": 1.5020370483398438e-05,
+        "streaming_time": 5.001311779022217,
+        "total_time": 5.001607894897461
+      },
+      "errors": []
+    },
+    {
+      "module": "Fundamental Data Layer",
+      "status": "PASS",
+      "tests": [
+        {
+          "test": "Layer Creation",
+          "status": "PASS",
+          "time": 0.0005297660827636719,
+          "details": "Fundamental layer başarıyla oluşturuldu"
+        },
+        {
+          "test": "Batch Financial Scores",
+          "status": "PASS",
+          "time": 9.77430009841919,
+          "details": "3 sembol için skor hesaplandı"
+        },
+        {
+          "test": "Individual Symbol Score",
+          "status": "PASS",
+          "time": 1.9760730266571045,
+          "details": "AAPL: 45.0%"
+        }
+      ],
+      "performance": {
+        "creation_time": 0.0005297660827636719,
+        "batch_time": 9.77430009841919,
+        "individual_time": 1.9760730266571045,
+        "total_time": 1.9761009216308594
+      },
+      "errors": []
+    },
+    {
+      "module": "Grey TOPSIS Ranking",
+      "status": "PASS",
+      "tests": [
+        {
+          "test": "System Creation",
+          "status": "PASS",
+          "time": 8.20159912109375e-05,
+          "details": "Ranking system başarıyla oluşturuldu"
+        },
+        {
+          "test": "Ranking Calculation",
+          "status": "PASS",
+          "time": 0.020375967025756836,
+          "details": "3 hisse için ranking tamamlandı"
+        },
+        {
+          "test": "Top Stocks Retrieval",
+          "status": "PASS",
+          "time": 9.5367431640625e-07,
+          "details": "Top 3 hisse başarıyla alındı"
+        }
+      ],
+      "performance": {
+        "creation_time": 8.20159912109375e-05,
+        "calculation_time": 0.020375967025756836,
+        "top_stocks_time": 9.5367431640625e-07,
+        "total_time": 1.0967254638671875e-05
+      },
+      "errors": []
+    }
+  ],
+  "integration_tests": [
+    {
+      "module": "Integrated System",
+      "status": "PASS",
+      "tests": [
+        {
+          "test": "Integrated System Creation",
+          "status": "PASS",
+          "time": 4.673004150390625e-05,
+          "details": "Entegre sistem başarıyla oluşturuldu"
+        },
+        {
+          "test": "Full Integration",
+          "status": "PASS",
+          "time": 13.594141960144043,
+          "details": "Final accuracy: %134.0"
+        },
+        {
+          "test": "WebSocket Integration",
+          "status": "PASS",
+          "time": 0,
+          "details": "WebSocket başarıyla entegre edildi"
+        },
+        {
+          "test": "Fundamental Integration",
+          "status": "PASS",
+          "time": 0,
+          "details": "Fundamental data başarıyla entegre edildi"
+        },
+        {
+          "test": "Ranking Integration",
+          "status": "PASS",
+          "time": 0,
+          "details": "Ranking system başarıyla entegre edildi"
+        }
+      ],
+      "performance": {
+        "creation_time": 4.673004150390625e-05,
+        "integration_time": 13.594141960144043,
+        "total_time": 13.594152212142944
+      },
+      "errors": []
+    }
+  ],
+  "performance_metrics": {
+    "total_test_time": 30.36860990524292,
+    "modules_passed": 3,
+    "modules_failed": 0,
+    "integration_passed": 1,
+    "integration_failed": 0
+  },
+  "errors": [],
+  "warnings": [],
+  "final_status": "PASS",
+  "end_time": "2025-08-29T07:28:05.236686"
+}

@@ -14,7 +14,6 @@ import logging
 import ta
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-import ta
 
 logger = logging.getLogger(__name__)
 
@@ -109,36 +108,36 @@ class TechnicalPatternEngine:
             return None
             
         except Exception as e:
-            logger.error(f"EMA cross tespit hatası: {e}")
+            logger.error(f"EMA cross detection hatası: {e}")
             return None
     
     def detect_candlestick_patterns(self, df: pd.DataFrame) -> List[PatternSignal]:
-        """Candlestick formasyonları tespit et"""
+        """Candlestick pattern'ları tespit et"""
+        patterns = []
+        
         try:
-            patterns = []
-            
-            if len(df) < 3:
+            if len(df) < 2:
                 return patterns
             
+            # Son 2 mum
+            current = df.iloc[-1]
+            previous = df.iloc[-2]
+            
             print(f"DEBUG: Candlestick tespit - son 2 mum:")
-            print(f"  Mum -2: O={df['Open'].iloc[-2]:.2f}, H={df['High'].iloc[-2]:.2f}, L={df['Low'].iloc[-2]:.2f}, C={df['Close'].iloc[-2]:.2f}")
-            print(f"  Mum -1: O={df['Open'].iloc[-1]:.2f}, H={df['High'].iloc[-1]:.2f}, L={df['Low'].iloc[-1]:.2f}, C={df['Close'].iloc[-1]:.2f}")
+            print(f"  Mum -2: O={previous['Open']:.2f}, H={previous['High']:.2f}, L={previous['Low']:.2f}, C={previous['Close']:.2f}")
+            print(f"  Mum -1: O={current['Open']:.2f}, H={current['High']:.2f}, L={current['Low']:.2f}, C={current['Close']:.2f}")
             
-            # Bullish Engulfing - manuel kontrol
-            prev_open = df['Open'].iloc[-2]
-            prev_close = df['Close'].iloc[-2]
-            curr_open = df['Open'].iloc[-1]
-            curr_close = df['Close'].iloc[-1]
-            
-            # Önceki mum kırmızı (close < open) ve şimdiki mum yeşil (close > open)
-            if (prev_close < prev_open and curr_close > curr_open and
-                curr_open < prev_close and curr_close > prev_open):
+            # Bullish Engulfing
+            if (previous['Close'] < previous['Open'] and  # Önceki kırmızı mum
+                current['Close'] > current['Open'] and      # Şimdiki yeşil mum
+                current['Open'] < previous['Close'] and     # Şimdiki açılış önceki kapanışın altında
+                current['Close'] > previous['Open']):       # Şimdiki kapanış önceki açılışın üstünde
                 
                 print("DEBUG: Bullish Engulfing tespit edildi!")
                 
-                entry_price = curr_close
-                stop_loss = df['Low'].iloc[-1] * 0.98
-                take_profit = entry_price + (entry_price - stop_loss) * 2
+                entry_price = current['Close']
+                stop_loss = min(previous['Low'], current['Low'])
+                take_profit = entry_price + (entry_price - stop_loss) * 2  # 2:1 R/R
                 risk_reward = (take_profit - entry_price) / (entry_price - stop_loss)
                 
                 if risk_reward >= self.risk_reward_min:
@@ -153,39 +152,44 @@ class TechnicalPatternEngine:
                         take_profit=take_profit,
                         risk_reward=risk_reward,
                         timestamp=datetime.now(),
-                        description='Yeşil mum önceki kırmızı mumu yutuyor'
+                        description='Yeşil mum kırmızı mumu tamamen sarıyor'
                     ))
             
-            # TA-Lib ile de kontrol et
-            bullish_engulf = ta.candlestick.CDLENGULFING(df['Open'], df['High'], df['Low'], df['Close'])
-            if bullish_engulf.iloc[-1] > 0:
-                print("DEBUG: TA-Lib Bullish Engulfing tespit edildi!")
+            # Bearish Engulfing
+            elif (previous['Close'] > previous['Open'] and  # Önceki yeşil mum
+                  current['Close'] < current['Open'] and      # Şimdiki kırmızı mum
+                  current['Open'] > previous['Close'] and     # Şimdiki açılış önceki kapanışın üstünde
+                  current['Close'] < previous['Open']):       # Şimdiki kapanış önceki açılışın altında
                 
-                entry_price = df['Close'].iloc[-1]
-                stop_loss = df['Low'].iloc[-1] * 0.98
-                take_profit = entry_price + (entry_price - stop_loss) * 2
-                risk_reward = (take_profit - entry_price) / (entry_price - stop_loss)
+                entry_price = current['Close']
+                stop_loss = max(previous['High'], current['High'])
+                take_profit = entry_price - (stop_loss - entry_price) * 2  # 2:1 R/R
+                risk_reward = (stop_loss - entry_price) / (entry_price - take_profit)
                 
                 if risk_reward >= self.risk_reward_min:
                     patterns.append(PatternSignal(
                         symbol=df.get('symbol', 'UNKNOWN'),
                         pattern_type='CANDLESTICK',
-                        pattern_name='Bullish Engulfing (TA-Lib)',
+                        pattern_name='Bearish Engulfing',
                         confidence=0.75,
-                        direction='BULLISH',
+                        direction='BEARISH',
                         entry_price=entry_price,
                         stop_loss=stop_loss,
                         take_profit=take_profit,
                         risk_reward=risk_reward,
                         timestamp=datetime.now(),
-                        description='TA-Lib: Yeşil mum önceki kırmızı mumu yutuyor'
+                        description='Kırmızı mum yeşil mumu tamamen sarıyor'
                     ))
             
-            return patterns
+            # Doji
+            elif abs(current['Close'] - current['Open']) < (current['High'] - current['Low']) * 0.1:
+                # Doji tespit edildi ama sinyal üretmiyoruz (neutral)
+                pass
             
         except Exception as e:
             logger.error(f"Candlestick pattern tespit hatası: {e}")
-            return []
+        
+        return patterns
     
     def detect_harmonic_patterns(self, df: pd.DataFrame) -> List[PatternSignal]:
         """Harmonik formasyonları tespit et (Gartley, AB=CD)"""
