@@ -82,6 +82,7 @@ import LaboratoryImagingManagement from "@/components/laboratory/laboratory-imag
 import GeneticCounselingManagement from "@/components/genetic/genetic-counseling-management";
 import TelepsychiatryManagement from "@/components/telepsychiatry/telepsychiatry-management";
 import AcademicResearchManagement from "@/components/academic/academic-research-management";
+import AIClinicalDecisionSupport from "@/components/ai/ai-clinical-decision-support";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -161,6 +162,7 @@ export default function HomePage() {
     { value: "ai", label: "AI Assistant" },
     { value: "ai-content-seo", label: "AI & SEO" },
     { value: "ai-diagnostic", label: "AI Diagnostic" },
+    { value: "ai-clinical-decision", label: "AI Clinical Decision" },
     { value: "gamification", label: "Gamification" },
     { value: "notification-hub", label: "Notifications" },
     { value: "research", label: "Research" },
@@ -1035,6 +1037,10 @@ export default function HomePage() {
 
           <TabsContent value="ai-diagnostic" className="space-y-6">
             <AIPoweredDiagnosticSupport />
+          </TabsContent>
+
+          <TabsContent value="ai-clinical-decision" className="space-y-6">
+            <AIClinicalDecisionSupport />
           </TabsContent>
 
           <TabsContent value="telepsychiatry" className="space-y-6">
