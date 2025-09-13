@@ -170,3 +170,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete electronic prescription security record' }, { status: 500 });
   }
 }
+

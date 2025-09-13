@@ -769,3 +769,4 @@ CREATE TRIGGER ai_recommendation_analytics_updated_at
     BEFORE UPDATE ON ai_recommendation_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_ai_recommendation_updated_at();
+

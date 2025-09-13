@@ -220,3 +220,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete guideline compliance tracking' }, { status: 500 });
   }
 }
+

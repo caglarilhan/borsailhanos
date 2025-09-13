@@ -191,3 +191,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete prescription fraud detection record' }, { status: 500 });
   }
 }
+

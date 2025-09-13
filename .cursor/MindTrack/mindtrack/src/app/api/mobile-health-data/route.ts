@@ -180,3 +180,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete mobile health data' }, { status: 500 });
   }
 }
+

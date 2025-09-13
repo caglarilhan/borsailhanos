@@ -168,3 +168,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete revenue analytics' }, { status: 500 });
   }
 }
+

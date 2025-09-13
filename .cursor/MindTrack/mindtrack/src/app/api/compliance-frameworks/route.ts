@@ -144,3 +144,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete compliance framework' }, { status: 500 });
   }
 }
+

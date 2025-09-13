@@ -783,3 +783,4 @@ CREATE TRIGGER mobile_health_settings_updated_at
     BEFORE UPDATE ON mobile_health_settings
     FOR EACH ROW
     EXECUTE FUNCTION update_mobile_health_updated_at();
+

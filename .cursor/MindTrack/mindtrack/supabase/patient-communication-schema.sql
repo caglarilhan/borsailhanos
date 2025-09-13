@@ -735,3 +735,4 @@ CREATE TRIGGER communication_analytics_updated_at
     BEFORE UPDATE ON communication_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_communication_updated_at();
+

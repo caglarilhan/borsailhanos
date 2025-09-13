@@ -1078,3 +1078,4 @@ CREATE TRIGGER security_analytics_updated_at
     BEFORE UPDATE ON security_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_security_updated_at();
+

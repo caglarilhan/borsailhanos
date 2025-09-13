@@ -601,3 +601,4 @@ CREATE TRIGGER patient_reported_outcomes_updated_at
     BEFORE UPDATE ON patient_reported_outcomes
     FOR EACH ROW
     EXECUTE FUNCTION update_effectiveness_updated_at();
+

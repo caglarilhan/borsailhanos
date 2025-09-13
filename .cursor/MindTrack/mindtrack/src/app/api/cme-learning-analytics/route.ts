@@ -172,3 +172,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete CME learning analytics' }, { status: 500 });
   }
 }
+

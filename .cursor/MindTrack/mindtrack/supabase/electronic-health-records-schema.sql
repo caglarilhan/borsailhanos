@@ -994,3 +994,4 @@ CREATE TRIGGER ehr_analytics_updated_at
     BEFORE UPDATE ON ehr_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_ehr_updated_at();
+

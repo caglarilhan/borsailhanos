@@ -1,3 +1,5 @@
+"use client";
+
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -56,13 +58,13 @@ import DrugInteractionsManagement from "@/components/medication/drug-interaction
 import DrugDosageCalculators from "@/components/medication/drug-dosage-calculators";
 import MedicationTrackingReminders from "@/components/medication/medication-tracking-reminders";
 import MedicationSideEffectsTracking from "@/components/medication/medication-side-effects-tracking";
-import { AdvancedGeneticTests } from "@/components/genetic/advanced-genetic-tests";
-import { PersonalizedMedicationRecommendations } from "@/components/medication/personalized-medication-recommendations";
-import { AdvancedLabTracking } from "@/components/laboratory/advanced-lab-tracking";
-import { DrugLevelMonitoring } from "@/components/medication/drug-level-monitoring";
-import { MedicationEffectivenessAnalysis } from "@/components/medication/medication-effectiveness-analysis";
-import { AIPoweredMedicationRecommendations } from "@/components/ai/ai-powered-medication-recommendations";
-import { ClinicalGuidelines } from "@/components/guidelines/clinical-guidelines";
+import AdvancedGeneticTests from "@/components/genetic/advanced-genetic-tests";
+import PersonalizedMedicationRecommendations from "@/components/medication/personalized-medication-recommendations";
+import AdvancedLabTracking from "@/components/laboratory/advanced-lab-tracking";
+import DrugLevelMonitoring from "@/components/medication/drug-level-monitoring";
+import MedicationEffectivenessAnalysis from "@/components/medication/medication-effectiveness-analysis";
+import AIPoweredMedicationRecommendations from "@/components/ai/ai-powered-medication-recommendations";
+import ClinicalGuidelines from "@/components/guidelines/clinical-guidelines";
 import { MedicationSafetyManagement } from "@/components/medication/medication-safety-management";
 import { PrescriptionSecurityManagement } from "@/components/medication/prescription-security-management";
 import { PatientEducationMaterials } from "@/components/education/patient-education-materials";
@@ -89,6 +91,197 @@ function WebVitalsInit() {
 }
 
 export default function HomePage() {
+  const [category, setCategory] = React.useState<
+    | "core"
+    | "medication"
+    | "analytics"
+    | "security"
+    | "integration"
+    | "education"
+    | "other"
+  >("core");
+  const [tab, setTab] = React.useState<string>("dashboard");
+
+  const CORE_TABS = [
+    { value: "dashboard", label: "Dashboard" },
+    { value: "patient-portal", label: "Patient Portal" },
+    { value: "workflow-automation", label: "Workflow Automation" },
+    { value: "team-collaboration", label: "Team Collaboration" },
+  ];
+
+  const MEDICATION_TABS = [
+    { value: "advanced-medication", label: "Advanced Medication" },
+    { value: "drug-interactions", label: "Drug Interactions" },
+    { value: "dosage-calculators", label: "Dosage Calculators" },
+    { value: "medication-tracking", label: "Medication Tracking" },
+    { value: "side-effects-tracking", label: "Side Effects" },
+    { value: "drug-level-monitoring", label: "Drug Levels" },
+    { value: "medication-effectiveness", label: "Effectiveness" },
+    { value: "clinical-guidelines", label: "Guidelines" },
+    { value: "medication-safety", label: "Safety" },
+    { value: "prescription-security", label: "Prescription Sec" },
+    { value: "patient-education", label: "Education" },
+  ];
+
+  const ANALYTICS_TABS = [
+    { value: "analytics", label: "Analytics" },
+    { value: "advanced-analytics", label: "Advanced Analytics" },
+    { value: "practice-analytics", label: "Practice Analytics" },
+    { value: "predictive-analytics", label: "Predictive" },
+    { value: "advanced-analytics-bi", label: "BI" },
+    { value: "business-intelligence", label: "Business Intelligence" },
+    { value: "quality-measures", label: "Quality Measures" },
+  ];
+
+  const SECURITY_TABS = [
+    { value: "security", label: "Security" },
+    { value: "security-compliance", label: "Compliance" },
+    { value: "advanced-security", label: "Advanced Sec" },
+    { value: "advanced-security-features", label: "Security Features" },
+    { value: "hipaa-compliance", label: "HIPAA" },
+  ];
+
+  const INTEGRATION_TABS = [
+    { value: "data-integration", label: "Data Integration" },
+    { value: "api-gateway", label: "API Gateway" },
+    { value: "cloud-infrastructure", label: "Cloud & DevOps" },
+    { value: "electronic-health-records", label: "EHR" },
+    { value: "interoperability", label: "Interoperability" },
+    { value: "telehealth", label: "Telehealth" },
+    { value: "telehealth-video", label: "Video" },
+    { value: "telehealth-telemedicine", label: "Telemedicine" },
+  ];
+
+  const EDUCATION_TABS = [
+    { value: "cme", label: "CME" },
+    { value: "continuing-medical-education", label: "CME Mgmt" },
+  ];
+
+  const OTHER_TABS = [
+    { value: "ai", label: "AI Assistant" },
+    { value: "ai-content-seo", label: "AI & SEO" },
+    { value: "ai-diagnostic", label: "AI Diagnostic" },
+    { value: "gamification", label: "Gamification" },
+    { value: "notification-hub", label: "Notifications" },
+    { value: "research", label: "Research" },
+    { value: "clinical-decision", label: "Clinical Decision" },
+    { value: "mobile", label: "Mobile" },
+    { value: "financial-management", label: "Financial" },
+    { value: "population-health", label: "Population Health" },
+    { value: "practice-analytics", label: "Practice Analytics" },
+    { value: "professional-development", label: "Professional Dev" },
+    { value: "advanced-search", label: "Advanced Search" },
+    { value: "patient-outcomes", label: "Patient Outcomes" },
+    { value: "academic-research", label: "Academic Research" },
+    { value: "specialized-practice", label: "Specialized" },
+    { value: "advanced-genetic-tests", label: "Genetic Tests" },
+    { value: "personalized-recommendations", label: "Personalized Rx" },
+    { value: "advanced-lab-tracking", label: "Lab Tracking" },
+    { value: "laboratory-imaging", label: "Lab & Imaging" },
+    { value: "genetic-counseling", label: "Genetic Counseling" },
+    { value: "telepsychiatry", label: "Telepsychiatry" },
+    { value: "academic-management", label: "Academic Mgmt" },
+    { value: "business-intelligence", label: "Business Intelligence" },
+    { value: "insurance-billing", label: "Insurance & Billing" },
+    { value: "payment", label: "Payment" },
+    { value: "system-administration", label: "System Admin" },
+    { value: "cloud-infrastructure", label: "Cloud & DevOps" },
+    { value: "blockchain-web3", label: "Blockchain" },
+    { value: "healthcare-network", label: "Healthcare Network" },
+    { value: "quality-assurance", label: "QA" },
+    { value: "performance-monitoring", label: "Performance" },
+    { value: "disaster-recovery", label: "Backup & DR" },
+  ];
+
+  const CATEGORY_TO_TABS = {
+    core: CORE_TABS,
+    medication: MEDICATION_TABS,
+    analytics: ANALYTICS_TABS,
+    security: SECURITY_TABS,
+    integration: INTEGRATION_TABS,
+    education: EDUCATION_TABS,
+    other: OTHER_TABS,
+  } as const;
+
+  const categoryScrollRef = React.useRef<HTMLDivElement | null>(null);
+  const tabsScrollRef = React.useRef<HTMLDivElement | null>(null);
+
+  const scrollByAmount = 280;
+  const scrollLeft = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollBy({ left: -scrollByAmount, behavior: "smooth" });
+  };
+  const scrollRight = (ref: React.RefObject<HTMLDivElement | null>) => {
+    ref.current?.scrollBy({ left: scrollByAmount, behavior: "smooth" });
+  };
+
+  // Persist last selections
+  React.useEffect(() => {
+    try {
+      const savedCategory = window.localStorage.getItem("mt_category");
+      const savedTab = window.localStorage.getItem("mt_tab");
+      if (savedCategory && (savedCategory in CATEGORY_TO_TABS)) {
+        setCategory(savedCategory as keyof typeof CATEGORY_TO_TABS);
+      }
+      if (savedTab) {
+        setTab(savedTab);
+      }
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem("mt_category", category);
+    } catch {}
+  }, [category]);
+
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem("mt_tab", tab);
+    } catch {}
+  }, [tab]);
+
+  // Ensure tab is valid for current category
+  React.useEffect(() => {
+    const currentTabs = CATEGORY_TO_TABS[category];
+    if (!currentTabs.some((t) => t.value === tab)) {
+      setTab(currentTabs[0]?.value ?? "dashboard");
+    }
+  }, [category, tab]);
+
+  // Keyboard shortcuts: Alt+Left/Right for tabs, Alt+Up/Down for categories
+  React.useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.altKey && (e.key === "ArrowRight" || e.key === "ArrowLeft")) {
+        const list = CATEGORY_TO_TABS[category];
+        let index = list.findIndex((t) => t.value === tab);
+        if (index < 0) index = 0;
+        index += e.key === "ArrowRight" ? 1 : -1;
+        index = Math.max(0, Math.min(list.length - 1, index));
+        setTab(list[index].value);
+        e.preventDefault();
+      }
+      if (e.altKey && (e.key === "ArrowUp" || e.key === "ArrowDown")) {
+        const cats = [
+          "core",
+          "medication",
+          "analytics",
+          "security",
+          "integration",
+          "education",
+          "other",
+        ] as const;
+        let cIndex = cats.indexOf(category);
+        cIndex += e.key === "ArrowDown" ? 1 : -1;
+        cIndex = Math.max(0, Math.min(cats.length - 1, cIndex));
+        setCategory(cats[cIndex]);
+        e.preventDefault();
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [category, tab]);
+
   return (
     <>
       <WebVitalsInit />
@@ -100,100 +293,126 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
-        <Tabs defaultValue="dashboard" className="w-full">
-                        <TabsList className="grid w-full grid-cols-57">
-            <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="ai">AI Assistant</TabsTrigger>
-            <TabsTrigger value="telehealth">Telehealth</TabsTrigger>
-            <TabsTrigger value="research">Research</TabsTrigger>
-            <TabsTrigger value="security">Security</TabsTrigger>
-            <TabsTrigger value="smart-scheduling">Smart Scheduling</TabsTrigger>
-            <TabsTrigger value="payment">Payment</TabsTrigger>
-            <TabsTrigger value="mobile">Mobile</TabsTrigger>
-            <TabsTrigger value="advanced-analytics">Advanced Analytics</TabsTrigger>
-            <TabsTrigger value="security-compliance">Security & Compliance</TabsTrigger>
-            <TabsTrigger value="telehealth-video">Telehealth & Video</TabsTrigger>
-            <TabsTrigger value="clinical-decision">Clinical Decision</TabsTrigger>
-            <TabsTrigger value="notification-hub">Notification Hub</TabsTrigger>
-            <TabsTrigger value="data-integration">Data Integration</TabsTrigger>
-            <TabsTrigger value="patient-portal">Patient Portal</TabsTrigger>
-            <TabsTrigger value="gamification">Gamification</TabsTrigger>
-            <TabsTrigger value="advanced-reporting">Advanced Reporting</TabsTrigger>
-            <TabsTrigger value="workflow-automation">Workflow Automation</TabsTrigger>
-            <TabsTrigger value="team-collaboration">Team Collaboration</TabsTrigger>
-            <TabsTrigger value="knowledge-management">Knowledge Management</TabsTrigger>
-            <TabsTrigger value="predictive-analytics">Predictive Analytics</TabsTrigger>
-            <TabsTrigger value="quality-assurance">Quality Assurance</TabsTrigger>
-            <TabsTrigger value="performance-monitoring">Performance</TabsTrigger>
-                          <TabsTrigger value="disaster-recovery">Backup & DR</TabsTrigger>
-              <TabsTrigger value="system-administration">System Admin</TabsTrigger>
-              <TabsTrigger value="mobile-app-development">Mobile App</TabsTrigger>
-              <TabsTrigger value="advanced-security">Advanced Security</TabsTrigger>
-              <TabsTrigger value="api-gateway">API Gateway</TabsTrigger>
-              <TabsTrigger value="cloud-infrastructure">Cloud & DevOps</TabsTrigger>
-              <TabsTrigger value="blockchain-web3">Blockchain</TabsTrigger>
-              <TabsTrigger value="ai-content-seo">AI Content & SEO</TabsTrigger>
-              <TabsTrigger value="advanced-analytics-bi">Advanced Analytics</TabsTrigger>
-              <TabsTrigger value="hipaa-compliance">HIPAA Compliance</TabsTrigger>
-              <TabsTrigger value="insurance-billing">Insurance & Billing</TabsTrigger>
-              <TabsTrigger value="ai-diagnostic">AI Diagnostic</TabsTrigger>
-              <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
-              <TabsTrigger value="cme">CME</TabsTrigger>
-              <TabsTrigger value="prescription-management">Prescription</TabsTrigger>
-              <TabsTrigger value="mental-health-tools">Mental Health</TabsTrigger>
-              <TabsTrigger value="healthcare-network">Healthcare Network</TabsTrigger>
-              <TabsTrigger value="clinical-research">Clinical Research</TabsTrigger>
-              <TabsTrigger value="financial-management">Financial</TabsTrigger>
-              <TabsTrigger value="practice-analytics">Practice Analytics</TabsTrigger>
-              <TabsTrigger value="professional-development">Professional Dev</TabsTrigger>
-              <TabsTrigger value="advanced-security-features">Security</TabsTrigger>
-              <TabsTrigger value="population-health">Population Health</TabsTrigger>
-              <TabsTrigger value="customizable-practice">Practice Management</TabsTrigger>
-              <TabsTrigger value="advanced-reporting">Advanced Reporting</TabsTrigger>
-              <TabsTrigger value="workflow-automation">Workflow Automation</TabsTrigger>
-              <TabsTrigger value="real-time-collaboration">Real-time Collaboration</TabsTrigger>
-              <TabsTrigger value="advanced-search">Advanced Search</TabsTrigger>
-              <TabsTrigger value="predictive-analytics">Predictive Analytics</TabsTrigger>
-              <TabsTrigger value="clinical-decision-support">Clinical Decision</TabsTrigger>
-              <TabsTrigger value="patient-outcome-tracking">Patient Outcomes</TabsTrigger>
-                                  <TabsTrigger value="academic-research">Academic Research</TabsTrigger>
-                    <TabsTrigger value="specialized-practice">Specialized Practice</TabsTrigger>
-                    <TabsTrigger value="advanced-medication">Advanced Medication</TabsTrigger>
-                    <TabsTrigger value="drug-interactions">Drug Interactions</TabsTrigger>
-                    <TabsTrigger value="dosage-calculators">Dosage Calculators</TabsTrigger>
-                    <TabsTrigger value="medication-tracking">Medication Tracking</TabsTrigger>
-          <TabsTrigger value="side-effects-tracking">Side Effects Tracking</TabsTrigger>
-          <TabsTrigger value="advanced-genetic-tests">Advanced Genetic Tests</TabsTrigger>
-          <TabsTrigger value="personalized-recommendations">Personalized Recommendations</TabsTrigger>
-          <TabsTrigger value="advanced-lab-tracking">Advanced Lab Tracking</TabsTrigger>
-          <TabsTrigger value="drug-level-monitoring">Drug Level Monitoring</TabsTrigger>
-          <TabsTrigger value="medication-effectiveness">Medication Effectiveness</TabsTrigger>
-          <TabsTrigger value="patient-outcomes">Patient Outcomes</TabsTrigger>
-          <TabsTrigger value="ai-recommendations">AI Recommendations</TabsTrigger>
-          <TabsTrigger value="clinical-guidelines">Clinical Guidelines</TabsTrigger>
-          <TabsTrigger value="medication-safety">Medication Safety</TabsTrigger>
-          <TabsTrigger value="prescription-security">Prescription Security</TabsTrigger>
-          <TabsTrigger value="patient-education">Patient Education</TabsTrigger>
-                      <TabsTrigger value="patient-communication">Patient Communication</TabsTrigger>
-            <TabsTrigger value="telehealth-telemedicine">Telehealth & Telemedicine</TabsTrigger>
-            <TabsTrigger value="insurance-billing">Insurance & Billing</TabsTrigger>
-            <TabsTrigger value="electronic-health-records">Electronic Health Records</TabsTrigger>
-            <TabsTrigger value="advanced-security">Advanced Security</TabsTrigger>
-            <TabsTrigger value="quality-measures">Quality Measures</TabsTrigger>
-            <TabsTrigger value="pharmacogenomics">Pharmacogenomics</TabsTrigger>
-            <TabsTrigger value="mobile-health">Mobile Health</TabsTrigger>
-            <TabsTrigger value="continuing-medical-education">CME</TabsTrigger>
-            <TabsTrigger value="interoperability">Interoperability</TabsTrigger>
-            <TabsTrigger value="business-intelligence">Business Intelligence</TabsTrigger>
-                    <TabsTrigger value="laboratory-imaging">Lab & Imaging</TabsTrigger>
-                    <TabsTrigger value="genetic-counseling">Genetic Counseling</TabsTrigger>
-                    <TabsTrigger value="telepsychiatry">Telepsychiatry</TabsTrigger>
-                    <TabsTrigger value="academic-management">Academic Management</TabsTrigger>
-          </TabsList>
+        <Tabs value={tab} onValueChange={setTab} className="w-full">
+                        <div className="sticky top-0 z-20 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
+            {/* Mobile kategori seçimi */}
+            <div className="px-2 py-2 md:hidden">
+              <select
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as typeof category)}
+              >
+                <option value="core">Çekirdek</option>
+                <option value="medication">İlaç</option>
+                <option value="analytics">Analitik</option>
+                <option value="security">Güvenlik</option>
+                <option value="integration">Entegrasyon</option>
+                <option value="education">Eğitim</option>
+                <option value="other">Diğer</option>
+              </select>
+            </div>
+
+            {/* Desktop kategori çipleri + kaydırma kontrolü */}
+            <div className="relative hidden md:block">
+              <div className="absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+              <div className="absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+              <div className="flex items-center gap-2 px-2 py-2">
+                <button
+                  aria-label="Kategorileri sola kaydır"
+                  onClick={() => scrollLeft(categoryScrollRef)}
+                  className="hidden md:inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  ‹
+                </button>
+                <div
+                  ref={categoryScrollRef}
+                  className="flex items-center gap-2 overflow-x-auto px-1 py-1 scroll-smooth snap-x snap-mandatory scrollbar-thin"
+                >
+                  {[
+                    { key: "core", label: "Çekirdek" },
+                    { key: "medication", label: "İlaç" },
+                    { key: "analytics", label: "Analitik" },
+                    { key: "security", label: "Güvenlik" },
+                    { key: "integration", label: "Entegrasyon" },
+                    { key: "education", label: "Eğitim" },
+                    { key: "other", label: "Diğer" },
+                  ].map((c) => (
+                    <button
+                      key={c.key}
+                      onClick={() => setCategory(c.key as typeof category)}
+                      className={`whitespace-nowrap rounded-full border px-3 py-1 text-sm snap-start transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-black ${
+                        category === (c.key as typeof category)
+                          ? "bg-black text-white border-black"
+                          : "bg-white text-gray-700 hover:bg-gray-50 border-gray-200"
+                      }`}
+                    >
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  aria-label="Kategorileri sağa kaydır"
+                  onClick={() => scrollRight(categoryScrollRef)}
+                  className="hidden md:inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+
+            {/* Tabs + kaydırma kontrolü */}
+            <div className="relative">
+              <div className="absolute left-0 top-0 h-full w-10 bg-gradient-to-r from-white to-transparent pointer-events-none" />
+              <div className="absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-white to-transparent pointer-events-none" />
+              <div className="flex items-center gap-2 px-2 py-2">
+                <button
+                  aria-label="Sekmeleri sola kaydır"
+                  onClick={() => scrollLeft(tabsScrollRef)}
+                  className="hidden md:inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  ‹
+                </button>
+                <div ref={tabsScrollRef} className="overflow-x-auto">
+                  <TabsList className="flex w-full flex-nowrap gap-2 overflow-x-auto scrollbar-thin scroll-smooth snap-x snap-mandatory bg-white/70 px-2 py-2">
+                    {CATEGORY_TO_TABS[category].map((t) => (
+                      <TabsTrigger
+                        key={t.value}
+                        value={t.value}
+                        className="snap-start min-w-max rounded-full px-3 py-1 text-sm data-[state=active]:bg-gray-900 data-[state=active]:text-white hover:bg-gray-100 transition-colors"
+                      >
+                        {t.label}
+                      </TabsTrigger>
+                    ))}
+                  </TabsList>
+                </div>
+                <button
+                  aria-label="Sekmeleri sağa kaydır"
+                  onClick={() => scrollRight(tabsScrollRef)}
+                  className="hidden md:inline-flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          </div>
 
           <TabsContent value="dashboard" className="space-y-6">
-            {/* Dashboard content */}
+            {/* Dashboard Hero */}
+            <section className="relative overflow-hidden rounded-2xl border bg-gradient-to-br from-slate-50 to-white p-6 md:p-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="text-xl md:text-2xl font-bold tracking-tight text-gray-900">Günün Özeti</h2>
+                  <p className="mt-1 text-sm text-gray-600">Randevular, gelir ve önemli metrikler tek ekranda.</p>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-emerald-500"></span> Sistem stabil</div>
+                  <div className="hidden md:block h-4 w-px bg-gray-200" />
+                  <div>Son güncelleme: şimdi</div>
+                </div>
+              </div>
+            </section>
+
+            {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard
                 label="Today&apos;s Appointments"

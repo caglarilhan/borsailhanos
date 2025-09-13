@@ -457,3 +457,4 @@ CREATE TRIGGER drug_level_analytics_updated_at
     BEFORE UPDATE ON drug_level_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_drug_level_updated_at();
+

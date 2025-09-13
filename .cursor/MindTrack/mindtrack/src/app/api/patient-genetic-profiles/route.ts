@@ -180,3 +180,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete patient genetic profile' }, { status: 500 });
   }
 }
+

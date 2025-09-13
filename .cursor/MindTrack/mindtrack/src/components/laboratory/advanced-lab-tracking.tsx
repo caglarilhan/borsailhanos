@@ -255,3 +255,4 @@ const AdvancedLabTracking: React.FC = () => {
 };
 
 export default AdvancedLabTracking;
+

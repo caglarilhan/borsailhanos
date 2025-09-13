@@ -697,3 +697,4 @@ CREATE TRIGGER prescription_security_analytics_updated_at
     BEFORE UPDATE ON prescription_security_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_prescription_security_updated_at();
+

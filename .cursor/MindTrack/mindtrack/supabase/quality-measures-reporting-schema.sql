@@ -797,3 +797,4 @@ CREATE TRIGGER quality_reports_updated_at
     BEFORE UPDATE ON quality_reports
     FOR EACH ROW
     EXECUTE FUNCTION update_quality_updated_at();
+

@@ -849,3 +849,4 @@ CREATE TRIGGER pharmacogenomic_analytics_updated_at
     BEFORE UPDATE ON pharmacogenomic_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_pharmacogenomic_updated_at();
+

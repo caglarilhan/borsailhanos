@@ -110,3 +110,4 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to update drug level analytics' }, { status: 500 });
   }
 }
+
