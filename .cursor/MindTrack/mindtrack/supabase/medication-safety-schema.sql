@@ -774,3 +774,4 @@ CREATE TRIGGER medication_safety_analytics_updated_at
     BEFORE UPDATE ON medication_safety_analytics
     FOR EACH ROW
     EXECUTE FUNCTION update_medication_safety_updated_at();
+

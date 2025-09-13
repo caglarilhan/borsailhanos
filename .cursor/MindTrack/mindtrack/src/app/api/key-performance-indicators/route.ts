@@ -166,3 +166,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete key performance indicator' }, { status: 500 });
   }
 }
+

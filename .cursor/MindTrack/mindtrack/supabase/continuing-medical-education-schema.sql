@@ -769,3 +769,4 @@ CREATE TRIGGER cme_notifications_reminders_updated_at
     BEFORE UPDATE ON cme_notifications_reminders
     FOR EACH ROW
     EXECUTE FUNCTION update_cme_updated_at();
+

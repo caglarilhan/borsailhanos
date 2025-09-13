@@ -174,3 +174,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete insurance provider' }, { status: 500 });
   }
 }
+

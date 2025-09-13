@@ -159,3 +159,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete drug level schedule' }, { status: 500 });
   }
 }
+

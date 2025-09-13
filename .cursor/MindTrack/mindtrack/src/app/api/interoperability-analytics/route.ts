@@ -152,3 +152,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete interoperability analytics' }, { status: 500 });
   }
 }
+

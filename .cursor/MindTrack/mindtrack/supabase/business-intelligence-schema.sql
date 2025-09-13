@@ -739,3 +739,4 @@ CREATE TRIGGER business_intelligence_settings_updated_at
     BEFORE UPDATE ON business_intelligence_settings
     FOR EACH ROW
     EXECUTE FUNCTION update_business_intelligence_updated_at();
+

@@ -191,3 +191,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete pharmacogenomic recommendation' }, { status: 500 });
   }
 }
+

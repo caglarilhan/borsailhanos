@@ -698,3 +698,4 @@ CREATE TRIGGER guideline_alerts_updated_at
     BEFORE UPDATE ON guideline_alerts
     FOR EACH ROW
     EXECUTE FUNCTION update_clinical_guidelines_updated_at();
+

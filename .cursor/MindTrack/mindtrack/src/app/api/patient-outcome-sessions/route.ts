@@ -185,3 +185,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete patient outcome session' }, { status: 500 });
   }
 }
+

@@ -166,3 +166,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete performance analytics' }, { status: 500 });
   }
 }
+

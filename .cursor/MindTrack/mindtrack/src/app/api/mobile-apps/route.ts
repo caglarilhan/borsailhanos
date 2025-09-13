@@ -156,3 +156,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete mobile app' }, { status: 500 });
   }
 }
+

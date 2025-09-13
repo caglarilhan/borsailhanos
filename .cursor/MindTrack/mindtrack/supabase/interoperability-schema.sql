@@ -642,3 +642,4 @@ CREATE TRIGGER interoperability_settings_updated_at
     BEFORE UPDATE ON interoperability_settings
     FOR EACH ROW
     EXECUTE FUNCTION update_interoperability_updated_at();
+

@@ -223,3 +223,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete patient communication message' }, { status: 500 });
   }
 }
+

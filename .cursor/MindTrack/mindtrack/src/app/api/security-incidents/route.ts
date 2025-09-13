@@ -182,3 +182,4 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to delete security incident' }, { status: 500 });
   }
 }
+
