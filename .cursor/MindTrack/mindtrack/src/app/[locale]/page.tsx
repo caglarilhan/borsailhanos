@@ -85,6 +85,7 @@ import AcademicResearchManagement from "@/components/academic/academic-research-
 import AIClinicalDecisionSupport from "@/components/ai/ai-clinical-decision-support";
 import AdvancedLaboratoryIntegration from "@/components/laboratory/advanced-laboratory-integration";
 import PharmacogenomicsIntegration from "@/components/pharmacogenomics/pharmacogenomics-integration";
+import TelehealthVideoPlatform from "@/components/telehealth/telehealth-video-platform";
 
 function WebVitalsInit() {
   React.useEffect(() => {
@@ -168,6 +169,7 @@ export default function HomePage() {
     { value: "mobile-app", label: "Mobile App" },
     { value: "lab-integration", label: "Lab Integration" },
     { value: "pharmacogenomics", label: "Pharmacogenomics" },
+    { value: "telehealth-video", label: "Telehealth Video" },
     { value: "gamification", label: "Gamification" },
     { value: "notification-hub", label: "Notifications" },
     { value: "research", label: "Research" },
@@ -1058,6 +1060,10 @@ export default function HomePage() {
 
           <TabsContent value="pharmacogenomics" className="space-y-6">
             <PharmacogenomicsIntegration />
+          </TabsContent>
+
+          <TabsContent value="telehealth-video" className="space-y-6">
+            <TelehealthVideoPlatform />
           </TabsContent>
 
           <TabsContent value="telepsychiatry" className="space-y-6">
