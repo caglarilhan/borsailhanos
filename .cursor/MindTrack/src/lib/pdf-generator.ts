@@ -1,0 +1,412 @@
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+
+// PDF configuration
+export const PDF_CONFIG = {
+  pageSize: 'A4',
+  orientation: 'portrait',
+  margin: {
+    top: 20,
+    right: 20,
+    bottom: 20,
+    left: 20
+  },
+  fontSizes: {
+    title: 16,
+    subtitle: 14,
+    body: 12,
+    small: 10
+  },
+  colors: {
+    primary: '#2563eb',
+    secondary: '#64748b',
+    success: '#059669',
+    warning: '#d97706',
+    error: '#dc2626'
+  }
+};
+
+// Report types
+export const REPORT_TYPES = {
+  MEDICAL_REPORT: 'medical_report',
+  LAB_RESULTS: 'lab_results',
+  PRESCRIPTION: 'prescription',
+  APPOINTMENT_SUMMARY: 'appointment_summary',
+  MEDICATION_HISTORY: 'medication_history',
+  PATIENT_SUMMARY: 'patient_summary'
+};
+
+// Generate PDF from HTML element
+export const generatePDFFromHTML = async (
+  elementId: string,
+  filename: string,
+  options?: {
+    pageSize?: string;
+    orientation?: 'portrait' | 'landscape';
+    margin?: number;
+  }
+): Promise<{ success: boolean; blob?: Blob; error?: string }> => {
+  try {
+    const element = document.getElementById(elementId);
+    if (!element) {
+      return { success: false, error: 'Element not found' };
+    }
+
+    const canvas = await html2canvas(element, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: '#ffffff'
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF({
+      orientation: options?.orientation || PDF_CONFIG.orientation,
+      unit: 'mm',
+      format: options?.pageSize || PDF_CONFIG.pageSize
+    });
+
+    const imgWidth = pdf.internal.pageSize.getWidth();
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pdf.internal.pageSize.getHeight();
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pdf.internal.pageSize.getHeight();
+    }
+
+    const blob = pdf.output('blob');
+    
+    // Download the PDF
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename}.pdf`;
+    link.click();
+
+    return { success: true, blob };
+  } catch (error) {
+    console.error('PDF generation error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+// Generate medical report PDF
+export const generateMedicalReportPDF = async (
+  patientData: any,
+  reportData: any,
+  filename?: string
+): Promise<{ success: boolean; blob?: Blob; error?: string }> => {
+  try {
+    const pdf = new jsPDF({
+      orientation: PDF_CONFIG.orientation,
+      unit: 'mm',
+      format: PDF_CONFIG.pageSize
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = PDF_CONFIG.margin.left;
+
+    // Header
+    pdf.setFontSize(PDF_CONFIG.fontSizes.title);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Medical Report', margin, 30);
+    
+    pdf.setFontSize(PDF_CONFIG.fontSizes.small);
+    pdf.setTextColor(PDF_CONFIG.colors.secondary);
+    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, 40);
+
+    // Patient Information
+    pdf.setFontSize(PDF_CONFIG.fontSizes.subtitle);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Patient Information', margin, 55);
+
+    pdf.setFontSize(PDF_CONFIG.fontSizes.body);
+    pdf.setTextColor('#000000');
+    let yPosition = 65;
+    
+    const patientInfo = [
+      `Name: ${patientData.name}`,
+      `Date of Birth: ${patientData.dateOfBirth}`,
+      `Medical Record Number: ${patientData.medicalRecordNumber}`,
+      `Phone: ${patientData.phone}`,
+      `Email: ${patientData.email}`
+    ];
+
+    patientInfo.forEach(info => {
+      pdf.text(info, margin, yPosition);
+      yPosition += 7;
+    });
+
+    // Report Content
+    yPosition += 10;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.subtitle);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Report Details', margin, yPosition);
+
+    yPosition += 10;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.body);
+    pdf.setTextColor('#000000');
+
+    if (reportData.diagnosis) {
+      pdf.text(`Diagnosis: ${reportData.diagnosis}`, margin, yPosition);
+      yPosition += 7;
+    }
+
+    if (reportData.treatment) {
+      pdf.text(`Treatment: ${reportData.treatment}`, margin, yPosition);
+      yPosition += 7;
+    }
+
+    if (reportData.notes) {
+      pdf.text(`Notes: ${reportData.notes}`, margin, yPosition);
+      yPosition += 7;
+    }
+
+    // Footer
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    pdf.setFontSize(PDF_CONFIG.fontSizes.small);
+    pdf.setTextColor(PDF_CONFIG.colors.secondary);
+    pdf.text('This report was generated by MindTrack Medical System', 
+             margin, pageHeight - 10);
+
+    const blob = pdf.output('blob');
+    
+    // Download the PDF
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename || 'medical-report'}.pdf`;
+    link.click();
+
+    return { success: true, blob };
+  } catch (error) {
+    console.error('Medical report PDF generation error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+// Generate lab results PDF
+export const generateLabResultsPDF = async (
+  patientData: any,
+  labResults: any[],
+  filename?: string
+): Promise<{ success: boolean; blob?: Blob; error?: string }> => {
+  try {
+    const pdf = new jsPDF({
+      orientation: PDF_CONFIG.orientation,
+      unit: 'mm',
+      format: PDF_CONFIG.pageSize
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = PDF_CONFIG.margin.left;
+
+    // Header
+    pdf.setFontSize(PDF_CONFIG.fontSizes.title);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Laboratory Results', margin, 30);
+    
+    pdf.setFontSize(PDF_CONFIG.fontSizes.small);
+    pdf.setTextColor(PDF_CONFIG.colors.secondary);
+    pdf.text(`Generated on: ${new Date().toLocaleDateString()}`, margin, 40);
+
+    // Patient Information
+    pdf.setFontSize(PDF_CONFIG.fontSizes.subtitle);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Patient Information', margin, 55);
+
+    pdf.setFontSize(PDF_CONFIG.fontSizes.body);
+    pdf.setTextColor('#000000');
+    let yPosition = 65;
+    
+    pdf.text(`Name: ${patientData.name}`, margin, yPosition);
+    yPosition += 7;
+    pdf.text(`Medical Record Number: ${patientData.medicalRecordNumber}`, margin, yPosition);
+    yPosition += 7;
+    pdf.text(`Date of Birth: ${patientData.dateOfBirth}`, margin, yPosition);
+
+    // Lab Results
+    yPosition += 15;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.subtitle);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Laboratory Results', margin, yPosition);
+
+    yPosition += 10;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.body);
+    pdf.setTextColor('#000000');
+
+    labResults.forEach((result, index) => {
+      if (yPosition > 250) {
+        pdf.addPage();
+        yPosition = 30;
+      }
+
+      pdf.text(`${index + 1}. ${result.testName}`, margin, yPosition);
+      yPosition += 7;
+      pdf.text(`   Date: ${result.date}`, margin, yPosition);
+      yPosition += 7;
+      pdf.text(`   Status: ${result.status}`, margin, yPosition);
+      yPosition += 7;
+      
+      if (result.results) {
+        pdf.text(`   Results: ${result.results}`, margin, yPosition);
+        yPosition += 7;
+      }
+      
+      yPosition += 5;
+    });
+
+    // Footer
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    pdf.setFontSize(PDF_CONFIG.fontSizes.small);
+    pdf.setTextColor(PDF_CONFIG.colors.secondary);
+    pdf.text('This report was generated by MindTrack Medical System', 
+             margin, pageHeight - 10);
+
+    const blob = pdf.output('blob');
+    
+    // Download the PDF
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename || 'lab-results'}.pdf`;
+    link.click();
+
+    return { success: true, blob };
+  } catch (error) {
+    console.error('Lab results PDF generation error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+// Generate prescription PDF
+export const generatePrescriptionPDF = async (
+  patientData: any,
+  prescriptionData: any,
+  filename?: string
+): Promise<{ success: boolean; blob?: Blob; error?: string }> => {
+  try {
+    const pdf = new jsPDF({
+      orientation: PDF_CONFIG.orientation,
+      unit: 'mm',
+      format: PDF_CONFIG.pageSize
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const margin = PDF_CONFIG.margin.left;
+
+    // Header
+    pdf.setFontSize(PDF_CONFIG.fontSizes.title);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Prescription', margin, 30);
+    
+    pdf.setFontSize(PDF_CONFIG.fontSizes.small);
+    pdf.setTextColor(PDF_CONFIG.colors.secondary);
+    pdf.text(`Date: ${new Date().toLocaleDateString()}`, margin, 40);
+
+    // Patient Information
+    pdf.setFontSize(PDF_CONFIG.fontSizes.subtitle);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Patient Information', margin, 55);
+
+    pdf.setFontSize(PDF_CONFIG.fontSizes.body);
+    pdf.setTextColor('#000000');
+    let yPosition = 65;
+    
+    pdf.text(`Name: ${patientData.name}`, margin, yPosition);
+    yPosition += 7;
+    pdf.text(`Date of Birth: ${patientData.dateOfBirth}`, margin, yPosition);
+    yPosition += 7;
+    pdf.text(`Medical Record Number: ${patientData.medicalRecordNumber}`, margin, yPosition);
+
+    // Prescription Details
+    yPosition += 15;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.subtitle);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Prescription Details', margin, yPosition);
+
+    yPosition += 10;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.body);
+    pdf.setTextColor('#000000');
+
+    prescriptionData.medications.forEach((med: any, index: number) => {
+      pdf.text(`${index + 1}. ${med.name}`, margin, yPosition);
+      yPosition += 7;
+      pdf.text(`   Dosage: ${med.dosage}`, margin, yPosition);
+      yPosition += 7;
+      pdf.text(`   Frequency: ${med.frequency}`, margin, yPosition);
+      yPosition += 7;
+      pdf.text(`   Instructions: ${med.instructions}`, margin, yPosition);
+      yPosition += 10;
+    });
+
+    // Doctor Information
+    yPosition += 10;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.subtitle);
+    pdf.setTextColor(PDF_CONFIG.colors.primary);
+    pdf.text('Prescribing Physician', margin, yPosition);
+
+    yPosition += 10;
+    pdf.setFontSize(PDF_CONFIG.fontSizes.body);
+    pdf.setTextColor('#000000');
+    pdf.text(`Dr. ${prescriptionData.doctorName}`, margin, yPosition);
+    yPosition += 7;
+    pdf.text(`License Number: ${prescriptionData.licenseNumber || 'N/A'}`, margin, yPosition);
+
+    // Footer
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    pdf.setFontSize(PDF_CONFIG.fontSizes.small);
+    pdf.setTextColor(PDF_CONFIG.colors.secondary);
+    pdf.text('This prescription was generated by MindTrack Medical System', 
+             margin, pageHeight - 10);
+
+    const blob = pdf.output('blob');
+    
+    // Download the PDF
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `${filename || 'prescription'}.pdf`;
+    link.click();
+
+    return { success: true, blob };
+  } catch (error) {
+    console.error('Prescription PDF generation error:', error);
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : 'Unknown error' 
+    };
+  }
+};
+
+// Utility function to format date
+export const formatDate = (date: Date | string): string => {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+};
+
+// Utility function to format time
+export const formatTime = (date: Date | string): string => {
+  const d = new Date(date);
+  return d.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
