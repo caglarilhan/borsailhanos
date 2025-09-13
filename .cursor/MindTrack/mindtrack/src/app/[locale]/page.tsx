@@ -163,6 +163,7 @@ export default function HomePage() {
     { value: "ai-content-seo", label: "AI & SEO" },
     { value: "ai-diagnostic", label: "AI Diagnostic" },
     { value: "ai-clinical-decision", label: "AI Clinical Decision" },
+    { value: "mobile-app", label: "Mobile App" },
     { value: "gamification", label: "Gamification" },
     { value: "notification-hub", label: "Notifications" },
     { value: "research", label: "Research" },
@@ -1041,6 +1042,10 @@ export default function HomePage() {
 
           <TabsContent value="ai-clinical-decision" className="space-y-6">
             <AIClinicalDecisionSupport />
+          </TabsContent>
+
+          <TabsContent value="mobile-app" className="space-y-6">
+            <MobileAppDevelopment />
           </TabsContent>
 
           <TabsContent value="telepsychiatry" className="space-y-6">
