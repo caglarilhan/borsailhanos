@@ -212,3 +212,4 @@ export function useClientPortal({ patientId }: ClientPortalHookProps) {
     fetchData
   };
 }
+

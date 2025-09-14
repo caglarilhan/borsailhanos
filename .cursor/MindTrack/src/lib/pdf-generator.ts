@@ -410,3 +410,4 @@ export const formatTime = (date: Date | string): string => {
     minute: '2-digit'
   });
 };
+

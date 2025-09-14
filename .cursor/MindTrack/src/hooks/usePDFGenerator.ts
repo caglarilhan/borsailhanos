@@ -213,3 +213,4 @@ export function usePDFGenerator({ userId }: PDFGeneratorHookProps) {
     validateReportData
   };
 }
+

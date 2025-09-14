@@ -219,3 +219,4 @@ CREATE POLICY "Temp uploads access" ON storage.objects
     bucket_id = 'temp-uploads' AND 
     auth.uid()::text = (storage.foldername(name))[1]
   );
+
