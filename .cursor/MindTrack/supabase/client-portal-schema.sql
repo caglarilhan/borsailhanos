@@ -335,3 +335,4 @@ CREATE POLICY "Patients can update own notifications" ON patient_notifications
       AND patient_profiles.user_id = auth.uid()
     )
   );
+

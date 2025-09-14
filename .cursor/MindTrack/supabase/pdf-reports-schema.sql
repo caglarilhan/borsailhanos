@@ -414,3 +414,4 @@ BEGIN
   RETURN v_log_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+

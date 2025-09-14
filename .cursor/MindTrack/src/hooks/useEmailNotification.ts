@@ -97,3 +97,4 @@ export function useEmailNotification({ userId }: EmailNotificationHookProps) {
     sendBulkEmails
   };
 }
+

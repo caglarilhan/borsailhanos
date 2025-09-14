@@ -457,3 +457,4 @@ async function generatePatientSummaryPDF(data: any): Promise<Buffer> {
     await browser.close();
   }
 }
+

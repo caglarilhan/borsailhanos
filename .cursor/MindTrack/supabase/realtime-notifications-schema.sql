@@ -286,3 +286,4 @@ BEGIN
   RETURN v_count;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
