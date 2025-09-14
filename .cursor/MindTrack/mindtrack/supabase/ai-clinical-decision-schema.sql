@@ -284,3 +284,4 @@ COMMENT ON TABLE ai_model_performance IS 'Tracks performance metrics of AI model
 COMMENT ON TABLE ai_feedback IS 'Stores clinician feedback on AI suggestions for continuous learning and improvement';
 COMMENT ON TABLE ai_usage_analytics IS 'Tracks usage patterns and analytics for AI clinical decision support features';
 COMMENT ON TABLE ai_clinical_guidelines IS 'Stores evidence-based clinical guidelines used by AI for decision support';
+

@@ -283,3 +283,4 @@ BEGIN
   RETURN log_id;
 END;
 $$ language 'plpgsql';
+

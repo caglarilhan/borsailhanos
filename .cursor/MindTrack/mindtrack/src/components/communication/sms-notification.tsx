@@ -403,3 +403,4 @@ export default function SMSNotification({ patientPhone, onSend }: SMSNotificatio
     </Card>
   );
 }
+

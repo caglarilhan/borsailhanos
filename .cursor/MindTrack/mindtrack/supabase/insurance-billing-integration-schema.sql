@@ -883,3 +883,4 @@ CREATE TRIGGER insurance_billing_analytics_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_insurance_billing_updated_at();
 
+

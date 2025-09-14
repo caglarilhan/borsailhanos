@@ -315,3 +315,4 @@ export function useMobileApp(): UseMobileAppReturn {
     clearOfflineData,
   };
 }
+

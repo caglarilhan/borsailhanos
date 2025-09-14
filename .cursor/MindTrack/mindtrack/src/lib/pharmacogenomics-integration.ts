@@ -525,3 +525,4 @@ class PharmacogenomicsIntegration {
 }
 
 export default PharmacogenomicsIntegration;
+

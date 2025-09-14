@@ -694,3 +694,4 @@ CREATE TRIGGER patient_outcome_alerts_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_patient_outcome_updated_at();
 
+

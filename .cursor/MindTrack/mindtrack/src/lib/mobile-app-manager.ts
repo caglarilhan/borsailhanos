@@ -304,3 +304,4 @@ export class MobileAppManager {
 
 // Export singleton instance
 export const mobileAppManager = new MobileAppManager();
+
