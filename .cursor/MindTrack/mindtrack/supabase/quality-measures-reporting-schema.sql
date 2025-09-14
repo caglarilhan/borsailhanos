@@ -798,3 +798,4 @@ CREATE TRIGGER quality_reports_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_quality_updated_at();
 
+

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
+import { sendInvitationEmail } from '@/lib/email';
 
 /**
  * POST /api/clinics/members/[id]/resend-invite
@@ -21,15 +22,26 @@ export async function POST(
 
     const memberId = id;
 
-    // Get user's clinic ID
+    // Get user's clinic ID and clinic info
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('clinic_id')
+      .select('clinic_id, full_name')
       .eq('user_id', user.id)
       .single();
 
     if (profileError || !userProfile?.clinic_id) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
+    }
+
+    // Get clinic information
+    const { data: clinic, error: clinicError } = await supabase
+      .from('clinics')
+      .select('name')
+      .eq('id', userProfile.clinic_id)
+      .single();
+
+    if (clinicError || !clinic) {
+      return NextResponse.json({ error: 'Clinic information not found' }, { status: 404 });
     }
 
     // Verify the member exists and belongs to the same clinic
@@ -109,11 +121,22 @@ export async function POST(
       return NextResponse.json({ error: 'Failed to update invitation' }, { status: 500 });
     }
 
-    // TODO: Send invitation email
+    // Send invitation email
     const memberEmail = existingMember.user_profiles?.email;
-    const memberName = existingMember.user_profiles?.full_name || 'there';
+    const invitationLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/invitation?token=${existingMember.id}&email=${encodeURIComponent(memberEmail)}`;
     
-    console.log(`Re-invitation sent to ${memberEmail} (${memberName}) for role: ${existingMember.role}`);
+    const emailResult = await sendInvitationEmail({
+      email: memberEmail,
+      clinicName: clinic.name,
+      inviterName: userProfile.full_name || 'Clinic Administrator',
+      role: existingMember.role,
+      invitationLink
+    });
+
+    if (!emailResult.success) {
+      console.error('Failed to resend invitation email:', emailResult.error);
+      // Don't fail the request, just log the error
+    }
 
     // Log the resend for audit purposes
     console.log(`User ${user.id} resent invitation to member ${memberId} (${existingMember.user_id})`);

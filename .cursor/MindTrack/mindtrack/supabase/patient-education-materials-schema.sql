@@ -733,3 +733,4 @@ CREATE TRIGGER patient_education_analytics_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_patient_education_updated_at();
 
+

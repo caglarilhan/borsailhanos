@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '@/lib/supabaseClient';
+import { sendInvitationEmail } from '@/lib/email';
 
 /**
  * POST /api/clinics/members/invite
@@ -26,15 +27,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
 
-    // Get user's clinic ID
+    // Get user's clinic ID and clinic info
     const { data: userProfile, error: profileError } = await supabase
       .from('user_profiles')
-      .select('clinic_id')
+      .select('clinic_id, full_name')
       .eq('user_id', user.id)
       .single();
 
     if (profileError || !userProfile?.clinic_id) {
       return NextResponse.json({ error: 'Clinic not found' }, { status: 404 });
+    }
+
+    // Get clinic information
+    const { data: clinic, error: clinicError } = await supabase
+      .from('clinics')
+      .select('name')
+      .eq('id', userProfile.clinic_id)
+      .single();
+
+    if (clinicError || !clinic) {
+      return NextResponse.json({ error: 'Clinic information not found' }, { status: 404 });
     }
 
     // Check if user already exists
@@ -134,9 +146,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to add clinic member' }, { status: 500 });
     }
 
-    // TODO: Send invitation email
-    // This would integrate with your email service (SendGrid, AWS SES, etc.)
-    console.log(`Invitation sent to ${email} for role: ${role}`);
+    // Send invitation email
+    const invitationLink = `${process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'}/auth/invitation?token=${member.id}&email=${encodeURIComponent(email)}`;
+    
+    const emailResult = await sendInvitationEmail({
+      email,
+      clinicName: clinic.name,
+      inviterName: userProfile.full_name || 'Clinic Administrator',
+      role,
+      invitationLink
+    });
+
+    if (!emailResult.success) {
+      console.error('Failed to send invitation email:', emailResult.error);
+      // Don't fail the request, just log the error
+    }
 
     return NextResponse.json({ 
       success: true, 
