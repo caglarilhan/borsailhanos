@@ -47,3 +47,4 @@ if __name__ == '__main__':
     mock = TimeGPTMock()
     df = mock.predict(10, '1D')
     print(df.head())
+

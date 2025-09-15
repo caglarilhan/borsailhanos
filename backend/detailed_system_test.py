@@ -656,3 +656,4 @@ async def run_detailed_tests():
 if __name__ == "__main__":
     # Detaylı testleri çalıştır
     asyncio.run(run_detailed_tests())
+

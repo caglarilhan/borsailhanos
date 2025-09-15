@@ -354,3 +354,4 @@ class BrokerManager:
                 if broker == self.active_broker:
                     return name
         return None
+

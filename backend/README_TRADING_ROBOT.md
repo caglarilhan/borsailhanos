@@ -250,3 +250,4 @@ Bu proje eğitim ve araştırma amaçlıdır. Gerçek para ile kullanmadan önce
 ---
 
 **⚠️ Uyarı**: Bu sistem eğitim amaçlıdır. Gerçek trading için profesyonel danışmanlık alın.
+

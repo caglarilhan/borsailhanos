@@ -368,3 +368,4 @@ async def test_fundamental_layer():
 if __name__ == "__main__":
     # Test çalıştır
     asyncio.run(test_fundamental_layer())
+

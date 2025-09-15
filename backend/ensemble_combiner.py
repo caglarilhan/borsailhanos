@@ -86,3 +86,4 @@ if __name__ == '__main__':
     comb = EnsembleCombiner()
     out = comb.combine(0.62, 102.0, 101.5, 100.0)
     print(out)
+

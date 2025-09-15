@@ -483,3 +483,4 @@ def test_lstm_model():
 if __name__ == "__main__":
     # Test çalıştır
     test_lstm_model()
+
