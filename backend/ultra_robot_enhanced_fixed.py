@@ -100,6 +100,14 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
         # Performance tracker
         self.performance_tracker = EnhancedPerformanceTracker()
         
+        # US Market sembolleri ekle
+        self.us_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"]
+        self.bist_symbols = ["SISE.IS", "EREGL.IS", "TUPRS.IS", "GARAN.IS", "AKBNK.IS"]
+        self.all_symbols = self.bist_symbols + self.us_symbols
+        
+        # Otomatik strateji oluşturma için sembol listesi
+        self.auto_symbols = self.all_symbols
+        
         # Alternative Data Manager (SPRINT 1 entegrasyonu)
         try:
             from alternative_data_manager import AlternativeDataManager, AlternativeDataConfig
@@ -182,6 +190,38 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
         except Exception as e:
             logger.error(f"❌ Gelişmiş strateji hatası: {e}")
             return {"error": str(e)}
+    
+    def auto_create_strategies_for_all_symbols(self) -> Dict[str, Dict]:
+        """Tüm semboller için otomatik strateji oluştur"""
+        try:
+            logger.info(f"🚀 {len(self.auto_symbols)} sembol için otomatik strateji oluşturuluyor...")
+            
+            strategies = {}
+            for symbol in self.auto_symbols:
+                try:
+                    # Varsayılan timeframes
+                    timeframes = [TimeFrame.MINUTE_5, TimeFrame.HOUR_1, TimeFrame.DAY_1]
+                    
+                    # Strateji oluştur
+                    strategy = self.create_enhanced_strategy(symbol, timeframes)
+                    strategies[symbol] = strategy
+                    
+                    logger.info(f"✅ {symbol} stratejisi oluşturuldu")
+                    
+                except Exception as e:
+                    logger.error(f"❌ {symbol} strateji hatası: {e}")
+                    continue
+            
+            logger.info(f"🎯 {len(strategies)} strateji başarıyla oluşturuldu")
+            return strategies
+            
+        except Exception as e:
+            logger.error(f"❌ Otomatik strateji oluşturma hatası: {e}")
+            return {}
+    
+    def get_all_active_symbols(self) -> List[str]:
+        """Aktif tüm sembolleri döndür"""
+        return self.auto_symbols
     
     def _train_ai_models(self, symbol: str, timeframes: List[TimeFrame]) -> None:
         """AI modelleri eğit (Advanced Features ile)"""

@@ -30,36 +30,27 @@ class BIST100Scanner:
     def __init__(self):
         self.robot = UltraRobotEnhancedFixed()
         self.bist100_symbols = self._get_bist100_symbols()
-        self.scan_interval = 300  # 5 dakika
+        self.scan_interval = 60  # Demo için 1 dakika
         self.forecast_hours = 48   # 48 saat önceden
         self.active_signals = {}
         self.signal_history = []
         self.snapshot_path = 'data/forecast_signals.json'
         
     def _get_bist100_symbols(self) -> List[str]:
-        """BIST 100 hisse listesi"""
-        return [
+        """BIST 100 + US Market sembolleri - Demo için optimize edildi"""
+        bist_symbols = [
             "GARAN.IS", "AKBNK.IS", "ISCTR.IS", "YKBNK.IS", "THYAO.IS",
             "SISE.IS", "EREGL.IS", "TUPRS.IS", "ASELS.IS", "KRDMD.IS",
             "PGSUS.IS", "SAHOL.IS", "KCHOL.IS", "VESTL.IS", "BIMAS.IS",
-            "MGROS.IS", "TCELL.IS", "TTKOM.IS", "DOHOL.IS", "EKGYO.IS",
-            "HEKTS.IS", "KERVN.IS", "KERVT.IS", "KOZAL.IS", "KOZAA.IS",
-            "LOGO.IS", "MIPTR.IS", "NTHOL.IS", "OYAKC.IS", "PETKM.IS",
-            "POLHO.IS", "PRKAB.IS", "PRKME.IS", "SAFKN.IS", "SASA.IS",
-            "SMRTG.IS", "TATKS.IS", "TMSN.IS", "TOASO.IS", "TSKB.IS",
-            "TTRAK.IS", "ULKER.IS", "VESBE.IS", "YATAS.IS", "YUNSA.IS",
-            "ZRGYO.IS", "ACSEL.IS", "ADEL.IS", "ADESE.IS", "AGHOL.IS",
-            "AKENR.IS", "AKFGY.IS", "AKGRT.IS", "AKSA.IS", "ALARK.IS",
-            "ALBRK.IS", "ALCAR.IS", "ALCTL.IS", "ALGYO.IS", "ALKIM.IS",
-            "ALTIN.IS", "ANACM.IS", "ANELE.IS", "ANGEN.IS", "ARCLK.IS",
-            "ASELS.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS",
-            "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS",
-            "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS",
-            "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS",
-            "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS",
-            "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS",
-            "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS", "ASELSAN.IS"
+            "MGROS.IS", "TCELL.IS", "TTKOM.IS", "DOHOL.IS", "EKGYO.IS"
         ]
+        
+        us_symbols = [
+            "AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"
+        ]
+        
+        # BIST + US sembolleri birleştir
+        return bist_symbols + us_symbols
     
     async def start_continuous_scanning(self):
         """Sürekli tarama başlat"""
@@ -126,14 +117,14 @@ class BIST100Scanner:
                 continue
     
     def _filter_forecast_signals(self, signals: List) -> List:
-        """48 saat önceden sinyalleri filtrele"""
+        """48 saat önceden sinyalleri filtrele - Demo için eşikleri düşürdük"""
         forecast_signals = []
         
         for signal in signals:
             # Sadece BUY sinyallerini al
             if signal.action in [EnhancedSignalType.STRONG_BUY, EnhancedSignalType.BUY, EnhancedSignalType.WEAK_BUY]:
-                # Yüksek güven skorlu sinyalleri al
-                if signal.confidence > 0.6:
+                # Demo ortamında daha fazla sinyal için eşiği düşürdük
+                if signal.confidence >= 0.4:  # 0.6'dan 0.4'e düşürdük
                     forecast_signals.append(signal)
         
         return forecast_signals
