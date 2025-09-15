@@ -16,8 +16,20 @@ from datetime import datetime, timedelta
 import asyncio
 import json
 import time
-from monitoring.metrics import track_request, track_prediction, track_error, get_metrics
-from prometheus_client import CONTENT_TYPE_LATEST
+try:
+    from monitoring.metrics import track_request, track_prediction, track_error, get_metrics
+    from prometheus_client import CONTENT_TYPE_LATEST
+except Exception:
+    # Monitoring opsiyonel: yoksa no-op fonksiyonlar kullan
+    def track_request(**kwargs):
+        return None
+    def track_prediction(**kwargs):
+        return None
+    def track_error(**kwargs):
+        return None
+    def get_metrics():
+        return ""
+    CONTENT_TYPE_LATEST = "text/plain; version=0.0.4; charset=utf-8"
 from middleware.rate_limiter import APIRateLimitMiddleware
 from core.cache import initialize_cache, close_cache, cache_manager, cached_ops, cache_result
 from core.database import initialize_database, close_database, db_manager
@@ -41,6 +53,7 @@ try:
     from firestore_schema import FirestoreSchema
     from config import config
     from bist100_scanner import BIST100Scanner
+    from real_time_pipeline import RealTimeDataPipeline
     
     # PRD v2.0 Yeni Modüller (OPTIMIZED)
     from live_price_layer import LivePriceLayer
@@ -48,6 +61,8 @@ try:
     
 except ImportError as e:
     print(f"⚠️ Import hatası: {e}")
+    # Eksik modüller için güvenli varsayılanlar
+    RealTimeDataPipeline = None  # type: ignore
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +77,18 @@ app = FastAPI(
 # Static ve Templates
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+# UI: Market bilgileri
+SUPPORTED_MARKETS = {
+    "BIST": {
+        "name": "Borsa İstanbul",
+        "default_symbols": ["SISE.IS", "EREGL.IS", "TUPRS.IS"]
+    },
+    "US": {
+        "name": "NASDAQ/NYSE (US)",
+        "default_symbols": ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"]
+    }
+}
 
 
 # Rate limiting middleware
@@ -270,10 +297,17 @@ async def startup_event():
             logger.warning(f"MCDM Ranking hatası: {e}")
             mcdm_ranking = None
         
-        # WebSocket connector (demo mode)
-        websocket_connector = RealTimeDataPipeline(
-            finnhub_api_key="demo"
-        )
+        # WebSocket connector (demo mode) - opsiyonel
+        try:
+            if 'RealTimeDataPipeline' in globals() and RealTimeDataPipeline is not None:
+                websocket_connector = RealTimeDataPipeline(
+                    finnhub_api_key="demo"
+                )
+            else:
+                websocket_connector = None
+        except Exception as e:
+            logger.warning(f"RealTimeDataPipeline başlatılamadı: {e}")
+            websocket_connector = None
         
         # Firestore schema (geçici olarak devre dışı)
         # try:
@@ -408,6 +442,71 @@ async def ui_dashboard(request: Request):
             "request": request,
             "title": "BIST AI Smart Trader",
         },
+    )
+
+@app.get("/markets")
+async def get_markets():
+    """Desteklenen marketler ve varsayılan semboller"""
+    return {
+        "markets": {k: v["name"] for k, v in SUPPORTED_MARKETS.items()},
+        "defaults": {k: v["default_symbols"] for k, v in SUPPORTED_MARKETS.items()},
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/api/markets")
+async def get_markets_api():
+    """/markets ile aynı içeriği /api/markets altında da sun"""
+    return {
+        "markets": {k: v["name"] for k, v in SUPPORTED_MARKETS.items()},
+        "defaults": {k: v["default_symbols"] for k, v in SUPPORTED_MARKETS.items()},
+        "timestamp": datetime.now().isoformat()
+    }
+
+# Basit test uçları (route kayıt doğrulaması)
+@app.get("/markets2")
+async def get_markets_v2():
+    return {
+        "ok": True,
+        "paths": list(SUPPORTED_MARKETS.keys()),
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.get("/signals/ui2")
+async def signals_ui_ping():
+    return {"ok": True, "ts": datetime.now().isoformat()}
+
+@app.get("/signals/ui")
+async def signals_ui(request: Request, market: str = "BIST", symbols: Optional[str] = None):
+    """Basit HTML tablo ile sinyaller"""
+    # Sinyalleri JSON endpoint'inden al
+    mkt = (market or "BIST").upper()
+    if symbols:
+        query = symbols
+    else:
+        query = None
+    # Yerel fonksiyonu doğrudan çağırıyoruz
+    resp = await get_signals(symbols=query, include_sentiment=True, include_xai=False, market=mkt)
+    sigs = resp.get("signals", {})
+    rows = [
+        {
+            "symbol": sym,
+            "signal": data.get("signal"),
+            "confidence": f"{data.get('confidence', 0):.2f}",
+            "ai": data.get("analysis", {}).get("ai_signal"),
+            "ai_conf": f"{data.get('analysis', {}).get('ai_confidence', 0):.2f}",
+        }
+        for sym, data in sigs.items()
+    ]
+    return templates.TemplateResponse(
+        "signals.html",
+        {
+            "request": request,
+            "market": mkt,
+            "markets": SUPPORTED_MARKETS,
+            "symbols": symbols or ",".join(SUPPORTED_MARKETS.get(mkt, SUPPORTED_MARKETS["BIST"])['default_symbols']),
+            "rows": rows,
+            "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
     )
 
 @app.get("/forecast/active")
