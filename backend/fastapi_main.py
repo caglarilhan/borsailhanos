@@ -1268,15 +1268,20 @@ async def get_symbol_price(symbol: str):
 async def get_signals(
     symbols: Optional[str] = None,
     include_sentiment: bool = True,
-    include_xai: bool = True
+    include_xai: bool = True,
+    market: str = "BIST"
 ):
     """Trading sinyalleri (PRD v2.0 - Kurumsal trader için)"""
     try:
-        # Sembolleri parse et
+        # Sembolleri parse et veya market'e göre varsayılanları seç
         if symbols:
             symbol_list = [s.strip() for s in symbols.split(",")]
         else:
-            symbol_list = ["SISE.IS", "EREGL.IS", "TUPRS.IS"]
+            mkt = (market or "BIST").upper()
+            if mkt in ("US", "NASDAQ"):
+                symbol_list = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"]
+            else:
+                symbol_list = ["SISE.IS", "EREGL.IS", "TUPRS.IS"]
         
         signals = {}
         

@@ -465,3 +465,4 @@ class TradingRobot:
         
         logger.info(f"💾 Sonuçlar kaydedildi: {filename}")
         return filename
+

@@ -227,3 +227,4 @@ async def main():
 if __name__ == "__main__":
     # Demo çalıştır
     asyncio.run(main())
+
