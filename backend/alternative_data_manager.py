@@ -63,11 +63,16 @@ class FinnhubDataProvider:
     async def get_stock_quote(self, symbol: str) -> Optional[Dict]:
         """Hisse fiyat bilgisi"""
         try:
-            if not symbol.endswith('.IS'):
-                symbol = f"{symbol}.IS"
+            # Sembol normalize: BIST dışı (AAPL, NVDA) için .IS ekleme
+            norm = symbol.strip().upper().replace('$', '')
+            if '.' in norm:
+                symbol_req = norm  # GARAN.IS, SISE.IS, etc.
+            else:
+                # Hepsi harf ve uzunluk <=5 ise US kabul et
+                symbol_req = norm if (norm.isalpha() and len(norm) <= 5) else f"{norm}.IS"
             
             url = f"{self.base_url}/quote"
-            params = {'symbol': symbol}
+            params = {'symbol': symbol_req}
             
             response = self.session.get(url, params=params, timeout=10)
             response.raise_for_status()
@@ -75,7 +80,7 @@ class FinnhubDataProvider:
             data = response.json()
             if data.get('c', 0) > 0:
                 return {
-                    'symbol': symbol,
+                    'symbol': symbol_req,
                     'price': data.get('c', 0),
                     'change': data.get('d', 0),
                     'change_percent': data.get('dp', 0),
@@ -104,12 +109,15 @@ class YahooFinanceFallback:
     async def get_stock_data(self, symbol: str, period: str = "1d") -> Optional[pd.DataFrame]:
         """Yahoo Finance'den hisse verisi"""
         try:
-            if not symbol.endswith('.IS'):
-                symbol = f"{symbol}.IS"
+            norm = symbol.strip().upper().replace('$', '')
+            if '.' in norm:
+                yf_symbol = norm
+            else:
+                yf_symbol = norm if (norm.isalpha() and len(norm) <= 5) else f"{norm}.IS"
             
             # Async olmayan yfinance'i async wrapper ile sarmalayalım
             loop = asyncio.get_event_loop()
-            ticker = await loop.run_in_executor(None, yf.Ticker, symbol)
+            ticker = await loop.run_in_executor(None, yf.Ticker, yf_symbol)
             data = await loop.run_in_executor(None, ticker.history, period)
             
             if not data.empty:
@@ -123,16 +131,19 @@ class YahooFinanceFallback:
     async def get_stock_info(self, symbol: str) -> Optional[Dict]:
         """Yahoo Finance'den hisse bilgisi"""
         try:
-            if not symbol.endswith('.IS'):
-                symbol = f"{symbol}.IS"
+            norm = symbol.strip().upper().replace('$', '')
+            if '.' in norm:
+                yf_symbol = norm
+            else:
+                yf_symbol = norm if (norm.isalpha() and len(norm) <= 5) else f"{norm}.IS"
             
             loop = asyncio.get_event_loop()
-            ticker = await loop.run_in_executor(None, yf.Ticker, symbol)
+            ticker = await loop.run_in_executor(None, yf.Ticker, yf_symbol)
             info = await loop.run_in_executor(None, getattr, ticker, 'info')
             
             if info:
                 return {
-                    'symbol': symbol,
+                    'symbol': yf_symbol,
                     'name': info.get('longName', ''),
                     'sector': info.get('sector', ''),
                     'industry': info.get('industry', ''),
@@ -153,14 +164,18 @@ class AlternativeDataManager:
     
     def __init__(self, config: AlternativeDataConfig):
         self.config = config
-        self.finnhub = FinnhubDataProvider(config.finnhub_api_key) if config.finnhub_api_key else None
+        # Env'den zorunlu anahtar oku; boşsa None bırak
+        key = config.finnhub_api_key or os.getenv("FINNHUB_API_KEY", "").strip()
+        self.finnhub = FinnhubDataProvider(key) if key else None
         self.yahoo_fallback = YahooFinanceFallback() if config.yahoo_fallback else None
         self.data_cache = {}
         self.cache_timestamps = {}
         
         logger.info("✅ Alternative Data Manager başlatıldı")
         if self.finnhub:
-            logger.info("   - Finnhub: ✅ Aktif")
+            # Güvenlik gereği anahtar maskelenir
+            masked = (self.finnhub.api_key[:4] + "***" + self.finnhub.api_key[-3:]) if self.finnhub.api_key else ""
+            logger.info("   - Finnhub: ✅ Aktif (key: %s)", masked)
         else:
             logger.info("   - Finnhub: ❌ API key yok")
         

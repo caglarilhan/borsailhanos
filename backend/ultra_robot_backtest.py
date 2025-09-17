@@ -83,7 +83,7 @@ class UltraRobotBacktest:
                 stock = yf.Ticker(symbol)
                 
                 # Zaman dilimine göre period ayarla
-                if timeframe in [TimeFrame.M1, TimeFrame.M5, TimeFrame.M15, TimeFrame.M30]:
+                if timeframe in [TimeFrame.M1, TimeFrame.M15, TimeFrame.M30]:
                     period = "60d"  # 60 gün (intraday limit)
                 elif timeframe in [TimeFrame.H1, TimeFrame.H4]:
                     period = "2y"   # 2 yıl
@@ -713,7 +713,7 @@ if __name__ == "__main__":
             "name": "Scalping Strategy",
             "start_date": "2024-01-01",
             "end_date": "2024-12-31",
-            "timeframes": [TimeFrame.M5, TimeFrame.M15]
+            "timeframes": [TimeFrame.M15]
         },
         {
             "name": "Swing Trading Strategy",

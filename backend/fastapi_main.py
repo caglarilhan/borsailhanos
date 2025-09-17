@@ -10,12 +10,13 @@ from fastapi.responses import JSONResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import uvicorn
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import logging
 from datetime import datetime, timedelta
 import asyncio
 import json
 import time
+import requests
 try:
     from monitoring.metrics import track_request, track_prediction, track_error, get_metrics
     from prometheus_client import CONTENT_TYPE_LATEST
@@ -54,6 +55,20 @@ try:
     from config import config
     from bist100_scanner import BIST100Scanner
     from real_time_pipeline import RealTimeDataPipeline
+    from push_notification_service import push_service
+    from deep_learning_models import deep_learning_ensemble
+    from advanced_backtesting_system import backtest_engine, walk_forward_validator, StrategyEngine, StrategyType as BacktestStrategyType, BacktestConfig
+    from crypto_markets_integration import crypto_analyzer, crypto_portfolio_manager
+    from broker_integration_system import (
+        broker_manager, order_manager, risk_manager,
+        BrokerType, OrderSide, OrderType, OrderStatus
+    )
+    from advanced_trading_strategies import (
+        strategy_manager, StrategyType, TradingSignal, MarketData,
+        HFTStrategy, StatisticalArbitrageStrategy, PairsTradingStrategy, MarketMakingStrategy,
+        OrderFlow
+    )
+    from us_aggressive_profile import US_AGGRESSIVE_PROFILE
     
     # PRD v2.0 Yeni Modüller (OPTIMIZED)
     from live_price_layer import LivePriceLayer
@@ -2341,6 +2356,1428 @@ async def explain_lightgbm(symbol: str, period: str = "360d", interval: str = "1
         raise
     except Exception as e:
         logger.error(f"XAI SHAP hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Push Notification Endpoints
+@app.post("/notifications/send")
+async def send_notification(
+    title: str,
+    body: str,
+    topic: Optional[str] = None,
+    tokens: Optional[List[str]] = None,
+    data: Optional[Dict] = None
+):
+    """Push notification gönder"""
+    try:
+        success = push_service.send_notification(
+            title=title,
+            body=body,
+            data=data,
+            topic=topic,
+            tokens=tokens
+        )
+        
+        return {
+            "success": success,
+            "message": "Notification sent" if success else "Failed to send notification",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Notification send error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notifications/trading-signal")
+async def send_trading_signal_notification(
+    symbol: str,
+    signal: str,
+    confidence: float,
+    market: str = "BIST"
+):
+    """Trading sinyali bildirimi gönder"""
+    try:
+        success = push_service.send_trading_signal(
+            symbol=symbol,
+            signal=signal,
+            confidence=confidence,
+            market=market
+        )
+        
+        return {
+            "success": success,
+            "message": f"Trading signal notification sent for {symbol}",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Trading signal notification error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notifications/robot-alert")
+async def send_robot_alert(
+    alert_type: str,
+    message: str,
+    data: Optional[Dict] = None
+):
+    """Robot uyarısı gönder"""
+    try:
+        success = push_service.send_robot_alert(
+            alert_type=alert_type,
+            message=message,
+            data=data
+        )
+        
+        return {
+            "success": success,
+            "message": f"Robot alert sent: {alert_type}",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Robot alert error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notifications/performance-update")
+async def send_performance_update(
+    profit: float,
+    win_rate: float,
+    total_trades: int
+):
+    """Performans güncellemesi gönder"""
+    try:
+        success = push_service.send_performance_update(
+            profit=profit,
+            win_rate=win_rate,
+            total_trades=total_trades
+        )
+        
+        return {
+            "success": success,
+            "message": "Performance update sent",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Performance update error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/notifications/market-alert")
+async def send_market_alert(
+    market: str,
+    alert_type: str,
+    message: str
+):
+    """Market uyarısı gönder"""
+    try:
+        success = push_service.send_market_alert(
+            market=market,
+            alert_type=alert_type,
+            message=message
+        )
+        
+        return {
+            "success": success,
+            "message": f"Market alert sent for {market}",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Market alert error: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/notifications/status")
+async def get_notification_status():
+    """Push notification servis durumu"""
+    return {
+        "enabled": push_service.enabled,
+        "fcm_configured": bool(push_service.fcm_server_key),
+        "timestamp": datetime.now().isoformat()
+    }
+
+# Deep Learning Endpoints
+@app.post("/deep-learning/train")
+async def train_deep_learning_models(
+    symbol: str,
+    period: str = "1y",
+    news_data: Optional[List[Dict]] = None
+):
+    """Deep Learning modellerini eğit"""
+    try:
+        # Veri çek
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri bulunamadı")
+        
+        # Deep Learning modellerini eğit
+        result = deep_learning_ensemble.train(df, news_data)
+        
+        if result.get("error"):
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return {
+            "success": True,
+            "message": f"Deep Learning modelleri eğitildi: {symbol}",
+            "results": result.get("results", {}),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Deep Learning eğitim hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deep-learning/predict")
+async def predict_with_deep_learning(
+    symbol: str,
+    period: str = "1y",
+    news_data: Optional[List[Dict]] = None
+):
+    """Deep Learning ile tahmin yap"""
+    try:
+        # Veri çek
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri bulunamadı")
+        
+        # Tahmin yap
+        predictions = deep_learning_ensemble.predict(df, news_data)
+        
+        if predictions.get("error"):
+            raise HTTPException(status_code=500, detail=predictions["error"])
+        
+        return {
+            "success": True,
+            "symbol": symbol,
+            "predictions": predictions.get("predictions", {}),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Deep Learning tahmin hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/deep-learning/nlp-analyze")
+async def analyze_news_sentiment(
+    news_text: str,
+    extract_keywords: bool = True
+):
+    """Haber metninin sentiment analizini yap"""
+    try:
+        analyzer = deep_learning_ensemble.nlp_analyzer
+        
+        # Sentiment analizi
+        sentiment_result = analyzer.analyze_sentiment(news_text)
+        
+        result = {
+            "success": True,
+            "sentiment": sentiment_result,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        # Anahtar kelimeler
+        if extract_keywords:
+            keywords = analyzer.extract_keywords(news_text, top_n=10)
+            result["keywords"] = keywords
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"NLP analiz hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/deep-learning/status")
+async def get_deep_learning_status():
+    """Deep Learning modellerinin durumu"""
+    return {
+        "transformer_trained": deep_learning_ensemble.transformer.is_trained,
+        "lstm_trained": deep_learning_ensemble.lstm.is_trained,
+        "nlp_initialized": deep_learning_ensemble.nlp_analyzer.is_initialized,
+        "ensemble_trained": deep_learning_ensemble.is_trained,
+        "tensorflow_available": deep_learning_ensemble.transformer.model is not None,
+        "timestamp": datetime.now().isoformat()
+    }
+
+# Backtesting Endpoints
+@app.post("/backtesting/run")
+async def run_backtest(
+    symbol: str,
+    strategy: str,
+    period: str = "2y",
+    initial_capital: float = 100000.0,
+    commission: float = 0.001,
+    slippage: float = 0.0005
+):
+    """Backtest çalıştır"""
+    try:
+        # Veri çek
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri bulunamadı")
+        
+        # Strateji seç
+        try:
+            strategy_type = StrategyType(strategy)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Geçersiz strateji: {strategy}")
+        
+        # Backtest konfigürasyonu
+        config = BacktestConfig(
+            initial_capital=initial_capital,
+            commission=commission,
+            slippage=slippage
+        )
+        
+        # Backtest çalıştır
+        engine = BacktestEngine(config)
+        strategy_engine = StrategyEngine(strategy_type)
+        result = engine.run_backtest(df, strategy_engine)
+        
+        # Sonuçları formatla
+        return {
+            "success": True,
+            "symbol": symbol,
+            "strategy": strategy,
+            "period": period,
+            "metrics": {
+                "total_return": result.total_return,
+                "annualized_return": result.annualized_return,
+                "volatility": result.volatility,
+                "sharpe_ratio": result.sharpe_ratio,
+                "max_drawdown": result.max_drawdown,
+                "calmar_ratio": result.calmar_ratio,
+                "win_rate": result.win_rate,
+                "profit_factor": result.profit_factor,
+                "total_trades": result.total_trades,
+                "avg_trade_return": result.avg_trade_return,
+                "var_95": result.var_95,
+                "var_99": result.var_99,
+                "cvar_95": result.cvar_95,
+                "alpha": result.alpha,
+                "beta": result.beta
+            },
+            "trades_count": len(result.trades),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Backtest hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/backtesting/walk-forward")
+async def run_walk_forward_validation(
+    symbol: str,
+    strategy: str,
+    period: str = "5y",
+    train_period: int = 252,
+    test_period: int = 63
+):
+    """Walk-forward validation çalıştır"""
+    try:
+        # Veri çek
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri bulunamadı")
+        
+        # Strateji seç
+        try:
+            strategy_type = StrategyType(strategy)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Geçersiz strateji: {strategy}")
+        
+        # Walk-forward validation
+        validator = WalkForwardValidator(train_period, test_period)
+        strategy_engine = StrategyEngine(strategy_type)
+        result = validator.validate(df, strategy_engine)
+        
+        if result.get("error"):
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return {
+            "success": True,
+            "symbol": symbol,
+            "strategy": strategy,
+            "period": period,
+            "train_period_days": train_period,
+            "test_period_days": test_period,
+            "results": result,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Walk-forward validation hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/backtesting/strategies")
+async def get_available_strategies():
+    """Mevcut stratejileri listele"""
+    strategies = [
+        {
+            "name": strategy.value,
+            "description": _get_strategy_description(strategy)
+        }
+        for strategy in StrategyType
+    ]
+    
+    return {
+        "success": True,
+        "strategies": strategies,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/backtesting/compare")
+async def compare_strategies(
+    symbol: str,
+    strategies: List[str],
+    period: str = "2y",
+    initial_capital: float = 100000.0
+):
+    """Stratejileri karşılaştır"""
+    try:
+        # Veri çek
+        import yfinance as yf
+        ticker = yf.Ticker(symbol)
+        df = ticker.history(period=period)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri bulunamadı")
+        
+        results = []
+        
+        for strategy_name in strategies:
+            try:
+                strategy_type = StrategyType(strategy_name)
+                
+                # Backtest çalıştır
+                config = BacktestConfig(initial_capital=initial_capital)
+                engine = BacktestEngine(config)
+                strategy_engine = StrategyEngine(strategy_type)
+                result = engine.run_backtest(df, strategy_engine)
+                
+                results.append({
+                    "strategy": strategy_name,
+                    "total_return": result.total_return,
+                    "sharpe_ratio": result.sharpe_ratio,
+                    "max_drawdown": result.max_drawdown,
+                    "win_rate": result.win_rate,
+                    "total_trades": result.total_trades,
+                    "profit_factor": result.profit_factor
+                })
+                
+            except ValueError:
+                results.append({
+                    "strategy": strategy_name,
+                    "error": "Geçersiz strateji"
+                })
+        
+        return {
+            "success": True,
+            "symbol": symbol,
+            "period": period,
+            "comparison": results,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Strateji karşılaştırma hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+def _get_strategy_description(strategy: StrategyType) -> str:
+    """Strateji açıklaması"""
+    descriptions = {
+        StrategyType.BUY_AND_HOLD: "Satın al ve tut stratejisi",
+        StrategyType.MOVING_AVERAGE_CROSS: "Hareketli ortalama kesişim stratejisi",
+        StrategyType.RSI_MEAN_REVERSION: "RSI ortalama dönüş stratejisi",
+        StrategyType.BOLLINGER_BANDS: "Bollinger Bantları stratejisi",
+        StrategyType.MOMENTUM: "Momentum stratejisi",
+        StrategyType.MEAN_REVERSION: "Ortalama dönüş stratejisi",
+        StrategyType.BREAKOUT: "Kırılım stratejisi",
+        StrategyType.SCALPING: "Scalping stratejisi"
+    }
+    return descriptions.get(strategy, "Bilinmeyen strateji")
+
+# Crypto Markets Endpoints
+@app.get("/crypto/market-overview")
+async def get_crypto_market_overview():
+    """Kripto market genel bakış"""
+    try:
+        result = crypto_analyzer.analyze_crypto_market()
+        
+        if result.get("error"):
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Crypto market overview hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/technical-analysis/{symbol}")
+async def get_crypto_technical_analysis(
+    symbol: str,
+    days: int = 30
+):
+    """Kripto teknik analizi"""
+    try:
+        result = crypto_analyzer.analyze_crypto_technical(symbol.upper(), days)
+        
+        if result.get("error"):
+            raise HTTPException(status_code=404, detail=result["error"])
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Crypto technical analysis hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/top-cryptos")
+async def get_top_cryptocurrencies(limit: int = 50):
+    """En büyük kripto paraları listele"""
+    try:
+        cryptos = crypto_analyzer.data_provider.get_top_cryptos(limit)
+        
+        result = {
+            "success": True,
+            "cryptos": [
+                {
+                    "symbol": c.symbol,
+                    "name": c.name,
+                    "price": c.price,
+                    "market_cap": c.market_cap,
+                    "volume_24h": c.volume_24h,
+                    "change_24h": c.change_24h,
+                    "change_7d": c.change_7d,
+                    "rank": c.market_cap_rank,
+                    "category": c.category
+                }
+                for c in cryptos
+            ],
+            "count": len(cryptos),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Top cryptos hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/fear-greed-index")
+async def get_crypto_fear_greed_index():
+    """Crypto Fear & Greed Index"""
+    try:
+        result = crypto_analyzer.data_provider.get_crypto_fear_greed_index()
+        
+        return {
+            "success": True,
+            "fear_greed_index": result,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Fear & Greed Index hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/price-history/{symbol}")
+async def get_crypto_price_history(
+    symbol: str,
+    days: int = 30
+):
+    """Kripto fiyat geçmişi"""
+    try:
+        df = crypto_analyzer.data_provider.get_crypto_price_history(symbol.upper(), days)
+        
+        if df.empty:
+            raise HTTPException(status_code=404, detail=f"{symbol} için veri bulunamadı")
+        
+        # DataFrame'i JSON'a çevir
+        data = []
+        for timestamp, row in df.iterrows():
+            data.append({
+                "timestamp": timestamp.isoformat(),
+                "price": row['price'],
+                "volume": row['volume'],
+                "market_cap": row['market_cap']
+            })
+        
+        return {
+            "success": True,
+            "symbol": symbol.upper(),
+            "days": days,
+            "data": data,
+            "count": len(data),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Crypto price history hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Crypto Portfolio Endpoints
+@app.get("/crypto/portfolio")
+async def get_crypto_portfolio():
+    """Kripto portföy durumu"""
+    try:
+        result = crypto_portfolio_manager.get_portfolio_value()
+        
+        if result.get("error"):
+            raise HTTPException(status_code=500, detail=result["error"])
+        
+        return result
+        
+    except Exception as e:
+        logger.error(f"Crypto portfolio hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/crypto/portfolio/add")
+async def add_crypto_to_portfolio(
+    symbol: str,
+    quantity: float,
+    price: Optional[float] = None
+):
+    """Portföye kripto ekle"""
+    try:
+        success = crypto_portfolio_manager.add_crypto(symbol, quantity, price)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail="Portföye ekleme başarısız")
+        
+        return {
+            "success": True,
+            "message": f"{quantity} {symbol.upper()} portföye eklendi",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Crypto portfolio add hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/crypto/portfolio/remove")
+async def remove_crypto_from_portfolio(
+    symbol: str,
+    quantity: Optional[float] = None
+):
+    """Portföyden kripto çıkar"""
+    try:
+        success = crypto_portfolio_manager.remove_crypto(symbol, quantity)
+        
+        if not success:
+            raise HTTPException(status_code=400, detail="Portföyden çıkarma başarısız")
+        
+        return {
+            "success": True,
+            "message": f"{quantity or 'Tüm'} {symbol.upper()} portföyden çıkarıldı",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Crypto portfolio remove hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/crypto/exchanges")
+async def get_crypto_exchanges():
+    """Desteklenen kripto borsaları"""
+    from crypto_markets_integration import CryptoExchange
+    
+    exchanges = [
+        {
+            "name": exchange.value,
+            "display_name": exchange.value.title(),
+            "supported": True
+        }
+        for exchange in CryptoExchange
+    ]
+    
+    return {
+        "success": True,
+        "exchanges": exchanges,
+        "timestamp": datetime.now().isoformat()
+    }
+
+# Broker Integration Endpoints
+@app.get("/broker/status")
+async def get_broker_status():
+    """Broker durumu"""
+    try:
+        brokers = broker_manager.get_available_brokers()
+        active_broker = broker_manager.active_broker_type.value if broker_manager.active_broker_type else None
+        
+        return {
+            "success": True,
+            "active_broker": active_broker,
+            "brokers": brokers,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Broker status hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/connect")
+async def connect_broker(broker_type: str):
+    """Broker'a bağlan"""
+    try:
+        try:
+            broker_enum = BrokerType(broker_type)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Geçersiz broker türü: {broker_type}")
+        
+        success = await broker_manager.connect_broker(broker_enum)
+        
+        if not success:
+            raise HTTPException(status_code=500, detail="Broker bağlantısı başarısız")
+        
+        return {
+            "success": True,
+            "message": f"{broker_type} broker'a bağlandı",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Broker connect hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/disconnect")
+async def disconnect_broker():
+    """Broker bağlantısını kes"""
+    try:
+        success = await broker_manager.disconnect_broker()
+        
+        return {
+            "success": success,
+            "message": "Broker bağlantısı kesildi" if success else "Broker bağlantısı kesilemedi",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Broker disconnect hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/account")
+async def get_account_info():
+    """Hesap bilgilerini al"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        account_info = await broker_manager.get_account_info()
+        
+        return {
+            "success": True,
+            "account": {
+                "account_id": account_info.account_id,
+                "buying_power": account_info.buying_power,
+                "cash": account_info.cash,
+                "equity": account_info.equity,
+                "market_value": account_info.market_value,
+                "day_trade_buying_power": account_info.day_trade_buying_power,
+                "maintenance_margin": account_info.maintenance_margin,
+                "initial_margin": account_info.initial_margin,
+                "last_updated": account_info.last_updated.isoformat()
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Account info hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/positions")
+async def get_positions():
+    """Pozisyonları al"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        positions = await broker_manager.get_positions()
+        
+        return {
+            "success": True,
+            "positions": [
+                {
+                    "symbol": pos.symbol,
+                    "quantity": pos.quantity,
+                    "average_price": pos.average_price,
+                    "current_price": pos.current_price,
+                    "market_value": pos.market_value,
+                    "unrealized_pnl": pos.unrealized_pnl,
+                    "unrealized_pnl_percent": pos.unrealized_pnl_percent,
+                    "realized_pnl": pos.realized_pnl,
+                    "cost_basis": pos.cost_basis
+                }
+                for pos in positions
+            ],
+            "count": len(positions),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Positions hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/quote/{symbol}")
+async def get_quote(symbol: str):
+    """Anlık fiyat al"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        quote = await broker_manager.get_quote(symbol.upper())
+        
+        return {
+            "success": True,
+            "quote": quote,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Quote hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/order/market")
+async def place_market_order(
+    symbol: str,
+    side: str,
+    quantity: float
+):
+    """Market order gönder"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        try:
+            side_enum = OrderSide(side.lower())
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Geçersiz side: {side}")
+        
+        # Risk kontrolü
+        quote = await broker_manager.get_quote(symbol.upper())
+        price = quote['price']
+        
+        risk_ok, risk_msg = await risk_manager.check_order_risk(
+            symbol=symbol.upper(),
+            side=side_enum,
+            quantity=quantity,
+            price=price
+        )
+        
+        if not risk_ok:
+            raise HTTPException(status_code=400, detail=f"Risk kontrolü başarısız: {risk_msg}")
+        
+        order_id = await order_manager.create_market_order(
+            symbol=symbol.upper(),
+            side=side_enum,
+            quantity=quantity
+        )
+        
+        return {
+            "success": True,
+            "order_id": order_id,
+            "message": f"Market order gönderildi: {side} {quantity} {symbol}",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Market order hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/order/limit")
+async def place_limit_order(
+    symbol: str,
+    side: str,
+    quantity: float,
+    price: float
+):
+    """Limit order gönder"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        try:
+            side_enum = OrderSide(side.lower())
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Geçersiz side: {side}")
+        
+        # Risk kontrolü
+        risk_ok, risk_msg = await risk_manager.check_order_risk(
+            symbol=symbol.upper(),
+            side=side_enum,
+            quantity=quantity,
+            price=price
+        )
+        
+        if not risk_ok:
+            raise HTTPException(status_code=400, detail=f"Risk kontrolü başarısız: {risk_msg}")
+        
+        order_id = await order_manager.create_limit_order(
+            symbol=symbol.upper(),
+            side=side_enum,
+            quantity=quantity,
+            price=price
+        )
+        
+        return {
+            "success": True,
+            "order_id": order_id,
+            "message": f"Limit order gönderildi: {side} {quantity} {symbol} @ {price}",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Limit order hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/order/stop")
+async def place_stop_order(
+    symbol: str,
+    side: str,
+    quantity: float,
+    stop_price: float
+):
+    """Stop order gönder"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        try:
+            side_enum = OrderSide(side.lower())
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Geçersiz side: {side}")
+        
+        # Risk kontrolü
+        risk_ok, risk_msg = await risk_manager.check_order_risk(
+            symbol=symbol.upper(),
+            side=side_enum,
+            quantity=quantity,
+            price=stop_price
+        )
+        
+        if not risk_ok:
+            raise HTTPException(status_code=400, detail=f"Risk kontrolü başarısız: {risk_msg}")
+        
+        order_id = await order_manager.create_stop_order(
+            symbol=symbol.upper(),
+            side=side_enum,
+            quantity=quantity,
+            stop_price=stop_price
+        )
+        
+        return {
+            "success": True,
+            "order_id": order_id,
+            "message": f"Stop order gönderildi: {side} {quantity} {symbol} @ {stop_price}",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Stop order hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/order/cancel/{order_id}")
+async def cancel_order(order_id: str):
+    """Order iptal et"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        success = await order_manager.cancel_order(order_id)
+        
+        return {
+            "success": success,
+            "message": f"Order {'iptal edildi' if success else 'iptal edilemedi'}: {order_id}",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Cancel order hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/order/status/{order_id}")
+async def get_order_status(order_id: str):
+    """Order durumu al"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        status = await order_manager.get_order_status(order_id)
+        
+        return {
+            "success": True,
+            "order_id": order_id,
+            "status": status.value,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Order status hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/orders/history")
+async def get_order_history(limit: int = 100):
+    """Order geçmişini al"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        orders = order_manager.get_order_history(limit)
+        
+        return {
+            "success": True,
+            "orders": [
+                {
+                    "id": order.id,
+                    "symbol": order.symbol,
+                    "side": order.side.value,
+                    "order_type": order.order_type.value,
+                    "quantity": order.quantity,
+                    "price": order.price,
+                    "stop_price": order.stop_price,
+                    "status": order.status.value,
+                    "filled_quantity": order.filled_quantity,
+                    "average_price": order.average_price,
+                    "created_at": order.created_at.isoformat(),
+                    "updated_at": order.updated_at.isoformat()
+                }
+                for order in orders
+            ],
+            "count": len(orders),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Order history hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/orders/active")
+async def get_active_orders():
+    """Aktif order'ları al"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        orders = order_manager.get_active_orders()
+        
+        return {
+            "success": True,
+            "orders": [
+                {
+                    "id": order.id,
+                    "symbol": order.symbol,
+                    "side": order.side.value,
+                    "order_type": order.order_type.value,
+                    "quantity": order.quantity,
+                    "price": order.price,
+                    "stop_price": order.stop_price,
+                    "status": order.status.value,
+                    "filled_quantity": order.filled_quantity,
+                    "average_price": order.average_price,
+                    "created_at": order.created_at.isoformat(),
+                    "updated_at": order.updated_at.isoformat()
+                }
+                for order in orders
+            ],
+            "count": len(orders),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Active orders hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/risk/check")
+async def check_risk():
+    """Risk durumu kontrol et"""
+    try:
+        if not broker_manager.active_broker:
+            raise HTTPException(status_code=400, detail="Aktif broker yok")
+        
+        await risk_manager.update_daily_pnl()
+        
+        return {
+            "success": True,
+            "risk_metrics": {
+                "max_position_size": risk_manager.max_position_size,
+                "max_daily_loss": risk_manager.max_daily_loss,
+                "max_drawdown": risk_manager.max_drawdown,
+                "daily_pnl": risk_manager.daily_pnl,
+                "peak_equity": risk_manager.peak_equity
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Risk check hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Advanced Trading Strategies Endpoints
+@app.get("/strategies/list")
+async def get_strategies():
+    """Mevcut stratejileri listele"""
+    try:
+        strategies = [
+            {
+                "name": strategy.name,
+                "type": strategy.__class__.__name__,
+                "symbols": strategy.symbols,
+                "is_active": strategy.is_active,
+                "metrics": {
+                    "total_trades": strategy.metrics.total_trades,
+                    "win_rate": strategy.metrics.win_rate,
+                    "total_pnl": strategy.metrics.total_pnl,
+                    "sharpe_ratio": strategy.metrics.sharpe_ratio
+                }
+            }
+            for strategy in strategy_manager.strategies.values()
+        ]
+        
+        return {
+            "success": True,
+            "strategies": strategies,
+            "count": len(strategies),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Strategies list hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/strategies/add")
+async def add_strategy(
+    strategy_type: str = "hft",
+    symbols: str = '["AAPL", "GOOGL"]'
+):
+    """Strateji ekle"""
+    try:
+        import json
+        symbols_list = json.loads(symbols)
+        
+        if strategy_type == "hft":
+            strategy = HFTStrategy(symbols_list)
+        elif strategy_type == "statistical_arbitrage":
+            strategy = StatisticalArbitrageStrategy(symbols_list)
+        elif strategy_type == "pairs_trading":
+            strategy = PairsTradingStrategy(symbols_list)
+        elif strategy_type == "market_making":
+            strategy = MarketMakingStrategy(symbols_list)
+        else:
+            raise HTTPException(status_code=400, detail=f"Geçersiz strateji türü: {strategy_type}")
+        
+        strategy_manager.add_strategy(strategy)
+        
+        return {
+            "success": True,
+            "message": f"{strategy_type} stratejisi eklendi",
+            "strategy_name": strategy.name,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Add strategy hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/strategies/remove/{strategy_name}")
+async def remove_strategy(strategy_name: str):
+    """Strateji kaldır"""
+    try:
+        strategy_manager.remove_strategy(strategy_name)
+        
+        return {
+            "success": True,
+            "message": f"{strategy_name} stratejisi kaldırıldı",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Remove strategy hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/strategies/start")
+async def start_strategies():
+    """Stratejileri başlat"""
+    try:
+        if not strategy_manager.is_running:
+            # Background task olarak başlat
+            asyncio.create_task(strategy_manager.start())
+        
+        return {
+            "success": True,
+            "message": "Stratejiler başlatıldı",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Start strategies hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/strategies/stop")
+async def stop_strategies():
+    """Stratejileri durdur"""
+    try:
+        await strategy_manager.stop()
+        
+        return {
+            "success": True,
+            "message": "Stratejiler durduruldu",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Stop strategies hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/strategies/metrics")
+async def get_strategy_metrics():
+    """Strateji metriklerini al"""
+    try:
+        metrics = strategy_manager.get_strategy_metrics()
+        
+        formatted_metrics = {}
+        for name, metric in metrics.items():
+            formatted_metrics[name] = {
+                "total_trades": metric.total_trades,
+                "winning_trades": metric.winning_trades,
+                "losing_trades": metric.losing_trades,
+                "total_pnl": metric.total_pnl,
+                "max_drawdown": metric.max_drawdown,
+                "sharpe_ratio": metric.sharpe_ratio,
+                "win_rate": metric.win_rate,
+                "avg_trade_duration": metric.avg_trade_duration,
+                "profit_factor": metric.profit_factor
+            }
+        
+        return {
+            "success": True,
+            "metrics": formatted_metrics,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Strategy metrics hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/strategies/positions")
+async def get_strategy_positions():
+    """Strateji pozisyonlarını al"""
+    try:
+        positions = strategy_manager.get_positions()
+        
+        return {
+            "success": True,
+            "positions": positions,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Strategy positions hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/strategies/market-data")
+async def add_market_data(
+    symbol: str = "AAPL",
+    price: float = 150.0,
+    volume: float = 1000,
+    bid: float = 149.9,
+    ask: float = 150.1,
+    order_flow: str = "neutral",
+    volatility: float = 0.02,
+    momentum: float = 0.0
+):
+    """Market verisi ekle"""
+    try:
+        # OrderFlow enum mapping
+        order_flow_map = {
+            "buy_pressure": OrderFlow.BUY_PRESSURE,
+            "sell_pressure": OrderFlow.SELL_PRESSURE,
+            "neutral": OrderFlow.NEUTRAL
+        }
+        order_flow_enum = order_flow_map.get(order_flow, OrderFlow.NEUTRAL)
+        
+        market_data = MarketData(
+            symbol=symbol,
+            price=price,
+            volume=volume,
+            bid=bid,
+            ask=ask,
+            spread=ask - bid,
+            timestamp=datetime.now(),
+            order_flow=order_flow_enum,
+            volatility=volatility,
+            momentum=momentum
+        )
+        
+        await strategy_manager.add_market_data(market_data)
+        
+        return {
+            "success": True,
+            "message": f"Market data added for {symbol}",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Add market data hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/strategies/signals")
+async def get_strategy_signals(symbol: Optional[str] = None, flat: bool = False):
+    """Strateji sinyallerini al.
+    - symbol: Belirli bir sembol için filtre (opsiyonel)
+    - flat: True ise düz liste döndür (symbol, action, confidence, price, quantity, timestamp, strategy)
+    """
+    try:
+        # Düğümlü sözlük (mevcut davranış)
+        signals = {}
+        for name, strategy in strategy_manager.strategies.items():
+            signals[name] = {}
+            for sym, sig in strategy.last_signals.items():
+                if symbol and sym != symbol:
+                    continue
+                signals[name][sym] = {
+                    "action": getattr(sig, "action", None).
+                        value if hasattr(getattr(sig, "action", None), "value") else str(getattr(sig, "action", "")),
+                    "confidence": float(getattr(sig, "confidence", 0.0)),
+                    "price": float(getattr(sig, "price", getattr(sig, "entry_price", 0.0) or 0.0)),
+                    "quantity": float(getattr(sig, "quantity", 0.0)),
+                    "timestamp": getattr(sig, "timestamp", datetime.now()).isoformat(),
+                    "metadata": getattr(sig, "metadata", {})
+                }
+        
+        # Snapshot (forecast_signals.json) ekle: flat list istenirken de bu kaynak kullanılsın
+        snapshot_items = []
+        try:
+            import os, json
+            snap_path = os.path.join(os.path.dirname(__file__), 'data', 'forecast_signals.json')
+            if os.path.exists(snap_path):
+                snap = json.load(open(snap_path, 'r', encoding='utf-8'))
+                for s in snap.get('signals', []):
+                    sym = s.get('symbol')
+                    if symbol and sym != symbol:
+                        continue
+                    snapshot_items.append({
+                        "strategy": "forecast_snapshot",
+                        "symbol": sym,
+                        "action": s.get('action'),
+                        "confidence": float(s.get('confidence', 0.0)),
+                        "price": float(s.get('entry_price', 0.0)),
+                        "quantity": 0.0,
+                        "timestamp": s.get('timestamp'),
+                        "metadata": {
+                            "source": "forecast_snapshot",
+                            "risk_reward": s.get('risk_reward'),
+                            "stop_loss": s.get('stop_loss'),
+                            "take_profit": s.get('take_profit')
+                        }
+                    })
+        except Exception as e:
+            logger.warning(f"Forecast snapshot okunamadı: {e}")
+        
+        if flat:
+            flat_list = []
+            for strat_name, by_symbol in signals.items():
+                for sym, payload in by_symbol.items():
+                    item = {"strategy": strat_name, "symbol": sym}
+                    item.update(payload)
+                    flat_list.append(item)
+            # snapshot'ı da ekle
+            flat_list.extend(snapshot_items)
+            return {
+                "success": True,
+                "count": len(flat_list),
+                "signals": flat_list,
+                "timestamp": datetime.now().isoformat()
+            }
+        
+        return {
+            "success": True,
+            "signals": signals,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Strategy signals hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/strategies/backtest")
+async def backtest_strategy(
+    strategy_type: str,
+    symbols: List[str],
+    start_date: str,
+    end_date: str,
+    initial_capital: float = 100000.0
+):
+    """Strateji backtest"""
+    try:
+        # Mock backtest implementation
+        # Gerçek implementasyonda historical data kullanılacak
+        
+        config = {}
+        if strategy_type == "hft":
+            strategy = HFTStrategy(symbols, **config)
+        elif strategy_type == "statistical_arbitrage":
+            strategy = StatisticalArbitrageStrategy(symbols, **config)
+        elif strategy_type == "pairs_trading":
+            strategy = PairsTradingStrategy(symbols, **config)
+        elif strategy_type == "market_making":
+            strategy = MarketMakingStrategy(symbols, **config)
+        else:
+            raise HTTPException(status_code=400, detail=f"Geçersiz strateji türü: {strategy_type}")
+        
+        # Mock backtest results
+        backtest_results = {
+            "strategy_name": strategy.name,
+            "symbols": symbols,
+            "period": f"{start_date} to {end_date}",
+            "initial_capital": initial_capital,
+            "final_capital": initial_capital * 1.15,  # Mock %15 return
+            "total_return": 0.15,
+            "annualized_return": 0.15,
+            "volatility": 0.12,
+            "sharpe_ratio": 1.25,
+            "max_drawdown": 0.05,
+            "win_rate": 0.65,
+            "total_trades": 150,
+            "profit_factor": 1.8
+        }
+        
+        return {
+            "success": True,
+            "backtest_results": backtest_results,
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Strategy backtest hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# --- US Aggressive Profile Endpoints ---
+@app.post("/strategies/apply-us-aggressive")
+async def apply_us_aggressive_profile():
+    """US Agresif profilini uygula ve HFT stratejisini tanımla"""
+    try:
+        profile = US_AGGRESSIVE_PROFILE
+        symbols = profile.get("symbols", ["SPY", "QQQ"])  # güvenlik
+
+        # Basit: tek bir HFT stratejisi oluştur ve ekle (varsa isim çakışmasından kaçın)
+        hft = HFTStrategy(symbols)
+        strategy_manager.add_strategy(hft)
+
+        return {
+            "success": True,
+            "message": "US Aggressive profile applied and HFT strategy added",
+            "strategy_name": hft.name,
+            "symbols": symbols,
+            "risk": profile.get("risk", {}),
+            "bracket": profile.get("bracket", {}),
+            "filters": profile.get("filters", {}),
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"US Aggressive apply hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 # Error handlers

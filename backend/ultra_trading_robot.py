@@ -91,12 +91,7 @@ class UltraTradingRobot:
                 "update_interval": 1,     # 1 saniye
                 "max_hold_time": 300      # 5 dakika
             },
-            TimeFrame.M5: {
-                "strategies": [StrategyType.SCALPING, StrategyType.DAY_TRADING],
-                "indicators": ["RSI", "MACD", "Bollinger", "Volume", "ATR"],
-                "update_interval": 5,     # 5 saniye
-                "max_hold_time": 1800     # 30 dakika
-            },
+            # TimeFrame.M5 devre dışı (stabilite için kaldırıldı)
             TimeFrame.M15: {
                 "strategies": [StrategyType.DAY_TRADING],
                 "indicators": ["RSI", "MACD", "Bollinger", "Volume", "ATR", "Stochastic"],
@@ -722,7 +717,7 @@ if __name__ == "__main__":
     
     # Test stratejisi
     test_symbol = "GARAN.IS"
-    test_timeframes = [TimeFrame.M5, TimeFrame.M15, TimeFrame.H1]
+    test_timeframes = [TimeFrame.M15, TimeFrame.H1]
     
     strategy = robot.create_multi_timeframe_strategy(test_symbol, test_timeframes)
     logger.info(f"📈 {test_symbol} stratejisi oluşturuldu")
