@@ -47,7 +47,10 @@ try:
     from rl_portfolio_agent import RLPortfolioAgent
     from sentiment_xai_engine import SentimentXAIEngine
     from dupont_piotroski_analyzer import DuPontPiotroskiAnalyzer
-    from macro_regime_detector import MacroRegimeDetector
+    try:
+        from us_aggressive_session_manager import us_aggressive_manager
+    except ImportError:
+        us_aggressive_manager = None
     from auto_backtest_walkforward import AutoBacktestWalkForward
     from bist_performance_tracker import BISTPerformanceTracker
     from accuracy_optimizer import AccuracyOptimizer
@@ -3809,6 +3812,195 @@ async def _scan_patterns_async(df, symbol: str):
     def _scan():
         return engine.scan_all_patterns(df, symbol)
     return await loop.run_in_executor(None, _scan)
+
+# ============================================================================
+# US AGGRESSIVE PROFILE ENDPOINTS
+# ============================================================================
+
+@app.get("/us-aggressive/test")
+async def test_us_aggressive():
+    """US Aggressive test endpoint"""
+    return {
+        "success": True,
+        "message": "US Aggressive test endpoint çalışıyor",
+        "manager_loaded": us_aggressive_manager is not None,
+        "timestamp": datetime.now().isoformat()
+    }
+
+@app.post("/us-aggressive/start-session")
+async def start_us_aggressive_session():
+    """US Aggressive seansını başlat ($100 -> $1000 hedefi)"""
+    if not us_aggressive_manager:
+        raise HTTPException(status_code=503, detail="US Aggressive Session Manager yüklenemedi")
+    
+    try:
+        us_aggressive_manager.start_session_monitoring()
+        return {
+            "success": True,
+            "message": "US Aggressive seansı başlatıldı",
+            "target": "$100 -> $1000",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"US Aggressive seans başlatma hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/us-aggressive/stop-session")
+async def stop_us_aggressive_session():
+    """US Aggressive seansını durdur"""
+    if not us_aggressive_manager:
+        raise HTTPException(status_code=503, detail="US Aggressive Session Manager yüklenemedi")
+    
+    try:
+        us_aggressive_manager.stop_session_monitoring()
+        return {
+            "success": True,
+            "message": "US Aggressive seansı durduruldu",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"US Aggressive seans durdurma hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/us-aggressive/status")
+async def get_us_aggressive_status():
+    """US Aggressive seans durumu"""
+    if not us_aggressive_manager:
+        raise HTTPException(status_code=503, detail="US Aggressive Session Manager yüklenemedi")
+    
+    try:
+        status = us_aggressive_manager.get_session_status()
+        return {
+            "success": True,
+            "status": status,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"US Aggressive durum hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/us-aggressive/reset-circuit-breaker")
+async def reset_us_aggressive_circuit_breaker():
+    """Devre kesiciyi sıfırla"""
+    if not us_aggressive_manager:
+        raise HTTPException(status_code=503, detail="US Aggressive Session Manager yüklenemedi")
+    
+    try:
+        us_aggressive_manager.reset_circuit_breaker()
+        return {
+            "success": True,
+            "message": "Devre kesici sıfırlandı",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Devre kesici sıfırlama hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/us-aggressive/record-trade")
+async def record_us_aggressive_trade(
+    symbol: str,
+    side: str,
+    quantity: float,
+    price: float,
+    pnl: float
+):
+    """US Aggressive işlem kaydı"""
+    if not us_aggressive_manager:
+        raise HTTPException(status_code=503, detail="US Aggressive Session Manager yüklenemedi")
+    
+    try:
+        us_aggressive_manager.record_trade(symbol, side, quantity, price, pnl)
+        return {
+            "success": True,
+            "message": f"İşlem kaydedildi: {symbol} {side} {quantity}@{price:.2f} PnL: ${pnl:.2f}",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"İşlem kaydetme hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/us-aggressive/can-trade")
+async def can_us_aggressive_trade():
+    """US Aggressive işlem yapılabilir mi kontrol et"""
+    if not us_aggressive_manager:
+        raise HTTPException(status_code=503, detail="US Aggressive Session Manager yüklenemedi")
+    
+    try:
+        can_trade, reason = us_aggressive_manager.can_trade()
+        return {
+            "success": True,
+            "can_trade": can_trade,
+            "reason": reason,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"İşlem kontrol hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/us-aggressive/signals")
+async def get_us_aggressive_signals():
+    """US Aggressive için özel sinyaller"""
+    try:
+        # US Aggressive için özel sinyal üretimi
+        us_symbols = ["AAPL", "TSLA", "NVDA", "MSFT", "GOOGL", "AMZN", "META", "NFLX", "AMD", "INTC"]
+        
+        signals = []
+        for symbol in us_symbols:
+            try:
+                # Basit momentum sinyali (demo)
+                import yfinance as yf
+                stock = yf.Ticker(symbol)
+                hist = stock.history(period="5d", interval="1h")
+                
+                if not hist.empty:
+                    # RSI hesapla
+                    delta = hist['Close'].diff()
+                    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+                    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+                    rs = gain / loss
+                    rsi = 100 - (100 / (1 + rs))
+                    
+                    current_rsi = rsi.iloc[-1]
+                    current_price = hist['Close'].iloc[-1]
+                    
+                    # Agresif sinyal üretimi
+                    if current_rsi < 30:  # Oversold
+                        signals.append({
+                            "symbol": symbol,
+                            "action": "BUY",
+                            "confidence": 0.85,
+                            "price": current_price,
+                            "reason": f"RSI oversold: {current_rsi:.1f}",
+                            "target": current_price * 1.05,  # %5 hedef
+                            "stop_loss": current_price * 0.95,  # %5 stop
+                            "timeframe": "H1",
+                            "timestamp": datetime.now().isoformat()
+                        })
+                    elif current_rsi > 70:  # Overbought
+                        signals.append({
+                            "symbol": symbol,
+                            "action": "SELL",
+                            "confidence": 0.80,
+                            "price": current_price,
+                            "reason": f"RSI overbought: {current_rsi:.1f}",
+                            "target": current_price * 0.95,  # %5 hedef
+                            "stop_loss": current_price * 1.05,  # %5 stop
+                            "timeframe": "H1",
+                            "timestamp": datetime.now().isoformat()
+                        })
+            except Exception as e:
+                logger.warning(f"US Aggressive sinyal hatası ({symbol}): {e}")
+                continue
+        
+        return {
+            "success": True,
+            "count": len(signals),
+            "signals": signals,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"US Aggressive sinyal hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     # Development server
