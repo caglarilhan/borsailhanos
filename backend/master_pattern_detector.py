@@ -19,8 +19,8 @@ try:
     from advanced_candlestick_detector import AdvancedCandlestickDetector
     from volume_momentum_detector import VolumeMomentumDetector
     from fibonacci_support_resistance_detector import FibonacciSupportResistanceDetector
-from ai_enhancement_deep_learning_detector import AIEnhancementDeepLearningDetector
-from quantum_ai_advanced_optimization_detector import QuantumAIAdvancedOptimizationDetector
+    from ai_enhancement_deep_learning_detector import AIEnhancementDeepLearningDetector
+    from quantum_ai_advanced_optimization_detector import QuantumAIAdvancedOptimizationDetector
 except ImportError:
     print("⚠️ Pattern detector modules not found, using simulated versions")
     # Fallback to simulated detectors
@@ -203,6 +203,13 @@ class MasterPatternDetector:
         scores['advanced_candlestick_score'] = candlestick_score
         scores['volume_momentum_score'] = volume_momentum_score
         scores['fibonacci_sr_score'] = fibonacci_sr_score
+        
+        # Calculate AI enhancement and quantum AI scores
+        ai_enhancement_score = self._calculate_ai_enhancement_score(all_patterns)
+        quantum_ai_score = self._calculate_quantum_ai_score(all_patterns)
+        
+        scores['ai_enhancement_score'] = ai_enhancement_score
+        scores['quantum_ai_score'] = quantum_ai_score
         
         # Weighted average score (Phase 6 enhanced)
         weighted_score = (

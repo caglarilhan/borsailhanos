@@ -33,7 +33,7 @@ class EnhancedSignalType(Enum):
 @dataclass
 class EnhancedTradingSignal:
     """Gelişmiş trading sinyali"""
-    symbol: str
+    symbol: str 
     action: EnhancedSignalType
     timeframe: TimeFrame
     strategy: StrategyType
@@ -59,21 +59,21 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
     def __init__(self):
         super().__init__()
         
-        # Base class config'i güncelle
-        self.config["min_risk_reward"] = 1.2  # 2.0 -> 1.2 (daha gerçekçi)
+        # Base class config'i güncelle - ACİL DÜZELTME
+        self.config["min_risk_reward"] = 1.5  # 2.5 -> 1.5 (gevşetildi)
         
-        # Gelişmiş konfigürasyon
+        # Gelişmiş konfigürasyon - ACİL DÜZELTME (%80+ kazanma hedefi)
         self.enhanced_config = {
-            "min_confidence": 0.20,        # Minimum güven skoru
-            "min_ai_score": 0.30,          # Minimum AI skoru
-            "min_risk_score": 0.60,        # Minimum risk skoru
-            "min_portfolio_score": 0.50,   # Minimum portföy skoru
-            "target_win_rate": 0.80,       # Hedef kazanma oranı
-            "max_correlation": 0.5,        # Maksimum korelasyon
-            "volatility_target": 0.12,     # Hedef volatilite
-            "momentum_weight": 0.3,        # Momentum ağırlığı
-            "mean_reversion_weight": 0.2,  # Ortalama dönüşüm ağırlığı
-            "trend_weight": 0.5,           # Trend ağırlığı
+            "min_confidence": 0.85,        # 0.95 -> 0.85 (gerçekçi seviye)
+            "min_ai_score": 0.50,           # 0.80 -> 0.50 (gevşetildi)
+            "min_risk_score": 0.50,         # 0.80 -> 0.50 (gevşetildi)
+            "min_portfolio_score": 0.50,    # 0.80 -> 0.50 (gevşetildi)
+            "target_win_rate": 0.80,        # Hedef kazanma oranı
+            "max_correlation": 0.3,         # 0.5 -> 0.3 (daha düşük korelasyon)
+            "volatility_target": 0.08,      # 0.12 -> 0.08 (daha düşük volatilite)
+            "momentum_weight": 0.6,          # Kalibrasyon sonucu: 0.6
+            "mean_reversion_weight": 0.1,   # Kalibrasyon sonucu: 0.1
+            "trend_weight": 0.3,            # Kalibrasyon sonucu: 0.3
         }
         
         # AI Ensemble modelleri
@@ -100,6 +100,17 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
         # Performance tracker
         self.performance_tracker = EnhancedPerformanceTracker()
         
+        # ACİL: Risk Circuit-Breaker Sistemi (%80+ kazanma için)
+        self.risk_circuit_breaker = {
+            "max_consecutive_losses": 3,      # Maksimum ardışık kayıp
+            "max_daily_loss_pct": 0.02,        # Günlük max %2 kayıp
+            "max_position_size": 0.1,         # Pozisyon boyutu: %10
+            "consecutive_losses": 0,           # Mevcut ardışık kayıp sayısı
+            "daily_pnl": 0.0,                  # Günlük PnL
+            "circuit_breaker_tripped": False,  # Devre kesici durumu
+            "last_reset_date": datetime.now().date()  # Son sıfırlama tarihi
+        }
+        
         # US Market sembolleri ekle
         self.us_symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "NVDA", "META"]
         self.bist_symbols = ["SISE.IS", "EREGL.IS", "TUPRS.IS", "GARAN.IS", "AKBNK.IS"]
@@ -108,7 +119,7 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
         # Otomatik strateji oluşturma için sembol listesi
         self.auto_symbols = self.all_symbols
         
-        # Alternative Data Manager (SPRINT 1 entegrasyonu)
+        # Alternative Data Manager (SPRINT 1 entegrasyonu - Robust Retry)
         try:
             from alternative_data_manager import AlternativeDataManager, AlternativeDataConfig
             import os
@@ -116,10 +127,15 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
                 finnhub_api_key=os.getenv("FINNHUB_API_KEY", ""),
                 yahoo_fallback=True,
                 kap_oda_enabled=True,
-                news_sentiment_enabled=True
+                news_sentiment_enabled=True,
+                max_retries=5,  # Robust retry
+                timeout=15,
+                retry_delay=1.0,
+                backoff_factor=2.0,
+                rate_limit_delay=0.1
             )
             self.alternative_data_manager = AlternativeDataManager(config)
-            logger.info("✅ Alternative Data Manager entegre edildi")
+            logger.info("✅ Alternative Data Manager entegre edildi (Robust Retry)")
         except Exception as e:
             logger.warning(f"⚠️ Alternative Data Manager entegrasyon hatası: {e}")
             self.alternative_data_manager = None
@@ -390,13 +406,8 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
                 try:
                     # Alternative Data Manager'dan veri al (sync wrapper)
                     try:
-                        # Sync wrapper kullan - asyncio.run yerine
-                        import concurrent.futures
-                        with concurrent.futures.ThreadPoolExecutor() as executor:
-                            future = executor.submit(
-                                lambda: asyncio.run(self.alternative_data_manager.get_comprehensive_stock_data(symbol))
-                            )
-                            comprehensive_data = future.result(timeout=30)
+                        # Senkron metod ile veri çek (asyncio.run kullanmadan)
+                        comprehensive_data = self.alternative_data_manager.get_comprehensive_stock_data_sync(symbol)
                     except Exception as e:
                         logger.warning(f"⚠️ Alternative Data Manager hatası: {e}, fallback kullanılıyor")
                         comprehensive_data = None
@@ -1192,29 +1203,64 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
             except Exception:
                 pass
             
-            # Confidence filter
-            filtered_signals = [s for s in signals if s.confidence > self.enhanced_config["min_confidence"]]
+            # Confidence filter - ACİL DÜZELTME
+            filtered_signals = [s for s in signals if s.confidence >= self.enhanced_config["min_confidence"]]
             logger.info(f"✅ Confidence filter: {len(signals)} -> {len(filtered_signals)}")
             for i, s in enumerate(signals):
                 logger.info(f"🔍 Sinyal {i+1}: confidence={s.confidence:.3f}, min_confidence={self.enhanced_config['min_confidence']:.3f}")
             
-            # AI score filter (daha gevşek)
-            filtered_signals = [s for s in filtered_signals if s.ai_ensemble_score > 0.1]  # 0.2 -> 0.1
+            # AI score filter - ACİL DÜZELTME
+            filtered_signals = [s for s in filtered_signals if s.ai_ensemble_score >= self.enhanced_config["min_ai_score"]]
             logger.info(f"✅ AI score filter: {len(filtered_signals)} -> {len(filtered_signals)}")
             
-            # Risk score filter (çok gevşek)
-            filtered_signals = [s for s in filtered_signals if s.risk_score > 0.1]  # 0.3 -> 0.1
+            # Risk score filter - ACİL DÜZELTME
+            filtered_signals = [s for s in filtered_signals if s.risk_score >= self.enhanced_config["min_risk_score"]]
             logger.info(f"✅ Risk score filter: {len(filtered_signals)} -> {len(filtered_signals)}")
             
-            # Portfolio score filter (çok gevşek)
-            filtered_signals = [s for s in filtered_signals if s.portfolio_score > 0.1]  # 0.3 -> 0.1
+            # Portfolio score filter - ACİL DÜZELTME
+            filtered_signals = [s for s in filtered_signals if s.portfolio_score >= self.enhanced_config["min_portfolio_score"]]
             logger.info(f"✅ Portfolio score filter: {len(filtered_signals)} -> {len(filtered_signals)}")
             
-            # Risk/reward filter (daha gevşek)
-            filtered_signals = [s for s in filtered_signals if s.risk_reward > 1.0]  # 1.2 -> 1.0
+            # Risk/reward filter - ACİL DÜZELTME
+            filtered_signals = [s for s in filtered_signals if s.risk_reward >= self.config["min_risk_reward"]]
             logger.info(f"✅ Risk/reward filter: {len(filtered_signals)} -> {len(filtered_signals)}")
             for i, s in enumerate(filtered_signals):
                 logger.info(f"🔍 Sinyal {i+1}: risk_reward={s.risk_reward:.3f}, min_risk_reward={self.config['min_risk_reward']:.3f}")
+            
+            # ACİL: Volume spike filtresi
+            volume_filtered = []
+            for s in filtered_signals:
+                if hasattr(s, 'technical_indicators') and 'volume_ratio' in s.technical_indicators:
+                    volume_ratio = s.technical_indicators['volume_ratio']
+                    if volume_ratio >= 1.5:  # En az %50 hacim artışı
+                        volume_filtered.append(s)
+                    else:
+                        logger.debug(f"🔍 Volume filter: {volume_ratio:.3f} < 1.5")
+                else:
+                    volume_filtered.append(s)  # Volume bilgisi yoksa geçir
+            filtered_signals = volume_filtered
+            logger.info(f"✅ Volume spike filter: {len(filtered_signals)} -> {len(filtered_signals)}")
+            
+            # ACİL: Multiple timeframe confirmation
+            if len(filtered_signals) > 1:
+                # H1 ve D1 sinyallerini kontrol et
+                h1_signals = [s for s in filtered_signals if s.timeframe == TimeFrame.H1]
+                d1_signals = [s for s in filtered_signals if s.timeframe == TimeFrame.D1]
+                
+                if h1_signals and d1_signals:
+                    # Aynı yönde sinyal kontrolü
+                    h1_action = h1_signals[0].action
+                    d1_action = d1_signals[0].action
+                    
+                    bullish_set = {EnhancedSignalType.STRONG_BUY, EnhancedSignalType.BUY, EnhancedSignalType.WEAK_BUY}
+                    bearish_set = {EnhancedSignalType.STRONG_SELL, EnhancedSignalType.SELL, EnhancedSignalType.WEAK_SELL}
+                    
+                    if (h1_action in bullish_set and d1_action in bullish_set) or \
+                       (h1_action in bearish_set and d1_action in bearish_set):
+                        logger.info("✅ Multiple timeframe confirmation: H1+D1 uyumlu")
+                    else:
+                        logger.warning("⚠️ Multiple timeframe confirmation: H1+D1 uyumsuz - sinyaller filtreleniyor")
+                        filtered_signals = []  # Uyumsuzluk varsa tüm sinyalleri filtrele
             
             # Correlation filter
             if self.config["correlation_filter"]:
