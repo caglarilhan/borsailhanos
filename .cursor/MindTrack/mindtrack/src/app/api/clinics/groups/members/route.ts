@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseClient';
 // body: { group_id: string, member_id: string, role?: 'owner'|'admin'|'member'|'viewer' }
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
 // body: { group_id: string, member_id: string, role: 'owner'|'admin'|'member'|'viewer' }
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -97,7 +97,7 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/clinics/groups/members?groupId=...&memberId=...
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

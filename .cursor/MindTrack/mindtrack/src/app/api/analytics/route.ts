@@ -7,7 +7,7 @@ const ANALYTICS_TTL_MS = 60 * 1000; // 60s cache window per unique key
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
 
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

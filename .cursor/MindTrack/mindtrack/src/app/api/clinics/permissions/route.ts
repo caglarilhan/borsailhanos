@@ -37,7 +37,7 @@ interface UpdatePermissionsRequest {
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Get current user - Mevcut kullanıcıyı al
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -120,7 +120,7 @@ export async function GET(request: NextRequest) {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Get current user - Mevcut kullanıcıyı al
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -312,7 +312,7 @@ export async function PUT(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Get current user - Mevcut kullanıcıyı al
     const { data: { user }, error: authError } = await supabase.auth.getUser();

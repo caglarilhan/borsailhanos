@@ -4,7 +4,7 @@ import { generateAINote, enhanceNoteWithAI } from '@/lib/ai-assistant';
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

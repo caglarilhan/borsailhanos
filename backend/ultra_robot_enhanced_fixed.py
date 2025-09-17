@@ -394,7 +394,7 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
                         import concurrent.futures
                         with concurrent.futures.ThreadPoolExecutor() as executor:
                             future = executor.submit(
-                                lambda: self.alternative_data_manager.get_comprehensive_stock_data(symbol)
+                                lambda: asyncio.run(self.alternative_data_manager.get_comprehensive_stock_data(symbol))
                             )
                             comprehensive_data = future.result(timeout=30)
                     except Exception as e:
@@ -1042,7 +1042,7 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
             ai_ensemble_score = self._calculate_ai_ensemble_score(ai_scores)
             
             # Confluence tabanlı güven artırımı
-            confidence = min(1.0, max(0.0, abs(final_score)))
+            confidence = min(0.85, max(0.0, abs(final_score)))  # Maksimum 0.85
             try:
                 ema_fast = indicators.get("EMA_9")
                 ema_slow = indicators.get("EMA_21")
@@ -1064,23 +1064,23 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
                 ok_count = 0
                 # EMA9 > EMA21
                 if ema_fast is not None and ema_slow is not None and last(ema_fast) > last(ema_slow):
-                    conf_boost += 0.15; ok_count += 1
+                    conf_boost += 0.20; ok_count += 1
                 # Fiyat > VWAP
                 if vwap is not None and close_ser is not None and last(close_ser) > last(vwap):
-                    conf_boost += 0.15; ok_count += 1
+                    conf_boost += 0.20; ok_count += 1
                 # MACD > Sinyal
                 if macd is not None and macd_sig is not None and last(macd) > last(macd_sig):
-                    conf_boost += 0.10; ok_count += 1
+                    conf_boost += 0.15; ok_count += 1
                 # RSI orta-bull bölge (daha yüksek bant ekstra ödül)
                 if rsi is not None:
                     rsi_val = last(rsi)
                     if 55 <= rsi_val < 60:
-                        conf_boost += 0.05; ok_count += 1
-                    elif 60 <= rsi_val <= 65:
                         conf_boost += 0.08; ok_count += 1
+                    elif 60 <= rsi_val <= 65:
+                        conf_boost += 0.15; ok_count += 1
                 # Hacim oranı
                 if vol_ratio is not None and last(vol_ratio) >= 2.0:
-                    conf_boost += 0.12; ok_count += 1
+                    conf_boost += 0.15; ok_count += 1
                 # BB sıkışma kırılımı (daha dar bant ödülü)
                 if bb_width is not None and last(bb_width) < 0.06:
                     conf_boost += 0.06
@@ -1091,19 +1091,45 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
                 except Exception:
                     sent = 0.5
                 if sent > 0.6:
-                    conf_boost += 0.05
+                    conf_boost += 0.10 # Önceki +0.05, şimdi +0.10
+                    ok_count += 1
                 elif sent < 0.4:
-                    conf_boost -= 0.05
+                    conf_boost -= 0.10 # Önceki -0.05, şimdi -0.10
                     
                 # Opsiyonel piyasa rejimi (ENV: MARKET_REGIME=RISK_ON/RISK_OFF)
                 import os
                 regime = os.getenv('MARKET_REGIME', '').upper()
                 if regime == 'RISK_ON' and action in {EnhancedSignalType.BUY, EnhancedSignalType.STRONG_BUY, EnhancedSignalType.WEAK_BUY}:
-                    conf_boost += 0.05
+                    conf_boost += 0.15 # Önceki +0.05, şimdi +0.15
+                    ok_count += 1
                 if regime == 'RISK_OFF' and action in {EnhancedSignalType.BUY, EnhancedSignalType.STRONG_BUY, EnhancedSignalType.WEAK_BUY}:
-                    conf_boost -= 0.05
+                    conf_boost -= 0.15 # Önceki -0.05, şimdi -0.15
                     
-                confidence = min(1.0, max(0.0, confidence + conf_boost))
+                # Spread analizi (düşük spread = yüksek likidite)
+                spread = indicators.get("Spread")
+                if spread is not None and last(spread) < 0.001: # %0.1'den düşük spread
+                    conf_boost += 0.08 # Yeni eklenen
+                    ok_count += 1
+                
+                # Volatilite analizi (orta volatilite = ideal)
+                volatility = indicators.get("Volatility")
+                if volatility is not None:
+                    vol_val = last(volatility)
+                    if 0.15 <= vol_val <= 0.25: # %15-25 arası ideal volatilite
+                        conf_boost += 0.10 # Yeni eklenen
+                        ok_count += 1
+                
+                # Momentum divergence kontrolü
+                momentum = indicators.get("Momentum")
+                if momentum is not None and last(momentum) > 0:
+                    conf_boost += 0.05 # Yeni eklenen
+                    ok_count += 1
+                
+                # Confidence cap - maksimum boost sınırı
+                max_boost = 0.60 # Maksimum +0.60 boost
+                conf_boost = min(conf_boost, max_boost)
+                
+                confidence = min(0.85, max(0.0, confidence + conf_boost))  # Maksimum 0.85
                 logger.info(f"🧠 Confluence boost: +{conf_boost:.2f} (checks={ok_count})")
             except Exception as _:
                 pass
@@ -1155,9 +1181,9 @@ class UltraRobotEnhancedFixed(UltraTradingRobot):
                     bearish_set = {EnhancedSignalType.STRONG_SELL, EnhancedSignalType.SELL, EnhancedSignalType.WEAK_SELL}
                     if (h1.action in bullish_set and d1.action in bullish_set) or (h1.action in bearish_set and d1.action in bearish_set):
                         # Uyum var: bonus artırıldı
-                        h1.confidence = float(min(1.0, h1.confidence + 0.35))
-                        d1.confidence = float(min(1.0, d1.confidence + 0.35))
-                        logger.info("✅ H1+D1 uyumu: Güven +0.35 uygulandı")
+                        h1.confidence = float(min(0.85, h1.confidence + 0.50))  # Maksimum 0.85
+                        d1.confidence = float(min(0.85, d1.confidence + 0.50))  # Maksimum 0.85
+                        logger.info("✅ H1+D1 uyumu: Güven +0.50 uygulandı")
                     else:
                         # Uyum yoksa daha düşük güvenli sinyali ele
                         keep = max([h1, d1], key=lambda s: s.confidence)
