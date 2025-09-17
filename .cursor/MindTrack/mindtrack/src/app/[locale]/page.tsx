@@ -22,7 +22,7 @@ import { QualityAssurance } from "@/components/qa/quality-assurance";
 import { PerformanceMonitoring } from "@/components/performance/performance-monitoring";
 import { DisasterRecovery } from "@/components/backup/disaster-recovery";
 import { SystemAdministration } from "@/components/admin/system-administration";
-import { MobileAppDevelopment } from "@/components/mobile/mobile-app-development";
+import MobileAppDevelopment from "@/components/mobile/mobile-app-development";
 import AdvancedSecurityFeatures from "@/components/security/advanced-security-features";
 import { APIGatewayMicroservices } from "@/components/api/api-gateway-microservices";
 import { CloudInfrastructureDevOps } from "@/components/devops/cloud-infrastructure-devops";
@@ -131,7 +131,7 @@ export default function HomePage() {
     { value: "analytics", label: "Analytics" },
     { value: "advanced-analytics", label: "Advanced Analytics" },
     { value: "practice-analytics", label: "Practice Analytics" },
-    { value: "predictive-analytics", label: "Predictive" },
+    { value: "predictive-analytics-ml", label: "Predictive" },
     { value: "advanced-analytics-bi", label: "BI" },
     { value: "business-intelligence", label: "Business Intelligence" },
     { value: "quality-measures", label: "Quality Measures" },
@@ -152,7 +152,7 @@ export default function HomePage() {
     { value: "electronic-health-records", label: "EHR" },
     { value: "interoperability", label: "Interoperability" },
     { value: "telehealth", label: "Telehealth" },
-    { value: "telehealth-video", label: "Video" },
+    { value: "telehealth-video-platform", label: "Video" },
     { value: "telehealth-telemedicine", label: "Telemedicine" },
   ];
 
@@ -169,7 +169,7 @@ export default function HomePage() {
     { value: "mobile-app", label: "Mobile App" },
     { value: "lab-integration", label: "Lab Integration" },
     { value: "pharmacogenomics", label: "Pharmacogenomics" },
-    { value: "telehealth-video", label: "Telehealth Video" },
+    { value: "telehealth-video-platform", label: "Telehealth Video" },
     { value: "gamification", label: "Gamification" },
     { value: "notification-hub", label: "Notifications" },
     { value: "research", label: "Research" },
@@ -200,6 +200,10 @@ export default function HomePage() {
     { value: "quality-assurance", label: "QA" },
     { value: "performance-monitoring", label: "Performance" },
     { value: "disaster-recovery", label: "Backup & DR" },
+    { value: "ai-recommendations", label: "AI Rx" },
+    { value: "prescription-management", label: "E-Prescribing" },
+    { value: "patient-communication", label: "Patient Comm" },
+    { value: "mental-health-tools", label: "MH Tools" },
   ];
 
   const CATEGORY_TO_TABS = {
@@ -1062,7 +1066,7 @@ export default function HomePage() {
             <PharmacogenomicsIntegration />
           </TabsContent>
 
-          <TabsContent value="telehealth-video" className="space-y-6">
+          <TabsContent value="telehealth-video-platform" className="space-y-6">
             <TelehealthVideoPlatform />
           </TabsContent>
 
@@ -1114,11 +1118,11 @@ export default function HomePage() {
             <CustomizablePracticeManagement />
           </TabsContent>
 
-          <TabsContent value="advanced-reporting" className="space-y-6">
+          <TabsContent value="advanced-reporting-analytics" className="space-y-6">
             <AdvancedReportingBusinessIntelligence />
           </TabsContent>
 
-          <TabsContent value="workflow-automation" className="space-y-6">
+          <TabsContent value="workflow-automation-process" className="space-y-6">
             <WorkflowAutomationProcessManagement />
           </TabsContent>
 
@@ -1130,7 +1134,7 @@ export default function HomePage() {
             <AdvancedSearchKnowledgeManagement />
           </TabsContent>
 
-          <TabsContent value="predictive-analytics" className="space-y-6">
+          <TabsContent value="predictive-analytics-ml" className="space-y-6">
             <PredictiveAnalyticsMachineLearning />
           </TabsContent>
 

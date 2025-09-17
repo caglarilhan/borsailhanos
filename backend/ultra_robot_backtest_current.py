@@ -81,7 +81,7 @@ class UltraRobotBacktestCurrent:
                 
                 try:
                     # Zaman dilimine göre period ayarla
-                    if timeframe in [TimeFrame.M1, TimeFrame.M5, TimeFrame.M15, TimeFrame.M30]:
+                    if timeframe in [TimeFrame.M1, TimeFrame.M15, TimeFrame.M30]:
                         period = "60d"  # Son 60 gün
                         logger.info(f"   📅 {timeframe.value}: Son 60 gün verisi")
                     elif timeframe in [TimeFrame.H1, TimeFrame.H4]:
@@ -721,7 +721,7 @@ if __name__ == "__main__":
     test_strategies = [
         {
             "name": "Scalping Strategy (5m-15m)",
-            "timeframes": [TimeFrame.M5, TimeFrame.M15]
+            "timeframes": [TimeFrame.M15]
         },
         {
             "name": "Swing Trading Strategy (1h-4h-1d)",

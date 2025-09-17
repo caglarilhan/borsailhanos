@@ -11,7 +11,8 @@ from datetime import datetime, timedelta
 from typing import Dict, List, Optional
 import pandas as pd
 import numpy as np
-from ultra_robot_enhanced_fixed import UltraRobotEnhancedFixed, EnhancedSignalType
+from ultra_robot_enhanced_fixed import UltraRobotEnhancedFixed, EnhancedSignalType, EnhancedTradingSignal
+from ultra_trading_robot import TimeFrame, StrategyType
 
 # Logging ayarları
 logging.basicConfig(
@@ -35,6 +36,8 @@ class BIST100Scanner:
         self.active_signals = {}
         self.signal_history = []
         self.snapshot_path = 'data/forecast_signals.json'
+        # Demo fallback kapalı: sadece gerçek sinyal
+        self.demo_force_signal = False
         
     def _get_bist100_symbols(self) -> List[str]:
         """BIST 100 + US Market sembolleri - Demo için optimize edildi"""
@@ -90,10 +93,12 @@ class BIST100Scanner:
         """Tüm hisseleri tara"""
         for symbol in self.bist100_symbols:
             try:
-                logger.info(f"🔍 {symbol} taranıyor...")
+                # Sembol normalize
+                norm_symbol = self._normalize_symbol(symbol)
+                logger.info(f"🔍 {norm_symbol} taranıyor...")
                 
                 # Gelişmiş sinyal üret
-                signals = self.robot.generate_enhanced_signals(symbol)
+                signals = self.robot.generate_enhanced_signals(norm_symbol)
                 
                 if signals:
                     logger.info(f"🎯 {symbol}: {len(signals)} sinyal bulundu!")
@@ -107,7 +112,7 @@ class BIST100Scanner:
                     else:
                         logger.info(f"⏸️ {symbol}: 48h önceden sinyal yok")
                 else:
-                    logger.info(f"❌ {symbol}: Sinyal bulunamadı")
+                    logger.info(f"❌ {norm_symbol}: Sinyal bulunamadı")
                 
                 # Rate limiting
                 await asyncio.sleep(1)
@@ -117,17 +122,28 @@ class BIST100Scanner:
                 continue
     
     def _filter_forecast_signals(self, signals: List) -> List:
-        """48 saat önceden sinyalleri filtrele - Demo için eşikleri düşürdük"""
+        """48 saat önceden sinyalleri filtrele - Tüm sinyalleri geçir"""
         forecast_signals = []
         
         for signal in signals:
             # Sadece BUY sinyallerini al
             if signal.action in [EnhancedSignalType.STRONG_BUY, EnhancedSignalType.BUY, EnhancedSignalType.WEAK_BUY]:
-                # Demo ortamında daha fazla sinyal için eşiği düşürdük
-                if signal.confidence >= 0.4:  # 0.6'dan 0.4'e düşürdük
-                    forecast_signals.append(signal)
+                # Tüm sinyalleri geçir (filtreleme kaldırıldı)
+                forecast_signals.append(signal)
+                logger.info(f"✅ {signal.symbol} sinyali geçirildi: confidence={signal.confidence:.3f}, action={signal.action}")
         
+        logger.info(f"📊 Toplam {len(signals)} sinyalden {len(forecast_signals)} tanesi geçirildi")
         return forecast_signals
+
+    def _normalize_symbol(self, symbol: str) -> str:
+        """Sembol normalize: '$' ve boşlukları temizle, upper-case; BIST için '.IS' formatını koru"""
+        if not symbol:
+            return symbol
+        cleaned = symbol.strip().upper()
+        if cleaned.startswith('$'):
+            cleaned = cleaned[1:]
+        # BIST sembollerinde '.IS' varsa bırak, yoksa orijinal listede US sembolleri mevcut
+        return cleaned
     
     async def _process_forecast_signals(self, symbol: str, signals: List):
         """48 saat önceden sinyalleri işle"""

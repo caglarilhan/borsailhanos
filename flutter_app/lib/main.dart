@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
-import 'early_warning_dashboard.dart';
+import 'screens/advanced_trading_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,7 +18,7 @@ class BistAIApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BIST AI Kazanç Asistanı',
+      title: 'BIST AI Smart Trader',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.green,
@@ -33,7 +33,7 @@ class BistAIApp extends StatelessWidget {
         ),
         useMaterial3: true,
       ),
-      home: const EarlyWarningDashboard(),
+      home: const AdvancedTradingDashboard(),
     );
   }
 }

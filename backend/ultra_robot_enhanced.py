@@ -837,7 +837,7 @@ class PortfolioOptimizer:
             base_score = 0.7
             
             # Timeframe bazlı ayarlama
-            if timeframe in [TimeFrame.M1, TimeFrame.M5, TimeFrame.M15]:
+            if timeframe in [TimeFrame.M1, TimeFrame.M15]:
                 timeframe_score = 0.8  # Scalping
             elif timeframe in [TimeFrame.H1, TimeFrame.H4]:
                 timeframe_score = 0.9  # Swing
@@ -964,7 +964,7 @@ if __name__ == "__main__":
     
     # Test stratejisi
     test_symbol = "GARAN.IS"
-    test_timeframes = [TimeFrame.M5, TimeFrame.M15, TimeFrame.H1]
+    test_timeframes = [TimeFrame.M15, TimeFrame.H1]
     
     # Gelişmiş strateji oluştur
     enhanced_strategy = enhanced_robot.create_enhanced_strategy(test_symbol, test_timeframes)
