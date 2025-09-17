@@ -4,7 +4,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseClient';
 // GET /api/clinics/groups
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -31,7 +31,7 @@ export async function GET() {
 // POST /api/clinics/groups
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
 // PUT /api/clinics/groups
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -139,7 +139,7 @@ export async function PUT(request: NextRequest) {
 // DELETE /api/clinics/groups?id=...
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

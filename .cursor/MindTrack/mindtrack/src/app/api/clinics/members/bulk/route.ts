@@ -5,7 +5,7 @@ import { createSupabaseServerClient } from '@/lib/supabaseClient';
 // body: { action: 'invite'|'role_update'|'csv_import', payload: any }
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 

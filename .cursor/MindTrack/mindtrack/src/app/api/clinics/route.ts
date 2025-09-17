@@ -4,7 +4,7 @@ import type { CreateClinicRequest } from '@/types/clinic';
 
 export async function GET() {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Get user's clinic
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -42,7 +42,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();

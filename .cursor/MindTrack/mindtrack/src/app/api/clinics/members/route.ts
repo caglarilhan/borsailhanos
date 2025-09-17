@@ -8,7 +8,7 @@ import type { ClinicMember } from '@/types/clinic';
  */
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Get current user
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
 // POST - Invite new member
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
 // PUT - Update member role
 export async function PUT(request: NextRequest) {
   try {
-    const supabase = createSupabaseServerClient();
+    const supabase = await createSupabaseServerClient();
     
     // Verify authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
