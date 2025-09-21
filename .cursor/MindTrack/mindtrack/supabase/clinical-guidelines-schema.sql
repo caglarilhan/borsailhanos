@@ -700,3 +700,4 @@ CREATE TRIGGER guideline_alerts_updated_at
     EXECUTE FUNCTION update_clinical_guidelines_updated_at();
 
 
+

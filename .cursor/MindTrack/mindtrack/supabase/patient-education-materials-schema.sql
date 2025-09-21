@@ -734,3 +734,4 @@ CREATE TRIGGER patient_education_analytics_updated_at
     EXECUTE FUNCTION update_patient_education_updated_at();
 
 
+

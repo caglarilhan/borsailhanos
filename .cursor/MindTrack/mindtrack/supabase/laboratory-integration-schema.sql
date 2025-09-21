@@ -382,3 +382,4 @@ COMMENT ON TABLE lab_specimens IS 'Stores specimen information for lab orders';
 COMMENT ON TABLE lab_processing_log IS 'Logs processing steps for lab results';
 COMMENT ON TABLE lab_analytics_cache IS 'Caches analytics data for performance';
 
+

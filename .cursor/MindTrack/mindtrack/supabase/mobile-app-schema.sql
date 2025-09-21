@@ -265,3 +265,4 @@ COMMENT ON TABLE push_notifications IS 'Stores push notifications sent to mobile
 COMMENT ON TABLE mobile_app_analytics IS 'Stores analytics events from mobile app usage';
 COMMENT ON TABLE mobile_performance_metrics IS 'Stores performance metrics collected from mobile devices';
 
+

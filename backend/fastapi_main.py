@@ -51,6 +51,30 @@ try:
         from us_aggressive_session_manager import us_aggressive_manager
     except ImportError:
         us_aggressive_manager = None
+    
+    # Market Regime Detector
+    try:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from market_regime_detector import MarketRegimeDetector
+        market_regime_detector = MarketRegimeDetector()
+        print("✅ Market Regime Detector başlatıldı")
+    except ImportError as e:
+        print(f"⚠️ Market Regime Detector yüklenemedi: {e}")
+        market_regime_detector = None
+    
+    # Broker Paper Trading
+    try:
+        import sys
+        import os
+        sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+        from broker_paper_trading import BrokerPaperTrading
+        broker_paper = BrokerPaperTrading(initial_capital=100.0)
+        print("✅ Broker Paper Trading başlatıldı")
+    except ImportError as e:
+        print(f"⚠️ Broker Paper Trading yüklenemedi: {e}")
+        broker_paper = None
     from auto_backtest_walkforward import AutoBacktestWalkForward
     from bist_performance_tracker import BISTPerformanceTracker
     from accuracy_optimizer import AccuracyOptimizer
@@ -3653,9 +3677,19 @@ async def get_strategy_signals(symbol: Optional[str] = None, flat: bool = False)
         snapshot_items = []
         try:
             import os, json
-            snap_path = os.path.join(os.path.dirname(__file__), 'data', 'forecast_signals.json')
+            # Snapshot dosyası proje kökündeki data/ altında tutuluyor
+            snap_path = os.path.normpath(os.path.join(os.path.dirname(__file__), '..', 'data', 'forecast_signals.json'))
             if os.path.exists(snap_path):
-                snap = json.load(open(snap_path, 'r', encoding='utf-8'))
+                with open(snap_path, 'r', encoding='utf-8', errors='ignore') as fh:
+                    raw = fh.read()
+                # Son geçerli JSON kapanışını bul ve kırp
+                last_brace = raw.rfind('}')
+                if last_brace != -1:
+                    raw_clean = raw[:last_brace+1]
+                else:
+                    raw_clean = raw.strip().rstrip('%')
+                snap = json.loads(raw_clean)
+                logger.info(f"📊 Snapshot yüklendi: {len(snap.get('signals', []))} sinyal")
                 for s in snap.get('signals', []):
                     sym = s.get('symbol')
                     if symbol and sym != symbol:
@@ -3687,6 +3721,9 @@ async def get_strategy_signals(symbol: Optional[str] = None, flat: bool = False)
                     flat_list.append(item)
             # snapshot'ı da ekle
             flat_list.extend(snapshot_items)
+            # Eğer hâlâ boşsa snapshot'ı tek başına dön
+            if not flat_list and snapshot_items:
+                flat_list = snapshot_items
             return {
                 "success": True,
                 "count": len(flat_list),
@@ -3696,7 +3733,7 @@ async def get_strategy_signals(symbol: Optional[str] = None, flat: bool = False)
         
         return {
             "success": True,
-            "signals": signals,
+            "signals": signals if any(signals.values()) else {"forecast_snapshot": {s.get('symbol'): s for s in snapshot_items}},
             "timestamp": datetime.now().isoformat()
         }
         
@@ -3814,8 +3851,207 @@ async def _scan_patterns_async(df, symbol: str):
     return await loop.run_in_executor(None, _scan)
 
 # ============================================================================
-# US AGGRESSIVE PROFILE ENDPOINTS
+# BROKER PAPER TRADING ENDPOINTS
 # ============================================================================
+
+@app.get("/broker/portfolio")
+async def get_broker_portfolio():
+    """Broker portföy özetini al"""
+    if not broker_paper:
+        raise HTTPException(status_code=503, detail="Broker Paper Trading yüklenemedi")
+    
+    try:
+        summary = broker_paper.get_portfolio_summary()
+        return {
+            "success": True,
+            "portfolio": summary
+        }
+    except Exception as e:
+        logger.error(f"Broker portfolio hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/positions")
+async def get_broker_positions():
+    """Broker pozisyonlarını al"""
+    if not broker_paper:
+        raise HTTPException(status_code=503, detail="Broker Paper Trading yüklenemedi")
+    
+    try:
+        positions = broker_paper.get_positions()
+        return {
+            "success": True,
+            "positions": positions,
+            "count": len(positions)
+        }
+    except Exception as e:
+        logger.error(f"Broker positions hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/broker/trades")
+async def get_broker_trades(limit: int = 50):
+    """Broker işlemlerini al"""
+    if not broker_paper:
+        raise HTTPException(status_code=503, detail="Broker Paper Trading yüklenemedi")
+    
+    try:
+        trades = broker_paper.get_trades(limit)
+        return {
+            "success": True,
+            "trades": trades,
+            "count": len(trades)
+        }
+    except Exception as e:
+        logger.error(f"Broker trades hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/order")
+async def place_broker_order(
+    symbol: str,
+    side: str,
+    quantity: Optional[float] = None,
+    price: Optional[float] = None,
+    stop_loss: Optional[float] = None,
+    take_profit: Optional[float] = None,
+    confidence: float = 1.0
+):
+    """Broker emri ver"""
+    if not broker_paper:
+        raise HTTPException(status_code=503, detail="Broker Paper Trading yüklenemedi")
+    
+    try:
+        from broker_paper_trading import OrderSide
+        
+        # Side validation
+        if side.upper() not in ["BUY", "SELL"]:
+            raise HTTPException(status_code=400, detail="Side must be BUY or SELL")
+        
+        order_side = OrderSide.BUY if side.upper() == "BUY" else OrderSide.SELL
+        
+        # Emir ver
+        order_id = broker_paper.place_order(
+            symbol=symbol,
+            side=order_side,
+            quantity=quantity,
+            price=price,
+            stop_loss=stop_loss,
+            take_profit=take_profit,
+            confidence=confidence
+        )
+        
+        if not order_id:
+            raise HTTPException(status_code=400, detail="Emir verilemedi")
+        
+        return {
+            "success": True,
+            "order_id": order_id,
+            "message": f"{symbol} {side} emri verildi",
+            "timestamp": datetime.now().isoformat()
+        }
+        
+    except Exception as e:
+        logger.error(f"Broker order hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/reset-circuit-breaker")
+async def reset_broker_circuit_breaker():
+    """Broker circuit breaker'ı sıfırla"""
+    if not broker_paper:
+        raise HTTPException(status_code=503, detail="Broker Paper Trading yüklenemedi")
+    
+    try:
+        broker_paper.reset_circuit_breaker()
+        return {
+            "success": True,
+            "message": "Circuit breaker sıfırlandı",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Broker circuit breaker reset hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/broker/save-state")
+async def save_broker_state():
+    """Broker durumunu kaydet"""
+    if not broker_paper:
+        raise HTTPException(status_code=503, detail="Broker Paper Trading yüklenemedi")
+    
+    try:
+        broker_paper.save_state()
+        return {
+            "success": True,
+            "message": "Broker durumu kaydedildi",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Broker save state hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# ============================================================================
+# MARKET REGIME DETECTION ENDPOINTS
+# ============================================================================
+
+@app.get("/market-regime/current")
+async def get_current_market_regime():
+    """Güncel piyasa rejimini al"""
+    if not market_regime_detector:
+        raise HTTPException(status_code=503, detail="Market Regime Detector yüklenemedi")
+    
+    try:
+        regime_signal = market_regime_detector.get_regime_signal()
+        return {
+            "success": True,
+            "regime": regime_signal.regime.value,
+            "confidence": regime_signal.confidence,
+            "risk_multiplier": regime_signal.risk_multiplier,
+            "recommendation": regime_signal.recommendation,
+            "indicators": regime_signal.indicators,
+            "timestamp": regime_signal.timestamp.isoformat()
+        }
+    except Exception as e:
+        logger.error(f"Market regime hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/market-regime/history")
+async def get_market_regime_history(days: int = 7):
+    """Piyasa rejimi geçmişini al"""
+    if not market_regime_detector:
+        raise HTTPException(status_code=503, detail="Market Regime Detector yüklenemedi")
+    
+    try:
+        history = market_regime_detector.get_regime_history(days)
+        return {
+            "success": True,
+            "history": [
+                {
+                    "regime": signal.regime.value,
+                    "confidence": signal.confidence,
+                    "risk_multiplier": signal.risk_multiplier,
+                    "recommendation": signal.recommendation,
+                    "timestamp": signal.timestamp.isoformat()
+                }
+                for signal in history
+            ],
+            "count": len(history)
+        }
+    except Exception as e:
+        logger.error(f"Market regime history hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/market-regime/summary")
+async def get_market_regime_summary():
+    """Piyasa rejimi özetini al"""
+    if not market_regime_detector:
+        raise HTTPException(status_code=503, detail="Market Regime Detector yüklenemedi")
+    
+    try:
+        summary = market_regime_detector.get_regime_summary()
+        return {
+            "success": True,
+            "summary": summary
+        }
+    except Exception as e:
+        logger.error(f"Market regime summary hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/us-aggressive/test")
 async def test_us_aggressive():
@@ -3826,6 +4062,41 @@ async def test_us_aggressive():
         "manager_loaded": us_aggressive_manager is not None,
         "timestamp": datetime.now().isoformat()
     }
+
+@app.get("/test/signals")
+async def test_signals():
+    """Test endpoint to verify snapshot loading"""
+    try:
+        import os, json
+        snap_path = os.path.join('data', 'forecast_signals.json')
+        if os.path.exists(snap_path):
+            with open(snap_path, 'r') as f:
+                raw = f.read()
+            last_brace = raw.rfind('}')
+            if last_brace != -1:
+                raw_clean = raw[:last_brace+1]
+            else:
+                raw_clean = raw.strip().rstrip('%')
+            snap = json.loads(raw_clean)
+            signals = snap.get('signals', [])
+            return {
+                "success": True,
+                "total_signals": len(signals),
+                "sample": signals[:3] if signals else [],
+                "timestamp": datetime.now().isoformat()
+            }
+        else:
+            return {
+                "success": False,
+                "error": "Snapshot file not found",
+                "path": snap_path
+            }
+    except Exception as e:
+        return {
+            "success": False,
+            "error": str(e),
+            "timestamp": datetime.now().isoformat()
+        }
 
 @app.post("/us-aggressive/start-session")
 async def start_us_aggressive_session():

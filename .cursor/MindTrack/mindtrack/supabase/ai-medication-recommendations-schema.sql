@@ -771,3 +771,4 @@ CREATE TRIGGER ai_recommendation_analytics_updated_at
     EXECUTE FUNCTION update_ai_recommendation_updated_at();
 
 
+

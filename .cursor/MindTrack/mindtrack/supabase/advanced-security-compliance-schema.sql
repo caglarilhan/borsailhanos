@@ -1080,3 +1080,4 @@ CREATE TRIGGER security_analytics_updated_at
     EXECUTE FUNCTION update_security_updated_at();
 
 
+

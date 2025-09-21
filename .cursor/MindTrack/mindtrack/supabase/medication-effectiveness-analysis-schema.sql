@@ -603,3 +603,4 @@ CREATE TRIGGER patient_reported_outcomes_updated_at
     EXECUTE FUNCTION update_effectiveness_updated_at();
 
 
+

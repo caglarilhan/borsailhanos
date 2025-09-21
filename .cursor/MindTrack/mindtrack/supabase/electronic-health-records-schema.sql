@@ -996,3 +996,4 @@ CREATE TRIGGER ehr_analytics_updated_at
     EXECUTE FUNCTION update_ehr_updated_at();
 
 
+

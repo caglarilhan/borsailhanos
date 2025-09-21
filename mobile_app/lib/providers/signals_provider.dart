@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class SignalsProvider extends ChangeNotifier {
   List<Map<String, dynamic>> _signals = [];
@@ -16,34 +17,24 @@ class SignalsProvider extends ChangeNotifier {
     notifyListeners();
     
     try {
-      // TODO: Implement real API call
-      await Future.delayed(const Duration(seconds: 1));
+      // Real API call
+      final response = await ApiService.analyzeSignal(symbol: 'SISE.IS');
       
-      // Mock data for testing
+      // Convert API response to signal format
       _signals = [
         {
           'id': '1',
-          'symbol': 'SISE.IS',
-          'type': 'BUY',
-          'confidence': 0.85,
-          'price': 45.20,
-          'target': 48.50,
-          'stop_loss': 43.80,
-          'timestamp': DateTime.now().toIso8601String(),
-          'reason': 'EMA cross + Bullish engulfing pattern',
-          'strength': 'STRONG'
-        },
-        {
-          'id': '2',
-          'symbol': 'EREGL.IS',
-          'type': 'SELL',
-          'confidence': 0.72,
-          'price': 32.15,
-          'target': 30.20,
-          'stop_loss': 33.50,
-          'timestamp': DateTime.now().toIso8601String(),
-          'reason': 'RSI overbought + Resistance level',
-          'strength': 'MEDIUM'
+          'symbol': response['symbol'],
+          'type': response['action'],
+          'confidence': response['confidence'],
+          'price': 45.20, // Mock price
+          'target': 48.50, // Mock target
+          'stop_loss': 43.80, // Mock stop loss
+          'timestamp': response['timestamp'],
+          'reason': response['reason'],
+          'strength': response['confidence'] > 0.8 ? 'STRONG' : 'MEDIUM',
+          'patterns_detected': response['patterns_detected'],
+          'expected_accuracy': response['expected_accuracy']
         }
       ];
       

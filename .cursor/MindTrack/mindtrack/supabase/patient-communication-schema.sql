@@ -737,3 +737,4 @@ CREATE TRIGGER communication_analytics_updated_at
     EXECUTE FUNCTION update_communication_updated_at();
 
 
+

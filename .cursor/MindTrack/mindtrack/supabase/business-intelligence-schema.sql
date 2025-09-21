@@ -741,3 +741,4 @@ CREATE TRIGGER business_intelligence_settings_updated_at
     EXECUTE FUNCTION update_business_intelligence_updated_at();
 
 
+

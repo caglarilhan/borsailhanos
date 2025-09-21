@@ -799,3 +799,4 @@ CREATE TRIGGER quality_reports_updated_at
     EXECUTE FUNCTION update_quality_updated_at();
 
 
+

@@ -216,3 +216,4 @@ CREATE TRIGGER trg_upd_lab_mappings BEFORE UPDATE ON lab_external_mappings FOR E
 CREATE TRIGGER trg_upd_lab_trends BEFORE UPDATE ON lab_trend_analytics FOR EACH ROW EXECUTE FUNCTION set_updated_at();
 
 
+

@@ -737,3 +737,4 @@ CREATE TRIGGER telehealth_analytics_updated_at
     EXECUTE FUNCTION update_telehealth_updated_at();
 
 
+

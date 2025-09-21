@@ -220,3 +220,4 @@ CREATE POLICY "Temp uploads access" ON storage.objects
     auth.uid()::text = (storage.foldername(name))[1]
   );
 
+

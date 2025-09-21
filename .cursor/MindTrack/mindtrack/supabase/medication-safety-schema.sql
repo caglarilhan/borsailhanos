@@ -776,3 +776,4 @@ CREATE TRIGGER medication_safety_analytics_updated_at
     EXECUTE FUNCTION update_medication_safety_updated_at();
 
 
+
