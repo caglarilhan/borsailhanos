@@ -1,0 +1,67 @@
+# BIST AI Smart Trader v2.1 Enhanced Requirements
+# PRD v2.0 + Advanced Enhancements
+
+# Core dependencies
+numpy>=1.21.0
+pandas>=1.5.0
+requests>=2.28.0
+python-dateutil>=2.8.0
+
+# Data fetching
+yfinance>=0.2.0
+beautifulsoup4>=4.11.0
+lxml>=4.9.0
+
+# Machine Learning
+scikit-learn>=1.1.0
+lightgbm>=4.0.0
+tensorflow>=2.13.0
+xgboost>=2.0.0
+
+# Multi-criteria decision making
+pymcdm>=1.1.0
+scipy>=1.9.0
+
+# Technical analysis
+talib-binary>=0.4.0
+ta>=0.10.0
+
+# Sentiment analysis
+transformers>=4.30.0
+torch>=2.0.0
+sentencepiece>=0.1.99
+
+# XAI
+shap>=0.42.0
+lime>=0.2.0
+
+# Portfolio optimization / RL
+stable-baselines3>=2.0.0
+gym>=0.26.0
+finrl>=0.3.0
+
+# API and web
+fastapi>=0.100.0
+uvicorn>=0.23.0
+websockets>=11.0.0
+streamlit>=1.25.0
+plotly>=5.15.0
+
+# Database
+firebase-admin>=6.2.0
+sqlalchemy>=2.0.0
+
+# Visualization
+matplotlib>=3.7.0
+seaborn>=0.12.0
+
+# Deployment
+gunicorn>=21.0.0
+docker>=6.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+loguru>=0.7.0
+pydantic>=2.0.0
+typing-extensions>=4.7.0
+asyncio-mqtt>=0.13.0

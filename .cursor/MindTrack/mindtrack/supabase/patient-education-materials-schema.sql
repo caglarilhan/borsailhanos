@@ -735,3 +735,4 @@ CREATE TRIGGER patient_education_analytics_updated_at
 
 
 
+

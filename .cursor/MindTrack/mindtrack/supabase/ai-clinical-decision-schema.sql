@@ -286,3 +286,4 @@ COMMENT ON TABLE ai_usage_analytics IS 'Tracks usage patterns and analytics for 
 COMMENT ON TABLE ai_clinical_guidelines IS 'Stores evidence-based clinical guidelines used by AI for decision support';
 
 
+
