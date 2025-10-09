@@ -2,6 +2,8 @@
 
 import * as React from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabaseClient";
+import { buildICS } from "@/lib/ics";
+import PendingAppointmentsAdmin from "@/components/appointments/pending-appointments-admin";
 import type { Appointment, Client } from "@/types/domain";
 import { generateTeleLink } from "@/lib/zoom";
 
@@ -74,8 +76,13 @@ export default function AppointmentsTab() {
 
   const onCancel = async (id: string) => {
     try {
-      const { error: err } = await supabase.from("appointments").update({ status: "cancelled" }).eq("id", id);
-      if (err) throw err;
+      // İptal + bekleme listesinden terfi işlemi
+      const res = await fetch('/api/appointments/cancel-with-waitlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id })
+      });
+      if (!res.ok) throw new Error('Cancel failed');
       fetchAll();
     } catch (e: unknown) {
       const errorMessage = e instanceof Error ? e.message : "Cancel failed";
@@ -119,6 +126,22 @@ export default function AppointmentsTab() {
       const errorMessage = e instanceof Error ? e.message : "Tele link generation failed";
       setError(errorMessage);
     }
+  };
+
+  const onDownloadIcs = (a: Appointment, clientName?: string) => {
+    const title = `Therapy Session - ${clientName || a.client_id}`;
+    const description = a.tele_link ? `Virtual session link: ${a.tele_link}` : 'Therapy session';
+    const dtStart = `${a.date}T${a.time}`;
+    const ics = buildICS({ title, description, start: dtStart, durationMinutes: 50, url: a.tele_link || undefined });
+    const blob = new Blob([ics], { type: 'text/calendar' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `appointment-${a.id}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -178,6 +201,7 @@ export default function AppointmentsTab() {
                 <th className="p-2">Status</th>
                 <th className="p-2">Tele Link</th>
                 <th className="p-2" />
+                <th className="p-2">ICS</th>
               </tr>
             </thead>
             <tbody>
@@ -213,12 +237,29 @@ export default function AppointmentsTab() {
                           SMS
                         </button>
                       )}
+                      <button
+                        onClick={async () => {
+                          await fetch('/api/calendar/sync', { method: 'POST' });
+                        }}
+                        className="text-xs border px-2 py-1 rounded"
+                        title="Sync Calendar"
+                      >
+                        Sync
+                      </button>
                       <button 
                         className="text-xs border px-2 py-1 rounded" 
                         onClick={() => onCancel(a.id)} 
                         disabled={a.status === "cancelled"}
                       >
                         {a.status === "cancelled" ? "Cancelled" : "Cancel"}
+                      </button>
+                    </td>
+                    <td className="p-2">
+                      <button
+                        onClick={() => onDownloadIcs(a, c?.name)}
+                        className="text-xs border px-2 py-1 rounded"
+                      >
+                        .ics
                       </button>
                     </td>
                   </tr>
@@ -233,6 +274,9 @@ export default function AppointmentsTab() {
           </table>
         </div>
       )}
+      <div className="pt-6 border-t">
+        <PendingAppointmentsAdmin />
+      </div>
     </div>
   );
 }

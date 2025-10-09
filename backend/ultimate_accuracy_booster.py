@@ -48,6 +48,42 @@ class UltimateAccuracySignal:
     
     timestamp: datetime
 
+    # --- Standardized interface for MVP ---
+    @property
+    def signal(self) -> str:
+        """Unified primary signal accessor (maps to ultimate_signal)."""
+        return self.ultimate_signal
+
+    @property
+    def confidence(self) -> float:
+        """Unified confidence accessor (uses ultimate_confidence in [0,1])."""
+        return float(self.ultimate_confidence)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Serialize to a standard dictionary shape for APIs/CLI."""
+        return {
+            'symbol': self.symbol,
+            'signal': self.signal,
+            'confidence': self.confidence,
+            'ensemble': {
+                'prediction': self.ensemble_prediction,
+                'confidence': float(self.ensemble_confidence),
+            },
+            'stacking': {
+                'prediction': self.stacking_prediction,
+                'confidence': float(self.stacking_confidence),
+            },
+            'meta_learning': {
+                'prediction': self.meta_learning_prediction,
+                'confidence': float(self.meta_learning_confidence),
+            },
+            'ultimate_accuracy': float(self.ultimate_accuracy),
+            'prediction_agreement': float(self.prediction_agreement),
+            'model_diversity': float(self.model_diversity),
+            'uncertainty_estimate': float(self.uncertainty_estimate),
+            'timestamp': self.timestamp.isoformat(),
+        }
+
 class UltimateAccuracyBooster:
     """Ultimate accuracy booster"""
     

@@ -2,6 +2,7 @@
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/ui/page-header";
+import { AccessGate } from "@/components/billing/access-gate";
 import { StatCard } from "@/components/ui/stat-card";
 import { 
   Calendar, 
@@ -306,6 +307,7 @@ export default function HomePage() {
 
       {/* Main Content */}
       <main className="container mx-auto px-6 py-8">
+        <AccessGate>
         <Tabs value={tab} onValueChange={setTab} className="w-full">
                         <div className="sticky top-0 z-20 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b">
             {/* Mobile kategori seçimi */}
@@ -1255,6 +1257,7 @@ export default function HomePage() {
                       <AcademicResearchManagement />
                     </TabsContent>
         </Tabs>
+        </AccessGate>
       </main>
     </>
   );

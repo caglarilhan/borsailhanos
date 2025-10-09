@@ -3,6 +3,7 @@
 import * as React from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabaseClient";
 import type { Client } from "@/types/domain";
+import ClientBilling from "@/components/clients/client-billing";
 
 export default function ClientsTab() {
   const supabase = React.useMemo(() => createSupabaseBrowserClient(), []);
@@ -12,6 +13,7 @@ export default function ClientsTab() {
   const [name, setName] = React.useState("");
   const [phone, setPhone] = React.useState("");
   const [email, setEmail] = React.useState("");
+  const [billingClient, setBillingClient] = React.useState<Client | null>(null);
 
   const fetchClients = React.useCallback(async () => {
     setLoading(true);
@@ -131,13 +133,19 @@ export default function ClientsTab() {
                   <td className="p-2">{c.email || "-"}</td>
                   <td className="p-2">{c.status}</td>
                   <td className="p-2">{new Date(c.created_at).toLocaleString()}</td>
-                  <td className="p-2 text-right">
+                  <td className="p-2 text-right space-x-2">
                     <button
                       className="text-xs border px-2 py-1 rounded"
                       onClick={() => onSoftDelete(c.id)}
                       disabled={c.status === "inactive"}
                     >
                       {c.status === "inactive" ? "Inactive" : "Deactivate"}
+                    </button>
+                    <button
+                      className="text-xs border px-2 py-1 rounded bg-blue-50 hover:bg-blue-100"
+                      onClick={() => setBillingClient(c)}
+                    >
+                      Billing
                     </button>
                   </td>
                 </tr>
@@ -149,6 +157,21 @@ export default function ClientsTab() {
               )}
             </tbody>
           </table>
+        </div>
+      )}
+      {billingClient && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-lg font-semibold">Billing · {billingClient.name}</h3>
+              <button onClick={() => setBillingClient(null)} className="text-sm px-2 py-1 border rounded">Kapat</button>
+            </div>
+            <ClientBilling
+              clientId={billingClient.id}
+              clientName={billingClient.name}
+              clientEmail={billingClient.email || ''}
+            />
+          </div>
         </div>
       )}
     </div>

@@ -3,7 +3,7 @@
 import * as React from "react";
 import { createSupabaseBrowserClient } from "@/lib/supabaseClient";
 import type { Note, Client } from "@/types/domain";
-import { encryptNote, decryptNote } from "@/lib/crypto";
+import { encryptNote, decryptNote, hasPassphraseConfigured, setPassphrase, encryptNoteWithPassphrase, decryptNoteWithPassphrase } from "@/lib/crypto";
 import type { AINoteRequest, AINoteResponse } from "@/lib/ai-assistant";
 
 const NOTE_TYPES = ["SOAP", "BIRP", "DAP"] as const;
@@ -14,6 +14,8 @@ export default function NotesTab() {
   const [clients, setClients] = React.useState<Client[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [passphrase, setPassphraseInput] = React.useState<string>("");
+  const [hasPassphrase, setHasPassphrase] = React.useState<boolean>(false);
   const [noteType, setNoteType] = React.useState<typeof NOTE_TYPES[number]>("SOAP");
   const [clientId, setClientId] = React.useState("");
   const [content, setContent] = React.useState("");
@@ -32,6 +34,24 @@ export default function NotesTab() {
     noteType: "SOAP"
   });
   const [aiResponse, setAiResponse] = React.useState<AINoteResponse | null>(null);
+
+  const applyTemplate = (type: typeof NOTE_TYPES[number]) => {
+    setNoteType(type);
+    const templates: Record<typeof NOTE_TYPES[number], string> = {
+      SOAP: `S: 
+O: 
+A: 
+P: `,
+      BIRP: `B: 
+I: 
+R: 
+P: `,
+      DAP: `D: 
+A: 
+P: `,
+    } as const;
+    setContent(templates[type]);
+  };
 
   const fetchAll = React.useCallback(async () => {
     setLoading(true);
@@ -57,12 +77,25 @@ export default function NotesTab() {
     fetchAll();
   }, [fetchAll]);
 
+  React.useEffect(() => {
+    setHasPassphrase(hasPassphraseConfigured());
+  }, []);
+
   const onAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() || !clientId) return;
     
     try {
-      const encryptedContent = await encryptNote(content);
+      let encryptedContent: string;
+      if (hasPassphrase) {
+        if (!passphrase) {
+          setError("Lütfen passphrase giriniz");
+          return;
+        }
+        encryptedContent = await encryptNoteWithPassphrase(content, passphrase);
+      } else {
+        encryptedContent = await encryptNote(content);
+      }
       const { error: err } = await supabase.from("notes").insert({ 
         client_id: clientId, 
         type: noteType, 
@@ -163,6 +196,59 @@ export default function NotesTab() {
 
   return (
     <div className="space-y-4">
+      {/* Passphrase setup */}
+      <div className="border rounded p-3 bg-yellow-50">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">Not Şifreleme</span>
+          <span className={`text-xs px-2 py-0.5 rounded ${hasPassphrase ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+            {hasPassphrase ? "Passphrase aktif" : "Passphrase ayarlı değil"}
+          </span>
+        </div>
+        {!hasPassphrase && (
+          <div className="mt-2 flex gap-2 items-end">
+            <div className="flex-1">
+              <label className="text-xs block mb-1">Passphrase</label>
+              <input
+                type="password"
+                value={passphrase}
+                onChange={(e) => setPassphraseInput(e.target.value)}
+                className="border rounded px-3 py-2 w-full"
+                placeholder="Notları şifrelemek için ikinci şifre"
+              />
+            </div>
+            <button
+              className="border rounded px-3 py-2"
+              onClick={async () => {
+                try {
+                  if (!passphrase) {
+                    setError("Passphrase boş olamaz");
+                    return;
+                  }
+                  await setPassphrase(passphrase);
+                  setHasPassphrase(true);
+                } catch (e: unknown) {
+                  const msg = e instanceof Error ? e.message : "Passphrase ayarlanamadı";
+                  setError(msg);
+                }
+              }}
+            >
+              Kaydet
+            </button>
+          </div>
+        )}
+        {hasPassphrase && (
+          <div className="mt-2">
+            <label className="text-xs block mb-1">Passphrase</label>
+            <input
+              type="password"
+              value={passphrase}
+              onChange={(e) => setPassphraseInput(e.target.value)}
+              className="border rounded px-3 py-2 w-full"
+              placeholder="Deşifre için passphrase giriniz"
+            />
+          </div>
+        )}
+      </div>
       {/* AI Note Assistant Toggle */}
       <div className="flex justify-between items-center">
         <h3 className="text-lg font-semibold">Clinical Notes</h3>
@@ -321,7 +407,22 @@ export default function NotesTab() {
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className="text-xs block mb-1">Content</label>
+          <div className="flex items-center justify-between mb-1">
+            <label className="text-xs block">Content</label>
+            <div className="flex gap-1">
+              {NOTE_TYPES.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => applyTemplate(t)}
+                  className="text-[10px] border px-2 py-0.5 rounded bg-gray-50 hover:bg-gray-100"
+                  title={`${t} template`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+          </div>
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
@@ -360,7 +461,9 @@ export default function NotesTab() {
                       <button
                         onClick={async () => {
                           try {
-                            const decrypted = await decryptNote(n.content_encrypted);
+                            const decrypted = hasPassphrase && passphrase
+                              ? await decryptNoteWithPassphrase(n.content_encrypted, passphrase)
+                              : await decryptNote(n.content_encrypted);
                             alert(decrypted);
                           } catch (e: unknown) {
                             const errorMessage = e instanceof Error ? e.message : "Decrypt failed";

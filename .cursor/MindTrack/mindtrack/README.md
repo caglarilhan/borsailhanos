@@ -1,3 +1,26 @@
+## Production ENV ve Deploy
+
+Gerekli environment değişkenleri (örnek):
+
+```
+NEXT_PUBLIC_APP_URL=https://your-domain.com
+NEXT_PUBLIC_SUPABASE_URL=https://YOUR-PROJECT.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=public-anon-key
+SUPABASE_SERVICE_ROLE_KEY=service-role-key
+NEXT_PUBLIC_ENCRYPTION_KEY= # base64-encoded 32-byte key
+RESEND_API_KEY=
+RESEND_FROM="MindTrack <noreply@your-domain.com>"
+NEXT_PUBLIC_LEMONSQUEEZY_PRODUCT_ID=
+LEMONSQUEEZY_WEBHOOK_SECRET=
+SENTRY_DSN=
+```
+
+Deploy notları:
+- Supabase Auth → Allowed Redirect URLs içine domaininizi ekleyin
+- LemonSqueezy webhook → `/api/lemon/webhook` (HMAC imza aktif)
+- RLS aktif, `profiles` ve tüm owner tablo policy’leri yüklü
+- Reminder cron: Cloudflare Workers/Pages Scheduled ile `/api/appointments/reminders` çağrısı
+
 # MindTrack - Therapist Practice Management System
 
 A comprehensive, professional practice management system designed specifically for therapists, psychologists, and mental health professionals.

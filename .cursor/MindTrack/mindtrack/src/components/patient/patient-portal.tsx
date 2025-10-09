@@ -69,6 +69,82 @@ interface PatientAppointment {
     push: boolean;
   };
 }
+// Self-scheduling form (public-facing request)
+function SelfSchedulingRequest() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("");
+  const [notes, setNotes] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name || !email || !date || !time) {
+      setStatus("Lütfen gerekli alanları doldurun");
+      return;
+    }
+    setLoading(true);
+    setStatus(null);
+    try {
+      const res = await fetch('/api/appointments/pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, phone, date, time, notes })
+      });
+      if (!res.ok) throw new Error('Talep oluşturulamadı');
+      setStatus("Talebiniz alındı. Onaydan sonra e‑posta ile bilgilendirileceksiniz.");
+      setName(""); setEmail(""); setPhone(""); setDate(""); setTime(""); setNotes("");
+    } catch (err: unknown) {
+      setStatus(err instanceof Error ? err.message : 'Hata oluştu');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle>Randevu Talebi</CardTitle>
+        <CardDescription>Kendi uygunluğunuza göre randevu talebi oluşturun</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs block mb-1">Ad Soyad *</label>
+            <input className="border rounded w-full px-3 py-2" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs block mb-1">E‑posta *</label>
+            <input className="border rounded w-full px-3 py-2" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs block mb-1">Telefon</label>
+            <input className="border rounded w-full px-3 py-2" value={phone} onChange={(e) => setPhone(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs block mb-1">Tarih *</label>
+            <input className="border rounded w-full px-3 py-2" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+          </div>
+          <div>
+            <label className="text-xs block mb-1">Saat *</label>
+            <input className="border rounded w-full px-3 py-2" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </div>
+          <div className="md:col-span-2">
+            <label className="text-xs block mb-1">Not</label>
+            <textarea className="border rounded w-full px-3 py-2" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          </div>
+          <div className="md:col-span-2 flex items-center gap-2">
+            <Button disabled={loading} type="submit">{loading ? 'Gönderiliyor…' : 'Talep Gönder'}</Button>
+            {status && <span className="text-sm text-gray-600">{status}</span>}
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
 
 interface TreatmentPlan {
   id: string;
@@ -608,6 +684,8 @@ export function PatientPortal() {
 
   return (
     <div className="space-y-6">
+      {/* Self-scheduling public request form */}
+      <SelfSchedulingRequest />
       {/* Header Section - Başlık Bölümü */}
       <div className="flex items-center justify-between">
         <div>

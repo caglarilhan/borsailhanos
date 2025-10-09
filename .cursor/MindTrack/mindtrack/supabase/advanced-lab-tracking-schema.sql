@@ -218,3 +218,10 @@ CREATE TRIGGER trg_upd_lab_trends BEFORE UPDATE ON lab_trend_analytics FOR EACH 
 
 
 
+
+
+
+
+
+
+

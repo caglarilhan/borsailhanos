@@ -11,7 +11,7 @@ export interface Assessment {
   updated_at: string;
 }
 
-export type AssessmentType = 'phq9' | 'gad7' | 'bdi' | 'bai' | 'custom';
+export type AssessmentType = 'phq9' | 'gad7' | 'bdi' | 'bai' | 'pcl5' | 'custom';
 
 export type AssessmentSeverity = 'minimal' | 'mild' | 'moderate' | 'moderately_severe' | 'severe';
 
@@ -313,6 +313,164 @@ export const ASSESSMENT_TEMPLATES: Record<AssessmentType, AssessmentTemplate> = 
       { min_score: 8, max_score: 15, level: 'mild', label: 'Mild Anxiety', color: '#F59E0B', recommendation: 'Watchful waiting' },
       { min_score: 16, max_score: 25, level: 'moderate', label: 'Moderate Anxiety', color: '#F97316', recommendation: 'Consider treatment' },
       { min_score: 26, max_score: 63, level: 'severe', label: 'Severe Anxiety', color: '#EF4444', recommendation: 'Active treatment' }
+    ]
+  },
+  pcl5: {
+    type: 'pcl5',
+    name: 'PCL-5 (PTSD Checklist for DSM-5)',
+    description: '20-item self-report measure that assesses the 20 DSM-5 symptoms of PTSD',
+    questions: [
+      { id: 1, question: 'Repeated, disturbing, and unwanted memories of the stressful experience?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 2, question: 'Repeated, disturbing dreams of the stressful experience?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 3, question: 'Suddenly feeling or acting as if the stressful experience were actually happening again (as if you were actually back there reliving it)?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 4, question: 'Feeling very upset when something reminded you of the stressful experience?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 5, question: 'Having strong physical reactions when something reminded you of the stressful experience (for example, heart pounding, trouble breathing, sweating)?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 6, question: 'Avoiding memories, thoughts, or feelings related to the stressful experience?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 7, question: 'Avoiding external reminders of the stressful experience (for example, people, places, conversations, activities, objects, or situations)?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 8, question: 'Trouble remembering important parts of the stressful experience?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 9, question: 'Having strong negative beliefs about yourself, other people, or the world (for example, having thoughts such as: I am bad, there is something seriously wrong with me, no one can be trusted, the world is completely dangerous)?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 10, question: 'Blaming yourself or someone else for the stressful experience or what happened after it?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 11, question: 'Having strong negative feelings such as fear, horror, anger, guilt, or shame?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 12, question: 'Loss of interest in activities that you used to enjoy?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 13, question: 'Feeling distant or cut off from other people?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 14, question: 'Trouble experiencing positive feelings (for example, being unable to feel happiness or have loving feelings for people close to you)?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 15, question: "Irritable behavior, angry outbursts, or acting aggressively?", options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 16, question: 'Taking too many risks or doing things that could cause you harm?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 17, question: 'Being “superalert” or watchful or on guard?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 18, question: 'Feeling jumpy or easily startled?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 19, question: 'Having difficulty concentrating?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]},
+      { id: 20, question: 'Trouble falling or staying asleep?', options: [
+        { value: 0, label: 'Not at all' },
+        { value: 1, label: 'A little bit' },
+        { value: 2, label: 'Moderately' },
+        { value: 3, label: 'Quite a bit' },
+        { value: 4, label: 'Extremely' }
+      ]}
+    ],
+    scoring: {
+      min_score: 0,
+      max_score: 80,
+      interpretation: 'Total score reflects PTSD symptom severity (cutoff around 31-33)'
+    },
+    severity_levels: [
+      { min_score: 0, max_score: 10, level: 'minimal', label: 'Minimal', color: '#10B981', recommendation: 'Monitor' },
+      { min_score: 11, max_score: 32, level: 'mild', label: 'Mild', color: '#F59E0B', recommendation: 'Watchful waiting' },
+      { min_score: 33, max_score: 49, level: 'moderate', label: 'Moderate (≥33 suggests probable PTSD)', color: '#F97316', recommendation: 'Consider treatment' },
+      { min_score: 50, max_score: 80, level: 'severe', label: 'Severe', color: '#EF4444', recommendation: 'Active treatment' }
     ]
   },
   custom: {

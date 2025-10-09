@@ -1,11 +1,12 @@
 // App Constants
 class AppConstants {
   // API endpoints
-  static const String baseUrl = 'http://localhost:8000';
-  static const String apiVersion = '/api/v1';
+  // Android emülatör: 10.0.2.2, Backend port: 8080 (FastAPI)
+  static const String baseUrl = 'http://10.0.2.2:8080';
+  static const String apiVersion = '';
   
   // WebSocket
-  static const String wsUrl = 'ws://localhost:8000/ws';
+  static const String wsUrl = 'ws://10.0.2.2:8080/signals/stream';
   
   // Refresh intervals
   static const Duration priceRefreshInterval = Duration(seconds: 5);

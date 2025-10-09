@@ -444,21 +444,94 @@ class SignalsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _SignalsContent();
+  }
+}
+
+class _SignalsContent extends StatefulWidget {
+  @override
+  State<_SignalsContent> createState() => _SignalsContentState();
+}
+
+class _SignalsContentState extends State<_SignalsContent> {
+  bool _loading = true;
+  String? _error;
+  List<dynamic> _signals = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetch();
+  }
+
+  Future<void> _fetch() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final data = await SignalsService.fetchSignals(symbols: ['SISE.IS']);
+      setState(() {
+        _signals = (data['signals'] as List<dynamic>);
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI Sinyalleri'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: Show filters
-            },
+            icon: const Icon(Icons.refresh),
+            onPressed: _fetch,
           ),
         ],
       ),
-      body: const Center(
-        child: Text('Sinyaller burada görüntülenecek'),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(child: Text('Hata: $_error'))
+              : ListView.separated(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _signals.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    final item = _signals[index] as Map<String, dynamic>;
+                    final symbol = item['symbol'] as String? ?? '-';
+                    final topsis = item['topsis'] as num?;
+                    final advice = item['position_advice'] as Map<String, dynamic>?;
+                    final side = advice != null ? (advice['side'] as String? ?? 'HOLD') : 'HOLD';
+                    final tags = (item['signals'] as List<dynamic>?)?.isNotEmpty == true
+                        ? ((item['signals'] as List<dynamic>).last as Map<String, dynamic>)['tags'] as List<dynamic>? ?? []
+                        : [];
+                    return Card(
+                      child: ListTile(
+                        title: Text(symbol),
+                        subtitle: Text('Tags: ${tags.join(', ')}'),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(side, style: TextStyle(color: side == 'BUY' ? Colors.green : (side == 'SELL' ? Colors.red : Colors.grey))),
+                            if (topsis != null) Text('TOPSIS ${(topsis as num).toStringAsFixed(2)}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
     );
   }
 }

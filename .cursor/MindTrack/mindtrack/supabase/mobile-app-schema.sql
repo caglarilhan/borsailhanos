@@ -267,3 +267,10 @@ COMMENT ON TABLE mobile_performance_metrics IS 'Stores performance metrics colle
 
 
 
+
+
+
+
+
+
+

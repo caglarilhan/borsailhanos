@@ -220,7 +220,7 @@ class SentimentAnalyzer:
         """Metin sentiment analizi"""
         if self.sentiment_pipeline is not None:
             return self._bert_sentiment_analysis(text)
-            else:
+        else:
             return self._rule_based_sentiment_analysis(text)
     
     def _bert_sentiment_analysis(self, text: str) -> Tuple[float, float]:

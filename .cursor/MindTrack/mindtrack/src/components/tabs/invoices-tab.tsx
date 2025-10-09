@@ -41,6 +41,7 @@ import {
 import { createSupabaseBrowserClient } from "@/lib/supabaseClient";
 import SuperbillModal from "@/components/superbill/superbill-modal";
 import type { Invoice, Client, Clinic } from "@/types/domain";
+import { createSuperbillFromInvoice, type SuperbillData } from "@/lib/superbill-generator";
 
 /**
  * Invoice Tab State - Component state'i
@@ -268,6 +269,46 @@ export default function InvoicesTab() {
       isSuperbillModalOpen: true,
       selectedInvoice: invoice
     }));
+  };
+
+  /**
+   * Seçili invoice için Superbill PDF indirir
+   * - SuperbillData oluşturup /api/superbill'a gönderir
+   * - Dönen PDF'i indirir
+   */
+  const handleDownloadSuperbillPdf = async (invoice: Invoice) => {
+    try {
+      const client = state.clients.find(c => c.id === invoice.client_id);
+      if (!client || !state.clinic) {
+        setState(prev => ({ ...prev, error: "Client veya clinic bilgisi eksik" }));
+        return;
+      }
+      const data: SuperbillData = createSuperbillFromInvoice(
+        invoice as unknown as any,
+        client as unknown as any,
+        state.clinic as unknown as any
+      );
+      const response = await fetch('/api/superbill', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'data', superbill: data })
+      });
+      if (!response.ok) throw new Error('PDF generation failed');
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `superbill-${client.name}-${invoice.id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setState(prev => ({ ...prev, success: 'Superbill PDF indirildi!' }));
+      setTimeout(() => setState(prev => ({ ...prev, success: null })), 3000);
+    } catch (e: unknown) {
+      const errorMessage = e instanceof Error ? e.message : 'PDF indirilemedi';
+      setState(prev => ({ ...prev, error: errorMessage }));
+    }
   };
 
   /**
@@ -684,6 +725,16 @@ export default function InvoicesTab() {
                           >
                             <FileText className="h-3 w-3 mr-1" />
                             Superbill
+                          </Button>
+
+                          <Button
+                            onClick={() => handleDownloadSuperbillPdf(invoice)}
+                            variant="outline"
+                            size="sm"
+                            className="h-8 px-3"
+                          >
+                            <Download className="h-3 w-3 mr-1" />
+                            PDF
                           </Button>
                           
                           {invoice.status === 'unpaid' && (

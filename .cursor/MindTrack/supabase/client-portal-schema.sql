@@ -338,3 +338,10 @@ CREATE POLICY "Patients can update own notifications" ON patient_notifications
 
 
 
+
+
+
+
+
+
+

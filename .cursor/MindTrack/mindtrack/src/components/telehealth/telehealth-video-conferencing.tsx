@@ -238,6 +238,46 @@ interface EPrescription {
   };
 }
 
+interface WaitingRoomConfig {
+  id: string;
+  clinicId: string;
+  branding: {
+    logoUrl?: string;
+    primaryColor: string;
+    secondaryColor: string;
+    welcomeMessage: string;
+    backgroundImage?: string;
+  };
+  features: {
+    allowChat: boolean;
+    allowScreenShare: boolean;
+    allowRecording: boolean;
+    requireConsent: boolean;
+    autoAdmit: boolean;
+    maxWaitTime: number; // minutes
+  };
+  customFields: {
+    name: string;
+    type: 'text' | 'select' | 'checkbox';
+    required: boolean;
+    options?: string[];
+  }[];
+}
+
+interface RecordingConsent {
+  id: string;
+  sessionId: string;
+  clientId: string;
+  consentType: 'audio' | 'video' | 'both';
+  purpose: 'treatment' | 'training' | 'research' | 'quality_assurance';
+  retentionPeriod: number; // days
+  sharedWith: string[];
+  clientSignature: string;
+  signedAt: string;
+  ipAddress: string;
+  userAgent: string;
+}
+
 interface GroupSession {
   id: string;
   title: string;
@@ -281,6 +321,8 @@ export function TelehealthVideoConferencing() {
   const [groupSessions, setGroupSessions] = useState<GroupSession[]>([]);
   const [currentSession, setCurrentSession] = useState<VideoSession | null>(null);
   const [selectedWaitingRoom, setSelectedWaitingRoom] = useState<VirtualWaitingRoom | null>(null);
+  const [waitingRoomConfigs, setWaitingRoomConfigs] = useState<WaitingRoomConfig[]>([]);
+  const [recordingConsents, setRecordingConsents] = useState<RecordingConsent[]>([]);
   const [loading, setLoading] = useState(false);
   const [showCreateSession, setShowCreateSession] = useState(false);
   const [showCreateGroupSession, setShowCreateGroupSession] = useState(false);
@@ -1228,6 +1270,13 @@ export function TelehealthVideoConferencing() {
     </div>
   );
 }
+
+
+
+
+
+
+
 
 
 

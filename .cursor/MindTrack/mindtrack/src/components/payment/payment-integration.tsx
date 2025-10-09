@@ -211,6 +211,16 @@ interface PaymentGateway {
 
 // Payment Integration Component - Ödeme entegrasyonu sistemi
 export function PaymentIntegration() {
+  // LemonSqueezy checkout script yükle
+  React.useEffect(() => {
+    const existing = document.querySelector('script[src="https://assets.lemonsqueezy.com/lemon.js"]');
+    if (!existing) {
+      const s = document.createElement('script');
+      s.src = 'https://assets.lemonsqueezy.com/lemon.js';
+      s.async = true;
+      document.body.appendChild(s);
+    }
+  }, []);
   // State management - Uygulama durumunu yönetmek için
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -831,14 +841,18 @@ export function PaymentIntegration() {
                   <Badge variant={subscription?.plan === plan.id ? 'default' : 'secondary'}>
                     {subscription?.plan === plan.id ? 'Current Plan' : 'Available'}
                   </Badge>
-                  <Button 
-                    size="sm" 
-                    variant={subscription?.plan === plan.id ? 'outline' : 'default'}
-                    onClick={() => handleStripeCheckout(plan.id)}
-                    disabled={stripeLoading || subscription?.plan === plan.id}
-                  >
-                    {subscription?.plan === plan.id ? 'Current' : 'Subscribe'}
-                  </Button>
+                  {subscription?.plan === plan.id ? (
+                    <Button size="sm" variant="outline" disabled>
+                      Current
+                    </Button>
+                  ) : (
+                    <button
+                      data-lemon-checkout={process.env.NEXT_PUBLIC_LEMONSQUEEZY_PRODUCT_ID || undefined}
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground shadow hover:bg-primary/90 h-9 px-3"
+                    >
+                      Subscribe
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

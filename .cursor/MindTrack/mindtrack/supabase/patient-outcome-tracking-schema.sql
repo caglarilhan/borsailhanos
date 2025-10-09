@@ -697,3 +697,10 @@ CREATE TRIGGER patient_outcome_alerts_updated_at
 
 
 
+
+
+
+
+
+
+

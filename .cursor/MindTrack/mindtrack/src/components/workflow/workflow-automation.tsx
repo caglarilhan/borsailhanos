@@ -1,620 +1,747 @@
-"use client";
+'use client';
 
-import * as React from "react";
-import { useState, useEffect, useCallback } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import React, { useState, useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Progress } from '@/components/ui/progress';
 import { 
   Workflow, 
-  Play, 
-  Pause, 
-  Square, 
-  Settings, 
-  CheckCircle, 
-  XCircle, 
   Clock, 
-  Users, 
+  Calendar, 
+  DollarSign, 
   FileText, 
-  Zap, 
-  ArrowRight, 
+  Send, 
   Plus, 
   Edit, 
   Trash2, 
-  Copy, 
-  RefreshCw, 
-  AlertTriangle, 
-  Activity, 
-  BarChart3, 
-  TrendingUp, 
-  Target, 
-  Calendar, 
-  User, 
-  Eye,
-  Download,
-  Upload,
-  Database,
-  GitBranch,
-  Layers,
-  Filter,
-  Search,
-  MoreHorizontal
-} from "lucide-react";
+  Play,
+  Pause,
+  Settings,
+  Users,
+  MessageSquare,
+  Mail,
+  Phone,
+  CheckCircle,
+  AlertCircle,
+  Zap,
+  Timer,
+  Repeat,
+  Target
+} from 'lucide-react';
 
-// Workflow Automation & Process Management için gerekli interface'ler
-interface AutomatedWorkflow {
+interface WorkflowRule {
   id: string;
   name: string;
   description: string;
-  category: 'patient-care' | 'billing' | 'scheduling' | 'approval' | 'notification' | 'integration';
-  status: 'active' | 'inactive' | 'draft' | 'error';
-  trigger: {
-    type: 'manual' | 'scheduled' | 'event' | 'api' | 'condition';
-    condition: string;
-    schedule?: string;
-  };
-  steps: WorkflowStep[];
-  variables: {
-    [key: string]: any;
-  };
-  permissions: {
-    execute: string[];
-    edit: string[];
-    view: string[];
-  };
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-  lastRun?: Date;
-  nextRun?: Date;
-  executionCount: number;
-  successRate: number;
-  averageExecutionTime: number;
-}
-
-interface WorkflowStep {
-  id: string;
-  name: string;
-  type: 'action' | 'condition' | 'approval' | 'notification' | 'delay' | 'integration';
-  order: number;
-  config: {
-    action?: string;
-    condition?: string;
-    approvers?: string[];
-    delay?: number;
-    template?: string;
-    integration?: string;
-  };
-  status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
-  executionTime?: number;
-  output?: any;
-  error?: string;
-}
-
-interface ProcessTemplate {
-  id: string;
-  name: string;
-  description: string;
-  category: 'clinical' | 'administrative' | 'billing' | 'compliance' | 'custom';
-  version: string;
+  triggerType: 'appointment_reminder' | 'payment_followup' | 'intake_automation' | 'custom';
+  triggerConditions: any;
+  actions: WorkflowAction[];
   isActive: boolean;
-  steps: TemplateStep[];
-  estimatedDuration: number;
-  complexity: 'low' | 'medium' | 'high';
-  requirements: string[];
-  resources: string[];
-  tags: string[];
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-  usageCount: number;
-  successRate: number;
-}
-
-interface TemplateStep {
-  id: string;
-  name: string;
-  description: string;
-  type: 'task' | 'decision' | 'approval' | 'documentation' | 'review';
-  order: number;
-  required: boolean;
-  estimatedTime: number;
-  assigneeRole: string;
-  dependencies: string[];
-  instructions: string;
-  forms?: string[];
-  attachments?: string[];
-}
-
-interface TaskAutomation {
-  id: string;
-  name: string;
-  description: string;
-  type: 'email' | 'sms' | 'api-call' | 'data-sync' | 'report-generation' | 'file-processing';
-  status: 'active' | 'inactive' | 'paused';
-  schedule: {
-    type: 'immediate' | 'scheduled' | 'recurring';
-    cron?: string;
-    timezone: string;
-  };
-  config: {
-    [key: string]: any;
-  };
-  conditions: {
-    field: string;
-    operator: 'equals' | 'not-equals' | 'greater' | 'less' | 'contains' | 'exists';
-    value: any;
-  }[];
-  actions: {
-    type: string;
-    config: any;
-  }[];
-  lastRun?: Date;
-  nextRun?: Date;
   executionCount: number;
-  errorCount: number;
-  createdBy: string;
-  createdAt: Date;
+  lastExecuted?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-interface ApprovalWorkflow {
+interface WorkflowAction {
   id: string;
-  name: string;
-  description: string;
-  type: 'sequential' | 'parallel' | 'consensus' | 'any-one';
-  approvers: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    order: number;
-    status: 'pending' | 'approved' | 'rejected' | 'delegated';
-    comment?: string;
-    timestamp?: Date;
-  }[];
-  request: {
-    id: string;
-    title: string;
-    description: string;
-    requestedBy: string;
-    requestedAt: Date;
-    data: any;
-  };
-  deadline?: Date;
-  escalation?: {
-    enabled: boolean;
-    timeoutMinutes: number;
-    escalateTo: string[];
-  };
-  status: 'pending' | 'in-progress' | 'approved' | 'rejected' | 'expired';
-  currentStep: number;
-  finalDecision?: 'approved' | 'rejected';
-  completedAt?: Date;
+  type: 'send_email' | 'send_sms' | 'send_notification' | 'create_task' | 'update_status' | 'schedule_followup';
+  config: any;
+  delay?: number; // in minutes
+  order: number;
 }
 
-interface ProcessAnalytics {
+interface WorkflowExecution {
   id: string;
   workflowId: string;
-  period: {
-    start: Date;
-    end: Date;
-  };
-  metrics: {
-    totalExecutions: number;
-    successfulExecutions: number;
-    failedExecutions: number;
-    successRate: number;
-    averageExecutionTime: number;
-    totalExecutionTime: number;
-    bottlenecks: {
-      stepId: string;
-      stepName: string;
-      averageTime: number;
-      failureRate: number;
-    }[];
-    errors: {
-      type: string;
-      count: number;
-      lastOccurrence: Date;
-    }[];
-  };
-  performance: {
-    efficiency: number;
-    reliability: number;
-    scalability: number;
-    userSatisfaction: number;
-  };
-  recommendations: {
-    type: 'optimization' | 'error-reduction' | 'automation' | 'resource-allocation';
-    description: string;
-    impact: 'high' | 'medium' | 'low';
-    effort: 'high' | 'medium' | 'low';
-  }[];
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  triggerData: any;
+  executionLog: WorkflowExecutionLog[];
+  startedAt: string;
+  completedAt?: string;
+  errorMessage?: string;
 }
 
-// Workflow Automation & Process Management Component - İş akışı otomasyonu ve süreç yönetimi
-export function WorkflowAutomation() {
-  // State management - Durum yönetimi
-  const [automatedWorkflows, setAutomatedWorkflows] = useState<AutomatedWorkflow[]>([]);
-  const [processTemplates, setProcessTemplates] = useState<ProcessTemplate[]>([]);
-  const [taskAutomations, setTaskAutomations] = useState<TaskAutomation[]>([]);
-  const [approvalWorkflows, setApprovalWorkflows] = useState<ApprovalWorkflow[]>([]);
-  const [processAnalytics, setProcessAnalytics] = useState<ProcessAnalytics[]>([]);
-  const [selectedWorkflow, setSelectedWorkflow] = useState<AutomatedWorkflow | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [showCreateWorkflow, setShowCreateWorkflow] = useState(false);
-  const [systemEfficiency, setSystemEfficiency] = useState(89.7);
+interface WorkflowExecutionLog {
+  id: string;
+  actionId: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  message: string;
+  timestamp: string;
+  errorMessage?: string;
+}
 
-  // Mock data initialization - Test verilerini yükleme
+interface WorkflowAutomationProps {
+  userId: string;
+}
+
+export default function WorkflowAutomation({ userId }: WorkflowAutomationProps) {
+  const [workflowRules, setWorkflowRules] = useState<WorkflowRule[]>([]);
+  const [workflowExecutions, setWorkflowExecutions] = useState<WorkflowExecution[]>([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowRule | null>(null);
+  const [selectedExecution, setSelectedExecution] = useState<WorkflowExecution | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<'rules' | 'executions' | 'templates'>('rules');
+
   useEffect(() => {
-    // Simulated data loading - Test verisi simülasyonu
-    const mockAutomatedWorkflows: AutomatedWorkflow[] = [
-      {
-        id: '1',
-        name: 'Patient Onboarding Workflow',
-        description: 'Automated patient registration and onboarding process',
-        category: 'patient-care',
-        status: 'active',
-        trigger: {
-          type: 'event',
-          condition: 'new_patient_registered'
-        },
-        steps: [
-          {
-            id: 'step1',
-            name: 'Send Welcome Email',
-            type: 'notification',
-            order: 1,
-            config: { template: 'welcome_email' },
-            status: 'completed'
-          },
-          {
-            id: 'step2',
-            name: 'Schedule Initial Assessment',
-            type: 'action',
-            order: 2,
-            config: { action: 'schedule_appointment' },
-            status: 'completed'
-          }
-        ],
-        variables: { patient_type: 'new', priority: 'normal' },
-        permissions: {
-          execute: ['admin', 'staff'],
-          edit: ['admin'],
-          view: ['admin', 'staff', 'manager']
-        },
-        createdBy: 'admin@mindtrack.com',
-        createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-        lastRun: new Date(Date.now() - 2 * 60 * 60 * 1000),
-        nextRun: new Date(Date.now() + 30 * 60 * 1000),
-        executionCount: 145,
-        successRate: 94.5,
-        averageExecutionTime: 180
-      }
-    ];
+    loadWorkflowRules();
+    loadWorkflowExecutions();
+  }, [userId]);
 
-    const mockProcessTemplates: ProcessTemplate[] = [
-      {
-        id: '1',
-        name: 'Clinical Assessment Template',
-        description: 'Standard clinical assessment process template',
-        category: 'clinical',
-        version: '2.1.0',
-        isActive: true,
-        steps: [
-          {
-            id: 'temp_step1',
-            name: 'Initial Screening',
-            description: 'Conduct initial patient screening',
-            type: 'task',
-            order: 1,
-            required: true,
-            estimatedTime: 30,
-            assigneeRole: 'therapist',
-            dependencies: [],
-            instructions: 'Complete initial screening form and assessment',
-            forms: ['screening_form'],
-            attachments: []
-          }
-        ],
-        estimatedDuration: 120,
-        complexity: 'medium',
-        requirements: ['Licensed Therapist', 'Assessment Forms'],
-        resources: ['Assessment Room', 'Computer'],
-        tags: ['clinical', 'assessment', 'therapy'],
-        createdBy: 'clinical_admin@mindtrack.com',
-        createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-        usageCount: 87,
-        successRate: 96.2
-      }
-    ];
-
-    const mockTaskAutomations: TaskAutomation[] = [
-      {
-        id: '1',
-        name: 'Daily Report Generation',
-        description: 'Automatically generate and send daily reports',
-        type: 'report-generation',
-        status: 'active',
-        schedule: {
-          type: 'recurring',
-          cron: '0 8 * * *',
-          timezone: 'America/New_York'
-        },
-        config: {
-          reportType: 'daily_summary',
-          recipients: ['manager@mindtrack.com'],
-          format: 'pdf'
-        },
-        conditions: [
-          {
-            field: 'business_day',
-            operator: 'equals',
-            value: true
-          }
-        ],
-        actions: [
-          {
-            type: 'generate_report',
-            config: { template: 'daily_summary' }
-          },
-          {
-            type: 'send_email',
-            config: { template: 'report_email' }
-          }
-        ],
-        lastRun: new Date(Date.now() - 24 * 60 * 60 * 1000),
-        nextRun: new Date(Date.now() + 8 * 60 * 60 * 1000),
-        executionCount: 62,
-        errorCount: 2,
-        createdBy: 'admin@mindtrack.com',
-        createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
-      }
-    ];
-
-    const mockApprovalWorkflows: ApprovalWorkflow[] = [
-      {
-        id: '1',
-        name: 'Budget Request Approval',
-        description: 'Approval workflow for budget requests over $1000',
-        type: 'sequential',
-        approvers: [
-          {
-            id: 'approver1',
-            name: 'Department Manager',
-            email: 'manager@mindtrack.com',
-            role: 'manager',
-            order: 1,
-            status: 'approved',
-            comment: 'Approved for Q2 budget',
-            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-          },
-          {
-            id: 'approver2',
-            name: 'Finance Director',
-            email: 'finance@mindtrack.com',
-            role: 'director',
-            order: 2,
-            status: 'pending'
-          }
-        ],
-        request: {
-          id: 'req1',
-          title: 'New Therapy Equipment',
-          description: 'Purchase new therapy equipment for patient care',
-          requestedBy: 'therapist@mindtrack.com',
-          requestedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          data: { amount: 2500, category: 'equipment' }
-        },
-        deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-        escalation: {
-          enabled: true,
-          timeoutMinutes: 1440,
-          escalateTo: ['ceo@mindtrack.com']
-        },
-        status: 'in-progress',
-        currentStep: 2
-      }
-    ];
-
-    setAutomatedWorkflows(mockAutomatedWorkflows);
-    setProcessTemplates(mockProcessTemplates);
-    setTaskAutomations(mockTaskAutomations);
-    setApprovalWorkflows(mockApprovalWorkflows);
-  }, []);
-
-  // Create automated workflow - Otomatik iş akışı oluşturma
-  const createAutomatedWorkflow = useCallback(async (
-    name: string,
-    description: string,
-    category: AutomatedWorkflow['category'],
-    triggerType: string
-  ) => {
-    setLoading(true);
-    
+  const loadWorkflowRules = async () => {
     try {
-      // Simulated workflow creation - İş akışı oluşturma simülasyonu
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const newWorkflow: AutomatedWorkflow = {
-        id: `workflow_${Date.now()}`,
-        name,
-        description,
-        category,
-        status: 'draft',
-        trigger: {
-          type: triggerType as any,
-          condition: 'custom_condition'
-        },
-        steps: [],
-        variables: {},
-        permissions: {
-          execute: ['current_user'],
-          edit: ['current_user'],
-          view: ['current_user']
-        },
-        createdBy: 'current_user',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        executionCount: 0,
-        successRate: 0,
-        averageExecutionTime: 0
-      };
-      
-      setAutomatedWorkflows(prev => [...prev, newWorkflow]);
-      
-      return newWorkflow;
-      
+      const response = await fetch('/api/workflow/rules');
+      if (response.ok) {
+        const data = await response.json();
+        setWorkflowRules(data.rules || []);
+      }
     } catch (error) {
-      console.error('Workflow creation failed:', error);
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Error loading workflow rules:', error);
     }
-  }, []);
+  };
 
-  // Execute workflow - İş akışını çalıştırma
-  const executeWorkflow = useCallback(async (workflowId: string) => {
-    setLoading(true);
-    
+  const loadWorkflowExecutions = async () => {
     try {
-      // Simulated workflow execution - İş akışı çalıştırma simülasyonu
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      const workflow = automatedWorkflows.find(w => w.id === workflowId);
-      if (!workflow) throw new Error('Workflow not found');
-      
-      // Update workflow execution statistics
-      setAutomatedWorkflows(prev => prev.map(w => 
-        w.id === workflowId 
-          ? { 
-              ...w, 
-              lastRun: new Date(), 
-              executionCount: w.executionCount + 1,
-              status: 'active' as const
-            }
-          : w
-      ));
-      
-      return { success: true, workflowId };
-      
+      const response = await fetch('/api/workflow/executions');
+      if (response.ok) {
+        const data = await response.json();
+        setWorkflowExecutions(data.executions || []);
+      }
     } catch (error) {
-      console.error('Workflow execution failed:', error);
-      throw error;
-    } finally {
-      setLoading(false);
+      console.error('Error loading workflow executions:', error);
     }
-  }, [automatedWorkflows]);
+  };
 
-  // Calculate workflow metrics - İş akışı metriklerini hesaplama
-  const calculateWorkflowMetrics = useCallback(() => {
-    const totalWorkflows = automatedWorkflows.length;
-    const activeWorkflows = automatedWorkflows.filter(w => w.status === 'active').length;
-    const totalTemplates = processTemplates.length;
-    const activeTemplates = processTemplates.filter(t => t.isActive).length;
-    const totalAutomations = taskAutomations.length;
-    const activeAutomations = taskAutomations.filter(a => a.status === 'active').length;
-    const pendingApprovals = approvalWorkflows.filter(a => a.status === 'pending' || a.status === 'in-progress').length;
-    
-    return {
-      totalWorkflows,
-      activeWorkflows,
-      workflowActivationRate: totalWorkflows > 0 ? Math.round((activeWorkflows / totalWorkflows) * 100) : 0,
-      totalTemplates,
-      activeTemplates,
-      templateActivationRate: totalTemplates > 0 ? Math.round((activeTemplates / totalTemplates) * 100) : 0,
-      totalAutomations,
-      activeAutomations,
-      automationActivationRate: totalAutomations > 0 ? Math.round((activeAutomations / totalAutomations) * 100) : 0,
-      pendingApprovals
-    };
-  }, [automatedWorkflows, processTemplates, taskAutomations, approvalWorkflows]);
+  const createWorkflowRule = async (rule: Omit<WorkflowRule, 'id' | 'createdAt' | 'updatedAt' | 'executionCount'>) => {
+    try {
+      const response = await fetch('/api/workflow/rules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rule),
+      });
 
-  const metrics = calculateWorkflowMetrics();
+      if (response.ok) {
+        await loadWorkflowRules();
+        return true;
+      }
+    } catch (error) {
+      console.error('Error creating workflow rule:', error);
+    }
+    return false;
+  };
+
+  const updateWorkflowRule = async (id: string, updates: Partial<WorkflowRule>) => {
+    try {
+      const response = await fetch(`/api/workflow/rules/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+
+      if (response.ok) {
+        await loadWorkflowRules();
+        return true;
+      }
+    } catch (error) {
+      console.error('Error updating workflow rule:', error);
+    }
+    return false;
+  };
+
+  const deleteWorkflowRule = async (id: string) => {
+    try {
+      const response = await fetch(`/api/workflow/rules/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await loadWorkflowRules();
+        return true;
+      }
+    } catch (error) {
+      console.error('Error deleting workflow rule:', error);
+    }
+    return false;
+  };
+
+  const toggleWorkflowRule = async (id: string, isActive: boolean) => {
+    try {
+      const response = await fetch(`/api/workflow/rules/${id}/toggle`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isActive }),
+      });
+
+      if (response.ok) {
+        await loadWorkflowRules();
+        return true;
+      }
+    } catch (error) {
+      console.error('Error toggling workflow rule:', error);
+    }
+    return false;
+  };
+
+  const executeWorkflowRule = async (id: string, triggerData: any) => {
+    try {
+      const response = await fetch(`/api/workflow/rules/${id}/execute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ triggerData }),
+      });
+
+      if (response.ok) {
+        await loadWorkflowExecutions();
+        return true;
+      }
+    } catch (error) {
+      console.error('Error executing workflow rule:', error);
+    }
+    return false;
+  };
+
+  const getTriggerIcon = (triggerType: string) => {
+    switch (triggerType) {
+      case 'appointment_reminder': return <Calendar className="h-4 w-4" />;
+      case 'payment_followup': return <DollarSign className="h-4 w-4" />;
+      case 'intake_automation': return <FileText className="h-4 w-4" />;
+      default: return <Zap className="h-4 w-4" />;
+    }
+  };
+
+  const getActionIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'send_email': return <Mail className="h-4 w-4" />;
+      case 'send_sms': return <MessageSquare className="h-4 w-4" />;
+      case 'send_notification': return <AlertCircle className="h-4 w-4" />;
+      case 'create_task': return <Target className="h-4 w-4" />;
+      case 'update_status': return <CheckCircle className="h-4 w-4" />;
+      case 'schedule_followup': return <Timer className="h-4 w-4" />;
+      default: return <Zap className="h-4 w-4" />;
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'running': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'failed': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const renderWorkflowRule = (rule: WorkflowRule) => (
+    <Card key={rule.id} className="mb-4">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            {getTriggerIcon(rule.triggerType)}
+            <div>
+              <CardTitle className="text-lg">{rule.name}</CardTitle>
+              <CardDescription>{rule.description}</CardDescription>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge variant={rule.isActive ? 'default' : 'secondary'}>
+              {rule.isActive ? 'Active' : 'Inactive'}
+            </Badge>
+            <Badge variant="outline">
+              {rule.executionCount} runs
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => toggleWorkflowRule(rule.id, !rule.isActive)}
+            >
+              {rule.isActive ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedWorkflow(rule)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Trigger Type</Label>
+            <div className="text-sm text-muted-foreground capitalize">
+              {rule.triggerType.replace('_', ' ')}
+            </div>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Actions ({rule.actions.length})</Label>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {rule.actions.map((action, index) => (
+                <div key={index} className="flex items-center space-x-1 bg-muted px-2 py-1 rounded">
+                  {getActionIcon(action.type)}
+                  <span className="text-xs">{action.type.replace('_', ' ')}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {rule.lastExecuted && (
+            <div>
+              <Label className="text-sm font-medium">Last Executed</Label>
+              <div className="text-sm text-muted-foreground">
+                {new Date(rule.lastExecuted).toLocaleString()}
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderWorkflowExecution = (execution: WorkflowExecution) => (
+    <Card key={execution.id} className="mb-4">
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="text-lg">Execution #{execution.id.slice(-8)}</CardTitle>
+            <CardDescription>
+              Started {new Date(execution.startedAt).toLocaleString()}
+            </CardDescription>
+          </div>
+          <div className="flex items-center space-x-2">
+            <Badge className={getStatusColor(execution.status)}>
+              {execution.status}
+            </Badge>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedExecution(execution)}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Workflow ID</Label>
+            <div className="text-sm text-muted-foreground font-mono">
+              {execution.workflowId}
+            </div>
+          </div>
+          <div>
+            <Label className="text-sm font-medium">Execution Log ({execution.executionLog.length})</Label>
+            <div className="space-y-2 mt-2">
+              {execution.executionLog.slice(0, 3).map((log, index) => (
+                <div key={index} className="flex items-center space-x-2 text-sm">
+                  <Badge className={getStatusColor(log.status)}>
+                    {log.status}
+                  </Badge>
+                  <span className="text-muted-foreground">{log.message}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(log.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              ))}
+              {execution.executionLog.length > 3 && (
+                <div className="text-xs text-muted-foreground">
+                  +{execution.executionLog.length - 3} more logs
+                </div>
+              )}
+            </div>
+          </div>
+          {execution.errorMessage && (
+            <div>
+              <Label className="text-sm font-medium text-red-600">Error</Label>
+              <div className="text-sm text-red-600">{execution.errorMessage}</div>
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const workflowTemplates = [
+    {
+      name: 'Appointment Reminder',
+      description: 'Send reminder 24 hours before appointment',
+      triggerType: 'appointment_reminder' as const,
+      actions: [
+        { type: 'send_email' as const, config: { template: 'appointment_reminder' }, delay: 0, order: 1 },
+        { type: 'send_sms' as const, config: { template: 'appointment_reminder_sms' }, delay: 0, order: 2 }
+      ]
+    },
+    {
+      name: 'Payment Follow-up',
+      description: 'Follow up on overdue payments',
+      triggerType: 'payment_followup' as const,
+      actions: [
+        { type: 'send_email' as const, config: { template: 'payment_reminder' }, delay: 0, order: 1 },
+        { type: 'create_task' as const, config: { title: 'Follow up on payment' }, delay: 1440, order: 2 }
+      ]
+    },
+    {
+      name: 'Intake Automation',
+      description: 'Automate intake process for new patients',
+      triggerType: 'intake_automation' as const,
+      actions: [
+        { type: 'send_email' as const, config: { template: 'welcome_email' }, delay: 0, order: 1 },
+        { type: 'create_task' as const, config: { title: 'Review intake forms' }, delay: 60, order: 2 },
+        { type: 'schedule_followup' as const, config: { days: 7 }, delay: 10080, order: 3 }
+      ]
+    }
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Header Section - Başlık Bölümü */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">🔄 Workflow Automation & Process Management</h2>
-          <p className="text-gray-600">Automated workflows and process optimization tools</p>
+          <h1 className="text-3xl font-bold">Workflow Automation</h1>
+          <p className="text-muted-foreground">
+            Automate appointment reminders, payment follow-ups, and intake processes
+          </p>
         </div>
         <div className="flex items-center space-x-2">
-          <Badge variant="outline" className="bg-blue-50 text-blue-700">
-            <Workflow className="h-3 w-3 mr-1" />
-            {metrics.totalWorkflows} Workflows
-          </Badge>
-          <Badge variant="outline" className="bg-green-50 text-green-700">
-            <Activity className="h-3 w-3 mr-1" />
-            {systemEfficiency}% Efficiency
-          </Badge>
+          <Button onClick={() => setSelectedWorkflow({} as WorkflowRule)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Workflow
+          </Button>
         </div>
       </div>
 
-      {/* Workflow Overview - İş Akışı Genel Bakış */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-blue-900">Active Workflows</CardTitle>
-            <Workflow className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-900">{metrics.activeWorkflows}</div>
-            <p className="text-xs text-blue-700">
-              {metrics.totalWorkflows} total workflows
-            </p>
-            <Progress value={metrics.workflowActivationRate} className="mt-2 h-1" />
+      <div className="flex space-x-1 bg-muted p-1 rounded-lg">
+        <Button
+          variant={activeTab === 'rules' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('rules')}
+          className="flex-1"
+        >
+          <Workflow className="h-4 w-4 mr-2" />
+          Workflow Rules
+        </Button>
+        <Button
+          variant={activeTab === 'executions' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('executions')}
+          className="flex-1"
+        >
+          <Clock className="h-4 w-4 mr-2" />
+          Executions
+        </Button>
+        <Button
+          variant={activeTab === 'templates' ? 'default' : 'ghost'}
+          onClick={() => setActiveTab('templates')}
+          className="flex-1"
+        >
+          <Repeat className="h-4 w-4 mr-2" />
+          Templates
+        </Button>
+      </div>
+
+      {activeTab === 'rules' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Workflow Rules</h2>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline">
+                {workflowRules.filter(r => r.isActive).length} Active
+              </Badge>
+              <Badge variant="outline">
+                {workflowRules.length} Total
+              </Badge>
+            </div>
+          </div>
+
+          {workflowRules.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Workflow className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Workflow Rules</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Create automation rules to streamline your practice
+                </p>
+                <Button onClick={() => setSelectedWorkflow({} as WorkflowRule)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Rule
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {workflowRules.map(renderWorkflowRule)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'executions' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Workflow Executions</h2>
+            <div className="flex items-center space-x-2">
+              <Badge variant="outline">
+                {workflowExecutions.filter(e => e.status === 'completed').length} Completed
+              </Badge>
+              <Badge variant="outline">
+                {workflowExecutions.filter(e => e.status === 'failed').length} Failed
+              </Badge>
+            </div>
+          </div>
+
+          {workflowExecutions.length === 0 ? (
+            <Card>
+              <CardContent className="flex flex-col items-center justify-center py-12">
+                <Clock className="h-12 w-12 text-muted-foreground mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Executions</h3>
+                <p className="text-muted-foreground text-center mb-4">
+                  Workflow executions will appear here when rules are triggered
+                </p>
           </CardContent>
         </Card>
+          ) : (
+            <div className="space-y-4">
+              {workflowExecutions.map(renderWorkflowExecution)}
+            </div>
+          )}
+        </div>
+      )}
 
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-900">Process Templates</CardTitle>
-            <FileText className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-900">{metrics.activeTemplates}</div>
-            <p className="text-xs text-green-700">
-              {metrics.totalTemplates} total templates
+      {activeTab === 'templates' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xl font-semibold">Workflow Templates</h2>
+            <p className="text-sm text-muted-foreground">
+              Use these templates to quickly create common workflows
             </p>
-            <Progress value={metrics.templateActivationRate} className="mt-2 h-1" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {workflowTemplates.map((template, index) => (
+              <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center space-x-2">
+                    {getTriggerIcon(template.triggerType)}
+                    <CardTitle className="text-lg">{template.name}</CardTitle>
+                  </div>
+                  <CardDescription>{template.description}</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    <div>
+                      <Label className="text-sm font-medium">Actions ({template.actions.length})</Label>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {template.actions.map((action, actionIndex) => (
+                          <Badge key={actionIndex} variant="outline" className="text-xs">
+                            {action.type.replace('_', ' ')}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={() => setSelectedWorkflow({
+                        ...template,
+                        id: '',
+                        triggerConditions: {},
+                        isActive: true,
+                        executionCount: 0,
+                        createdAt: '',
+                        updatedAt: ''
+                      })}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Use Template
+                    </Button>
+                  </div>
           </CardContent>
         </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
-        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-purple-900">Task Automations</CardTitle>
-            <Zap className="h-4 w-4 text-purple-600" />
+      {/* Workflow Configuration Modal */}
+      {selectedWorkflow && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>
+                {selectedWorkflow.id ? 'Edit Workflow Rule' : 'Create Workflow Rule'}
+              </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-900">{metrics.activeAutomations}</div>
-            <p className="text-xs text-purple-700">
-              {metrics.totalAutomations} total automations
-            </p>
-            <Progress value={metrics.automationActivationRate} className="mt-2 h-1" />
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="workflow-name">Name</Label>
+                    <Input
+                      id="workflow-name"
+                      value={selectedWorkflow.name || ''}
+                      onChange={(e) => setSelectedWorkflow({
+                        ...selectedWorkflow,
+                        name: e.target.value
+                      })}
+                      placeholder="Workflow name"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="workflow-trigger">Trigger Type</Label>
+                    <select
+                      id="workflow-trigger"
+                      value={selectedWorkflow.triggerType || 'appointment_reminder'}
+                      onChange={(e) => setSelectedWorkflow({
+                        ...selectedWorkflow,
+                        triggerType: e.target.value as any
+                      })}
+                      className="w-full p-2 border rounded"
+                    >
+                      <option value="appointment_reminder">Appointment Reminder</option>
+                      <option value="payment_followup">Payment Follow-up</option>
+                      <option value="intake_automation">Intake Automation</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <Label htmlFor="workflow-description">Description</Label>
+                  <Textarea
+                    id="workflow-description"
+                    value={selectedWorkflow.description || ''}
+                    onChange={(e) => setSelectedWorkflow({
+                      ...selectedWorkflow,
+                      description: e.target.value
+                    })}
+                    placeholder="Workflow description"
+                    rows={3}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="workflow-conditions">Trigger Conditions (JSON)</Label>
+                  <Textarea
+                    id="workflow-conditions"
+                    value={JSON.stringify(selectedWorkflow.triggerConditions || {}, null, 2)}
+                    onChange={(e) => {
+                      try {
+                        const conditions = JSON.parse(e.target.value);
+                        setSelectedWorkflow({
+                          ...selectedWorkflow,
+                          triggerConditions: conditions
+                        });
+                      } catch (error) {
+                        // Invalid JSON, keep the text
+                      }
+                    }}
+                    placeholder="Trigger conditions"
+                    rows={4}
+                  />
+                </div>
+                <div>
+                  <Label>Actions</Label>
+                  <div className="space-y-2 mt-2">
+                    {selectedWorkflow.actions?.map((action, index) => (
+                      <div key={index} className="flex items-center space-x-2 p-2 border rounded">
+                        {getActionIcon(action.type)}
+                        <span className="text-sm">{action.type.replace('_', ' ')}</span>
+                        {action.delay && (
+                          <Badge variant="outline" className="text-xs">
+                            {action.delay}min delay
+                          </Badge>
+                        )}
+                      </div>
+                    )) || []}
+                  </div>
+                </div>
+                <div className="flex justify-end space-x-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedWorkflow(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      if (selectedWorkflow.id) {
+                        await updateWorkflowRule(selectedWorkflow.id, selectedWorkflow);
+                      } else {
+                        await createWorkflowRule(selectedWorkflow);
+                      }
+                      setSelectedWorkflow(null);
+                    }}
+                  >
+                    {selectedWorkflow.id ? 'Update' : 'Create'}
+                  </Button>
+                </div>
+              </div>
           </CardContent>
         </Card>
+        </div>
+      )}
 
-        <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-orange-900">Pending Approvals</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+      {/* Execution Details Modal */}
+      {selectedExecution && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+            <CardHeader>
+              <CardTitle>Execution Details</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-900">{metrics.pendingApprovals}</div>
-            <p className="text-xs text-orange-700">
-              Awaiting approval
-            </p>
-            <Progress value={75} className="mt-2 h-1" />
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Status</Label>
+                    <div className="mt-1">
+                      <Badge className={getStatusColor(selectedExecution.status)}>
+                        {selectedExecution.status}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-sm font-medium">Started At</Label>
+                    <div className="text-sm text-muted-foreground">
+                      {new Date(selectedExecution.startedAt).toLocaleString()}
+                    </div>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Execution Log</Label>
+                  <div className="space-y-2 mt-2">
+                    {selectedExecution.executionLog.map((log, index) => (
+                      <div key={index} className="flex items-center space-x-2 p-2 border rounded">
+                        <Badge className={getStatusColor(log.status)}>
+                          {log.status}
+                        </Badge>
+                        <span className="text-sm">{log.message}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">
+                          {new Date(log.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {selectedExecution.errorMessage && (
+                  <div>
+                    <Label className="text-sm font-medium text-red-600">Error Message</Label>
+                    <div className="text-sm text-red-600 p-2 bg-red-50 rounded">
+                      {selectedExecution.errorMessage}
+                    </div>
+                  </div>
+                )}
+                <div className="flex justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setSelectedExecution(null)}
+                  >
+                    Close
+                  </Button>
+                </div>
+              </div>
           </CardContent>
         </Card>
       </div>
+      )}
     </div>
   );
 }

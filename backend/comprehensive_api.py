@@ -18,6 +18,7 @@ from ai_ensemble_system import AIEnsembleSystem
 from sentiment_analyzer import SentimentAnalyzer
 from rl_portfolio_agent import RLPortfolioAgent
 from xai_explainer import XAIExplainer
+from bist100_scanner import BIST100Scanner
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +43,7 @@ ai_ensemble = AIEnsembleSystem()
 sentiment_analyzer = SentimentAnalyzer()
 rl_agent = RLPortfolioAgent()
 xai_explainer = XAIExplainer()
+scanner = BIST100Scanner()
 
 @app.get("/api/v2/health")
 async def health_check():
@@ -188,6 +190,92 @@ async def get_financial_ranking(symbols: str = "GARAN.IS,AKBNK.IS,ISCTR.IS,YKBNK
         
     except Exception as e:
         logger.error(f"❌ Financial ranking hatası: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/v2/top-bist")
+async def get_top_bist(
+    top: int = 5,
+    symbols: Optional[str] = None,
+    min_confidence: float = 0.75,
+    min_rr: float = 1.5,
+    min_sentiment: float = 0.55
+):
+    """Stricter BIST picks: 1h∩1d BUY, confidence/RR thresholds, sentiment gated, TOPSIS-ranked."""
+    try:
+        default_bist = [
+            "SISE.IS", "ASELS.IS", "YKBNK.IS", "THYAO.IS", "TUPRS.IS",
+            "EREGL.IS", "BIMAS.IS", "KRDMD.IS", "HEKTS.IS", "SAHOL.IS",
+            "PGSUS.IS", "FROTO.IS", "KCHOL.IS", "ISCTR.IS", "TOASO.IS"
+        ]
+        symbol_list = [s.strip().upper() for s in (symbols.split(',') if symbols else default_bist) if s.strip()]
+
+        # 1) Financial ranking (Grey TOPSIS)
+        ranking = topsis_ranker.rank_stocks(symbol_list) or {}
+        # Normalize to list with scores
+        ranked = sorted(
+            (
+                (sym, (ranking.get(sym, {}) or {}).get("score", 0.0))
+                for sym in symbol_list
+            ), key=lambda x: x[1], reverse=True
+        )
+        # Keep top half as quality filter
+        cutoff_idx = max(1, len(ranked) // 2)
+        quality_set = {sym for sym, _ in ranked[:cutoff_idx]}
+
+        # 2) Technical/AI BUY scan via scanner with 1h∩1d confluence
+        picks = []
+        for sym in symbol_list:
+            try:
+                enhanced_signals = scanner.robot.generate_enhanced_signals(sym) or []
+                by_tf = {}
+                for sig in enhanced_signals:
+                    action = getattr(sig.action, 'value', str(sig.action)).upper()
+                    timeframe = getattr(getattr(sig, 'timeframe', None), 'value', str(getattr(sig, 'timeframe', '')))
+                    conf = float(getattr(sig, 'confidence', 0) or 0.0)
+                    rr = float(getattr(sig, 'risk_reward', 0) or 0.0)
+                    if action in ("BUY", "STRONG_BUY") and conf >= min_confidence and rr >= min_rr:
+                        by_tf[timeframe] = sig
+
+                if "1h" in by_tf and "1d" in by_tf and sym in quality_set:
+                    # 3) Sentiment gate
+                    s = sentiment_analyzer.analyze_stock_sentiment(sym)
+                    sentiment_ok = (s is not None and s.sentiment_score >= min_sentiment)
+                    if not sentiment_ok:
+                        continue
+
+                    sig_h1 = by_tf["1h"]
+                    sig_d1 = by_tf["1d"]
+                    picks.append({
+                        "symbol": sym,
+                        "action": "BUY",
+                        "timeframe": "1h&1d",
+                        "entry": float(getattr(sig_h1, 'entry_price', 0) or 0.0),
+                        "take_profit": float(getattr(sig_d1, 'take_profit', 0) or 0.0),
+                        "stop_loss": float(getattr(sig_d1, 'stop_loss', 0) or 0.0),
+                        "risk_reward": min(
+                            float(getattr(sig_h1, 'risk_reward', 0) or 0.0),
+                            float(getattr(sig_d1, 'risk_reward', 0) or 0.0)
+                        ),
+                        "confidence": min(
+                            float(getattr(sig_h1, 'confidence', 0) or 0.0),
+                            float(getattr(sig_d1, 'confidence', 0) or 0.0)
+                        ),
+                        "topsis_score": (ranking.get(sym, {}) or {}).get("score", 0.0),
+                        "sentiment": s.sentiment_score
+                    })
+            except Exception as e:
+                logger.warning(f"⚠️ {sym} pick değerlendirme hatası: {e}")
+                continue
+
+        # Sort by TOPSIS score then confidence
+        picks.sort(key=lambda x: (x.get("topsis_score", 0.0), x.get("confidence", 0.0)), reverse=True)
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "total": min(top, len(picks)),
+            "picks": picks[:top]
+        }
+    except Exception as e:
+        logger.error(f"❌ Top BIST endpoint hatası: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
