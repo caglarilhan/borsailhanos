@@ -99,10 +99,12 @@ except ImportError as e:
 # FreemiumModel importu ayrı bir blokta
 try:
     from backend.services.freemium_model import FreemiumModel
-    print("✅ FreemiumModel başarıyla import edildi")
+    from backend.services.bist100_ai_predictor import bist100_predictor
+    print("✅ FreemiumModel ve BIST100Predictor başarıyla import edildi")
 except ImportError as e:
     print(f"⚠️ FreemiumModel import hatası: {e}")
     FreemiumModel = None
+    bist100_predictor = None
 
 # WebSocket bağlantı yöneticisi
 class ConnectionManager:
@@ -290,8 +292,80 @@ async def health_check():
     return {
         "status": "healthy",
         "version": "2.0.0",
+        "bist100_predictor": bist100_predictor is not None,
         "timestamp": datetime.now().isoformat()
     }
+
+# BIST 100 AI Predictions Endpoints
+@app.get("/api/bist100/predictions")
+async def get_bist100_predictions(
+    timeframe: str = "1h",
+    limit: int = 20
+):
+    """Get BIST 100 AI predictions"""
+    try:
+        if bist100_predictor is None:
+            return {"error": "BIST100 predictor not available"}
+        
+        predictions = await bist100_predictor.predict_bist100(timeframe, limit)
+        return {
+            "predictions": predictions,
+            "timeframe": timeframe,
+            "count": len(predictions),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/bist100/predict/{symbol}")
+async def predict_single_stock(
+    symbol: str,
+    timeframe: str = "1h"
+):
+    """Predict single stock price"""
+    try:
+        if bist100_predictor is None:
+            return {"error": "BIST100 predictor not available"}
+        
+        prediction = await bist100_predictor.predict_single_stock(f"{symbol}.IS", timeframe)
+        return {
+            "prediction": prediction,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/bist100/models/status")
+async def get_ai_models_status():
+    """Get AI models status"""
+    try:
+        if bist100_predictor is None:
+            return {"error": "BIST100 predictor not available"}
+        
+        status = await bist100_predictor.get_model_status()
+        return status
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/bist100/history/{symbol}")
+async def get_prediction_history(
+    symbol: str,
+    hours: int = 24
+):
+    """Get prediction history for a symbol"""
+    try:
+        if bist100_predictor is None:
+            return {"error": "BIST100 predictor not available"}
+        
+        history = await bist100_predictor.get_prediction_history(symbol, hours)
+        return {
+            "history": history,
+            "symbol": symbol,
+            "hours": hours,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 # Kullanıcı yönetimi endpoint'leri
 @app.post("/auth/register")

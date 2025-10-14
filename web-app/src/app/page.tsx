@@ -10,7 +10,8 @@ import {
   UserCircleIcon,
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
-  RocketLaunchIcon
+  RocketLaunchIcon,
+  CpuChipIcon
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import TradingSignals from '@/components/TradingSignals';
@@ -19,6 +20,8 @@ import AdvancedCharts from '@/components/AdvancedCharts';
 import GodModePanel from '@/components/GodModePanel';
 import SeckmeFormations from '@/components/SeckmeFormations';
 import RealTimeAlerts from '@/components/RealTimeAlerts';
+import Bist100Predictions from '@/components/Bist100Predictions';
+import AIPredictionEngine from '@/components/AIPredictionEngine';
 
 interface TradingSignal {
   symbol: string;
@@ -42,7 +45,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState({ name: 'Admin', email: 'admin@bistai.com' });
   const [godMode, setGodMode] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'signals' | 'market' | 'charts' | 'seckme' | 'alerts' | 'godmode'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'signals' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'godmode'>('dashboard');
 
   // Mock data for demonstration
   useEffect(() => {
@@ -165,6 +168,8 @@ export default function Dashboard() {
                 { id: 'charts', name: 'Grafikler', icon: ChartBarIcon },
                 { id: 'seckme', name: 'Seçmeki Formasyonları', icon: ArrowTrendingUpIcon },
                 { id: 'alerts', name: 'Gerçek Zamanlı Uyarılar', icon: BellIcon },
+                { id: 'bist100', name: 'BIST 100 AI Tahminleri', icon: ArrowTrendingUpIcon },
+                { id: 'aiengine', name: 'AI Tahmin Motoru', icon: CpuChipIcon },
                 { id: 'godmode', name: 'God Mode', icon: ShieldCheckIcon }
               ].map((tab) => (
                 <button
@@ -265,6 +270,16 @@ export default function Dashboard() {
         {/* Gerçek Zamanlı Uyarılar Tab */}
         {activeTab === 'alerts' && (
           <RealTimeAlerts isLoading={isLoading} />
+        )}
+
+        {/* BIST 100 AI Tahminleri Tab */}
+        {activeTab === 'bist100' && (
+          <Bist100Predictions isLoading={isLoading} />
+        )}
+
+        {/* AI Tahmin Motoru Tab */}
+        {activeTab === 'aiengine' && (
+          <AIPredictionEngine isLoading={isLoading} />
         )}
 
         {/* God Mode Tab */}
