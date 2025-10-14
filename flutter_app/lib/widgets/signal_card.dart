@@ -4,11 +4,13 @@ import '../models/trading_signal.dart';
 class SignalCard extends StatelessWidget {
   final TradingSignal signal;
   final VoidCallback? onTap;
+  final Map<String, dynamic>? realtimePrice;
   
   const SignalCard({
     Key? key,
     required this.signal,
     this.onTap,
+    this.realtimePrice,
   }) : super(key: key);
   
   Color _getSignalColor(String signalType) {
@@ -61,7 +63,7 @@ class SignalCard extends StatelessWidget {
                 children: [
                   Icon(signalIcon, color: signalColor, size: 32),
                   const SizedBox(width: 12),
-                  Expanded(
+                  Flexible(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -101,6 +103,44 @@ class SignalCard extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 12),
+              
+              // Gerçek zamanlı fiyat bilgisi
+              if (realtimePrice != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.flash_on, size: 16, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Canlı: \$${realtimePrice!['price']?.toStringAsFixed(2) ?? 'N/A'}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                      if (realtimePrice!['change'] != null) ...[
+                        const SizedBox(width: 8),
+                        Text(
+                          '${realtimePrice!['change'] > 0 ? '+' : ''}${realtimePrice!['change'].toStringAsFixed(2)}%',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: realtimePrice!['change'] > 0 ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              
               if (signal.aiSignal != null) ...[
                 Row(
                   children: [

@@ -55,3 +55,5 @@ def generate_basic_signals(df: pd.DataFrame) -> List[Dict]:
     return signals
 
 
+
+

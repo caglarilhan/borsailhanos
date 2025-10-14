@@ -26,11 +26,11 @@ class MarketSelector extends StatelessWidget {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
+                Flexible(
                   child: _buildMarketButton('BIST', 'Borsa İstanbul'),
                 ),
                 const SizedBox(width: 12),
-                Expanded(
+                Flexible(
                   child: _buildMarketButton('US', 'NASDAQ/NYSE'),
                 ),
               ],

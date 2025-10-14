@@ -13,6 +13,23 @@ class RobotControlPanel extends StatelessWidget {
     required this.onAutoTradingToggled,
   }) : super(key: key);
   
+  factory RobotControlPanel.adapt({
+    Key? key,
+    required dynamic robotStatus,
+    required Function(String) onModeChanged,
+    required Function(bool) onAutoTradingToggled,
+  }) {
+    final RobotStatus normalized = robotStatus is RobotStatus
+        ? robotStatus
+        : RobotStatus.fromJson(robotStatus as Map<String, dynamic>);
+    return RobotControlPanel(
+      key: key,
+      robotStatus: normalized,
+      onModeChanged: onModeChanged,
+      onAutoTradingToggled: onAutoTradingToggled,
+    );
+  }
+  
   Color _getModeColor(String mode) {
     switch (mode.toUpperCase()) {
       case 'AGGRESSIVE':
@@ -48,7 +65,7 @@ class RobotControlPanel extends StatelessWidget {
                         size: 32,
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      Flexible(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -71,7 +88,7 @@ class RobotControlPanel extends StatelessWidget {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: _buildStatCard(
                           'Mevcut Sermaye',
                           '₺${robotStatus.currentCapital.toStringAsFixed(2)}',
@@ -80,7 +97,7 @@ class RobotControlPanel extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      Flexible(
                         child: _buildStatCard(
                           'Toplam Kar',
                           '₺${robotStatus.totalProfit.toStringAsFixed(2)}',
@@ -93,7 +110,7 @@ class RobotControlPanel extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: _buildStatCard(
                           'Aktif Pozisyon',
                           '${robotStatus.activePositions}',
@@ -102,11 +119,11 @@ class RobotControlPanel extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      Flexible(
                         child: _buildStatCard(
                           'Kazanma Oranı',
                           '${(robotStatus.winRate * 100).toStringAsFixed(1)}%',
-                          Icons.target,
+                          Icons.trending_up,
                           robotStatus.winRate >= 0.5 ? Colors.green : Colors.red,
                         ),
                       ),
@@ -133,15 +150,15 @@ class RobotControlPanel extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: _buildModeButton('AGGRESSIVE', 'Agresif'),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
+                      Flexible(
                         child: _buildModeButton('NORMAL', 'Normal'),
                       ),
                       const SizedBox(width: 8),
-                      Expanded(
+                      Flexible(
                         child: _buildModeButton('SAFE', 'Güvenli'),
                       ),
                     ],

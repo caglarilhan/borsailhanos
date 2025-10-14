@@ -30,7 +30,7 @@ class _PerformanceChartState extends State<PerformanceChart> {
                   const SizedBox(height: 16),
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: _buildPerformanceCard(
                           'Toplam Kar',
                           '+₺2,450.50',
@@ -39,11 +39,11 @@ class _PerformanceChartState extends State<PerformanceChart> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      Flexible(
                         child: _buildPerformanceCard(
                           'Kazanma Oranı',
                           '73.2%',
-                          Icons.target,
+                          Icons.trending_up,
                           Colors.blue,
                         ),
                       ),
@@ -52,7 +52,7 @@ class _PerformanceChartState extends State<PerformanceChart> {
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                      Expanded(
+                      Flexible(
                         child: _buildPerformanceCard(
                           'Sharpe Ratio',
                           '1.85',
@@ -61,7 +61,7 @@ class _PerformanceChartState extends State<PerformanceChart> {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Expanded(
+                      Flexible(
                         child: _buildPerformanceCard(
                           'Max Drawdown',
                           '-5.2%',

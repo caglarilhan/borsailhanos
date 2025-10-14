@@ -62,3 +62,5 @@ def fetch_basic_fundamentals(symbols: Iterable[str]) -> pd.DataFrame:
     return df[["NetProfitMargin", "ROE", "DebtEquity"]]
 
 
+
+

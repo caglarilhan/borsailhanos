@@ -1,0 +1,277 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { 
+  ChartBarIcon, 
+  ArrowTrendingUpIcon, 
+  ArrowTrendingDownIcon,
+  BellIcon,
+  Cog6ToothIcon,
+  UserCircleIcon,
+  ArrowRightOnRectangleIcon,
+  ShieldCheckIcon,
+  RocketLaunchIcon
+} from '@heroicons/react/24/outline';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import TradingSignals from '@/components/TradingSignals';
+import MarketOverview from '@/components/MarketOverview';
+import AdvancedCharts from '@/components/AdvancedCharts';
+import GodModePanel from '@/components/GodModePanel';
+import SeckmeFormations from '@/components/SeckmeFormations';
+import RealTimeAlerts from '@/components/RealTimeAlerts';
+
+interface TradingSignal {
+  symbol: string;
+  signal: 'BUY' | 'SELL' | 'HOLD';
+  confidence: number;
+  price: number;
+  change: number;
+  timestamp: string;
+}
+
+interface MarketData {
+  symbol: string;
+  price: number;
+  change: number;
+  volume: number;
+}
+
+export default function Dashboard() {
+  const [signals, setSignals] = useState<TradingSignal[]>([]);
+  const [marketData, setMarketData] = useState<MarketData[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [user, setUser] = useState({ name: 'Admin', email: 'admin@bistai.com' });
+  const [godMode, setGodMode] = useState(true);
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'signals' | 'market' | 'charts' | 'seckme' | 'alerts' | 'godmode'>('dashboard');
+
+  // Mock data for demonstration
+  useEffect(() => {
+    const mockSignals: TradingSignal[] = [
+      {
+        symbol: 'THYAO',
+        signal: 'BUY',
+        confidence: 0.85,
+        price: 325.50,
+        change: 2.3,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'RSI oversold durumda ve MACD pozitif kesişim yapıyor',
+        shapValues: { rsi: 0.25, macd: 0.18, volume: 0.12, price_change: 0.15 },
+        confluenceScore: 0.87,
+        marketRegime: 'Risk-On',
+        sentimentScore: 0.78,
+        expectedReturn: 0.045,
+        stopLoss: 310.25,
+        takeProfit: 340.75
+      },
+      {
+        symbol: 'ASELS',
+        signal: 'SELL',
+        confidence: 0.72,
+        price: 88.40,
+        change: -1.8,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'RSI overbought seviyede ve hacim düşüş trendinde',
+        shapValues: { rsi: -0.20, macd: -0.15, volume: -0.08, price_change: -0.12 },
+        confluenceScore: 0.73,
+        marketRegime: 'Risk-Off',
+        sentimentScore: 0.42,
+        expectedReturn: -0.028,
+        stopLoss: 92.15,
+        takeProfit: 84.65
+      },
+      {
+        symbol: 'TUPRS',
+        signal: 'BUY',
+        confidence: 0.91,
+        price: 145.20,
+        change: 3.1,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'Güçlü momentum ve pozitif sentiment birleşimi',
+        shapValues: { rsi: 0.35, macd: 0.28, volume: 0.22, price_change: 0.18 },
+        confluenceScore: 0.94,
+        marketRegime: 'Risk-On',
+        sentimentScore: 0.89,
+        expectedReturn: 0.067,
+        stopLoss: 138.50,
+        takeProfit: 152.30
+      }
+    ];
+
+    const mockMarketData: MarketData[] = [
+      { symbol: 'THYAO', price: 325.50, change: 2.3, volume: 1500000, marketCap: 45000000000, sector: 'Havacılık', peRatio: 12.5, dividendYield: 2.8 },
+      { symbol: 'ASELS', price: 88.40, change: -1.8, volume: 800000, marketCap: 18000000000, sector: 'Teknoloji', peRatio: 18.2, dividendYield: 1.5 },
+      { symbol: 'TUPRS', price: 145.20, change: 3.1, volume: 1200000, marketCap: 25000000000, sector: 'Enerji', peRatio: 8.9, dividendYield: 4.2 },
+      { symbol: 'SISE', price: 45.80, change: 1.2, volume: 900000, marketCap: 12000000000, sector: 'İnşaat', peRatio: 15.3, dividendYield: 3.1 },
+      { symbol: 'EREGL', price: 67.30, change: -0.5, volume: 1100000, marketCap: 20000000000, sector: 'Enerji', peRatio: 11.7, dividendYield: 2.9 }
+    ];
+
+    setTimeout(() => {
+      setSignals(mockSignals);
+      setMarketData(mockMarketData);
+      setIsLoading(false);
+    }, 1000);
+  }, []);
+
+  const chartData = [
+    { time: '09:00', price: 320 },
+    { time: '10:00', price: 322 },
+    { time: '11:00', price: 318 },
+    { time: '12:00', price: 325 },
+    { time: '13:00', price: 323 },
+    { time: '14:00', price: 327 },
+    { time: '15:00', price: 325 }
+  ];
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <ChartBarIcon className="h-8 w-8 text-blue-600" />
+              <h1 className="ml-2 text-xl font-bold text-gray-900">BIST AI Smart Trader</h1>
+            </div>
+            <div className="flex items-center space-x-4">
+              <BellIcon className="h-6 w-6 text-gray-400" />
+              <Cog6ToothIcon className="h-6 w-6 text-gray-400" />
+              <div className="flex items-center space-x-2">
+                <UserCircleIcon className="h-8 w-8 text-gray-400" />
+                <span className="text-sm font-medium text-gray-700">{user.name}</span>
+              </div>
+              <ArrowRightOnRectangleIcon className="h-6 w-6 text-gray-400" />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Navigation Tabs */}
+        <div className="mb-8">
+          <div className="border-b border-gray-200">
+            <nav className="-mb-px flex space-x-8">
+              {[
+                { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
+                { id: 'signals', name: 'AI Sinyalleri', icon: ArrowTrendingUpIcon },
+                { id: 'market', name: 'Piyasa', icon: ChartBarIcon },
+                { id: 'charts', name: 'Grafikler', icon: ChartBarIcon },
+                { id: 'seckme', name: 'Seçmeki Formasyonları', icon: ArrowTrendingUpIcon },
+                { id: 'alerts', name: 'Gerçek Zamanlı Uyarılar', icon: BellIcon },
+                { id: 'godmode', name: 'God Mode', icon: ShieldCheckIcon }
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id as any)}
+                  className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === tab.id
+                      ? 'border-blue-500 text-blue-600'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
+                >
+                  <tab.icon className="h-5 w-5" />
+                  <span>{tab.name}</span>
+                  {tab.id === 'godmode' && godMode && (
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  )}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Dashboard Tab */}
+        {activeTab === 'dashboard' && (
+          <>
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <ArrowTrendingUpIcon className="h-8 w-8 text-green-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Toplam Kar</p>
+                    <p className="text-2xl font-bold text-green-600">+₺12,450</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <ChartBarIcon className="h-8 w-8 text-blue-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Aktif Sinyaller</p>
+                    <p className="text-2xl font-bold text-blue-600">{signals.length}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <ArrowTrendingUpIcon className="h-8 w-8 text-purple-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Doğruluk Oranı</p>
+                    <p className="text-2xl font-bold text-purple-600">87.3%</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow p-6">
+                <div className="flex items-center">
+                  <ArrowTrendingDownIcon className="h-8 w-8 text-red-500" />
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-500">Risk Skoru</p>
+                    <p className="text-2xl font-bold text-red-600">Düşük</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <TradingSignals signals={signals} isLoading={isLoading} />
+              <MarketOverview marketData={marketData} isLoading={isLoading} />
+            </div>
+
+            {/* Chart */}
+            <div className="mt-8">
+              <AdvancedCharts symbol="THYAO" isLoading={isLoading} />
+            </div>
+          </>
+        )}
+
+        {/* AI Sinyalleri Tab */}
+        {activeTab === 'signals' && (
+          <TradingSignals signals={signals} isLoading={isLoading} />
+        )}
+
+        {/* Piyasa Tab */}
+        {activeTab === 'market' && (
+          <MarketOverview marketData={marketData} isLoading={isLoading} />
+        )}
+
+        {/* Grafikler Tab */}
+        {activeTab === 'charts' && (
+          <AdvancedCharts symbol="THYAO" isLoading={isLoading} />
+        )}
+
+        {/* Seçmeki Formasyonları Tab */}
+        {activeTab === 'seckme' && (
+          <SeckmeFormations isLoading={isLoading} />
+        )}
+
+        {/* Gerçek Zamanlı Uyarılar Tab */}
+        {activeTab === 'alerts' && (
+          <RealTimeAlerts isLoading={isLoading} />
+        )}
+
+        {/* God Mode Tab */}
+        {activeTab === 'godmode' && (
+          <GodModePanel isActive={godMode} onToggle={setGodMode} />
+        )}
+      </main>
+    </div>
+  );
+}
