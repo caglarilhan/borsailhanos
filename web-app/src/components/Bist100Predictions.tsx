@@ -40,156 +40,168 @@ interface Bist100PredictionsProps {
 
 export default function Bist100Predictions({ isLoading }: Bist100PredictionsProps) {
   const [predictions, setPredictions] = useState<Bist100Prediction[]>([]);
-  const [timeframe, setTimeframe] = useState<'5m' | '15m' | '30m' | '1h' | '4h' | '1d'>('1h');
+  const [timeframe, setTimeframe] = useState<'5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '2d' | '3d' | '5d' | '1w'>('1d');
   const [sortBy, setSortBy] = useState<'confidence' | 'change' | 'aiScore'>('confidence');
   const [filter, setFilter] = useState<'all' | 'rising' | 'falling'>('all');
   const [selectedPrediction, setSelectedPrediction] = useState<Bist100Prediction | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
-    // Mock BIST 100 predictions with AI analysis
-    const mockPredictions: Bist100Prediction[] = [
-      {
-        symbol: 'THYAO',
-        company: 'Türk Hava Yolları',
-        sector: 'Havacılık',
-        currentPrice: 325.50,
-        predictedPrice: 342.80,
-        change: 5.3,
-        confidence: 0.94,
-        timeframe: '1h',
-        aiScore: 0.92,
-        technicalScore: 0.88,
-        fundamentalScore: 0.85,
-        sentimentScore: 0.91,
-        volume: 2500000,
-        marketCap: 45000000000,
-        peRatio: 12.5,
-        reasons: [
-          'RSI oversold seviyede (28)',
-          'MACD pozitif kesişim yaptı',
-          'Hacim 3 günlük ortalamanın %150 üzerinde',
-          'Pozitif haber: Yeni uçak siparişi',
-          'Teknik destek seviyesinde güçlü alım'
-        ],
-        riskLevel: 'Düşük',
-        recommendation: 'Güçlü Al',
-        lastUpdate: new Date().toISOString()
-      },
-      {
-        symbol: 'ASELS',
-        company: 'Aselsan',
-        sector: 'Savunma',
-        currentPrice: 88.40,
-        predictedPrice: 82.15,
-        change: -7.1,
-        confidence: 0.89,
-        timeframe: '4h',
-        aiScore: 0.87,
-        technicalScore: 0.82,
-        fundamentalScore: 0.79,
-        sentimentScore: 0.45,
-        volume: 1800000,
-        marketCap: 18000000000,
-        peRatio: 18.2,
-        reasons: [
-          'RSI overbought seviyede (78)',
-          'Çifte tepe formasyonu tamamlandı',
-          'Hacim düşüş trendinde',
-          'Negatif haber: Proje gecikmesi',
-          'Teknik direnç seviyesinde satış baskısı'
-        ],
-        riskLevel: 'Orta',
-        recommendation: 'Sat',
-        lastUpdate: new Date().toISOString()
-      },
-      {
-        symbol: 'TUPRS',
-        company: 'Tüpraş',
-        sector: 'Enerji',
-        currentPrice: 145.20,
-        predictedPrice: 158.50,
-        change: 9.2,
-        confidence: 0.96,
-        timeframe: '30m',
-        aiScore: 0.95,
-        technicalScore: 0.93,
-        fundamentalScore: 0.91,
-        sentimentScore: 0.89,
-        volume: 3200000,
-        marketCap: 25000000000,
-        peRatio: 8.9,
-        reasons: [
-          'Üçgen formasyonu kırılımı',
-          'Petrol fiyatları yükselişte',
-          'Güçlü temel analiz skoru',
-          'Pozitif sentiment (%89)',
-          'Yüksek hacim ile destekleniyor'
-        ],
-        riskLevel: 'Düşük',
-        recommendation: 'Güçlü Al',
-        lastUpdate: new Date().toISOString()
-      },
-      {
-        symbol: 'SISE',
-        company: 'Şişecam',
-        sector: 'İnşaat',
-        currentPrice: 45.80,
-        predictedPrice: 48.20,
-        change: 5.2,
-        confidence: 0.82,
-        timeframe: '1h',
-        aiScore: 0.79,
-        technicalScore: 0.76,
-        fundamentalScore: 0.84,
-        sentimentScore: 0.72,
-        volume: 950000,
-        marketCap: 12000000000,
-        peRatio: 15.3,
-        reasons: [
-          'EMA 20/50 pozitif kesişim',
-          'İnşaat sektörü toparlanma',
-          'Düşük P/E oranı',
-          'Orta seviye sentiment',
-          'Teknik destek seviyesinde'
-        ],
-        riskLevel: 'Orta',
-        recommendation: 'Al',
-        lastUpdate: new Date().toISOString()
-      },
-      {
-        symbol: 'EREGL',
-        company: 'Ereğli Demir Çelik',
-        sector: 'Çelik',
-        currentPrice: 67.30,
-        predictedPrice: 64.15,
-        change: -4.7,
-        confidence: 0.85,
-        timeframe: '2h',
-        aiScore: 0.83,
-        technicalScore: 0.81,
-        fundamentalScore: 0.77,
-        sentimentScore: 0.38,
-        volume: 1100000,
-        marketCap: 20000000000,
-        peRatio: 11.7,
-        reasons: [
-          'Bollinger Bands üst bandından geri dönüş',
-          'Çelik fiyatları düşüşte',
-          'Negatif sentiment (%38)',
-          'Hacim artışı ile satış',
-          'Teknik direnç seviyesi'
-        ],
-        riskLevel: 'Yüksek',
-        recommendation: 'Sat',
-        lastUpdate: new Date().toISOString()
-      }
-    ];
+    // Mock BIST 100 predictions with AI analysis - Multiple timeframes
+    const generatePredictionsForTimeframe = (tf: string): Bist100Prediction[] => {
+      const basePredictions = [
+        {
+          symbol: 'THYAO',
+          company: 'Türk Hava Yolları',
+          sector: 'Havacılık',
+          currentPrice: 325.50,
+          volume: 2500000,
+          marketCap: 45000000000,
+          peRatio: 12.5,
+        },
+        {
+          symbol: 'ASELS',
+          company: 'Aselsan',
+          sector: 'Savunma',
+          currentPrice: 88.40,
+          volume: 1800000,
+          marketCap: 18000000000,
+          peRatio: 18.2,
+        },
+        {
+          symbol: 'TUPRS',
+          company: 'Tüpraş',
+          sector: 'Enerji',
+          currentPrice: 145.20,
+          volume: 3200000,
+          marketCap: 25000000000,
+          peRatio: 8.9,
+        },
+        {
+          symbol: 'SISE',
+          company: 'Şişecam',
+          sector: 'İnşaat',
+          currentPrice: 45.80,
+          volume: 950000,
+          marketCap: 12000000000,
+          peRatio: 15.3,
+        },
+        {
+          symbol: 'EREGL',
+          company: 'Ereğli Demir Çelik',
+          sector: 'Çelik',
+          currentPrice: 67.30,
+          volume: 1100000,
+          marketCap: 20000000000,
+          peRatio: 11.7,
+        }
+      ];
+
+      return basePredictions.map(stock => {
+        // Generate different predictions based on timeframe
+        let changePercent = 0;
+        let confidence = 0;
+        let reasons: string[] = [];
+        let recommendation = 'Bekle';
+        let riskLevel = 'Orta';
+
+        switch (tf) {
+          case '5m':
+            changePercent = Math.random() * 2 - 1; // -1% to +1%
+            confidence = 0.6 + Math.random() * 0.2; // 60-80%
+            reasons = ['Kısa vadeli momentum', 'Hacim analizi', 'Mikro seviye teknik sinyaller'];
+            break;
+          case '15m':
+            changePercent = Math.random() * 3 - 1.5; // -1.5% to +1.5%
+            confidence = 0.65 + Math.random() * 0.2; // 65-85%
+            reasons = ['15 dakikalık trend analizi', 'RSI kısa vadeli sinyaller', 'Hacim artışı'];
+            break;
+          case '30m':
+            changePercent = Math.random() * 4 - 2; // -2% to +2%
+            confidence = 0.7 + Math.random() * 0.2; // 70-90%
+            reasons = ['Yarım saatlik formasyon', 'MACD kısa vadeli', 'Teknik destek/direnç'];
+            break;
+          case '1h':
+            changePercent = Math.random() * 5 - 2.5; // -2.5% to +2.5%
+            confidence = 0.75 + Math.random() * 0.2; // 75-95%
+            reasons = ['Saatlik trend kırılımı', 'RSI oversold/overbought', 'Hacim ortalamanın üzerinde'];
+            break;
+          case '4h':
+            changePercent = Math.random() * 6 - 3; // -3% to +3%
+            confidence = 0.8 + Math.random() * 0.15; // 80-95%
+            reasons = ['4 saatlik formasyon', 'Güçlü teknik sinyaller', 'Pozitif momentum'];
+            break;
+          case '1d':
+            changePercent = Math.random() * 8 - 4; // -4% to +4%
+            confidence = 0.85 + Math.random() * 0.1; // 85-95%
+            reasons = ['Günlük trend analizi', 'Güçlü temel analiz', 'Pozitif haber akışı'];
+            break;
+          case '2d':
+            changePercent = Math.random() * 10 - 5; // -5% to +5%
+            confidence = 0.8 + Math.random() * 0.15; // 80-95%
+            reasons = ['2 günlük momentum', 'Sektörel trend', 'Makro ekonomik faktörler'];
+            break;
+          case '3d':
+            changePercent = Math.random() * 12 - 6; // -6% to +6%
+            confidence = 0.75 + Math.random() * 0.2; // 75-95%
+            reasons = ['3 günlük formasyon', 'Haftalık trend', 'Piyasa sentiment'];
+            break;
+          case '5d':
+            changePercent = Math.random() * 15 - 7.5; // -7.5% to +7.5%
+            confidence = 0.7 + Math.random() * 0.25; // 70-95%
+            reasons = ['Haftalık trend analizi', 'Sektörel rotasyon', 'Makro veriler'];
+            break;
+          case '1w':
+            changePercent = Math.random() * 20 - 10; // -10% to +10%
+            confidence = 0.65 + Math.random() * 0.3; // 65-95%
+            reasons = ['Haftalık formasyon', 'Uzun vadeli trend', 'Temel analiz güçlü'];
+            break;
+        }
+
+        const predictedPrice = stock.currentPrice * (1 + changePercent / 100);
+        
+        // Determine recommendation and risk
+        if (changePercent > 3) {
+          recommendation = 'Güçlü Al';
+          riskLevel = confidence > 0.9 ? 'Düşük' : 'Orta';
+        } else if (changePercent > 1) {
+          recommendation = 'Al';
+          riskLevel = 'Orta';
+        } else if (changePercent < -3) {
+          recommendation = 'Güçlü Sat';
+          riskLevel = 'Yüksek';
+        } else if (changePercent < -1) {
+          recommendation = 'Sat';
+          riskLevel = 'Yüksek';
+        } else {
+          recommendation = 'Bekle';
+          riskLevel = 'Düşük';
+        }
+
+        return {
+          ...stock,
+          predictedPrice: Number(predictedPrice.toFixed(2)),
+          change: Number(changePercent.toFixed(2)),
+          confidence: Number(confidence.toFixed(3)),
+          timeframe: tf,
+          aiScore: Number((confidence * 0.9 + Math.random() * 0.1).toFixed(3)),
+          technicalScore: Number((0.6 + Math.random() * 0.3).toFixed(3)),
+          fundamentalScore: Number((0.7 + Math.random() * 0.2).toFixed(3)),
+          sentimentScore: Number((0.5 + Math.random() * 0.4).toFixed(3)),
+          reasons,
+          riskLevel: riskLevel as 'Düşük' | 'Orta' | 'Yüksek',
+          recommendation: recommendation as 'Güçlü Al' | 'Al' | 'Bekle' | 'Sat' | 'Güçlü Sat',
+          lastUpdate: new Date().toISOString()
+        };
+      });
+    };
+
+    const mockPredictions = generatePredictionsForTimeframe(timeframe);
 
     setTimeout(() => {
       setPredictions(mockPredictions);
     }, 1000);
-  }, []);
+  }, [timeframe]); // Re-generate predictions when timeframe changes
 
   const getRecommendationColor = (recommendation: string) => {
     switch (recommendation) {
@@ -283,17 +295,28 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
             {/* Timeframe Selector */}
             <div className="flex items-center space-x-2">
               <ClockIcon className="h-4 w-4 text-gray-400" />
-              {['5m', '15m', '30m', '1h', '4h', '1d'].map((tf) => (
+              {[
+                { key: '5m', label: '5dk' },
+                { key: '15m', label: '15dk' },
+                { key: '30m', label: '30dk' },
+                { key: '1h', label: '1sa' },
+                { key: '4h', label: '4sa' },
+                { key: '1d', label: '1gün' },
+                { key: '2d', label: '2gün' },
+                { key: '3d', label: '3gün' },
+                { key: '5d', label: '5gün' },
+                { key: '1w', label: '1hafta' }
+              ].map((tf) => (
                 <button
-                  key={tf}
-                  onClick={() => setTimeframe(tf as any)}
+                  key={tf.key}
+                  onClick={() => setTimeframe(tf.key as any)}
                   className={`px-2 py-1 text-xs rounded ${
-                    timeframe === tf
+                    timeframe === tf.key
                       ? 'bg-blue-100 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-100'
                   }`}
                 >
-                  {tf}
+                  {tf.label}
                 </button>
               ))}
             </div>

@@ -299,7 +299,7 @@ async def health_check():
 # BIST 100 AI Predictions Endpoints
 @app.get("/api/bist100/predictions")
 async def get_bist100_predictions(
-    timeframe: str = "1h",
+    timeframe: str = "1d",
     limit: int = 20
 ):
     """Get BIST 100 AI predictions"""
@@ -320,7 +320,7 @@ async def get_bist100_predictions(
 @app.get("/api/bist100/predict/{symbol}")
 async def predict_single_stock(
     symbol: str,
-    timeframe: str = "1h"
+    timeframe: str = "1d"
 ):
     """Predict single stock price"""
     try:

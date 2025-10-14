@@ -132,7 +132,7 @@ class BIST100AIPredictor:
         # In real implementation, this would analyze news, social media, etc.
         return np.random.uniform(0.3, 0.9)
     
-    async def predict_single_stock(self, symbol: str, timeframe: str = '1h') -> Dict:
+    async def predict_single_stock(self, symbol: str, timeframe: str = '1d') -> Dict:
         """Predict single stock price"""
         try:
             # Get stock data
@@ -312,7 +312,7 @@ class BIST100AIPredictor:
         }
         return mock_pe.get(symbol, 15.0)
     
-    async def predict_bist100(self, timeframe: str = '1h', limit: int = 20) -> List[Dict]:
+    async def predict_bist100(self, timeframe: str = '1d', limit: int = 20) -> List[Dict]:
         """Predict BIST 100 stocks"""
         try:
             predictions = []
