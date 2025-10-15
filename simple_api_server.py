@@ -100,11 +100,24 @@ except ImportError as e:
 try:
     from backend.services.freemium_model import FreemiumModel
     from backend.services.bist100_ai_predictor import bist100_predictor
-    print("✅ FreemiumModel ve BIST100Predictor başarıyla import edildi")
+    from backend.services.broker_integration import broker_manager, initialize_brokers
+    from backend.services.crypto_trading import crypto_engine
+    from backend.services.options_analysis import options_analyzer
+    from backend.services.advanced_ai_ensemble import advanced_ai_ensemble
+    from backend.services.harmonic_pattern_detector import harmonic_detector
+    from backend.services.elliott_wave_detector import elliott_detector
+    print("✅ Tüm servisler başarıyla import edildi")
 except ImportError as e:
-    print(f"⚠️ FreemiumModel import hatası: {e}")
+    print(f"⚠️ Servis import hatası: {e}")
     FreemiumModel = None
     bist100_predictor = None
+    broker_manager = None
+    initialize_brokers = None
+    crypto_engine = None
+    options_analyzer = None
+    advanced_ai_ensemble = None
+    harmonic_detector = None
+    elliott_detector = None
 
 # WebSocket bağlantı yöneticisi
 class ConnectionManager:
@@ -293,6 +306,12 @@ async def health_check():
         "status": "healthy",
         "version": "2.0.0",
         "bist100_predictor": bist100_predictor is not None,
+        "broker_integration": broker_manager is not None,
+        "crypto_trading": crypto_engine is not None,
+        "options_analysis": options_analyzer is not None,
+        "advanced_ai_ensemble": advanced_ai_ensemble is not None,
+        "harmonic_pattern_detector": harmonic_detector is not None,
+        "elliott_wave_detector": elliott_detector is not None,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -300,7 +319,7 @@ async def health_check():
 @app.get("/api/bist100/predictions")
 async def get_bist100_predictions(
     timeframe: str = "1d",
-    limit: int = 20
+    limit: int = 50
 ):
     """Get BIST 100 AI predictions"""
     try:
@@ -362,6 +381,361 @@ async def get_prediction_history(
             "history": history,
             "symbol": symbol,
             "hours": hours,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# Broker Integration Endpoints
+@app.get("/api/brokers/status")
+async def get_brokers_status():
+    """Get all brokers status"""
+    try:
+        if broker_manager is None:
+            return {"error": "Broker manager not available"}
+        
+        auth_results = await broker_manager.authenticate_all()
+        return {
+            "brokers": auth_results,
+            "total_brokers": len(broker_manager.brokers),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/brokers/accounts")
+async def get_all_accounts():
+    """Get account info from all brokers"""
+    try:
+        if broker_manager is None:
+            return {"error": "Broker manager not available"}
+        
+        accounts = await broker_manager.get_all_accounts()
+        return {
+            "accounts": accounts,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/brokers/positions")
+async def get_all_positions():
+    """Get positions from all brokers"""
+    try:
+        if broker_manager is None:
+            return {"error": "Broker manager not available"}
+        
+        positions = await broker_manager.get_all_positions()
+        return {
+            "positions": positions,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/brokers/portfolio")
+async def get_aggregated_portfolio():
+    """Get aggregated portfolio across all brokers"""
+    try:
+        if broker_manager is None:
+            return {"error": "Broker manager not available"}
+        
+        portfolio = await broker_manager.get_aggregated_portfolio()
+        return portfolio
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/brokers/orders")
+async def place_order_all_brokers(request: dict):
+    """Place order on all brokers"""
+    try:
+        if broker_manager is None:
+            return {"error": "Broker manager not available"}
+        
+        symbol = request.get("symbol")
+        quantity = request.get("quantity")
+        order_type = request.get("order_type", "MARKET")
+        price = request.get("price")
+        
+        if not symbol or not quantity:
+            return {"error": "Symbol and quantity are required"}
+        
+        results = await broker_manager.place_order_all_brokers(symbol, quantity, order_type, price)
+        return {
+            "orders": results,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/brokers/initialize")
+async def initialize_brokers_endpoint():
+    """Initialize broker connections"""
+    try:
+        if initialize_brokers is None:
+            return {"error": "Initialize brokers function not available"}
+        
+        result = await initialize_brokers()
+        return {
+            "success": result,
+            "message": "Brokers initialized successfully" if result else "Failed to initialize brokers",
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# Crypto Trading Endpoints
+@app.get("/api/crypto/prices")
+async def get_crypto_prices():
+    """Get all crypto prices"""
+    try:
+        if crypto_engine is None:
+            return {"error": "Crypto engine not available"}
+        
+        prices = await crypto_engine.get_all_prices()
+        return {
+            "prices": prices,
+            "count": len(prices),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/crypto/predictions")
+async def get_crypto_predictions(
+    timeframe: str = "1h",
+    limit: int = 10
+):
+    """Get crypto predictions"""
+    try:
+        if crypto_engine is None:
+            return {"error": "Crypto engine not available"}
+        
+        # Get prices first
+        await crypto_engine.get_all_prices()
+        
+        predictions = []
+        for symbol in crypto_engine.crypto_symbols[:limit]:
+            prediction = await crypto_engine.get_crypto_prediction(symbol, timeframe)
+            if prediction:
+                predictions.append(prediction)
+        
+        # Sort by confidence
+        predictions.sort(key=lambda x: x.get("confidence", 0), reverse=True)
+        
+        return {
+            "predictions": predictions,
+            "timeframe": timeframe,
+            "count": len(predictions),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/crypto/trending")
+async def get_trending_cryptos():
+    """Get trending cryptocurrencies"""
+    try:
+        if crypto_engine is None:
+            return {"error": "Crypto engine not available"}
+        
+        # Get prices first
+        await crypto_engine.get_all_prices()
+        
+        trending = await crypto_engine.get_trending_cryptos()
+        return {
+            "trending": trending,
+            "count": len(trending),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/crypto/portfolio/{user_id}")
+async def get_crypto_portfolio(user_id: str):
+    """Get user's crypto portfolio"""
+    try:
+        if crypto_engine is None:
+            return {"error": "Crypto engine not available"}
+        
+        portfolio = await crypto_engine.get_crypto_portfolio(user_id)
+        return portfolio
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/crypto/predict/{symbol}")
+async def predict_single_crypto(
+    symbol: str,
+    timeframe: str = "1h"
+):
+    """Predict single crypto price"""
+    try:
+        if crypto_engine is None:
+            return {"error": "Crypto engine not available"}
+        
+        # Get prices first
+        await crypto_engine.get_all_prices()
+        
+        prediction = await crypto_engine.get_crypto_prediction(symbol, timeframe)
+        return {
+            "prediction": prediction,
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# Options Analysis Endpoints
+@app.get("/api/options/chain/{symbol}")
+async def get_option_chain(
+    symbol: str,
+    expiration: str = None
+):
+    """Get option chain for symbol"""
+    try:
+        if options_analyzer is None:
+            return {"error": "Options analyzer not available"}
+        
+        if not expiration:
+            # Use next month expiration as default
+            next_month = datetime.now() + timedelta(days=30)
+            expiration = next_month.strftime('%Y-%m-%d')
+        
+        option_chain = await options_analyzer.analyze_option_chain(symbol, expiration)
+        return option_chain
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/options/volatility/{symbol}")
+async def get_volatility_surface(symbol: str):
+    """Get volatility surface for symbol"""
+    try:
+        if options_analyzer is None:
+            return {"error": "Options analyzer not available"}
+        
+        volatility_surface = await options_analyzer.get_volatility_surface(symbol)
+        return volatility_surface
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.post("/api/options/strategy")
+async def analyze_strategy(request: dict):
+    """Analyze options strategy"""
+    try:
+        if options_analyzer is None:
+            return {"error": "Options analyzer not available"}
+        
+        symbol = request.get("symbol")
+        strategy_type = request.get("strategy_type")
+        params = request.get("params", {})
+        
+        if not symbol or not strategy_type:
+            return {"error": "Symbol and strategy_type are required"}
+        
+        analysis = await options_analyzer.analyze_strategy(symbol, strategy_type, params)
+        return analysis
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/options/underlying/{symbol}")
+async def get_underlying_info(symbol: str):
+    """Get underlying asset information"""
+    try:
+        if options_analyzer is None:
+            return {"error": "Options analyzer not available"}
+        
+        if symbol not in options_analyzer.underlying_assets:
+            return {"error": f"Symbol {symbol} not supported"}
+        
+        underlying = options_analyzer.underlying_assets[symbol]
+        strikes = options_analyzer.get_strike_prices(underlying['price'])
+        expirations = options_analyzer.get_expiration_dates()
+        
+        return {
+            "symbol": symbol,
+            "current_price": underlying['price'],
+            "volatility": underlying['volatility'],
+            "dividend_yield": underlying['dividend_yield'],
+            "risk_free_rate": options_analyzer.risk_free_rate,
+            "available_strikes": strikes,
+            "available_expirations": expirations,
+            "last_update": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/options/strategies")
+async def get_available_strategies():
+    """Get available options strategies"""
+    try:
+        strategies = [
+            {
+                "name": "Long Call",
+                "type": "long_call",
+                "description": "Satın alınan call opsiyonu",
+                "profit_direction": "Yükseliş",
+                "risk_level": "Yüksek",
+                "max_profit": "Sınırsız",
+                "max_loss": "Prim ödemesi"
+            },
+            {
+                "name": "Long Put",
+                "type": "long_put",
+                "description": "Satın alınan put opsiyonu",
+                "profit_direction": "Düşüş",
+                "risk_level": "Yüksek",
+                "max_profit": "Strike - Prim",
+                "max_loss": "Prim ödemesi"
+            },
+            {
+                "name": "Covered Call",
+                "type": "covered_call",
+                "description": "Hisse + Kısa call",
+                "profit_direction": "Yatay/Yükseliş",
+                "risk_level": "Orta",
+                "max_profit": "Sınırlı",
+                "max_loss": "Hisse düşüşü"
+            },
+            {
+                "name": "Protective Put",
+                "type": "protective_put",
+                "description": "Hisse + Uzun put",
+                "profit_direction": "Yükseliş",
+                "risk_level": "Düşük",
+                "max_profit": "Sınırsız",
+                "max_loss": "Sınırlı"
+            },
+            {
+                "name": "Straddle",
+                "type": "straddle",
+                "description": "Aynı strike call + put",
+                "profit_direction": "Volatilite",
+                "risk_level": "Yüksek",
+                "max_profit": "Sınırsız",
+                "max_loss": "Toplam prim"
+            },
+            {
+                "name": "Strangle",
+                "type": "strangle",
+                "description": "Farklı strike call + put",
+                "profit_direction": "Volatilite",
+                "risk_level": "Yüksek",
+                "max_profit": "Sınırsız",
+                "max_loss": "Toplam prim"
+            },
+            {
+                "name": "Iron Condor",
+                "type": "iron_condor",
+                "description": "Call spread + Put spread",
+                "profit_direction": "Yatay",
+                "risk_level": "Orta",
+                "max_profit": "Net kredi",
+                "max_loss": "Sınırlı"
+            }
+        ]
+        
+        return {
+            "strategies": strategies,
+            "count": len(strategies),
             "timestamp": datetime.now().isoformat()
         }
     except Exception as e:
@@ -2670,6 +3044,197 @@ async def get_subscription_analytics_endpoint():
     try:
         result = freemium_model.get_subscription_analytics()
         return result
+    except Exception as e:
+        return {"error": str(e)}
+
+# Advanced AI Ensemble Endpoints
+@app.get("/api/ai/ensemble/predictions")
+async def get_ensemble_predictions(
+    symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL",
+    timeframe: str = "1d"
+):
+    """Get advanced AI ensemble predictions"""
+    try:
+        if advanced_ai_ensemble is None:
+            return {"error": "Advanced AI ensemble not available"}
+        
+        symbol_list = [s.strip() for s in symbols.split(",")]
+        predictions = await advanced_ai_ensemble.get_ensemble_predictions(symbol_list, timeframe)
+        
+        # Convert to dict format
+        predictions_data = []
+        for pred in predictions:
+            predictions_data.append({
+                "symbol": pred.symbol,
+                "prediction": pred.prediction,
+                "confidence": pred.confidence,
+                "price_target": pred.price_target,
+                "stop_loss": pred.stop_loss,
+                "take_profit": pred.take_profit,
+                "timeframe": pred.timeframe,
+                "model_scores": pred.model_scores,
+                "feature_importance": pred.feature_importance,
+                "risk_score": pred.risk_score,
+                "timestamp": pred.timestamp
+            })
+        
+        return {
+            "predictions": predictions_data,
+            "timeframe": timeframe,
+            "count": len(predictions_data),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/ai/ensemble/predict/{symbol}")
+async def get_single_ensemble_prediction(
+    symbol: str,
+    timeframe: str = "1d"
+):
+    """Get single symbol ensemble prediction"""
+    try:
+        if advanced_ai_ensemble is None:
+            return {"error": "Advanced AI ensemble not available"}
+        
+        prediction = await advanced_ai_ensemble.predict_single_stock(symbol, timeframe)
+        
+        return {
+            "prediction": {
+                "symbol": prediction.symbol,
+                "prediction": prediction.prediction,
+                "confidence": prediction.confidence,
+                "price_target": prediction.price_target,
+                "stop_loss": prediction.stop_loss,
+                "take_profit": prediction.take_profit,
+                "timeframe": prediction.timeframe,
+                "model_scores": prediction.model_scores,
+                "feature_importance": prediction.feature_importance,
+                "risk_score": prediction.risk_score,
+                "timestamp": prediction.timestamp
+            },
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# Harmonic Pattern Detection Endpoints
+@app.get("/api/patterns/harmonic/{symbol}")
+async def get_harmonic_patterns(
+    symbol: str,
+    timeframe: str = "1d"
+):
+    """Get harmonic patterns for symbol"""
+    try:
+        if harmonic_detector is None:
+            return {"error": "Harmonic pattern detector not available"}
+        
+        patterns = await harmonic_detector.analyze_symbol(symbol, timeframe)
+        
+        patterns_data = []
+        for pattern in patterns:
+            patterns_data.append({
+                "pattern_type": pattern.pattern_type.value,
+                "direction": pattern.direction.value,
+                "confidence": pattern.confidence,
+                "points": pattern.points,
+                "fibonacci_ratios": pattern.fibonacci_ratios,
+                "risk_reward_ratio": pattern.risk_reward_ratio,
+                "target_price": pattern.target_price,
+                "stop_loss": pattern.stop_loss,
+                "completion_percentage": pattern.completion_percentage,
+                "timestamp": pattern.timestamp
+            })
+        
+        return {
+            "symbol": symbol,
+            "patterns": patterns_data,
+            "timeframe": timeframe,
+            "count": len(patterns_data),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/patterns/harmonic/bulk")
+async def get_bulk_harmonic_patterns(
+    symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL",
+    timeframe: str = "1d"
+):
+    """Get harmonic patterns for multiple symbols"""
+    try:
+        if harmonic_detector is None:
+            return {"error": "Harmonic pattern detector not available"}
+        
+        symbol_list = [s.strip() for s in symbols.split(",")]
+        signals = await harmonic_detector.get_pattern_signals(symbol_list, timeframe)
+        
+        return {
+            "signals": signals,
+            "timeframe": timeframe,
+            "count": len(signals),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+# Elliott Wave Detection Endpoints
+@app.get("/api/patterns/elliott/{symbol}")
+async def get_elliott_waves(
+    symbol: str,
+    timeframe: str = "1d"
+):
+    """Get Elliott Wave patterns for symbol"""
+    try:
+        if elliott_detector is None:
+            return {"error": "Elliott Wave detector not available"}
+        
+        waves = await elliott_detector.analyze_symbol(symbol, timeframe)
+        
+        waves_data = []
+        for wave in waves:
+            waves_data.append({
+                "wave_type": wave.wave_type.value,
+                "direction": wave.direction.value,
+                "confidence": wave.confidence,
+                "waves": wave.waves,
+                "fibonacci_ratios": wave.fibonacci_ratios,
+                "wave_strength": wave.wave_strength,
+                "target_price": wave.target_price,
+                "stop_loss": wave.stop_loss,
+                "completion_percentage": wave.completion_percentage,
+                "timestamp": wave.timestamp
+            })
+        
+        return {
+            "symbol": symbol,
+            "waves": waves_data,
+            "timeframe": timeframe,
+            "count": len(waves_data),
+            "timestamp": datetime.now().isoformat()
+        }
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/api/patterns/elliott/bulk")
+async def get_bulk_elliott_waves(
+    symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL",
+    timeframe: str = "1d"
+):
+    """Get Elliott Wave patterns for multiple symbols"""
+    try:
+        if elliott_detector is None:
+            return {"error": "Elliott Wave detector not available"}
+        
+        symbol_list = [s.strip() for s in symbols.split(",")]
+        signals = await elliott_detector.get_wave_signals(symbol_list, timeframe)
+        
+        return {
+            "signals": signals,
+            "timeframe": timeframe,
+            "count": len(signals),
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
         return {"error": str(e)}
 

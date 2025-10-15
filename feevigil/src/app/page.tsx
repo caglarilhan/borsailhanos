@@ -32,12 +32,12 @@ export default function Home() {
               Start Free Audit
               <span className="ml-2 inline-block group-hover:translate-x-1 transition-transform">→</span>
             </Link>
-            <button 
-              onClick={() => document.getElementById('sample-modal')?.classList.remove('hidden')}
-              className="border-2 border-gray-300 text-gray-900 px-10 py-5 rounded-xl text-lg font-semibold hover:bg-gray-50 hover:border-gray-400 transform hover:scale-105 transition-all duration-200"
+            <a 
+              href="#sample-report"
+              className="border-2 border-gray-300 text-gray-900 px-10 py-5 rounded-xl text-lg font-semibold hover:bg-gray-50 hover:border-gray-400 transform hover:scale-105 transition-all duration-200 inline-block text-center"
             >
               See Sample Report
-            </button>
+            </a>
           </div>
           
           {/* Risk Reversal */}
@@ -237,33 +237,45 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Sample Report Modal */}
-      <div id="sample-modal" className="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-2xl p-8 max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-2xl font-bold text-gray-900">Sample FeeVigil Report</h3>
-            <button 
-              onClick={() => document.getElementById('sample-modal')?.classList.add('hidden')}
-              className="text-gray-400 hover:text-gray-600 text-2xl"
-            >
-              ×
-            </button>
-          </div>
-          <div className="space-y-4 text-gray-700">
-            <p>This is what your FeeVigil report will look like:</p>
+      {/* Sample Report Section */}
+      <section id="sample-report" className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="bg-white rounded-2xl p-8 shadow-lg">
+          <h3 className="text-3xl font-bold text-gray-900 mb-6 text-center">Sample FeeVigil Report</h3>
+          <div className="space-y-6 text-gray-700">
+            <p className="text-lg text-center">This is what your FeeVigil report will look like:</p>
             <div className="bg-gray-50 p-6 rounded-lg">
-              <h4 className="font-semibold text-gray-900 mb-2">Hidden Fees Found: $2,847/month</h4>
-              <ul className="space-y-2 text-sm">
-                <li>• Shopify: $1,200 in unnecessary transaction fees</li>
-                <li>• Stripe: $847 in currency conversion fees</li>
-                <li>• PayPal: $500 in cross-border fees</li>
-                <li>• AWS: $300 in unused services</li>
+              <h4 className="font-semibold text-gray-900 mb-4 text-xl">Hidden Fees Found: $2,847/month</h4>
+              <ul className="space-y-3 text-base">
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mr-3"></span>
+                  Shopify: $1,200 in unnecessary transaction fees
+                </li>
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mr-3"></span>
+                  Stripe: $847 in currency conversion fees
+                </li>
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mr-3"></span>
+                  PayPal: $500 in cross-border fees
+                </li>
+                <li className="flex items-center">
+                  <span className="w-2 h-2 bg-red-500 rounded-full mr-3"></span>
+                  AWS: $300 in unused services
+                </li>
               </ul>
             </div>
-            <p className="text-sm text-gray-600">Get your personalized report in 48 hours. No credit card required.</p>
+            <p className="text-center text-gray-600">Get your personalized report in 48 hours. No credit card required.</p>
+            <div className="text-center">
+              <Link 
+                href="/onboarding" 
+                className="inline-block bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition-colors"
+              >
+                Get Your Free Report
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

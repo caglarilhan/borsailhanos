@@ -11,7 +11,12 @@ import {
   ArrowRightOnRectangleIcon,
   ShieldCheckIcon,
   RocketLaunchIcon,
-  CpuChipIcon
+  CpuChipIcon,
+  BuildingOfficeIcon,
+  AcademicCapIcon,
+  CurrencyDollarIcon,
+  CalculatorIcon,
+  StarIcon
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import TradingSignals from '@/components/TradingSignals';
@@ -22,6 +27,14 @@ import SeckmeFormations from '@/components/SeckmeFormations';
 import RealTimeAlerts from '@/components/RealTimeAlerts';
 import Bist100Predictions from '@/components/Bist100Predictions';
 import AIPredictionEngine from '@/components/AIPredictionEngine';
+import BrokerIntegration from '@/components/BrokerIntegration';
+import CryptoTrading from '@/components/CryptoTrading';
+import OptionsAnalysis from '@/components/OptionsAnalysis';
+import WatchlistManager from '@/components/WatchlistManager';
+import AdvancedAIPredictions from '@/components/AdvancedAIPredictions';
+import PatternAnalysis from '@/components/PatternAnalysis';
+import SmartNotifications from '@/components/SmartNotifications';
+import EducationSystem from '@/components/EducationSystem';
 
 interface TradingSignal {
   symbol: string;
@@ -45,7 +58,7 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState({ name: 'Admin', email: 'admin@bistai.com' });
   const [godMode, setGodMode] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'signals' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'godmode'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'signals' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'brokers' | 'crypto' | 'options' | 'watchlist' | 'advancedai' | 'patterns' | 'notifications' | 'education' | 'godmode'>('dashboard');
 
   // Mock data for demonstration
   useEffect(() => {
@@ -170,6 +183,14 @@ export default function Dashboard() {
                 { id: 'alerts', name: 'Gerçek Zamanlı Uyarılar', icon: BellIcon },
                 { id: 'bist100', name: 'BIST 100 AI Tahminleri', icon: ArrowTrendingUpIcon },
                 { id: 'aiengine', name: 'AI Tahmin Motoru', icon: CpuChipIcon },
+                { id: 'brokers', name: 'Broker Entegrasyonu', icon: BuildingOfficeIcon },
+                { id: 'crypto', name: 'Kripto Trading', icon: CurrencyDollarIcon },
+                { id: 'options', name: 'Opsiyon Analizi', icon: CalculatorIcon },
+                { id: 'watchlist', name: 'İzleme Listesi', icon: StarIcon },
+                { id: 'advancedai', name: 'Gelişmiş AI', icon: CpuChipIcon },
+                { id: 'patterns', name: 'Formasyon Analizi', icon: ChartBarIcon },
+                { id: 'notifications', name: 'Akıllı Bildirimler', icon: BellIcon },
+                { id: 'education', name: 'Eğitim & Sosyal', icon: AcademicCapIcon },
                 { id: 'godmode', name: 'God Mode', icon: ShieldCheckIcon }
               ].map((tab) => (
                 <button
@@ -282,10 +303,50 @@ export default function Dashboard() {
           <AIPredictionEngine isLoading={isLoading} />
         )}
 
-        {/* God Mode Tab */}
-        {activeTab === 'godmode' && (
-          <GodModePanel isActive={godMode} onToggle={setGodMode} />
+        {/* Broker Entegrasyonu Tab */}
+        {activeTab === 'brokers' && (
+          <BrokerIntegration isLoading={isLoading} />
         )}
+
+        {/* Kripto Trading Tab */}
+        {activeTab === 'crypto' && (
+          <CryptoTrading isLoading={isLoading} />
+        )}
+
+            {/* Opsiyon Analizi Tab */}
+            {activeTab === 'options' && (
+              <OptionsAnalysis isLoading={isLoading} />
+            )}
+
+            {/* İzleme Listesi Tab */}
+            {activeTab === 'watchlist' && (
+              <WatchlistManager isLoading={isLoading} />
+            )}
+
+            {/* Gelişmiş AI Tab */}
+            {activeTab === 'advancedai' && (
+              <AdvancedAIPredictions isLoading={isLoading} />
+            )}
+
+            {/* Formasyon Analizi Tab */}
+            {activeTab === 'patterns' && (
+              <PatternAnalysis isLoading={isLoading} />
+            )}
+
+            {/* Akıllı Bildirimler Tab */}
+            {activeTab === 'notifications' && (
+              <SmartNotifications isLoading={isLoading} />
+            )}
+
+            {/* Eğitim & Sosyal Tab */}
+            {activeTab === 'education' && (
+              <EducationSystem isLoading={isLoading} />
+            )}
+
+            {/* God Mode Tab */}
+            {activeTab === 'godmode' && (
+              <GodModePanel isActive={godMode} onToggle={setGodMode} />
+            )}
       </main>
     </div>
   );

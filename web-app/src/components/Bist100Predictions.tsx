@@ -47,55 +47,97 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
   const [showDetails, setShowDetails] = useState(false);
 
   useEffect(() => {
-    // Mock BIST 100 predictions with AI analysis - Multiple timeframes
-    const generatePredictionsForTimeframe = (tf: string): Bist100Prediction[] => {
-      const basePredictions = [
-        {
-          symbol: 'THYAO',
-          company: 'Türk Hava Yolları',
-          sector: 'Havacılık',
-          currentPrice: 325.50,
-          volume: 2500000,
-          marketCap: 45000000000,
-          peRatio: 12.5,
-        },
-        {
-          symbol: 'ASELS',
-          company: 'Aselsan',
-          sector: 'Savunma',
-          currentPrice: 88.40,
-          volume: 1800000,
-          marketCap: 18000000000,
-          peRatio: 18.2,
-        },
-        {
-          symbol: 'TUPRS',
-          company: 'Tüpraş',
-          sector: 'Enerji',
-          currentPrice: 145.20,
-          volume: 3200000,
-          marketCap: 25000000000,
-          peRatio: 8.9,
-        },
-        {
-          symbol: 'SISE',
-          company: 'Şişecam',
-          sector: 'İnşaat',
-          currentPrice: 45.80,
-          volume: 950000,
-          marketCap: 12000000000,
-          peRatio: 15.3,
-        },
-        {
-          symbol: 'EREGL',
-          company: 'Ereğli Demir Çelik',
-          sector: 'Çelik',
-          currentPrice: 67.30,
-          volume: 1100000,
-          marketCap: 20000000000,
-          peRatio: 11.7,
+    const fetchPredictions = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8081/api/bist100/predictions?timeframe=${timeframe}&limit=50`);
+        const data = await response.json();
+        
+        if (data.predictions && data.predictions.length > 0) {
+          // Transform API response to match our interface
+          const transformedPredictions: Bist100Prediction[] = data.predictions.map((pred: any) => ({
+            symbol: pred.symbol?.replace('.IS', '') || 'UNKNOWN',
+            company: pred.company || pred.symbol?.replace('.IS', '') || 'Bilinmeyen Şirket',
+            sector: pred.sector || 'Genel',
+            currentPrice: pred.current_price || 0,
+            predictedPrice: pred.predicted_price || 0,
+            change: pred.change_percent || 0,
+            confidence: pred.confidence || 0,
+            timeframe: pred.timeframe || timeframe,
+            aiScore: pred.ai_score || pred.confidence || 0,
+            technicalScore: pred.technical_score || 0.7,
+            fundamentalScore: pred.fundamental_score || 0.8,
+            sentimentScore: pred.sentiment_score || 0.6,
+            volume: pred.volume || 1000000,
+            marketCap: pred.market_cap || 10000000000,
+            peRatio: pred.pe_ratio || 15,
+            reasons: pred.reasons || ['AI analizi', 'Teknik sinyaller', 'Temel faktörler'],
+            riskLevel: pred.risk_level || 'Orta',
+            recommendation: pred.recommendation || 'Bekle',
+            lastUpdate: pred.timestamp || new Date().toISOString()
+          }));
+          
+          setPredictions(transformedPredictions);
+        } else {
+          // Fallback to mock data if API fails
+          generateMockPredictions();
         }
-      ];
+      } catch (error) {
+        console.error('Error fetching predictions:', error);
+        // Fallback to mock data
+        generateMockPredictions();
+      }
+    };
+
+    const generateMockPredictions = () => {
+      // Mock BIST 100 predictions with AI analysis - Multiple timeframes
+      const generatePredictionsForTimeframe = (tf: string): Bist100Prediction[] => {
+        const basePredictions = [
+          {
+            symbol: 'THYAO',
+            company: 'Türk Hava Yolları',
+            sector: 'Havacılık',
+            currentPrice: 325.50,
+            volume: 2500000,
+            marketCap: 45000000000,
+            peRatio: 12.5,
+          },
+          {
+            symbol: 'ASELS',
+            company: 'Aselsan',
+            sector: 'Savunma',
+            currentPrice: 88.40,
+            volume: 1800000,
+            marketCap: 18000000000,
+            peRatio: 18.2,
+          },
+          {
+            symbol: 'TUPRS',
+            company: 'Tüpraş',
+            sector: 'Enerji',
+            currentPrice: 145.20,
+            volume: 3200000,
+            marketCap: 25000000000,
+            peRatio: 8.9,
+          },
+          {
+            symbol: 'SISE',
+            company: 'Şişecam',
+            sector: 'İnşaat',
+            currentPrice: 45.80,
+            volume: 950000,
+            marketCap: 12000000000,
+            peRatio: 15.3,
+          },
+          {
+            symbol: 'EREGL',
+            company: 'Ereğli Demir Çelik',
+            sector: 'Çelik',
+            currentPrice: 67.30,
+            volume: 1100000,
+            marketCap: 20000000000,
+            peRatio: 11.7,
+          }
+        ];
 
       return basePredictions.map(stock => {
         // Generate different predictions based on timeframe
@@ -196,12 +238,12 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
       });
     };
 
-    const mockPredictions = generatePredictionsForTimeframe(timeframe);
+        const mockPredictions = generatePredictionsForTimeframe(timeframe);
+        setPredictions(mockPredictions);
+      };
 
-    setTimeout(() => {
-      setPredictions(mockPredictions);
-    }, 1000);
-  }, [timeframe]); // Re-generate predictions when timeframe changes
+      fetchPredictions();
+    }, [timeframe]);
 
   const getRecommendationColor = (recommendation: string) => {
     switch (recommendation) {

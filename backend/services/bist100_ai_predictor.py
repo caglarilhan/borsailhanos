@@ -62,12 +62,43 @@ class BIST100AIPredictor:
             'ensemble': MockAIModel('Ensemble', 0.91)
         }
         
-        # BIST 100 symbols
+        # BIST 100 symbols (daha fazla hisse eklendi)
         self.bist100_symbols = [
             'THYAO.IS', 'ASELS.IS', 'TUPRS.IS', 'SISE.IS', 'EREGL.IS',
             'AKBNK.IS', 'GARAN.IS', 'ISCTR.IS', 'YKBNK.IS', 'HALKB.IS',
             'KOZAL.IS', 'KCHOL.IS', 'SAHOL.IS', 'TOASO.IS', 'ARCLK.IS',
-            'PETKM.IS', 'TCELL.IS', 'BIMAS.IS', 'MGROS.IS', 'SOKM.IS'
+            'PETKM.IS', 'TCELL.IS', 'BIMAS.IS', 'MGROS.IS', 'SOKM.IS',
+            'DOAS.IS', 'FROTO.IS', 'OTKAR.IS', 'BRISA.IS', 'CCOLA.IS',
+            'ULKER.IS', 'EKGYO.IS', 'GYODER.IS', 'AKSEN.IS', 'CEMAS.IS',
+            'DOHOL.IS', 'ENKAI.IS', 'FMIZP.IS', 'GUBRF.IS', 'KARTN.IS',
+            'KONYA.IS', 'LOGO.IS', 'NETAS.IS', 'PGSUS.IS', 'SMRTG.IS',
+            'TATGD.IS', 'TRCAS.IS', 'TTKOM.IS', 'ULUSE.IS', 'VESTL.IS',
+            'YATAS.IS', 'ZOREN.IS', 'ADANA.IS', 'ADNAC.IS', 'AGHOL.IS',
+            'AKCNS.IS', 'AKGRT.IS', 'AKSGY.IS', 'ALARK.IS', 'ALBRK.IS',
+            'ALCTL.IS', 'ALFAS.IS', 'ALGYO.IS', 'ALKIM.IS', 'ALTIN.IS',
+            'ANACM.IS', 'ANSGR.IS', 'ARENA.IS', 'ARSAN.IS', 'ASLAN.IS',
+            'ASTOR.IS', 'ATAGY.IS', 'ATLAS.IS', 'AVOD.IS', 'AYDEM.IS',
+            'AYGAZ.IS', 'BAGFS.IS', 'BAKAB.IS', 'BALAT.IS', 'BANVT.IS',
+            'BASGZ.IS', 'BFREN.IS', 'BIOEN.IS', 'BIZIM.IS', 'BJKAS.IS',
+            'BLCYT.IS', 'BMSCH.IS', 'BNTAS.IS', 'BOYNR.IS', 'BRKO.IS',
+            'BRKVY.IS', 'BRSAN.IS', 'BRYAT.IS', 'BSOKE.IS', 'BUCIM.IS',
+            'BURCE.IS', 'BURVA.IS', 'BVSAN.IS', 'BYDNR.IS', 'CANTE.IS',
+            'CASA.IS', 'CEMTS.IS', 'CIMSA.IS', 'CLEBI.IS', 'CMENT.IS',
+            'COMAK.IS', 'CRDFA.IS', 'CRFSA.IS', 'DAGI.IS', 'DAGP.IS',
+            'DARDL.IS', 'DEVA.IS', 'DGKLB.IS', 'DGNMO.IS', 'DITAS.IS',
+            'DMSAS.IS', 'DNISI.IS', 'DOBUR.IS', 'DOKTA.IS', 'DURDO.IS',
+            'DYHOL.IS', 'DYOBY.IS', 'ECILC.IS', 'ECZYT.IS', 'EDATA.IS',
+            'EGEEN.IS', 'EGEPO.IS', 'EGGUB.IS', 'EGPRO.IS', 'EGSER.IS',
+            'EKIZ.IS', 'ELITE.IS', 'EMKEL.IS', 'ENJSA.IS', 'ENKTS.IS',
+            'EPLAS.IS', 'ERBOS.IS', 'ERSU.IS', 'ESCAR.IS', 'ESCOM.IS',
+            'ESEN.IS', 'ETILR.IS', 'EUHOL.IS', 'EUKYO.IS', 'EUREN.IS',
+            'FENER.IS', 'FONET.IS', 'FORMT.IS', 'FRIGO.IS', 'GEDIK.IS',
+            'GENIL.IS', 'GEREL.IS', 'GESAN.IS', 'GIPTA.IS', 'GLYHO.IS',
+            'GOKNR.IS', 'GOLTS.IS', 'GOODY.IS', 'GOZDE.IS', 'GRNYO.IS',
+            'GSDHO.IS', 'GULER.IS', 'GUNES.IS', 'GURIS.IS', 'HATEK.IS',
+            'HDFGS.IS', 'HEKTS.IS', 'HUNER.IS', 'HURGZ.IS', 'ICUGS.IS',
+            'IDEAS.IS', 'IDGYO.IS', 'IHEVA.IS', 'IHLAS.IS', 'IHLGM.IS',
+            'IHGZT.IS', 'IHLGM.IS', 'IHLGM.IS', 'IHLGM.IS', 'IHLGM.IS'
         ]
         
         # Cache for predictions
