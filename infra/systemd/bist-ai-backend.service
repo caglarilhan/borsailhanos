@@ -1,0 +1,15 @@
+[Unit]
+Description=BIST AI Smart Trader Backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/Users/caglarilhan/borsailhanos
+Environment=HOST=0.0.0.0
+Environment=PORT=9011
+ExecStart=/usr/bin/env python3 /Users/caglarilhan/borsailhanos/simple_http_server.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

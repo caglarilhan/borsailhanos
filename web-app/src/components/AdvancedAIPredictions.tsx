@@ -7,8 +7,8 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon,
   SparklesIcon,
-  TrendingUpIcon,
-  TrendingDownIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
   MinusIcon
 } from '@heroicons/react/24/outline';
 
@@ -34,7 +34,9 @@ const API_BASE_URL = 'http://127.0.0.1:8081';
 
 const AdvancedAIPredictions: React.FC<AdvancedAIPredictionsProps> = ({ isLoading }) => {
   const [predictions, setPredictions] = useState<EnsemblePrediction[]>([]);
-  const [timeframe, setTimeframe] = useState<'5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '2d' | '3d' | '5d' | '1w'>('1d');
+  const TIMEFRAMES = ['5m','15m','30m','1h','4h','1d','2d','3d','5d','1w'] as const;
+  type Timeframe = typeof TIMEFRAMES[number];
+  const [timeframe, setTimeframe] = useState<Timeframe>('1d');
   const [selectedPrediction, setSelectedPrediction] = useState<EnsemblePrediction | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
@@ -161,8 +163,8 @@ const AdvancedAIPredictions: React.FC<AdvancedAIPredictionsProps> = ({ isLoading
 
   const getPredictionIcon = (prediction: string) => {
     switch (prediction) {
-      case 'BUY': return <TrendingUpIcon className="h-5 w-5" />;
-      case 'SELL': return <TrendingDownIcon className="h-5 w-5" />;
+      case 'BUY': return <ArrowTrendingUpIcon className="h-5 w-5" />;
+      case 'SELL': return <ArrowTrendingDownIcon className="h-5 w-5" />;
       case 'HOLD': return <MinusIcon className="h-5 w-5" />;
       default: return <MinusIcon className="h-5 w-5" />;
     }
@@ -224,10 +226,10 @@ const AdvancedAIPredictions: React.FC<AdvancedAIPredictionsProps> = ({ isLoading
             </span>
           </div>
           <div className="flex items-center space-x-2">
-            {['5m', '15m', '30m', '1h', '4h', '1d', '2d', '3d', '5d', '1w'].map((tf) => (
+            {TIMEFRAMES.map((tf) => (
               <button
                 key={tf}
-                onClick={() => setTimeframe(tf as any)}
+                onClick={() => setTimeframe(tf)}
                 className={`px-2 py-1 text-xs rounded ${
                   timeframe === tf
                     ? 'bg-purple-100 text-purple-700'

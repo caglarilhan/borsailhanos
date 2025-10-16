@@ -16,11 +16,15 @@ import {
   AcademicCapIcon,
   CurrencyDollarIcon,
   CalculatorIcon,
-  StarIcon
+  StarIcon,
+  BeakerIcon,
+  ScaleIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import TradingSignals from '@/components/TradingSignals';
 import MarketOverview from '@/components/MarketOverview';
+import LivePrices from '@/components/LivePrices';
 import AdvancedCharts from '@/components/AdvancedCharts';
 import GodModePanel from '@/components/GodModePanel';
 import SeckmeFormations from '@/components/SeckmeFormations';
@@ -35,6 +39,18 @@ import AdvancedAIPredictions from '@/components/AdvancedAIPredictions';
 import PatternAnalysis from '@/components/PatternAnalysis';
 import SmartNotifications from '@/components/SmartNotifications';
 import EducationSystem from '@/components/EducationSystem';
+import UltraAccuracyOptimizer from '@/components/UltraAccuracyOptimizer';
+import DeepLearningModels from '@/components/DeepLearningModels';
+import AdvancedEnsembleStrategies from '@/components/AdvancedEnsembleStrategies';
+import MarketRegimeDetector from '@/components/MarketRegimeDetector';
+import BistSignals from '@/components/BistSignals';
+import PredictiveTwin from '@/components/PredictiveTwin';
+import RiskEngine from '@/components/RiskEngine';
+import ScenarioSimulator from '@/components/ScenarioSimulator';
+import XAIExplain from '@/components/XAIExplain';
+import IngestionMonitor from '@/components/IngestionMonitor';
+import AdaptiveUI from '@/components/AdaptiveUI';
+import WatchlistDropdown from '@/components/WatchlistDropdown';
 
 interface TradingSignal {
   symbol: string;
@@ -52,13 +68,45 @@ interface MarketData {
   volume: number;
 }
 
+type TabId = 'dashboard' | 'signals' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'brokers' | 'crypto' | 'options' | 'watchlist' | 'advancedai' | 'patterns' | 'notifications' | 'education' | 'accuracy' | 'godmode' | 'deeplearning' | 'ensemble' | 'regime';
+
+const tabs = [
+  { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
+  { id: 'signals', name: 'AI Sinyalleri', icon: ArrowTrendingUpIcon },
+  { id: 'market', name: 'Piyasa', icon: ChartBarIcon },
+  { id: 'charts', name: 'Grafikler', icon: ChartBarIcon },
+  { id: 'seckme', name: 'Seçmeki Formasyonları', icon: ArrowTrendingUpIcon },
+  { id: 'alerts', name: 'Gerçek Zamanlı Uyarılar', icon: BellIcon },
+  { id: 'bist100', name: 'BIST 100 AI Tahminleri', icon: ArrowTrendingUpIcon },
+  { id: 'aiengine', name: 'AI Tahmin Motoru', icon: CpuChipIcon },
+  { id: 'brokers', name: 'Broker Entegrasyonu', icon: BuildingOfficeIcon },
+  { id: 'crypto', name: 'Kripto Trading', icon: CurrencyDollarIcon },
+  { id: 'options', name: 'Opsiyon Analizi', icon: CalculatorIcon },
+  { id: 'watchlist', name: 'İzleme Listesi', icon: StarIcon },
+  { id: 'advancedai', name: 'Gelişmiş AI', icon: CpuChipIcon },
+  { id: 'patterns', name: 'Formasyon Analizi', icon: ChartBarIcon },
+  { id: 'twin', name: 'Predictive Twin', icon: CpuChipIcon },
+  { id: 'risk', name: 'Risk Engine', icon: ShieldCheckIcon },
+  { id: 'sim', name: 'Scenario Simulator', icon: BeakerIcon },
+  { id: 'xai', name: 'XAI Explain', icon: SparklesIcon },
+  { id: 'ingest', name: 'Ingestion Monitor', icon: BeakerIcon },
+  { id: 'adaptive', name: 'Adaptive UI', icon: SparklesIcon },
+  { id: 'notifications', name: 'Akıllı Bildirimler', icon: BellIcon },
+  { id: 'education', name: 'Eğitim & Sosyal', icon: AcademicCapIcon },
+  { id: 'accuracy', name: 'Doğruluk Optimizasyonu', icon: RocketLaunchIcon },
+  { id: 'deeplearning', name: 'Deep Learning', icon: CpuChipIcon },
+  { id: 'ensemble', name: 'Ensemble Stratejileri', icon: BeakerIcon },
+  { id: 'regime', name: 'Piyasa Rejimi', icon: ScaleIcon },
+  { id: 'godmode', name: 'God Mode', icon: ShieldCheckIcon }
+] as const;
+
 export default function Dashboard() {
   const [signals, setSignals] = useState<TradingSignal[]>([]);
   const [marketData, setMarketData] = useState<MarketData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState({ name: 'Admin', email: 'admin@bistai.com' });
   const [godMode, setGodMode] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'signals' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'brokers' | 'crypto' | 'options' | 'watchlist' | 'advancedai' | 'patterns' | 'notifications' | 'education' | 'godmode'>('dashboard');
+  const [activeTab, setActiveTab] = useState<TabId>('dashboard');
 
   // Mock data for demonstration
   useEffect(() => {
@@ -159,6 +207,7 @@ export default function Dashboard() {
             <div className="flex items-center space-x-4">
               <BellIcon className="h-6 w-6 text-gray-400" />
               <Cog6ToothIcon className="h-6 w-6 text-gray-400" />
+              <WatchlistDropdown />
               <div className="flex items-center space-x-2">
                 <UserCircleIcon className="h-8 w-8 text-gray-400" />
                 <span className="text-sm font-medium text-gray-700">{user.name}</span>
@@ -174,28 +223,10 @@ export default function Dashboard() {
         <div className="mb-8">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
-              {[
-                { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
-                { id: 'signals', name: 'AI Sinyalleri', icon: ArrowTrendingUpIcon },
-                { id: 'market', name: 'Piyasa', icon: ChartBarIcon },
-                { id: 'charts', name: 'Grafikler', icon: ChartBarIcon },
-                { id: 'seckme', name: 'Seçmeki Formasyonları', icon: ArrowTrendingUpIcon },
-                { id: 'alerts', name: 'Gerçek Zamanlı Uyarılar', icon: BellIcon },
-                { id: 'bist100', name: 'BIST 100 AI Tahminleri', icon: ArrowTrendingUpIcon },
-                { id: 'aiengine', name: 'AI Tahmin Motoru', icon: CpuChipIcon },
-                { id: 'brokers', name: 'Broker Entegrasyonu', icon: BuildingOfficeIcon },
-                { id: 'crypto', name: 'Kripto Trading', icon: CurrencyDollarIcon },
-                { id: 'options', name: 'Opsiyon Analizi', icon: CalculatorIcon },
-                { id: 'watchlist', name: 'İzleme Listesi', icon: StarIcon },
-                { id: 'advancedai', name: 'Gelişmiş AI', icon: CpuChipIcon },
-                { id: 'patterns', name: 'Formasyon Analizi', icon: ChartBarIcon },
-                { id: 'notifications', name: 'Akıllı Bildirimler', icon: BellIcon },
-                { id: 'education', name: 'Eğitim & Sosyal', icon: AcademicCapIcon },
-                { id: 'godmode', name: 'God Mode', icon: ShieldCheckIcon }
-              ].map((tab) => (
+              {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
                       ? 'border-blue-500 text-blue-600'
@@ -270,12 +301,15 @@ export default function Dashboard() {
 
         {/* AI Sinyalleri Tab */}
         {activeTab === 'signals' && (
-          <TradingSignals signals={signals} isLoading={isLoading} />
+          <BistSignals />
         )}
 
         {/* Piyasa Tab */}
         {activeTab === 'market' && (
-          <MarketOverview marketData={marketData} isLoading={isLoading} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <MarketOverview marketData={marketData} isLoading={isLoading} />
+            <LivePrices />
+          </div>
         )}
 
         {/* Grafikler Tab */}
@@ -333,6 +367,30 @@ export default function Dashboard() {
               <PatternAnalysis isLoading={isLoading} />
             )}
 
+        {activeTab === 'twin' && (
+          <PredictiveTwin />
+        )}
+
+        {activeTab === 'risk' && (
+          <RiskEngine />
+        )}
+
+        {activeTab === 'sim' && (
+          <ScenarioSimulator />
+        )}
+
+        {activeTab === 'xai' && (
+          <XAIExplain />
+        )}
+
+        {activeTab === 'ingest' && (
+          <IngestionMonitor />
+        )}
+
+        {activeTab === 'adaptive' && (
+          <AdaptiveUI />
+        )}
+
             {/* Akıllı Bildirimler Tab */}
             {activeTab === 'notifications' && (
               <SmartNotifications isLoading={isLoading} />
@@ -341,6 +399,26 @@ export default function Dashboard() {
             {/* Eğitim & Sosyal Tab */}
             {activeTab === 'education' && (
               <EducationSystem isLoading={isLoading} />
+            )}
+
+            {/* Doğruluk Optimizasyonu Tab */}
+            {activeTab === 'accuracy' && (
+              <UltraAccuracyOptimizer isLoading={isLoading} />
+            )}
+
+            {/* Deep Learning Tab */}
+            {activeTab === 'deeplearning' && (
+              <DeepLearningModels isLoading={isLoading} />
+            )}
+
+            {/* Ensemble Stratejileri Tab */}
+            {activeTab === 'ensemble' && (
+              <AdvancedEnsembleStrategies isLoading={isLoading} />
+            )}
+
+            {/* Piyasa Rejimi Tab */}
+            {activeTab === 'regime' && (
+              <MarketRegimeDetector isLoading={isLoading} />
             )}
 
             {/* God Mode Tab */}

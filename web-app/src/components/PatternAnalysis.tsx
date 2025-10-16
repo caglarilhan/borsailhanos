@@ -6,8 +6,8 @@ import {
   SparklesIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon,
-  TrendingUpIcon,
-  TrendingDownIcon
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon
 } from '@heroicons/react/24/outline';
 
 interface HarmonicPattern {
@@ -46,7 +46,9 @@ const PatternAnalysis: React.FC<PatternAnalysisProps> = ({ isLoading }) => {
   const [harmonicPatterns, setHarmonicPatterns] = useState<{ [key: string]: HarmonicPattern[] }>({});
   const [elliottWaves, setElliottWaves] = useState<{ [key: string]: ElliottWave[] }>({});
   const [selectedSymbol, setSelectedSymbol] = useState('THYAO');
-  const [timeframe, setTimeframe] = useState<'5m' | '15m' | '30m' | '1h' | '4h' | '1d' | '2d' | '3d' | '5d' | '1w'>('1d');
+  const TIMEFRAMES = ['1h','4h','1d','1w'] as const;
+  type Timeframe = typeof TIMEFRAMES[number];
+  const [timeframe, setTimeframe] = useState<Timeframe>('1d');
   const [activeTab, setActiveTab] = useState<'harmonic' | 'elliott'>('harmonic');
   const [selectedPattern, setSelectedPattern] = useState<any>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -207,8 +209,8 @@ const PatternAnalysis: React.FC<PatternAnalysisProps> = ({ isLoading }) => {
 
   const getDirectionIcon = (direction: string) => {
     return direction === 'Bullish' ? 
-      <TrendingUpIcon className="h-4 w-4 text-green-600" /> : 
-      <TrendingDownIcon className="h-4 w-4 text-red-600" />;
+      <ArrowTrendingUpIcon className="h-4 w-4 text-green-600" /> : 
+      <ArrowTrendingDownIcon className="h-4 w-4 text-red-600" />;
   };
 
   const getConfidenceColor = (confidence: number) => {
@@ -289,10 +291,10 @@ const PatternAnalysis: React.FC<PatternAnalysisProps> = ({ isLoading }) => {
             
             {/* Timeframe Selector */}
             <div className="flex space-x-1">
-              {['1h', '4h', '1d', '1w'].map((tf) => (
+              {TIMEFRAMES.map((tf) => (
                 <button
                   key={tf}
-                  onClick={() => setTimeframe(tf as any)}
+                  onClick={() => setTimeframe(tf)}
                   className={`px-2 py-1 text-xs rounded ${
                     timeframe === tf
                       ? 'bg-indigo-100 text-indigo-700'

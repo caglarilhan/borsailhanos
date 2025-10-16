@@ -106,6 +106,8 @@ try:
     from backend.services.advanced_ai_ensemble import advanced_ai_ensemble
     from backend.services.harmonic_pattern_detector import harmonic_detector
     from backend.services.elliott_wave_detector import elliott_detector
+    from backend.services.ultra_accuracy_optimizer import ultra_accuracy_optimizer
+    from backend.services.real_time_data_sources import real_time_data_sources
     print("✅ Tüm servisler başarıyla import edildi")
 except ImportError as e:
     print(f"⚠️ Servis import hatası: {e}")
@@ -118,6 +120,8 @@ except ImportError as e:
     advanced_ai_ensemble = None
     harmonic_detector = None
     elliott_detector = None
+    ultra_accuracy_optimizer = None
+    real_time_data_sources = None
 
 # WebSocket bağlantı yöneticisi
 class ConnectionManager:
@@ -312,6 +316,8 @@ async def health_check():
         "advanced_ai_ensemble": advanced_ai_ensemble is not None,
         "harmonic_pattern_detector": harmonic_detector is not None,
         "elliott_wave_detector": elliott_detector is not None,
+        "ultra_accuracy_optimizer": ultra_accuracy_optimizer is not None,
+        "real_time_data_sources": real_time_data_sources is not None,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -3238,12 +3244,354 @@ async def get_bulk_elliott_waves(
     except Exception as e:
         return {"error": str(e)}
 
-# Background task başlat
-@app.on_event("startup")
-async def startup_event():
-    """Uygulama başlatıldığında background task'ı başlat"""
-    asyncio.create_task(broadcast_realtime_data())
-    print("🚀 Gerçek zamanlı veri akışı başlatıldı")
+    # Ultra Accuracy Optimizer Endpoints
+    @app.get("/api/accuracy/optimize")
+    async def optimize_accuracy_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL",
+        strategy: str = "comprehensive"
+    ):
+        """Run comprehensive accuracy optimization"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            optimization_results = await ultra_accuracy_optimizer.run_comprehensive_optimization(symbol_list)
+            
+            return {
+                "optimization_results": optimization_results,
+                "strategy": strategy,
+                "symbols": symbol_list,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/accuracy/improvement_plan")
+    async def get_accuracy_improvement_plan():
+        """Get accuracy improvement plan"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            improvement_plan = await ultra_accuracy_optimizer.get_accuracy_improvement_plan()
+            return {
+                "improvement_plan": improvement_plan,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.post("/api/accuracy/hyperparameter_optimization")
+    async def optimize_hyperparameters_endpoint(request: dict):
+        """Optimize hyperparameters for specific model"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            model_name = request.get("model_name")
+            if not model_name:
+                return {"error": "Model name is required"}
+            
+            # Mock data for demonstration
+            X = np.random.random((1000, 50))
+            y = np.random.randint(0, 3, 1000)
+            
+            optimization_results = await ultra_accuracy_optimizer.optimize_hyperparameters(X, y, model_name)
+            return {
+                "model_name": model_name,
+                "optimization_results": optimization_results,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.post("/api/accuracy/feature_engineering")
+    async def advanced_feature_engineering_endpoint(request: dict):
+        """Run advanced feature engineering"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            raw_data = request.get("raw_data", {
+                "price": 100,
+                "volume": 1000000,
+                "high": 105,
+                "low": 95
+            })
+            
+            features = await ultra_accuracy_optimizer.advanced_feature_engineering(raw_data)
+            return {
+                "features": features,
+                "feature_count": len(features),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/accuracy/meta_learning")
+    async def create_meta_learning_system_endpoint():
+        """Create meta-learning system"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            meta_learning_system = await ultra_accuracy_optimizer.create_meta_learning_system()
+            return {
+                "meta_learning_system": meta_learning_system,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.post("/api/accuracy/active_learning")
+    async def implement_active_learning_endpoint(request: dict):
+        """Implement active learning"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            unlabeled_data = request.get("unlabeled_data", [{"sample": i} for i in range(100)])
+            
+            active_learning_results = await ultra_accuracy_optimizer.implement_active_learning(unlabeled_data)
+            return {
+                "active_learning_results": active_learning_results,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.post("/api/accuracy/ensemble_optimization")
+    async def optimize_ensemble_endpoint(request: dict):
+        """Optimize model ensemble"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            models = request.get("models", ultra_accuracy_optimizer.models)
+            validation_data = request.get("validation_data", {"validation_data": "mock"})
+            
+            ensemble_results = await ultra_accuracy_optimizer.optimize_model_ensemble(models, validation_data)
+            return {
+                "ensemble_results": ensemble_results,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.post("/api/accuracy/transfer_learning")
+    async def implement_transfer_learning_endpoint(request: dict):
+        """Implement transfer learning"""
+        try:
+            if ultra_accuracy_optimizer is None:
+                return {"error": "Ultra accuracy optimizer not available"}
+            
+            source_domain = request.get("source_domain", "US_Markets")
+            target_domain = request.get("target_domain", "BIST_Markets")
+            
+            transfer_results = await ultra_accuracy_optimizer.implement_transfer_learning(source_domain, target_domain)
+            return {
+                "transfer_results": transfer_results,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    # Real-time Data Sources Endpoints
+    @app.get("/api/realtime/bloomberg")
+    async def get_bloomberg_data_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL"
+    ):
+        """Get Bloomberg real-time data"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            bloomberg_data = await real_time_data_sources.get_bloomberg_data(symbol_list)
+            
+            return {
+                "bloomberg_data": bloomberg_data,
+                "symbols": symbol_list,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/news")
+    async def get_reuters_news_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL",
+        hours_back: int = 24
+    ):
+        """Get Reuters news for symbols"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            news_data = await real_time_data_sources.get_reuters_news(symbol_list, hours_back)
+            
+            return {
+                "news": [news.__dict__ for news in news_data],
+                "symbols": symbol_list,
+                "hours_back": hours_back,
+                "count": len(news_data),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/social_sentiment")
+    async def get_social_sentiment_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL"
+    ):
+        """Get social media sentiment for symbols"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            
+            # Get sentiment from all platforms
+            twitter_sentiment = await real_time_data_sources.get_twitter_sentiment(symbol_list)
+            reddit_sentiment = await real_time_data_sources.get_reddit_sentiment(symbol_list)
+            stocktwits_sentiment = await real_time_data_sources.get_stocktwits_sentiment(symbol_list)
+            
+            return {
+                "twitter_sentiment": [sentiment.__dict__ for sentiment in twitter_sentiment],
+                "reddit_sentiment": [sentiment.__dict__ for sentiment in reddit_sentiment],
+                "stocktwits_sentiment": [sentiment.__dict__ for sentiment in stocktwits_sentiment],
+                "symbols": symbol_list,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/options_flow")
+    async def get_options_flow_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL"
+    ):
+        """Get options flow data for symbols"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            options_data = await real_time_data_sources.get_options_flow(symbol_list)
+            
+            return {
+                "options_flow": [option.__dict__ for option in options_data],
+                "symbols": symbol_list,
+                "count": len(options_data),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/insider_trading")
+    async def get_insider_trading_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL"
+    ):
+        """Get insider trading data for symbols"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            insider_data = await real_time_data_sources.get_insider_trading(symbol_list)
+            
+            return {
+                "insider_trading": [trade.__dict__ for trade in insider_data],
+                "symbols": symbol_list,
+                "count": len(insider_data),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/economic_data")
+    async def get_economic_data_endpoint():
+        """Get economic data from FRED"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            economic_data = await real_time_data_sources.get_economic_data()
+            
+            return {
+                "economic_data": economic_data,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/comprehensive")
+    async def get_comprehensive_data_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL"
+    ):
+        """Get comprehensive real-time data from all sources"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            comprehensive_data = await real_time_data_sources.get_comprehensive_data(symbol_list)
+            
+            return {
+                "comprehensive_data": comprehensive_data,
+                "symbols": symbol_list,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/market_sentiment")
+    async def get_market_sentiment_aggregate_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL"
+    ):
+        """Get aggregated market sentiment across all sources"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            sentiment_data = await real_time_data_sources.get_market_sentiment_aggregate(symbol_list)
+            
+            return {
+                "market_sentiment": sentiment_data,
+                "symbols": symbol_list,
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    @app.get("/api/realtime/unusual_activity")
+    async def get_unusual_activity_alerts_endpoint(
+        symbols: str = "THYAO,ASELS,TUPRS,SISE,EREGL"
+    ):
+        """Get alerts for unusual market activity"""
+        try:
+            if real_time_data_sources is None:
+                return {"error": "Real-time data sources not available"}
+            
+            symbol_list = [s.strip() for s in symbols.split(",")]
+            alerts = await real_time_data_sources.get_unusual_activity_alerts(symbol_list)
+            
+            return {
+                "alerts": alerts,
+                "symbols": symbol_list,
+                "count": len(alerts),
+                "timestamp": datetime.now().isoformat()
+            }
+        except Exception as e:
+            return {"error": str(e)}
+
+    # Background task başlat
+    @app.on_event("startup")
+    async def startup_event():
+        """Uygulama başlatıldığında background task'ı başlat"""
+        asyncio.create_task(broadcast_realtime_data())
+        print("🚀 Gerçek zamanlı veri akışı başlatıldı")
 
 if __name__ == "__main__":
     import uvicorn
