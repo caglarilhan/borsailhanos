@@ -63,6 +63,43 @@ export default function ScenarioSimulator() {
           </>
         )}
       </div>
+      <div className="px-4 py-2 border-t flex items-center gap-2">
+        <button
+          onClick={async ()=>{
+            try {
+              const r = await fetch(`${API_BASE_URL}/api/scenario/presets`, { cache: 'no-store' });
+              const j = await r.json();
+              if (Array.isArray(j?.presets) && j.presets.length>0) {
+                const p = j.presets[0];
+                setRate(p.rate); setFx(p.fx); setVix(p.vix);
+              }
+            } catch {}
+          }}
+          className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"
+        >FED Dovish</button>
+        <button
+          onClick={async ()=>{
+            try {
+              const r = await fetch(`${API_BASE_URL}/api/scenario/presets`, { cache: 'no-store' });
+              const j = await r.json();
+              const p = j.presets?.find((x:any)=>x.id==='tcmb_hike');
+              if (p) { setRate(p.rate); setFx(p.fx); setVix(p.vix); }
+            } catch {}
+          }}
+          className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"
+        >TCMB Hike</button>
+        <button
+          onClick={async ()=>{
+            try {
+              const r = await fetch(`${API_BASE_URL}/api/scenario/presets`, { cache: 'no-store' });
+              const j = await r.json();
+              const p = j.presets?.find((x:any)=>x.id==='opec_cut');
+              if (p) { setRate(p.rate); setFx(p.fx); setVix(p.vix); }
+            } catch {}
+          }}
+          className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"
+        >OPEC Cut</button>
+      </div>
     </div>
   );
 }

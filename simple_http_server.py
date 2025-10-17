@@ -123,6 +123,46 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_regime_history(query_params)
         elif path == '/api/regime/statistics':
             self.handle_regime_statistics()
+        elif path == '/api/regime/markov':
+            self.handle_regime_markov(query_params)
+        elif path == '/api/sector/relative_strength':
+            self.handle_sector_relative_strength(query_params)
+        elif path == '/api/sector/graph':
+            self.handle_sector_graph(query_params)
+        elif path == '/api/liquidity/heatmap':
+            self.handle_liquidity_heatmap(query_params)
+        elif path == '/api/events/news_stream':
+            self.handle_events_news_stream(query_params)
+        elif path == '/api/events/sentiment_ote':
+            self.handle_events_sentiment_ote(query_params)
+        elif path == '/api/signals/anomaly_momentum':
+            self.handle_anomaly_momentum(query_params)
+        elif path == '/api/arbitrage/cross_market':
+            self.handle_cross_market_arbitrage(query_params)
+        elif path == '/api/arbitrage/pairs':
+            self.handle_arbitrage_pairs()
+        elif path == '/api/arbitrage/history':
+            self.handle_arbitrage_history(query_params)
+        elif path == '/api/arbitrage/top':
+            self.handle_arbitrage_top()
+        elif path == '/api/arbitrage/watchlist/get':
+            self.handle_arbitrage_watchlist_get()
+        elif path == '/api/arbitrage/watchlist/update':
+            self.handle_arbitrage_watchlist_update(query_params)
+        elif path == '/api/arbitrage/auto_alert':
+            self.handle_arbitrage_auto_alert(query_params)
+        elif path == '/api/calibration/apply':
+            self.handle_calibration_apply(query_params)
+        elif path == '/api/scenario/presets':
+            self.handle_scenario_presets()
+        elif path == '/api/feedback/submit':
+            self.handle_feedback_submit(query_params)
+        elif path == '/api/feedback/stats':
+            self.handle_feedback_stats()
+        elif path == '/api/model/weights/update':
+            self.handle_model_weights_update()
+        elif path == '/api/xai/reason':
+            self.handle_xai_reason(query_params)
         elif path == '/api/ai/bist30_predictions':
             self.handle_bist30_predictions(query_params)
         elif path == '/api/ai/bist100_predictions':
@@ -149,6 +189,10 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_ingestion_lag()
         elif path == '/api/ingestion/latency':
             self.handle_ingestion_latency()
+        elif path == '/api/ingestion/publish_ticks':
+            self.handle_publish_ticks(query_params)
+        elif path == '/api/ingestion/ticks':
+            self.handle_get_ticks(query_params)
         elif path == '/api/ui/recommendations':
             self.handle_ui_recommendations(query_params)
         elif path == '/api/alerts/register_push':
@@ -1174,6 +1218,345 @@ class BISTAIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             self.send_json_response({'error': str(e)})
 
+    def handle_regime_markov(self, query_params):
+        try:
+            # Mock Markov regime-switching output with macro inputs
+            symbol = query_params.get('symbol', ['BIST100'])[0]
+            import random
+            p_on = random.uniform(0.4, 0.8)
+            p_off = 1.0 - p_on
+            regime = 'risk_on' if p_on >= p_off else 'risk_off'
+            risk_scale = 1.1 if regime == 'risk_on' else 0.85
+            target_scale = 1.15 if regime == 'risk_on' else 0.9
+            self.send_json_response({
+                'symbol': symbol,
+                'regime': regime,
+                'probabilities': { 'risk_on': round(p_on,3), 'risk_off': round(p_off,3) },
+                'risk_scale': risk_scale,
+                'target_scale': target_scale,
+                'timestamp': datetime.now().isoformat()
+            })
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Sector Relative Strength (GNN) stubs
+    def handle_sector_relative_strength(self, query_params):
+        try:
+            market = query_params.get('market', ['BIST'])[0]
+            import random
+            sectors = [
+                'Teknoloji','Enerji','Sanayi','Finans','Sağlık','İletişim','Temel Tüketim','Dayanıklı Tüketim'
+            ]
+            data = []
+            for s in sectors:
+                strength = round(random.uniform(-1.0, 1.0), 3)
+                top = [f'{"THYAO" if market=="BIST" else "AAPL"}', f'{"ASELS" if market=="BIST" else "MSFT"}']
+                data.append({ 'sector': s, 'strength': strength, 'top_symbols': top })
+            data.sort(key=lambda x: x['strength'], reverse=True)
+            self.send_json_response({ 'market': market, 'sectors': data, 'timestamp': datetime.now().isoformat() })
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_sector_graph(self, query_params):
+        try:
+            market = query_params.get('market', ['BOTH'])[0]
+            # simple bipartite-like graph between BIST-US pairs
+            nodes = [
+                {'id':'BIST_Teknoloji','group':'BIST'}, {'id':'US_Technology','group':'US'},
+                {'id':'BIST_Enerji','group':'BIST'}, {'id':'US_Energy','group':'US'}
+            ]
+            links = [
+                {'source':'BIST_Teknoloji','target':'US_Technology','weight':0.72},
+                {'source':'BIST_Enerji','target':'US_Energy','weight':0.65}
+            ]
+            self.send_json_response({ 'market': market, 'nodes': nodes, 'links': links, 'timestamp': datetime.now().isoformat() })
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_liquidity_heatmap(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            import random
+            # Build a simple price x time heatmap with bid/ask pressure and cancel rate
+            grid = []
+            base_price = random.uniform(50, 150)
+            for t in range(10):
+                row = []
+                for p in range(-5, 6):
+                    price_level = round(base_price + p*0.5, 2)
+                    bid_density = random.randint(0, 100)
+                    ask_density = random.randint(0, 100)
+                    cancel_rate = round(random.uniform(0, 1), 2)
+                    vwap_deviation = round(random.uniform(-0.02, 0.02), 3)
+                    row.append({
+                        'price': price_level,
+                        'bid': bid_density,
+                        'ask': ask_density,
+                        'cancel': cancel_rate,
+                        'vwap_dev': vwap_deviation
+                    })
+                grid.append(row)
+            self.send_json_response({ 'symbol': symbol, 'grid': grid, 'timestamp': datetime.now().isoformat() })
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Event-Driven AI (FinBERT sentiment + OTE)
+    def handle_events_news_stream(self, query_params):
+        try:
+            symbols = query_params.get('symbols', ['THYAO,ASELS,AAPL,MSFT'])[0]
+            limit = int(query_params.get('limit', ['20'])[0])
+            symbol_list = [s.strip().upper() for s in symbols.split(',') if s.strip()]
+            import random
+            sources = ['Reuters','Bloomberg','KAP','SEC','Twitter']
+            items = []
+            for _ in range(limit):
+                sym = random.choice(symbol_list)
+                src = random.choice(sources)
+                items.append({
+                    'symbol': sym,
+                    'source': src,
+                    'headline': f'{sym} haber başlığı {random.randint(1,999)}',
+                    'url': 'https://example.com',
+                    'timestamp': datetime.now().isoformat()
+                })
+            self.send_json_response({'count': len(items), 'items': items})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_events_sentiment_ote(self, query_params):
+        try:
+            text = query_params.get('text', [''])[0]
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            import random
+            sentiment = round(random.uniform(-1, 1), 3)
+            event_types = ['Earnings','M&A','Buyback','Regulatory','Macro']
+            event = random.choice(event_types)
+            strength = round(random.uniform(0.4, 0.95), 2)
+            direction = 'positive' if sentiment >= 0 else 'negative'
+            self.send_json_response({
+                'symbol': symbol,
+                'sentiment': sentiment,
+                'direction': direction,
+                'event_type': event,
+                'event_strength': strength,
+                'mean_reversion_boost': 1.15 if (event in ['Earnings','Buyback'] and sentiment<0) else 1.0,
+                'timestamp': datetime.now().isoformat()
+            })
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Anomaly + Exponential Momentum hybrid
+    def handle_anomaly_momentum(self, query_params):
+        try:
+            symbols = query_params.get('symbols', ['THYAO,ASELS,TUPRS,AAPL,MSFT'])[0]
+            symbol_list = [s.strip().upper() for s in symbols.split(',') if s.strip()]
+            import random
+            out = []
+            for sym in symbol_list:
+                anomaly_score = round(random.uniform(0, 1), 3)  # autoencoder/IF proxy
+                kama = round(random.uniform(-1, 1), 3)
+                hull = round(random.uniform(-1, 1), 3)
+                trigger = (anomaly_score >= 0.7 and (kama > 0.2 or hull > 0.2))
+                strength = round(0.5*anomaly_score + 0.25*max(0,kama) + 0.25*max(0,hull), 3)
+                out.append({
+                    'symbol': sym,
+                    'anomaly': anomaly_score,
+                    'kama': kama,
+                    'hull': hull,
+                    'trigger': trigger,
+                    'strength': strength
+                })
+            out.sort(key=lambda x: x['strength'], reverse=True)
+            self.send_json_response({'count': len(out), 'signals': out, 'timestamp': datetime.now().isoformat()})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Cross-market arbitrage hints
+    def handle_cross_market_arbitrage(self, query_params):
+        try:
+            pair = query_params.get('pair', ['THYAO/ADR'])[0]
+            import random
+            corr = round(random.uniform(0.4, 0.95), 2)
+            coint_p = round(random.uniform(0.01, 0.2), 3)
+            lead_lag_sec = random.randint(5, 90)
+            hint = 'lead_US' if random.random() > 0.5 else 'lead_BIST'
+            spread_bps = round(random.uniform(5, 40), 1)
+            # opportunity score (0-1): high corr, low coint_p, low spread
+            opp = max(0.0, min(1.0, 0.6*corr + 0.3*(1.0 - min(1.0, coint_p*5)) + 0.1*(1.0 - min(1.0, spread_bps/50.0))))
+            self.send_json_response({
+                'pair': pair,
+                'correlation': corr,
+                'cointegration_p': coint_p,
+                'lead_lag_seconds': lead_lag_sec,
+                'hint': hint,
+                'spread_bps': spread_bps,
+                'opportunity': round(opp, 3),
+                'timestamp': datetime.now().isoformat()
+            })
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_arbitrage_pairs(self):
+        try:
+            pairs = [
+                'THYAO/ADR', 'TUPRS/ADR', 'ASELS/ADR',
+                'AAPL/FUT', 'MSFT/FUT', 'BABA/HK',
+                'XU100/US', 'XU030/US'
+            ]
+            self.send_json_response({'pairs': pairs})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_arbitrage_history(self, query_params):
+        try:
+            pair = query_params.get('pair', ['THYAO/ADR'])[0]
+            import random
+            base = random.uniform(0.6, 0.9)
+            history = []
+            for i in range(30):
+                base = max(0.3, min(0.98, base + random.uniform(-0.03, 0.03)))
+                history.append({'t': i, 'corr': round(base, 2)})
+            self.send_json_response({'pair': pair, 'history': history})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_arbitrage_top(self):
+        try:
+            pairs = [
+                'THYAO/ADR', 'TUPRS/ADR', 'ASELS/ADR', 'SISE/ADR', 'BIMAS/ADR',
+                'AAPL/FUT', 'MSFT/FUT', 'NVDA/FUT', 'BABA/HK', 'TSLA/FUT'
+            ]
+            import random
+            items = []
+            for p in pairs:
+                corr = round(random.uniform(0.5, 0.95), 2)
+                coint_p = round(random.uniform(0.01, 0.25), 3)
+                spread_bps = round(random.uniform(5, 50), 1)
+                opp = max(0.0, min(1.0, 0.6*corr + 0.3*(1.0 - min(1.0, coint_p*5)) + 0.1*(1.0 - min(1.0, spread_bps/50.0))))
+                items.append({'pair': p, 'correlation': corr, 'cointegration_p': coint_p, 'spread_bps': spread_bps, 'opportunity': round(opp,3)})
+            items.sort(key=lambda x: x['opportunity'], reverse=True)
+            self.send_json_response({'count': len(items[:5]), 'top': items[:5]})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    _ARBITRAGE_WATCHLIST = set()
+    _ARBITRAGE_AUTO_ALERT = {'enabled': False, 'threshold': 0.7}
+    def handle_arbitrage_watchlist_get(self):
+        try:
+            self.send_json_response({'pairs': sorted(list(self._ARBITRAGE_WATCHLIST))})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_arbitrage_watchlist_update(self, query_params):
+        try:
+            pair = query_params.get('pair', [''])[0]
+            op = query_params.get('op', ['add'])[0]
+            if pair:
+                if op == 'remove':
+                    self._ARBITRAGE_WATCHLIST.discard(pair)
+                else:
+                    self._ARBITRAGE_WATCHLIST.add(pair)
+            self.send_json_response({'ok': True, 'pairs': sorted(list(self._ARBITRAGE_WATCHLIST))})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_arbitrage_auto_alert(self, query_params):
+        try:
+            if 'enable' in query_params:
+                val = query_params.get('enable', ['0'])[0]
+                self._ARBITRAGE_AUTO_ALERT['enabled'] = val in ('1','true','True')
+            if 'threshold' in query_params:
+                self._ARBITRAGE_AUTO_ALERT['threshold'] = float(query_params.get('threshold', ['0.7'])[0])
+            self.send_json_response(self._ARBITRAGE_AUTO_ALERT)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Probability calibration stubs
+    def handle_calibration_apply(self, query_params):
+        try:
+            method = query_params.get('method', ['platt'])[0]
+            prob = float(query_params.get('prob', ['0.7'])[0])
+            if method == 'isotonic':
+                calibrated = min(1.0, max(0.0, prob**0.9))
+            else:  # platt proxy
+                calibrated = min(1.0, max(0.0, 1/(1+2.0**(-(prob*8-4)))))
+            self.send_json_response({'method': method, 'input': prob, 'calibrated': round(calibrated,4)})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Scenario presets (FED/TCMB/OPEC)
+    def handle_scenario_presets(self):
+        try:
+            presets = [
+                {'id':'fed_dovish','rate':0.1,'fx':33,'vix':14,'desc':'FED güvercin, risk-on'},
+                {'id':'tcmb_hike','rate':0.35,'fx':36,'vix':18,'desc':'TCMB faiz artışı'},
+                {'id':'opec_cut','rate':0.22,'fx':35,'vix':16,'desc':'OPEC üretim kesintisi, enerji pozitif'}
+            ]
+            self.send_json_response({'presets': presets})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Feedback loop stubs
+    _FEEDBACK = []
+    def handle_feedback_submit(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0]
+            outcome = float(query_params.get('outcome', ['0.03'])[0])
+            model = query_params.get('model', ['ensemble'])[0]
+            self._FEEDBACK.append({'symbol': symbol, 'outcome': outcome, 'model': model, 'ts': datetime.now().isoformat()})
+            self._FEEDBACK = self._FEEDBACK[-5000:]
+            self.send_json_response({'ok': True, 'count': len(self._FEEDBACK)})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_feedback_stats(self):
+        try:
+            if not self._FEEDBACK:
+                self.send_json_response({'count': 0, 'by_model': {}})
+                return
+            by_model = {}
+            for r in self._FEEDBACK:
+                m = r['model']
+                by_model.setdefault(m, []).append(r['outcome'])
+            stats = { m: {'count': len(v), 'avg_outcome': round(sum(v)/len(v),4)} for m,v in by_model.items() }
+            self.send_json_response({'count': len(self._FEEDBACK), 'by_model': stats})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_model_weights_update(self):
+        try:
+            # Softmax benzeri dönüşüm: avg_outcome → weight
+            if not self._FEEDBACK:
+                self.send_json_response({'weights': {}})
+                return
+            by_model = {}
+            for r in self._FEEDBACK:
+                m = r['model']
+                by_model.setdefault(m, []).append(r['outcome'])
+            avgs = { m: (sum(v)/len(v)) for m,v in by_model.items() }
+            import math
+            exps = { m: math.exp(avgs[m]) for m in avgs }
+            total = sum(exps.values()) or 1.0
+            weights = { m: round(exps[m]/total, 4) for m in exps }
+            self.send_json_response({'weights': weights, 'models': list(weights.keys())})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_xai_reason(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0]
+            horizon = query_params.get('horizon', ['1d'])[0]
+            reason = f"{symbol} için {horizon}: RSI toparlanma, hacim artışı ve KAMA yukarı eğim birleşimi."
+            factors = [
+                {'feature': 'RSI', 'impact': 0.24},
+                {'feature': 'VolumeDelta', 'impact': 0.18},
+                {'feature': 'KAMA_Slope', 'impact': 0.16},
+                {'feature': 'RegimeScale', 'impact': 0.12}
+            ]
+            self.send_json_response({'symbol': symbol, 'horizon': horizon, 'reason': reason, 'factors': factors})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
     def handle_bist100_predictions(self, query_params):
         try:
             # Simplified BIST100 (reuse BIST30 list and extend with mocks for demo)
@@ -1497,6 +1880,51 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                     'timestamp': datetime.now().isoformat()
                 }
             self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    # Dual-layer ingestion: mock tick unify (BIST depth + US L1)
+    _TICKS = []
+
+    def handle_publish_ticks(self, query_params):
+        try:
+            import random
+            from time import time as now_time
+            symbols = query_params.get('symbols', ['THYAO,ASELS,AAPL,MSFT'])[0].split(',')
+            count = int(query_params.get('count', ['20'])[0])
+            produced = []
+            for _ in range(count):
+                sym = random.choice(symbols).strip().upper()
+                src = 'BIST' if sym.endswith('.IS') or sym in ['THYAO','ASELS','TUPRS','SISE','EREGL'] else 'US'
+                ts = int(now_time()*1000)
+                tick = {
+                    'symbol': sym,
+                    'src': src,
+                    'price': round(random.uniform(10, 500), 2),
+                    'size': random.randint(10, 5000),
+                    'bid': round(random.uniform(10, 500), 2),
+                    'ask': round(random.uniform(10, 500), 2),
+                    'depth_bid': random.randint(1, 5),
+                    'depth_ask': random.randint(1, 5),
+                    'ts': ts
+                }
+                self._TICKS.append(tick)
+                produced.append(tick)
+            self._TICKS = self._TICKS[-1000:]
+            self.send_json_response({'ok': True, 'produced': len(produced)})
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_get_ticks(self, query_params):
+        try:
+            sym = query_params.get('symbol', [''])[0].strip().upper()
+            limit = int(query_params.get('limit', ['50'])[0])
+            rows = self._TICKS
+            if sym:
+                rows = [t for t in rows if t['symbol'] == sym]
+            rows = rows[-limit:]
+            rows.sort(key=lambda x: x['ts'])
+            self.send_json_response({'count': len(rows), 'ticks': rows})
         except Exception as e:
             self.send_json_response({'error': str(e)})
 

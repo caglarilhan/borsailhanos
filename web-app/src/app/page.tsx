@@ -51,6 +51,14 @@ import XAIExplain from '@/components/XAIExplain';
 import IngestionMonitor from '@/components/IngestionMonitor';
 import AdaptiveUI from '@/components/AdaptiveUI';
 import WatchlistDropdown from '@/components/WatchlistDropdown';
+import TickInspector from '@/components/TickInspector';
+import SectorStrength from '@/components/SectorStrength';
+import LiquidityHeatmap from '@/components/LiquidityHeatmap';
+import EventDrivenAI from '@/components/EventDrivenAI';
+import AnomalyMomentum from '@/components/AnomalyMomentum';
+import CrossMarketArbitrage from '@/components/CrossMarketArbitrage';
+import CalibrationPanel from '@/components/CalibrationPanel';
+import FeedbackPanel from '@/components/FeedbackPanel';
 
 interface TradingSignal {
   symbol: string;
@@ -91,6 +99,14 @@ const tabs = [
   { id: 'xai', name: 'XAI Explain', icon: SparklesIcon },
   { id: 'ingest', name: 'Ingestion Monitor', icon: BeakerIcon },
   { id: 'adaptive', name: 'Adaptive UI', icon: SparklesIcon },
+  { id: 'ticks', name: 'Tick Inspector', icon: ChartBarIcon },
+  { id: 'sector', name: 'Sektör Güç', icon: ChartBarIcon },
+  { id: 'liquidity', name: 'Likidite Heatmap', icon: ChartBarIcon },
+  { id: 'events', name: 'Event-Driven AI', icon: SparklesIcon },
+  { id: 'anomaly', name: 'Anomali+Momentum', icon: ChartBarIcon },
+  { id: 'arbitrage', name: 'Arbitraj İpuçları', icon: ChartBarIcon },
+  { id: 'calibration', name: 'Kalibrasyon', icon: ScaleIcon },
+  { id: 'feedback', name: 'Feedback', icon: ChartBarIcon },
   { id: 'notifications', name: 'Akıllı Bildirimler', icon: BellIcon },
   { id: 'education', name: 'Eğitim & Sosyal', icon: AcademicCapIcon },
   { id: 'accuracy', name: 'Doğruluk Optimizasyonu', icon: RocketLaunchIcon },
@@ -389,6 +405,38 @@ export default function Dashboard() {
 
         {activeTab === 'adaptive' && (
           <AdaptiveUI />
+        )}
+
+        {activeTab === 'ticks' && (
+          <TickInspector />
+        )}
+
+        {activeTab === 'sector' && (
+          <SectorStrength />
+        )}
+
+        {activeTab === 'liquidity' && (
+          <LiquidityHeatmap />
+        )}
+
+        {activeTab === 'events' && (
+          <EventDrivenAI />
+        )}
+
+        {activeTab === 'anomaly' && (
+          <AnomalyMomentum />
+        )}
+
+        {activeTab === 'arbitrage' && (
+          <CrossMarketArbitrage />
+        )}
+
+        {activeTab === 'calibration' && (
+          <CalibrationPanel />
+        )}
+
+        {activeTab === 'feedback' && (
+          <FeedbackPanel />
         )}
 
             {/* Akıllı Bildirimler Tab */}
