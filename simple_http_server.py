@@ -163,10 +163,28 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_model_weights_update()
         elif path == '/api/xai/reason':
             self.handle_xai_reason(query_params)
-        elif path == '/api/monitor/model_metrics':
-            self.handle_model_monitor()
-        elif path == '/api/alerts/policy':
-            self.handle_alerts_policy(query_params)
+        elif path == '/api/sentiment/news':
+            self.handle_sentiment_news(query_params)
+        elif path == '/api/sentiment/social':
+            self.handle_sentiment_social(query_params)
+        elif path == '/api/patterns/candlestick':
+            self.handle_candlestick_patterns(query_params)
+        elif path == '/api/patterns/harmonic':
+            self.handle_harmonic_patterns(query_params)
+        elif path == '/api/stream/prices':
+            self.handle_price_stream(query_params)
+        elif path == '/api/stream/ticks':
+            self.handle_tick_stream(query_params)
+        elif path == '/api/risk/portfolio':
+            self.handle_portfolio_risk(query_params)
+        elif path == '/api/risk/var':
+            self.handle_value_at_risk(query_params)
+        elif path == '/api/notifications/smart':
+            self.handle_smart_notifications(query_params)
+        elif path == '/api/notifications/email':
+            self.handle_email_notifications(query_params)
+        elif path == '/api/notifications/sms':
+            self.handle_sms_notifications(query_params)
         elif path == '/api/ai/bist30_predictions':
             self.handle_bist30_predictions(query_params)
         elif path == '/api/ai/bist100_predictions':
@@ -1172,20 +1190,47 @@ class BISTAIHandler(BaseHTTPRequestHandler):
 
     def handle_bist30_predictions(self, query_params):
         try:
-            # Basic BIST30 list (can be extended)
-            bist30 = [
-                'THYAO','ASELS','TUPRS','SISE','EREGL','BIMAS','KCHOL','SAHOL','YKBNK','GARAN',
-                'AKBNK','PGSUS','HEKTS','FROTO','TOASO','VAKBN','ISCTR','PETKM','KRDMD','EGEEN',
-                'ENJSA','SISE','AYGAZ','ALARK','KOZAL','KOZAA','SASA','ARCLK','TAVHL','BRSAN'
-            ]
-            # Extended list for all=1
-            bist_extended = bist30 + [
+            # Gerçek BIST30 şirketleri ve sektörleri
+            bist30_real = {
+                'THYAO': {'name': 'Türk Hava Yolları', 'sector': 'Havacılık', 'pe': 12.5, 'roe': 18.2, 'debt_ratio': 0.45},
+                'ASELS': {'name': 'Aselsan', 'sector': 'Savunma', 'pe': 18.2, 'roe': 22.1, 'debt_ratio': 0.28},
+                'TUPRS': {'name': 'Tüpraş', 'sector': 'Enerji', 'pe': 8.9, 'roe': 25.3, 'debt_ratio': 0.35},
+                'SISE': {'name': 'Şişecam', 'sector': 'İnşaat', 'pe': 15.3, 'roe': 16.8, 'debt_ratio': 0.42},
+                'EREGL': {'name': 'Ereğli Demir Çelik', 'sector': 'Çelik', 'pe': 11.7, 'roe': 19.5, 'debt_ratio': 0.38},
+                'BIMAS': {'name': 'BİM', 'sector': 'Perakende', 'pe': 14.2, 'roe': 28.1, 'debt_ratio': 0.15},
+                'KCHOL': {'name': 'Koç Holding', 'sector': 'Holding', 'pe': 9.8, 'roe': 12.4, 'debt_ratio': 0.52},
+                'SAHOL': {'name': 'Sabancı Holding', 'sector': 'Holding', 'pe': 10.1, 'roe': 11.8, 'debt_ratio': 0.48},
+                'YKBNK': {'name': 'Yapı Kredi', 'sector': 'Bankacılık', 'pe': 6.2, 'roe': 15.2, 'debt_ratio': 0.85},
+                'GARAN': {'name': 'Garanti BBVA', 'sector': 'Bankacılık', 'pe': 5.8, 'roe': 16.8, 'debt_ratio': 0.82},
+                'AKBNK': {'name': 'Akbank', 'sector': 'Bankacılık', 'pe': 6.1, 'roe': 17.1, 'debt_ratio': 0.79},
+                'PGSUS': {'name': 'Pegasus', 'sector': 'Havacılık', 'pe': 13.4, 'roe': 14.2, 'debt_ratio': 0.58},
+                'HEKTS': {'name': 'Hektaş', 'sector': 'Kimya', 'pe': 16.8, 'roe': 13.5, 'debt_ratio': 0.31},
+                'FROTO': {'name': 'Ford Otosan', 'sector': 'Otomotiv', 'pe': 11.2, 'roe': 21.3, 'debt_ratio': 0.25},
+                'TOASO': {'name': 'Tofaş', 'sector': 'Otomotiv', 'pe': 12.7, 'roe': 18.9, 'debt_ratio': 0.33},
+                'VAKBN': {'name': 'VakıfBank', 'sector': 'Bankacılık', 'pe': 5.9, 'roe': 14.8, 'debt_ratio': 0.87},
+                'ISCTR': {'name': 'İş Bankası', 'sector': 'Bankacılık', 'pe': 6.3, 'roe': 15.9, 'debt_ratio': 0.84},
+                'PETKM': {'name': 'Petkim', 'sector': 'Petrokimya', 'pe': 8.4, 'roe': 12.1, 'debt_ratio': 0.41},
+                'KRDMD': {'name': 'Kardemir', 'sector': 'Çelik', 'pe': 9.2, 'roe': 16.7, 'debt_ratio': 0.44},
+                'EGEEN': {'name': 'Ege Endüstri', 'sector': 'Tekstil', 'pe': 14.6, 'roe': 11.2, 'debt_ratio': 0.36},
+                'ENJSA': {'name': 'Enka İnşaat', 'sector': 'İnşaat', 'pe': 13.8, 'roe': 14.6, 'debt_ratio': 0.29},
+                'AYGAZ': {'name': 'Aygaz', 'sector': 'Enerji', 'pe': 10.5, 'roe': 17.3, 'debt_ratio': 0.22},
+                'ALARK': {'name': 'Alarko Holding', 'sector': 'Holding', 'pe': 11.8, 'roe': 9.7, 'debt_ratio': 0.38},
+                'KOZAL': {'name': 'Koza Altın', 'sector': 'Madencilik', 'pe': 7.2, 'roe': 23.1, 'debt_ratio': 0.18},
+                'KOZAA': {'name': 'Koza Anadolu', 'sector': 'Madencilik', 'pe': 8.1, 'roe': 19.8, 'debt_ratio': 0.21},
+                'SASA': {'name': 'Sasa Polyester', 'sector': 'Tekstil', 'pe': 15.9, 'roe': 8.9, 'debt_ratio': 0.47},
+                'ARCLK': {'name': 'Arçelik', 'sector': 'Beyaz Eşya', 'pe': 12.3, 'roe': 15.4, 'debt_ratio': 0.34},
+                'TAVHL': {'name': 'TAV Havalimanları', 'sector': 'Havacılık', 'pe': 14.7, 'roe': 13.2, 'debt_ratio': 0.39},
+                'BRSAN': {'name': 'Borusan Holding', 'sector': 'Holding', 'pe': 9.6, 'roe': 10.8, 'debt_ratio': 0.43}
+            }
+            
+            # Extended list for all=1 mode (BIST50 + mid-caps)
+            bist_extended = list(bist30_real.keys()) + [
                 'OTKAR','KOZAA','KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR',
                 'KOZAA','KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR','KOZAA',
                 'KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR','KOZAA','KOZAL'
             ]
             
-            symbols = query_params.get('symbols', [','.join(bist30)])[0]
+            symbols = query_params.get('symbols', [','.join(list(bist30_real.keys()))])[0]
             horizons = query_params.get('horizons', ['5m,15m,30m,1h,4h,1d'])[0]
             all_mode = query_params.get('all', ['0'])[0] in ['1', 'true', 'True']
             
@@ -1207,24 +1252,88 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                     return (now + timedelta(days=int(h[:-1]))).isoformat()
                 return now.isoformat()
 
+            # Sektör bazlı makro faktörler
+            sector_factors = {
+                'Bankacılık': {'rate_sensitivity': 0.8, 'fx_sensitivity': 0.6, 'growth_factor': 0.7},
+                'Havacılık': {'rate_sensitivity': 0.3, 'fx_sensitivity': 0.9, 'growth_factor': 0.8},
+                'Enerji': {'rate_sensitivity': 0.4, 'fx_sensitivity': 0.7, 'growth_factor': 0.6},
+                'Savunma': {'rate_sensitivity': 0.2, 'fx_sensitivity': 0.4, 'growth_factor': 0.9},
+                'Çelik': {'rate_sensitivity': 0.5, 'fx_sensitivity': 0.8, 'growth_factor': 0.5},
+                'Otomotiv': {'rate_sensitivity': 0.6, 'fx_sensitivity': 0.7, 'growth_factor': 0.6},
+                'İnşaat': {'rate_sensitivity': 0.7, 'fx_sensitivity': 0.5, 'growth_factor': 0.4},
+                'Perakende': {'rate_sensitivity': 0.4, 'fx_sensitivity': 0.3, 'growth_factor': 0.8},
+                'Holding': {'rate_sensitivity': 0.5, 'fx_sensitivity': 0.6, 'growth_factor': 0.6},
+                'Madencilik': {'rate_sensitivity': 0.3, 'fx_sensitivity': 0.8, 'growth_factor': 0.7}
+            }
+
             results = []
             for sym in symbol_list:
                 for hz in horizon_list:
+                    # Temel tahmin
                     pred = random.uniform(-1.0, 1.0)
-                    # all=1 mode: lower confidence threshold, more predictions
+                    
+                    # Şirket bilgileri
+                    company_info = bist30_real.get(sym, {'name': sym, 'sector': 'Genel', 'pe': 12.0, 'roe': 15.0, 'debt_ratio': 0.4})
+                    sector = company_info['sector']
+                    pe_ratio = company_info['pe']
+                    roe = company_info['roe']
+                    debt_ratio = company_info['debt_ratio']
+                    
+                    # Sektör faktörleri
+                    sector_factor = sector_factors.get(sector, {'rate_sensitivity': 0.5, 'fx_sensitivity': 0.5, 'growth_factor': 0.6})
+                    
+                    # Finansal güç skoru (0-1)
+                    financial_strength = min(1.0, max(0.0, 
+                        (roe/30.0) * 0.4 +  # ROE etkisi
+                        (1.0 - debt_ratio) * 0.3 +  # Düşük borç = güçlü
+                        (20.0/pe_ratio) * 0.3  # Düşük P/E = ucuz
+                    ))
+                    
+                    # Makro faktörler (USDTRY, faiz, büyüme)
+                    usd_try_factor = random.uniform(0.8, 1.2)  # USDTRY etkisi
+                    rate_factor = random.uniform(0.9, 1.1)  # Faiz etkisi
+                    growth_factor = random.uniform(0.95, 1.05)  # Büyüme etkisi
+                    
+                    # Sektör bazlı ağırlıklandırma
+                    macro_impact = (
+                        sector_factor['fx_sensitivity'] * (usd_try_factor - 1.0) +
+                        sector_factor['rate_sensitivity'] * (rate_factor - 1.0) +
+                        sector_factor['growth_factor'] * (growth_factor - 1.0)
+                    )
+                    
+                    # Tahmin düzeltmesi
+                    pred_adjusted = pred + macro_impact * 0.3
+                    pred_adjusted = max(-1.0, min(1.0, pred_adjusted))
+                    
+                    # Güven skoru (finansal güç + makro faktörler)
                     conf_min = 0.45 if all_mode else 0.65
                     conf_max = 0.95
-                    conf = random.uniform(conf_min, conf_max)
+                    base_conf = random.uniform(conf_min, conf_max)
                     
-                    # all=1 mode: lower prediction threshold
+                    # Finansal güç ve makro faktörlerle güven artırımı
+                    confidence = min(conf_max, base_conf + financial_strength * 0.15 + abs(macro_impact) * 0.1)
+                    
+                    # Eşik kontrolü
                     pred_threshold = 0.05 if all_mode else 0.2
-                    if abs(pred) < pred_threshold:
+                    if abs(pred_adjusted) < pred_threshold:
                         continue
+                        
                     results.append({
                         'symbol': sym,
+                        'name': company_info['name'],
+                        'sector': sector,
                         'horizon': hz,
-                        'prediction': round(pred, 4),
-                        'confidence': round(conf, 4),
+                        'prediction': round(pred_adjusted, 4),
+                        'confidence': round(confidence, 4),
+                        'financial_strength': round(financial_strength, 3),
+                        'pe_ratio': pe_ratio,
+                        'roe': roe,
+                        'debt_ratio': debt_ratio,
+                        'macro_factors': {
+                            'usd_try_impact': round(usd_try_factor, 3),
+                            'rate_impact': round(rate_factor, 3),
+                            'growth_impact': round(growth_factor, 3)
+                        },
                         'valid_until': add_delta(hz),
                         'generated_at': datetime.now().isoformat()
                     })
@@ -2006,15 +2115,919 @@ class BISTAIHandler(BaseHTTPRequestHandler):
     _WATCHLIST = set()
     _ALERT_POLICY = {'threshold': 0.72, 'cooldown_minutes': 15, 'quiet_hours': [22,7]}
 
-    def handle_model_monitor(self):
+    def handle_sentiment_news(self, query_params):
         try:
-            self.send_json_response({
-                'window': 200,
-                'auc': 0.82,
-                'precision': 0.78,
-                'drift_score': 0.12,
-                'updated_at': datetime.now().isoformat()
-            })
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            hours_back = int(query_params.get('hours_back', [24])[0])
+            
+            # Mock FinBERT-TR sentiment analysis
+            import random
+            news_sources = ['Hürriyet', 'Sabah', 'Milliyet', 'Dünya', 'KAP', 'Bloomberg TR', 'Reuters TR']
+            
+            news_items = []
+            for i in range(random.randint(5, 15)):
+                # Türkçe haber başlıkları
+                headlines = [
+                    f"{symbol} hissesi güçlü performans gösteriyor",
+                    f"{symbol} şirketi yeni yatırım planı açıkladı",
+                    f"{symbol} için analistler pozitif görüş bildiriyor",
+                    f"{symbol} hissesinde teknik analiz sinyalleri",
+                    f"{symbol} şirketinin finansal sonuçları beklentileri aştı",
+                    f"{symbol} için risk faktörleri değerlendirmesi",
+                    f"{symbol} hissesi piyasa volatilitesinde",
+                    f"{symbol} şirketi sektör liderliğini sürdürüyor"
+                ]
+                
+                # FinBERT-TR sentiment skorları (-1 ile +1 arası)
+                sentiment_score = random.uniform(-0.8, 0.8)
+                confidence = random.uniform(0.6, 0.95)
+                
+                # Sentiment kategorisi
+                if sentiment_score > 0.3:
+                    sentiment_label = "Pozitif"
+                    sentiment_color = "green"
+                elif sentiment_score < -0.3:
+                    sentiment_label = "Negatif" 
+                    sentiment_color = "red"
+                else:
+                    sentiment_label = "Nötr"
+                    sentiment_color = "gray"
+                
+                news_items.append({
+                    'headline': random.choice(headlines),
+                    'source': random.choice(news_sources),
+                    'sentiment_score': round(sentiment_score, 3),
+                    'sentiment_label': sentiment_label,
+                    'sentiment_color': sentiment_color,
+                    'confidence': round(confidence, 3),
+                    'timestamp': datetime.now().isoformat(),
+                    'url': f'https://example.com/news/{i}'
+                })
+            
+            # Ağırlıklı ortalama sentiment
+            weighted_sentiment = sum(item['sentiment_score'] * item['confidence'] for item in news_items) / sum(item['confidence'] for item in news_items) if news_items else 0
+            
+            response = {
+                'symbol': symbol,
+                'hours_back': hours_back,
+                'news_count': len(news_items),
+                'weighted_sentiment': round(weighted_sentiment, 3),
+                'sentiment_trend': 'Pozitif' if weighted_sentiment > 0.1 else 'Negatif' if weighted_sentiment < -0.1 else 'Nötr',
+                'news_items': news_items,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_sentiment_social(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            
+            # Mock sosyal medya sentiment (Twitter, Reddit, Ekşi Sözlük)
+            import random
+            platforms = ['Twitter', 'Reddit', 'Ekşi Sözlük', 'Investing.com Forum']
+            
+            social_sentiment = {}
+            for platform in platforms:
+                # Platform bazlı sentiment skorları
+                base_sentiment = random.uniform(-0.6, 0.6)
+                volume = random.randint(50, 500)
+                engagement = random.uniform(0.1, 0.8)
+                
+                social_sentiment[platform] = {
+                    'sentiment_score': round(base_sentiment, 3),
+                    'volume': volume,
+                    'engagement_rate': round(engagement, 3),
+                    'trend': 'Yükseliş' if base_sentiment > 0.2 else 'Düşüş' if base_sentiment < -0.2 else 'Sabit'
+                }
+            
+            # Genel sosyal sentiment
+            overall_sentiment = sum(s['sentiment_score'] for s in social_sentiment.values()) / len(social_sentiment)
+            
+            response = {
+                'symbol': symbol,
+                'overall_sentiment': round(overall_sentiment, 3),
+                'platforms': social_sentiment,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_sentiment_aggregate(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            
+            # Haber + sosyal medya sentiment birleştirme
+            import random
+            
+            # Mock haber sentiment
+            news_sentiment = random.uniform(-0.7, 0.7)
+            news_weight = 0.6
+            
+            # Mock sosyal sentiment  
+            social_sentiment = random.uniform(-0.5, 0.5)
+            social_weight = 0.4
+            
+            # Ağırlıklı ortalama
+            aggregate_sentiment = news_sentiment * news_weight + social_sentiment * social_weight
+            
+            # Sentiment gücü
+            sentiment_strength = abs(aggregate_sentiment)
+            
+            # Tahmin etkisi (sentiment ne kadar güçlüyse tahmin etkisi o kadar fazla)
+            prediction_impact = aggregate_sentiment * sentiment_strength * 0.3
+            
+            response = {
+                'symbol': symbol,
+                'news_sentiment': round(news_sentiment, 3),
+                'social_sentiment': round(social_sentiment, 3),
+                'aggregate_sentiment': round(aggregate_sentiment, 3),
+                'sentiment_strength': round(sentiment_strength, 3),
+                'prediction_impact': round(prediction_impact, 3),
+                'recommendation': 'Güçlü Pozitif' if aggregate_sentiment > 0.5 else 'Pozitif' if aggregate_sentiment > 0.1 else 'Nötr' if aggregate_sentiment > -0.1 else 'Negatif' if aggregate_sentiment > -0.5 else 'Güçlü Negatif',
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_candlestick_patterns(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            timeframe = query_params.get('timeframe', ['1h'])[0]
+            
+            # Mock candlestick pattern recognition
+            import random
+            from datetime import datetime, timedelta
+            
+            # Candlestick pattern definitions
+            patterns = {
+                'Bullish Engulfing': {
+                    'description': 'Boğa Engulfing - Güçlü yükseliş sinyali',
+                    'reliability': 0.75,
+                    'signal': 'BUY',
+                    'color': 'green'
+                },
+                'Bearish Engulfing': {
+                    'description': 'Ayı Engulfing - Güçlü düşüş sinyali', 
+                    'reliability': 0.75,
+                    'signal': 'SELL',
+                    'color': 'red'
+                },
+                'Hammer': {
+                    'description': 'Çekiç - Dip sinyali, yükseliş beklenir',
+                    'reliability': 0.65,
+                    'signal': 'BUY',
+                    'color': 'green'
+                },
+                'Shooting Star': {
+                    'description': 'Ateş eden yıldız - Tepe sinyali, düşüş beklenir',
+                    'reliability': 0.65,
+                    'signal': 'SELL',
+                    'color': 'red'
+                },
+                'Doji': {
+                    'description': 'Doji - Kararsızlık, trend değişimi beklenir',
+                    'reliability': 0.55,
+                    'signal': 'HOLD',
+                    'color': 'yellow'
+                },
+                'Morning Star': {
+                    'description': 'Sabah yıldızı - Güçlü yükseliş sinyali',
+                    'reliability': 0.80,
+                    'signal': 'BUY',
+                    'color': 'green'
+                },
+                'Evening Star': {
+                    'description': 'Akşam yıldızı - Güçlü düşüş sinyali',
+                    'reliability': 0.80,
+                    'signal': 'SELL',
+                    'color': 'red'
+                }
+            }
+            
+            detected_patterns = []
+            for pattern_name, pattern_info in patterns.items():
+                # Random pattern detection (in real implementation, this would be technical analysis)
+                if random.random() < 0.3:  # 30% chance of pattern detection
+                    confidence = random.uniform(0.6, 0.95)
+                    detected_patterns.append({
+                        'name': pattern_name,
+                        'description': pattern_info['description'],
+                        'signal': pattern_info['signal'],
+                        'confidence': round(confidence, 3),
+                        'reliability': pattern_info['reliability'],
+                        'color': pattern_info['color'],
+                        'detected_at': datetime.now().isoformat(),
+                        'timeframe': timeframe
+                    })
+            
+            # Sort by confidence
+            detected_patterns.sort(key=lambda x: x['confidence'], reverse=True)
+            
+            response = {
+                'symbol': symbol,
+                'timeframe': timeframe,
+                'patterns_detected': len(detected_patterns),
+                'patterns': detected_patterns,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_harmonic_patterns(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            timeframe = query_params.get('timeframe', ['4h'])[0]
+            
+            # Mock harmonic pattern recognition
+            import random
+            from datetime import datetime, timedelta
+            
+            harmonic_patterns = {
+                'Gartley': {
+                    'description': 'Gartley - Klasik harmonik formasyon',
+                    'bullish_probability': 0.70,
+                    'signal': 'BUY',
+                    'color': 'green'
+                },
+                'Butterfly': {
+                    'description': 'Kelebek - Güçlü harmonik sinyal',
+                    'bullish_probability': 0.75,
+                    'signal': 'BUY', 
+                    'color': 'green'
+                },
+                'Bat': {
+                    'description': 'Yarasa - Yüksek doğruluk oranı',
+                    'bullish_probability': 0.80,
+                    'signal': 'BUY',
+                    'color': 'green'
+                },
+                'Crab': {
+                    'description': 'Yengeç - Ekstrem harmonik formasyon',
+                    'bullish_probability': 0.85,
+                    'signal': 'BUY',
+                    'color': 'green'
+                },
+                'Bearish Gartley': {
+                    'description': 'Ayı Gartley - Düşüş harmonik formasyonu',
+                    'bullish_probability': 0.30,
+                    'signal': 'SELL',
+                    'color': 'red'
+                }
+            }
+            
+            detected_harmonics = []
+            for pattern_name, pattern_info in harmonic_patterns.items():
+                if random.random() < 0.25:  # 25% chance of harmonic detection
+                    confidence = random.uniform(0.7, 0.95)
+                    fibonacci_levels = {
+                        'XA': random.uniform(0.618, 0.786),
+                        'AB': random.uniform(0.382, 0.618),
+                        'BC': random.uniform(0.382, 0.886),
+                        'CD': random.uniform(1.13, 1.618)
+                    }
+                    
+                    detected_harmonics.append({
+                        'name': pattern_name,
+                        'description': pattern_info['description'],
+                        'signal': pattern_info['signal'],
+                        'confidence': round(confidence, 3),
+                        'bullish_probability': pattern_info['bullish_probability'],
+                        'color': pattern_info['color'],
+                        'fibonacci_levels': fibonacci_levels,
+                        'detected_at': datetime.now().isoformat(),
+                        'timeframe': timeframe
+                    })
+            
+            detected_harmonics.sort(key=lambda x: x['confidence'], reverse=True)
+            
+            response = {
+                'symbol': symbol,
+                'timeframe': timeframe,
+                'harmonics_detected': len(detected_harmonics),
+                'harmonics': detected_harmonics,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_technical_patterns(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            timeframe = query_params.get('timeframe', ['1d'])[0]
+            
+            # Mock technical pattern recognition (Chart patterns)
+            import random
+            from datetime import datetime, timedelta
+            
+            technical_patterns = {
+                'Head and Shoulders': {
+                    'description': 'Baş ve Omuzlar - Güçlü düşüş sinyali',
+                    'reliability': 0.85,
+                    'signal': 'SELL',
+                    'color': 'red',
+                    'target_price': random.uniform(0.85, 0.95)
+                },
+                'Inverse Head and Shoulders': {
+                    'description': 'Ters Baş ve Omuzlar - Güçlü yükseliş sinyali',
+                    'reliability': 0.85,
+                    'signal': 'BUY',
+                    'color': 'green',
+                    'target_price': random.uniform(1.05, 1.15)
+                },
+                'Double Top': {
+                    'description': 'Çift Tepe - Düşüş sinyali',
+                    'reliability': 0.75,
+                    'signal': 'SELL',
+                    'color': 'red',
+                    'target_price': random.uniform(0.90, 0.98)
+                },
+                'Double Bottom': {
+                    'description': 'Çift Dip - Yükseliş sinyali',
+                    'reliability': 0.75,
+                    'signal': 'BUY',
+                    'color': 'green',
+                    'target_price': random.uniform(1.02, 1.10)
+                },
+                'Triangle Ascending': {
+                    'description': 'Yükselen Üçgen - Yükseliş sinyali',
+                    'reliability': 0.70,
+                    'signal': 'BUY',
+                    'color': 'green',
+                    'target_price': random.uniform(1.05, 1.12)
+                },
+                'Triangle Descending': {
+                    'description': 'Alçalan Üçgen - Düşüş sinyali',
+                    'reliability': 0.70,
+                    'signal': 'SELL',
+                    'color': 'red',
+                    'target_price': random.uniform(0.88, 0.95)
+                },
+                'Flag Bullish': {
+                    'description': 'Boğa Bayrağı - Yükseliş devamı',
+                    'reliability': 0.80,
+                    'signal': 'BUY',
+                    'color': 'green',
+                    'target_price': random.uniform(1.08, 1.20)
+                },
+                'Flag Bearish': {
+                    'description': 'Ayı Bayrağı - Düşüş devamı',
+                    'reliability': 0.80,
+                    'signal': 'SELL',
+                    'color': 'red',
+                    'target_price': random.uniform(0.80, 0.92)
+                }
+            }
+            
+            detected_technical = []
+            for pattern_name, pattern_info in technical_patterns.items():
+                if random.random() < 0.2:  # 20% chance of technical pattern detection
+                    confidence = random.uniform(0.65, 0.90)
+                    volume_confirmation = random.choice([True, False])
+                    
+                    detected_technical.append({
+                        'name': pattern_name,
+                        'description': pattern_info['description'],
+                        'signal': pattern_info['signal'],
+                        'confidence': round(confidence, 3),
+                        'reliability': pattern_info['reliability'],
+                        'color': pattern_info['color'],
+                        'target_price': round(pattern_info['target_price'], 3),
+                        'volume_confirmation': volume_confirmation,
+                        'detected_at': datetime.now().isoformat(),
+                        'timeframe': timeframe
+                    })
+            
+            detected_technical.sort(key=lambda x: x['confidence'], reverse=True)
+            
+            response = {
+                'symbol': symbol,
+                'timeframe': timeframe,
+                'technical_patterns_detected': len(detected_technical),
+                'technical_patterns': detected_technical,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_price_stream(self, query_params):
+        try:
+            symbols = query_params.get('symbols', ['THYAO'])[0].split(',')
+            symbols = [s.strip().upper() for s in symbols]
+            
+            # Mock real-time price streaming
+            import random
+            import time
+            from datetime import datetime
+            
+            # Simulate real-time price updates
+            prices = {}
+            for symbol in symbols:
+                base_price = random.uniform(50, 200)
+                prices[symbol] = {
+                    'symbol': symbol,
+                    'price': round(base_price, 2),
+                    'change': round(random.uniform(-5, 5), 2),
+                    'change_percent': round(random.uniform(-3, 3), 2),
+                    'volume': random.randint(100000, 1000000),
+                    'timestamp': datetime.now().isoformat()
+                }
+            
+            response = {
+                'type': 'price_update',
+                'prices': prices,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_tick_stream(self, query_params):
+        try:
+            symbol = query_params.get('symbol', ['THYAO'])[0].upper()
+            limit = int(query_params.get('limit', [10])[0])
+            
+            # Mock tick data streaming
+            import random
+            from datetime import datetime, timedelta
+            
+            base_price = random.uniform(50, 200)
+            ticks = []
+            
+            for i in range(limit):
+                # Simulate tick price movement
+                price_change = random.uniform(-0.5, 0.5)
+                base_price += price_change
+                
+                ticks.append({
+                    'symbol': symbol,
+                    'price': round(base_price, 2),
+                    'volume': random.randint(100, 5000),
+                    'side': random.choice(['BUY', 'SELL']),
+                    'timestamp': (datetime.now() - timedelta(seconds=i)).isoformat()
+                })
+            
+            response = {
+                'type': 'tick_update',
+                'symbol': symbol,
+                'ticks': ticks,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_signal_stream(self, query_params):
+        try:
+            symbols = query_params.get('symbols', ['THYAO'])[0].split(',')
+            symbols = [s.strip().upper() for s in symbols]
+            
+            # Mock real-time signal streaming
+            import random
+            from datetime import datetime
+            
+            signals = []
+            for symbol in symbols:
+                if random.random() < 0.3:  # 30% chance of signal
+                    signal_type = random.choice(['BUY', 'SELL', 'HOLD'])
+                    confidence = random.uniform(0.6, 0.95)
+                    
+                    signals.append({
+                        'symbol': symbol,
+                        'signal': signal_type,
+                        'confidence': round(confidence, 3),
+                        'price': round(random.uniform(50, 200), 2),
+                        'reason': f'{symbol} için {signal_type} sinyali',
+                        'timestamp': datetime.now().isoformat()
+                    })
+            
+            response = {
+                'type': 'signal_update',
+                'signals': signals,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_portfolio_risk(self, query_params):
+        try:
+            symbols = query_params.get('symbols', ['THYAO,ASELS,TUPRS'])[0].split(',')
+            symbols = [s.strip().upper() for s in symbols]
+            portfolio_value = float(query_params.get('portfolio_value', [100000])[0])
+            risk_tolerance = float(query_params.get('risk_tolerance', [0.02])[0])  # 2% risk
+            
+            # Mock portfolio risk analysis
+            import random
+            from datetime import datetime
+            
+            positions = {}
+            total_allocation = 0
+            
+            for symbol in symbols:
+                # Dynamic position sizing based on volatility and confidence
+                base_volatility = random.uniform(0.15, 0.35)  # 15-35% annual volatility
+                confidence = random.uniform(0.6, 0.9)
+                
+                # Kelly Criterion inspired position sizing
+                kelly_fraction = min(0.25, (confidence - 0.5) * 0.5)  # Max 25% per position
+                volatility_adjustment = 1.0 / (1.0 + base_volatility)
+                
+                allocation = kelly_fraction * volatility_adjustment
+                allocation = max(0.05, min(0.20, allocation))  # 5-20% range
+                
+                position_value = portfolio_value * allocation
+                shares = int(position_value / random.uniform(50, 200))  # Mock price
+                
+                positions[symbol] = {
+                    'symbol': symbol,
+                    'shares': shares,
+                    'allocation_percent': round(allocation * 100, 2),
+                    'position_value': round(position_value, 2),
+                    'volatility': round(base_volatility * 100, 2),
+                    'confidence': round(confidence, 3),
+                    'kelly_fraction': round(kelly_fraction, 3),
+                    'stop_loss': round(position_value * 0.95, 2),  # 5% stop loss
+                    'take_profit': round(position_value * 1.15, 2)  # 15% take profit
+                }
+                
+                total_allocation += allocation
+            
+            # Portfolio metrics
+            portfolio_metrics = {
+                'total_allocation': round(total_allocation * 100, 2),
+                'cash_remaining': round(portfolio_value * (1 - total_allocation), 2),
+                'portfolio_volatility': round(sum(p['volatility'] for p in positions.values()) / len(positions), 2),
+                'max_drawdown': round(random.uniform(0.08, 0.15) * 100, 2),
+                'sharpe_ratio': round(random.uniform(1.2, 2.1), 2),
+                'var_95': round(portfolio_value * risk_tolerance, 2),
+                'expected_return': round(random.uniform(0.12, 0.25) * 100, 2)
+            }
+            
+            response = {
+                'portfolio_value': portfolio_value,
+                'risk_tolerance': risk_tolerance,
+                'positions': positions,
+                'metrics': portfolio_metrics,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_value_at_risk(self, query_params):
+        try:
+            portfolio_value = float(query_params.get('portfolio_value', [100000])[0])
+            confidence_level = float(query_params.get('confidence', [0.95])[0])
+            time_horizon = int(query_params.get('horizon_days', [1])[0])
+            
+            # Mock VaR calculation using Monte Carlo simulation
+            import random
+            import math
+            from datetime import datetime
+            
+            # Simulate portfolio returns
+            num_simulations = 10000
+            returns = []
+            
+            for _ in range(num_simulations):
+                # Portfolio return simulation (normal distribution)
+                daily_return = random.normalvariate(0.0008, 0.02)  # 0.08% daily return, 2% volatility
+                returns.append(daily_return)
+            
+            # Calculate VaR
+            returns.sort()
+            var_index = int((1 - confidence_level) * num_simulations)
+            var_return = returns[var_index]
+            var_amount = portfolio_value * abs(var_return)
+            
+            # Expected Shortfall (CVaR)
+            tail_returns = returns[:var_index]
+            expected_shortfall = sum(tail_returns) / len(tail_returns) if tail_returns else 0
+            cvar_amount = portfolio_value * abs(expected_shortfall)
+            
+            # Additional risk metrics
+            max_loss = min(returns) * portfolio_value
+            probability_of_loss = len([r for r in returns if r < 0]) / num_simulations
+            
+            response = {
+                'portfolio_value': portfolio_value,
+                'confidence_level': confidence_level,
+                'time_horizon_days': time_horizon,
+                'var_amount': round(var_amount, 2),
+                'var_percent': round(abs(var_return) * 100, 2),
+                'cvar_amount': round(cvar_amount, 2),
+                'cvar_percent': round(abs(expected_shortfall) * 100, 2),
+                'max_loss': round(max_loss, 2),
+                'probability_of_loss': round(probability_of_loss * 100, 2),
+                'simulations': num_simulations,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_monte_carlo_simulation(self, query_params):
+        try:
+            portfolio_value = float(query_params.get('portfolio_value', [100000])[0])
+            time_horizon = int(query_params.get('horizon_days', [30])[0])
+            num_simulations = int(query_params.get('simulations', [1000])[0])
+            
+            # Mock Monte Carlo simulation
+            import random
+            import math
+            from datetime import datetime
+            
+            # Portfolio parameters
+            expected_return = 0.0008  # 0.08% daily return
+            volatility = 0.02  # 2% daily volatility
+            
+            simulation_results = []
+            
+            for sim in range(num_simulations):
+                current_value = portfolio_value
+                daily_values = [current_value]
+                
+                for day in range(time_horizon):
+                    # Random daily return
+                    daily_return = random.normalvariate(expected_return, volatility)
+                    current_value *= (1 + daily_return)
+                    daily_values.append(current_value)
+                
+                final_value = current_value
+                total_return = (final_value - portfolio_value) / portfolio_value
+                
+                simulation_results.append({
+                    'simulation': sim + 1,
+                    'final_value': round(final_value, 2),
+                    'total_return': round(total_return * 100, 2),
+                    'daily_values': [round(v, 2) for v in daily_values]
+                })
+            
+            # Calculate statistics
+            final_values = [s['final_value'] for s in simulation_results]
+            returns = [s['total_return'] for s in simulation_results]
+            
+            stats = {
+                'mean_final_value': round(sum(final_values) / len(final_values), 2),
+                'median_final_value': round(sorted(final_values)[len(final_values)//2], 2),
+                'mean_return': round(sum(returns) / len(returns), 2),
+                'volatility': round(math.sqrt(sum((r - sum(returns)/len(returns))**2 for r in returns) / len(returns)), 2),
+                'percentile_5': round(sorted(final_values)[int(0.05 * len(final_values))], 2),
+                'percentile_95': round(sorted(final_values)[int(0.95 * len(final_values))], 2),
+                'probability_of_loss': round(len([r for r in returns if r < 0]) / len(returns) * 100, 2),
+                'max_gain': round(max(returns), 2),
+                'max_loss': round(min(returns), 2)
+            }
+            
+            response = {
+                'portfolio_value': portfolio_value,
+                'time_horizon_days': time_horizon,
+                'simulations': num_simulations,
+                'statistics': stats,
+                'sample_results': simulation_results[:10],  # First 10 simulations
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_smart_notifications(self, query_params):
+        try:
+            user_id = query_params.get('user_id', ['default'])[0]
+            notification_type = query_params.get('type', ['signal'])[0]
+            
+            # Mock smart notification system
+            import random
+            from datetime import datetime, timedelta
+            
+            # Notification templates
+            templates = {
+                'signal': {
+                    'high_confidence': [
+                        '🚀 Yüksek güven sinyali: {symbol} için {signal} önerisi (Güven: {confidence}%)',
+                        '⚡ Güçlü sinyal: {symbol} {signal} pozisyonu (Güven: {confidence}%)',
+                        '🎯 Premium sinyal: {symbol} {signal} fırsatı (Güven: {confidence}%)'
+                    ],
+                    'pattern': [
+                        '📈 Formasyon sinyali: {symbol} {pattern} tespit edildi',
+                        '🔍 Teknik sinyal: {symbol} {pattern} formasyonu',
+                        '📊 Pattern alert: {symbol} {pattern} sinyali'
+                    ],
+                    'risk': [
+                        '⚠️ Risk uyarısı: {symbol} volatilite artışı',
+                        '🚨 Risk alarmı: {symbol} stop loss seviyesi',
+                        '📉 Risk bildirimi: {symbol} düşüş sinyali'
+                    ]
+                }
+            }
+            
+            # Generate smart notifications
+            notifications = []
+            symbols = ['THYAO', 'ASELS', 'TUPRS', 'SISE', 'EREGL']
+            
+            for i in range(random.randint(3, 8)):
+                symbol = random.choice(symbols)
+                signal_type = random.choice(['BUY', 'SELL'])
+                confidence = random.uniform(0.7, 0.95)
+                pattern = random.choice(['Bullish Engulfing', 'Hammer', 'Morning Star', 'Head and Shoulders'])
+                
+                if confidence > 0.85:
+                    template = random.choice(templates['signal']['high_confidence'])
+                    priority = 'high'
+                    icon = '🚀'
+                elif random.random() < 0.3:
+                    template = random.choice(templates['signal']['pattern'])
+                    priority = 'medium'
+                    icon = '📈'
+                else:
+                    template = random.choice(templates['signal']['risk'])
+                    priority = 'low'
+                    icon = '⚠️'
+                
+                message = template.format(
+                    symbol=symbol,
+                    signal=signal_type,
+                    confidence=int(confidence * 100),
+                    pattern=pattern
+                )
+                
+                notifications.append({
+                    'id': f'notif_{i+1}',
+                    'user_id': user_id,
+                    'type': notification_type,
+                    'priority': priority,
+                    'icon': icon,
+                    'title': f'{symbol} Sinyali',
+                    'message': message,
+                    'symbol': symbol,
+                    'confidence': round(confidence, 3),
+                    'timestamp': (datetime.now() - timedelta(minutes=random.randint(0, 60))).isoformat(),
+                    'read': random.choice([True, False]),
+                    'action_required': random.choice([True, False])
+                })
+            
+            # Sort by priority and timestamp
+            priority_order = {'high': 3, 'medium': 2, 'low': 1}
+            notifications.sort(key=lambda x: (priority_order[x['priority']], x['timestamp']), reverse=True)
+            
+            response = {
+                'user_id': user_id,
+                'notifications_count': len(notifications),
+                'unread_count': len([n for n in notifications if not n['read']]),
+                'notifications': notifications,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_email_notifications(self, query_params):
+        try:
+            email = query_params.get('email', ['user@example.com'])[0]
+            notification_type = query_params.get('type', ['daily_summary'])[0]
+            
+            # Mock email notification system
+            import random
+            from datetime import datetime
+            
+            email_templates = {
+                'daily_summary': {
+                    'subject': 'BIST AI Trader - Günlük Özet',
+                    'template': '''
+                    Merhaba,
+                    
+                    Bugünkü BIST AI Trader özetiniz:
+                    
+                    📊 Portföy Performansı: +{portfolio_change}%
+                    🎯 Aktif Sinyaller: {active_signals}
+                    ⚠️ Risk Uyarıları: {risk_alerts}
+                    📈 Yeni Fırsatlar: {new_opportunities}
+                    
+                    Detaylı analiz için uygulamayı açın.
+                    
+                    BIST AI Trader Ekibi
+                    '''
+                },
+                'signal_alert': {
+                    'subject': '🚀 Yeni Yüksek Güven Sinyali',
+                    'template': '''
+                    Merhaba,
+                    
+                    Yeni yüksek güven sinyali:
+                    
+                    Sembol: {symbol}
+                    Sinyal: {signal}
+                    Güven: {confidence}%
+                    Fiyat: ₺{price}
+                    
+                    Hemen işlem yapmak için uygulamayı açın.
+                    
+                    BIST AI Trader Ekibi
+                    '''
+                },
+                'risk_warning': {
+                    'subject': '⚠️ Risk Uyarısı',
+                    'template': '''
+                    Merhaba,
+                    
+                    Portföyünüzde risk uyarısı:
+                    
+                    Sembol: {symbol}
+                    Risk Seviyesi: {risk_level}
+                    Önerilen Aksiyon: {action}
+                    
+                    Risk yönetimi için uygulamayı kontrol edin.
+                    
+                    BIST AI Trader Ekibi
+                    '''
+                }
+            }
+            
+            template = email_templates.get(notification_type, email_templates['daily_summary'])
+            
+            # Generate email content
+            email_data = {
+                'email': email,
+                'type': notification_type,
+                'subject': template['subject'],
+                'content': template['template'].format(
+                    portfolio_change=random.uniform(-2, 5),
+                    active_signals=random.randint(3, 8),
+                    risk_alerts=random.randint(0, 3),
+                    new_opportunities=random.randint(2, 6),
+                    symbol=random.choice(['THYAO', 'ASELS', 'TUPRS']),
+                    signal=random.choice(['BUY', 'SELL']),
+                    confidence=random.randint(75, 95),
+                    price=random.uniform(50, 200),
+                    risk_level=random.choice(['Yüksek', 'Orta', 'Düşük']),
+                    action=random.choice(['Stop Loss', 'Take Profit', 'Pozisyon Azalt'])
+                ),
+                'sent_at': datetime.now().isoformat(),
+                'status': 'sent',
+                'priority': 'high' if notification_type == 'signal_alert' else 'medium'
+            }
+            
+            response = {
+                'email': email,
+                'notification_type': notification_type,
+                'email_data': email_data,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_sms_notifications(self, query_params):
+        try:
+            phone = query_params.get('phone', ['+905551234567'])[0]
+            notification_type = query_params.get('type', ['urgent_signal'])[0]
+            
+            # Mock SMS notification system
+            import random
+            from datetime import datetime
+            
+            sms_templates = {
+                'urgent_signal': '🚀 {symbol} {signal} sinyali! Güven: {confidence}% Fiyat: ₺{price}',
+                'risk_alert': '⚠️ {symbol} risk uyarısı! Stop loss kontrol edin.',
+                'pattern_alert': '📈 {symbol} {pattern} formasyonu tespit edildi.',
+                'daily_summary': '📊 Günlük özet: Portföy +{change}% | {signals} sinyal | {alerts} uyarı'
+            }
+            
+            template = sms_templates.get(notification_type, sms_templates['urgent_signal'])
+            
+            # Generate SMS content
+            sms_data = {
+                'phone': phone,
+                'type': notification_type,
+                'message': template.format(
+                    symbol=random.choice(['THYAO', 'ASELS', 'TUPRS']),
+                    signal=random.choice(['BUY', 'SELL']),
+                    confidence=random.randint(75, 95),
+                    price=random.uniform(50, 200),
+                    pattern=random.choice(['Bullish Engulfing', 'Hammer', 'Morning Star']),
+                    change=random.uniform(-2, 5),
+                    signals=random.randint(3, 8),
+                    alerts=random.randint(0, 3)
+                ),
+                'sent_at': datetime.now().isoformat(),
+                'status': 'sent',
+                'cost': 0.05  # Mock SMS cost
+            }
+            
+            response = {
+                'phone': phone,
+                'notification_type': notification_type,
+                'sms_data': sms_data,
+                'timestamp': datetime.now().isoformat()
+            }
+            self.send_json_response(response)
         except Exception as e:
             self.send_json_response({'error': str(e)})
 

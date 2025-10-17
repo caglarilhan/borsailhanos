@@ -224,7 +224,8 @@ export default function BistSignals() {
                 return acc;
               }, {} as Record<string, Prediction[]>);
             return Object.entries(groups).map(([sym, list]) => {
-              const best = list.slice().sort((a,b)=> (b.confidence||0)-(a.confidence||0))[0];
+              const sorted = list.slice().sort((a,b)=> (b.confidence||0)-(a.confidence||0));
+              const best = sorted[0];
               const up = best.prediction >= 0;
               const confPct = Math.round(best.confidence*100);
               const inWatch = watchlist.includes(sym);
@@ -235,6 +236,24 @@ export default function BistSignals() {
                     <div className={`text-xs px-2 py-0.5 rounded ${up?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{up?'Yükseliş':'Düşüş'}</div>
                   </div>
                   <div className="mt-2 text-sm text-gray-800">En iyi güven: {confPct}% • Ufuk: {best.horizon}</div>
+                  <div className="mt-3 space-y-1">
+                    {sorted.map((p)=>{
+                      const upx = p.prediction >= 0; const pct = Math.round(p.prediction*1000)/10;
+                      const confc = Math.round(p.confidence*100);
+                      const chip = upx? 'bg-green-50 text-green-700 border-green-200' : 'bg-red-50 text-red-700 border-red-200';
+                      return (
+                        <div key={`${p.horizon}`} className={`flex items-center justify-between text-xs border ${chip} rounded px-2 py-1`}>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{p.horizon}</span>
+                            <span>{upx?'Yükseliş':'Düşüş'} {pct}%</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span>Güven {confc}%</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-gray-700">
                     <ClockIcon className="h-4 w-4" />
                     Geçerlilik: {new Date(best.valid_until).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})}

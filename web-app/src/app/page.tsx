@@ -58,7 +58,7 @@ import EventDrivenAI from '@/components/EventDrivenAI';
 import AnomalyMomentum from '@/components/AnomalyMomentum';
 import CrossMarketArbitrage from '@/components/CrossMarketArbitrage';
 import CalibrationPanel from '@/components/CalibrationPanel';
-import FeedbackPanel from '@/components/FeedbackPanel';
+import SmartNotifications from '@/components/SmartNotifications';
 
 interface TradingSignal {
   symbol: string;
@@ -106,7 +106,7 @@ const tabs = [
   { id: 'anomaly', name: 'Anomali+Momentum', icon: ChartBarIcon },
   { id: 'arbitrage', name: 'Arbitraj İpuçları', icon: ChartBarIcon },
   { id: 'calibration', name: 'Kalibrasyon', icon: ScaleIcon },
-  { id: 'feedback', name: 'Feedback', icon: ChartBarIcon },
+  { id: 'smart_notifications', name: 'Smart Notifications', icon: BellIcon },
   { id: 'notifications', name: 'Akıllı Bildirimler', icon: BellIcon },
   { id: 'education', name: 'Eğitim & Sosyal', icon: AcademicCapIcon },
   { id: 'accuracy', name: 'Doğruluk Optimizasyonu', icon: RocketLaunchIcon },
@@ -118,8 +118,8 @@ const tabs = [
 
 const groupedTabs = [
   { group: 'Sinyaller', items: ['signals','bist100','anomaly','arbitrage'] as const },
-  { group: 'Analiz', items: ['market','charts','patterns','sector','liquidity','events','twin','xai'] as const },
-  { group: 'Operasyon', items: ['risk','sim','watchlist','alerts','ticks','ingest','adaptive'] as const },
+  { group: 'Analiz', items: ['market','charts','patterns','sector','liquidity','events','twin','xai','sentiment'] as const },
+  { group: 'Operasyon', items: ['risk','sim','watchlist','alerts','ticks','ingest','adaptive','streaming','risk_mgmt','smart_notifications'] as const },
   { group: 'Gelişmiş', items: ['aiengine','advancedai','calibration','feedback','accuracy','deeplearning','ensemble','regime','godmode','brokers','crypto','options','education'] as const }
 ] as const;
 
@@ -447,6 +447,26 @@ export default function Dashboard() {
 
         {activeTab === 'calibration' && (
           <CalibrationPanel />
+        )}
+
+        {activeTab === 'smart_notifications' && (
+          <SmartNotifications />
+        )}
+
+        {activeTab === 'risk_mgmt' && (
+          <RiskManagement />
+        )}
+
+        {activeTab === 'streaming' && (
+          <LiveStreaming />
+        )}
+
+        {activeTab === 'patterns' && (
+          <PatternRecognition />
+        )}
+
+        {activeTab === 'sentiment' && (
+          <SentimentAnalysis />
         )}
 
         {activeTab === 'feedback' && (
