@@ -1,12 +1,13 @@
 import os
 import random
 from datetime import datetime
+from typing import Optional
 
 
 class KafkaClientStub:
     """Lightweight stub to mimic Kafka/Redpanda client behaviour for demo."""
 
-    def __init__(self, brokers: str | None = None):
+    def __init__(self, brokers: Optional[str] = None):
         self.brokers = brokers or os.getenv('KAFKA_BROKERS', 'kafka:9092')
         self.topics = ['market.bist.prices', 'market.us.prices']
 

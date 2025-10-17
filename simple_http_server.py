@@ -163,6 +163,10 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_model_weights_update()
         elif path == '/api/xai/reason':
             self.handle_xai_reason(query_params)
+        elif path == '/api/monitor/model_metrics':
+            self.handle_model_monitor()
+        elif path == '/api/alerts/policy':
+            self.handle_alerts_policy(query_params)
         elif path == '/api/ai/bist30_predictions':
             self.handle_bist30_predictions(query_params)
         elif path == '/api/ai/bist100_predictions':
@@ -232,14 +236,18 @@ class BISTAIHandler(BaseHTTPRequestHandler):
     
     def do_OPTIONS(self):
         self.send_cors_headers()
-        self.end_headers()
     
     def send_cors_headers(self):
-        self.send_response(200)
-        self.send_header('Content-Type', 'application/json')
-        self.send_header('Access-Control-Allow-Origin', '*')
-        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        # Only handle preflight here; normal responses add CORS in send_json_response
+        if getattr(self, 'command', None) == 'OPTIONS':
+            self.send_response(200)
+            self.send_header('Access-Control-Allow-Origin', '*')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+            self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+            self.end_headers()
+        else:
+            # For GET/POST, do nothing here to avoid double send_response
+            pass
     
     def handle_health(self):
         response = {
@@ -1170,9 +1178,20 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'AKBNK','PGSUS','HEKTS','FROTO','TOASO','VAKBN','ISCTR','PETKM','KRDMD','EGEEN',
                 'ENJSA','SISE','AYGAZ','ALARK','KOZAL','KOZAA','SASA','ARCLK','TAVHL','BRSAN'
             ]
+            # Extended list for all=1
+            bist_extended = bist30 + [
+                'OTKAR','KOZAA','KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR',
+                'KOZAA','KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR','KOZAA',
+                'KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR','KOZAA','KOZAL'
+            ]
+            
             symbols = query_params.get('symbols', [','.join(bist30)])[0]
             horizons = query_params.get('horizons', ['5m,15m,30m,1h,4h,1d'])[0]
+            all_mode = query_params.get('all', ['0'])[0] in ['1', 'true', 'True']
+            
             symbol_list = [s.strip().upper() for s in symbols.split(',') if s.strip()]
+            if all_mode:
+                symbol_list = bist_extended
             horizon_list = [h.strip() for h in horizons.split(',') if h.strip()]
 
             from datetime import datetime, timedelta
@@ -1192,8 +1211,14 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             for sym in symbol_list:
                 for hz in horizon_list:
                     pred = random.uniform(-1.0, 1.0)
-                    conf = random.uniform(0.65, 0.95)
-                    if abs(pred) < 0.2:
+                    # all=1 mode: lower confidence threshold, more predictions
+                    conf_min = 0.45 if all_mode else 0.65
+                    conf_max = 0.95
+                    conf = random.uniform(conf_min, conf_max)
+                    
+                    # all=1 mode: lower prediction threshold
+                    pred_threshold = 0.05 if all_mode else 0.2
+                    if abs(pred) < pred_threshold:
                         continue
                     results.append({
                         'symbol': sym,
@@ -1212,6 +1237,7 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'horizons': horizon_list,
                 'symbols': symbol_list,
                 'predictions': results,
+                'all_mode': all_mode,
                 'timestamp': datetime.now().isoformat()
             }
             self.send_json_response(response)
@@ -1568,10 +1594,21 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             # fill up to ~100 for demo
             extras = [f'SYM{i:02d}' for i in range(1, 71)]
             default_list = base + extras
+            
+            # Extended list for all=1 mode
+            bist_extended = default_list + [
+                'KOZAA','KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR','KOZAA',
+                'KOZAL','AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR','KOZAA','KOZAL',
+                'AYGAZ','ALARK','SASA','ARCLK','TAVHL','BRSAN','OTKAR','KOZAA','KOZAL','AYGAZ'
+            ]
 
             symbols = query_params.get('symbols', [','.join(default_list)])[0]
             horizons = query_params.get('horizons', ['5m,15m,30m,1h,4h,1d'])[0]
+            all_mode = query_params.get('all', ['0'])[0] in ['1', 'true', 'True']
+            
             symbol_list = [s.strip().upper() for s in symbols.split(',') if s.strip()]
+            if all_mode:
+                symbol_list = bist_extended
             horizon_list = [h.strip() for h in horizons.split(',') if h.strip()]
 
             from datetime import datetime, timedelta
@@ -1591,8 +1628,14 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             for sym in symbol_list:
                 for hz in horizon_list:
                     pred = random.uniform(-1.0, 1.0)
-                    conf = random.uniform(0.65, 0.95)
-                    if abs(pred) < 0.2:
+                    # all=1 mode: lower confidence threshold, more predictions
+                    conf_min = 0.45 if all_mode else 0.65
+                    conf_max = 0.95
+                    conf = random.uniform(conf_min, conf_max)
+                    
+                    # all=1 mode: lower prediction threshold
+                    pred_threshold = 0.05 if all_mode else 0.2
+                    if abs(pred) < pred_threshold:
                         continue
                     results.append({
                         'symbol': sym,
@@ -1609,6 +1652,7 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'horizons': horizon_list,
                 'symbols': symbol_list,
                 'predictions': results,
+                'all_mode': all_mode,
                 'timestamp': datetime.now().isoformat()
             }
             self.send_json_response(response)
@@ -1960,6 +2004,32 @@ class BISTAIHandler(BaseHTTPRequestHandler):
     # Web Push & Watchlist stubs (in-memory)
     _PUSH_TOKENS = []
     _WATCHLIST = set()
+    _ALERT_POLICY = {'threshold': 0.72, 'cooldown_minutes': 15, 'quiet_hours': [22,7]}
+
+    def handle_model_monitor(self):
+        try:
+            self.send_json_response({
+                'window': 200,
+                'auc': 0.82,
+                'precision': 0.78,
+                'drift_score': 0.12,
+                'updated_at': datetime.now().isoformat()
+            })
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
+
+    def handle_alerts_policy(self, query_params):
+        try:
+            if 'threshold' in query_params:
+                self._ALERT_POLICY['threshold'] = float(query_params['threshold'][0])
+            if 'cooldown_minutes' in query_params:
+                self._ALERT_POLICY['cooldown_minutes'] = int(query_params['cooldown_minutes'][0])
+            if 'quiet_hours' in query_params:
+                rng = query_params['quiet_hours'][0].split('-')
+                self._ALERT_POLICY['quiet_hours'] = [int(rng[0]), int(rng[1])]
+            self.send_json_response(self._ALERT_POLICY)
+        except Exception as e:
+            self.send_json_response({'error': str(e)})
 
     def handle_register_push(self):
         try:
@@ -2007,6 +2077,10 @@ class BISTAIHandler(BaseHTTPRequestHandler):
         json_data = json.dumps(data, indent=2)
         self.send_response(200)
         self.send_header('Content-Type', 'application/json')
+        # CORS headers on every JSON response
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
         self.send_header('Content-Length', str(len(json_data)))
         self.end_headers()
         self.wfile.write(json_data.encode('utf-8'))

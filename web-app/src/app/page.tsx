@@ -116,6 +116,13 @@ const tabs = [
   { id: 'godmode', name: 'God Mode', icon: ShieldCheckIcon }
 ] as const;
 
+const groupedTabs = [
+  { group: 'Sinyaller', items: ['signals','bist100','anomaly','arbitrage'] as const },
+  { group: 'Analiz', items: ['market','charts','patterns','sector','liquidity','events','twin','xai'] as const },
+  { group: 'Operasyon', items: ['risk','sim','watchlist','alerts','ticks','ingest','adaptive'] as const },
+  { group: 'Gelişmiş', items: ['aiengine','advancedai','calibration','feedback','accuracy','deeplearning','ensemble','regime','godmode','brokers','crypto','options','education'] as const }
+] as const;
+
 export default function Dashboard() {
   const [signals, setSignals] = useState<TradingSignal[]>([]);
   const [marketData, setMarketData] = useState<MarketData[]>([]);
@@ -237,26 +244,33 @@ export default function Dashboard() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Navigation Tabs */}
         <div className="mb-8">
-          <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  }`}
-                >
-                  <tab.icon className="h-5 w-5" />
-                  <span>{tab.name}</span>
-                  {tab.id === 'godmode' && godMode && (
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  )}
-                </button>
-              ))}
-            </nav>
+          <div className="space-y-4">
+            {groupedTabs.map(section => (
+              <div key={section.group}>
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{section.group}</div>
+                <div className="border-b border-gray-200">
+                  <nav className="-mb-px flex flex-wrap gap-3">
+                    {tabs.filter(t => (section.items as readonly string[]).includes(t.id)).map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setActiveTab(tab.id as TabId)}
+                        className={`flex items-center space-x-2 py-2 px-2 border-b-2 font-medium text-sm ${
+                          activeTab === tab.id
+                            ? 'border-blue-500 text-blue-600'
+                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        }`}
+                      >
+                        <tab.icon className="h-5 w-5" />
+                        <span>{tab.name}</span>
+                        {tab.id === 'godmode' && godMode && (
+                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        )}
+                      </button>
+                    ))}
+                  </nav>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
