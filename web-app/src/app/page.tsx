@@ -58,7 +58,6 @@ import EventDrivenAI from '@/components/EventDrivenAI';
 import AnomalyMomentum from '@/components/AnomalyMomentum';
 import CrossMarketArbitrage from '@/components/CrossMarketArbitrage';
 import CalibrationPanel from '@/components/CalibrationPanel';
-import SmartNotifications from '@/components/SmartNotifications';
 
 interface TradingSignal {
   symbol: string;
