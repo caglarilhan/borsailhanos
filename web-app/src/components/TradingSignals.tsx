@@ -34,6 +34,97 @@ interface TradingSignalsProps {
 export default function TradingSignals({ signals, isLoading }: TradingSignalsProps) {
   const [selectedSignal, setSelectedSignal] = useState<TradingSignal | null>(null);
   const [showXAI, setShowXAI] = useState(false);
+  const [allSignals, setAllSignals] = useState<TradingSignal[]>([]);
+
+  // Mock data for demonstration
+  useEffect(() => {
+    const mockSignals: TradingSignal[] = [
+      {
+        symbol: 'THYAO',
+        signal: 'BUY',
+        confidence: 0.85,
+        price: 325.50,
+        change: 2.3,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'RSI oversold durumda ve MACD pozitif kesişim yapıyor',
+        shapValues: { rsi: 0.25, macd: 0.18, volume: 0.12, price_change: 0.15 },
+        confluenceScore: 0.87,
+        marketRegime: 'Risk-On',
+        sentimentScore: 0.78,
+        expectedReturn: 0.045,
+        stopLoss: 310.25,
+        takeProfit: 340.75
+      },
+      {
+        symbol: 'ASELS',
+        signal: 'SELL',
+        confidence: 0.72,
+        price: 88.40,
+        change: -1.8,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'RSI overbought seviyede ve hacim düşüş trendinde',
+        shapValues: { rsi: -0.20, macd: -0.15, volume: -0.08, price_change: -0.12 },
+        confluenceScore: 0.73,
+        marketRegime: 'Risk-Off',
+        sentimentScore: 0.42,
+        expectedReturn: -0.028,
+        stopLoss: 92.15,
+        takeProfit: 84.65
+      },
+      {
+        symbol: 'TUPRS',
+        signal: 'BUY',
+        confidence: 0.91,
+        price: 145.20,
+        change: 3.1,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'Güçlü momentum ve pozitif sentiment birleşimi',
+        shapValues: { rsi: 0.35, macd: 0.28, volume: 0.22, price_change: 0.18 },
+        confluenceScore: 0.94,
+        marketRegime: 'Risk-On',
+        sentimentScore: 0.89,
+        expectedReturn: 0.067,
+        stopLoss: 138.50,
+        takeProfit: 152.30
+      },
+      {
+        symbol: 'SISE',
+        signal: 'BUY',
+        confidence: 0.78,
+        price: 45.80,
+        change: 1.2,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'Teknik destek seviyesinde güçlü alım',
+        shapValues: { rsi: 0.22, macd: 0.16, volume: 0.14, price_change: 0.11 },
+        confluenceScore: 0.81,
+        marketRegime: 'Risk-On',
+        sentimentScore: 0.65,
+        expectedReturn: 0.032,
+        stopLoss: 43.50,
+        takeProfit: 48.10
+      },
+      {
+        symbol: 'EREGL',
+        signal: 'HOLD',
+        confidence: 0.65,
+        price: 67.30,
+        change: -0.5,
+        timestamp: new Date().toISOString(),
+        xaiExplanation: 'Karışık sinyaller, bekle ve gör stratejisi',
+        shapValues: { rsi: 0.05, macd: -0.02, volume: 0.08, price_change: -0.03 },
+        confluenceScore: 0.68,
+        marketRegime: 'Neutral',
+        sentimentScore: 0.55,
+        expectedReturn: 0.008,
+        stopLoss: 64.20,
+        takeProfit: 70.40
+      }
+    ];
+    
+    setAllSignals(mockSignals);
+  }, []);
+
+  const displaySignals = signals.length > 0 ? signals : allSignals;
 
   const getSignalIcon = (signal: string) => {
     switch (signal) {
@@ -105,7 +196,7 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
       </div>
       <div className="p-6">
         <div className="space-y-4">
-          {signals.map((signal, index) => (
+          {displaySignals.map((signal, index) => (
             <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
