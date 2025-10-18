@@ -128,9 +128,9 @@ class RealDataProvider:
             signal = macd.ewm(span=9).mean()
             
             return {
-                'rsi': rsi.iloc[-1] if not rsi.empty else 50,
-                'macd': macd.iloc[-1] if not macd.empty else 0,
-                'signal': signal.iloc[-1] if not signal.empty else 0,
+                'rsi': rsi.iloc[-1] if not rsi.empty and not pd.isna(rsi.iloc[-1]) else 50,
+                'macd': macd.iloc[-1] if not macd.empty and not pd.isna(macd.iloc[-1]) else 0,
+                'signal': signal.iloc[-1] if not signal.empty and not pd.isna(signal.iloc[-1]) else 0,
                 'current_price': data['Close'].iloc[-1],
                 'volume': data['Volume'].iloc[-1]
             }
@@ -206,6 +206,11 @@ def get_real_trading_signals():
                 # AI sinyal üretimi (gerçek verilerle)
                 rsi = technicals.get('rsi', 50)
                 macd = technicals.get('macd', 0)
+                
+                # NaN kontrolü
+                if pd.isna(rsi) or pd.isna(macd):
+                    rsi = 50
+                    macd = 0
                 
                 # Sinyal belirleme
                 if rsi < 30 and macd > 0 and change > 0:
