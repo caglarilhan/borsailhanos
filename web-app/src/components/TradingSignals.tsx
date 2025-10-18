@@ -175,6 +175,38 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
           expectedReturn: 0.052,
           stopLoss: 119.50,
           takeProfit: 132.10
+        },
+        {
+          symbol: 'KCHOL',
+          signal: 'BUY',
+          confidence: 0.76,
+          price: 155.30,
+          change: 1.9,
+          timestamp: new Date().toISOString(),
+          xaiExplanation: 'Sektör lideri ve güçlü temel analiz',
+          shapValues: { rsi: 0.18, macd: 0.16, volume: 0.14, price_change: 0.16 },
+          confluenceScore: 0.78,
+          marketRegime: 'Risk-On',
+          sentimentScore: 0.75,
+          expectedReturn: 0.042,
+          stopLoss: 147.80,
+          takeProfit: 162.80
+        },
+        {
+          symbol: 'SAHOL',
+          signal: 'HOLD',
+          confidence: 0.65,
+          price: 72.10,
+          change: 0.3,
+          timestamp: new Date().toISOString(),
+          xaiExplanation: 'Nötr pozisyon, teknik göstergeler karışık',
+          shapValues: { rsi: 0.10, macd: 0.12, volume: 0.08, price_change: 0.05 },
+          confluenceScore: 0.67,
+          marketRegime: 'Risk-On',
+          sentimentScore: 0.68,
+          expectedReturn: 0.008,
+          stopLoss: 68.50,
+          takeProfit: 75.70
         }
       ];
       
