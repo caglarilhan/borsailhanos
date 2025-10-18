@@ -326,7 +326,7 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
                     <p className={`text-xs ${
                       signal.expectedReturn >= 0 ? 'text-green-500' : 'text-red-500'
                     }`}>
-                      Beklenen: {signal.expectedReturn >= 0 ? '+' : ''}{(signal.expectedReturn * 100).toFixed(1)}%
+                      Hedef: ₺{(signal.price * (1 + signal.expectedReturn)).toFixed(2)}
                     </p>
                   )}
                 </div>
