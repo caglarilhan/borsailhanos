@@ -220,6 +220,12 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_update_signal_result(query_params)
         elif path == '/api/tracking/report':
             self.handle_tracking_report(query_params)
+        elif path == '/api/watchlist/add':
+            self.handle_watchlist_add(query_params)
+        elif path == '/api/watchlist/remove':
+            self.handle_watchlist_remove(query_params)
+        elif path == '/api/watchlist/list':
+            self.handle_watchlist_list(query_params)
         elif path == '/api/prices':
             self.handle_price_quote(query_params)
         elif path == '/api/prices/bulk':
@@ -3377,6 +3383,80 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             return self.send_json_response({
                 'error': f'Rapor hatası: {str(e)}',
                 'report': ''
+            })
+    
+    def handle_watchlist_add(self, query_params):
+        """Watchlist'e hisse ekleme endpoint"""
+        try:
+            symbol = query_params.get('symbol', '').upper()
+            if not symbol:
+                return self.send_json_response({
+                    'error': 'Sembol gerekli',
+                    'success': False
+                })
+            
+            if symbol not in self._WATCHLIST:
+                self._WATCHLIST.add(symbol)
+                return self.send_json_response({
+                    'success': True,
+                    'message': f'{symbol} watchlist\'e eklendi',
+                    'symbols': sorted(list(self._WATCHLIST))
+                })
+            else:
+                return self.send_json_response({
+                    'success': False,
+                    'error': f'{symbol} zaten watchlist\'te',
+                    'symbols': sorted(list(self._WATCHLIST))
+                })
+                
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Watchlist ekleme hatası: {str(e)}',
+                'success': False
+            })
+    
+    def handle_watchlist_remove(self, query_params):
+        """Watchlist'ten hisse çıkarma endpoint"""
+        try:
+            symbol = query_params.get('symbol', '').upper()
+            if not symbol:
+                return self.send_json_response({
+                    'error': 'Sembol gerekli',
+                    'success': False
+                })
+            
+            if symbol in self._WATCHLIST:
+                self._WATCHLIST.remove(symbol)
+                return self.send_json_response({
+                    'success': True,
+                    'message': f'{symbol} watchlist\'ten çıkarıldı',
+                    'symbols': sorted(list(self._WATCHLIST))
+                })
+            else:
+                return self.send_json_response({
+                    'success': False,
+                    'error': f'{symbol} watchlist\'te bulunamadı',
+                    'symbols': sorted(list(self._WATCHLIST))
+                })
+                
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Watchlist çıkarma hatası: {str(e)}',
+                'success': False
+            })
+    
+    def handle_watchlist_list(self, query_params):
+        """Watchlist listesi endpoint"""
+        try:
+            return self.send_json_response({
+                'success': True,
+                'symbols': sorted(list(self._WATCHLIST)),
+                'count': len(self._WATCHLIST)
+            })
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Watchlist listesi hatası: {str(e)}',
+                'success': False
             })
     
     def send_json_response(self, data):
