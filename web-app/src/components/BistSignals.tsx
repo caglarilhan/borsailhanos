@@ -26,7 +26,8 @@ export default function BistSignals() {
   const [watchlist, setWatchlist] = useState<string[]>([]);
   const [filterWatch, setFilterWatch] = useState<boolean>(false);
   const [search, setSearch] = useState<string>('');
-  const [view, setView] = useState<'table'|'cards'>('table');
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
+  const [analysisData, setAnalysisData] = useState<any>(null);
 
   const endpoint = useMemo(() => {
     if (universe === 'ALL') return null;
@@ -84,8 +85,20 @@ export default function BistSignals() {
     );
   };
 
+  const loadAnalysis = async (symbol: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/ai/predictive_twin?symbol=${symbol}`);
+      const data = await response.json();
+      setAnalysisData(data);
+    } catch (error) {
+      console.error('Analiz yüklenemedi:', error);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm p-4 space-y-4">
+    <div className="flex gap-4">
+      {/* Sol Panel - Tahminler */}
+      <div className="flex-1 bg-white rounded-lg shadow-sm p-4 space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
@@ -142,32 +155,65 @@ export default function BistSignals() {
             <tr className="text-left text-gray-900">
               <th className="py-2 pr-4">Sembol</th>
               <th className="py-2 pr-4">Ufuk</th>
+              <th className="py-2 pr-4">Tahmin</th>
               <th className="py-2 pr-4">Sinyal</th>
               <th className="py-2 pr-4">Güven</th>
               <th className="py-2 pr-4">Geçerlilik</th>
+              <th className="py-2 pr-4">İşlemler</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
-              <tr><td className="py-4 text-gray-800" colSpan={5}>Yükleniyor…</td></tr>
+              <tr><td className="py-4 text-gray-800" colSpan={7}>Yükleniyor…</td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td className="py-4 text-gray-800" colSpan={5}>Kayıt yok</td></tr>
+              <tr><td className="py-4 text-gray-800" colSpan={7}>Kayıt yok</td></tr>
             )}
                 {!loading && rows
                   .filter(r => (!filterWatch || watchlist.includes(r.symbol)) && (search==='' || r.symbol.includes(search)))
                   .map((r, i) => {
               const up = r.prediction >= 0;
               const confPct = Math.round(r.confidence * 100);
-                  const inWatch = watchlist.includes(r.symbol);
+              const inWatch = watchlist.includes(r.symbol);
+              
+              // Alış/Satış sinyali belirleme
+              let signal = 'Bekle';
+              let signalColor = 'bg-gray-100 text-gray-700';
+              if (confPct >= 80) {
+                if (r.prediction >= 0.1) {
+                  signal = 'Güçlü Al';
+                  signalColor = 'bg-green-100 text-green-700';
+                } else if (r.prediction >= 0.05) {
+                  signal = 'Al';
+                  signalColor = 'bg-blue-100 text-blue-700';
+                } else if (r.prediction <= -0.1) {
+                  signal = 'Güçlü Sat';
+                  signalColor = 'bg-red-100 text-red-700';
+                } else if (r.prediction <= -0.05) {
+                  signal = 'Sat';
+                  signalColor = 'bg-orange-100 text-orange-700';
+                }
+              }
               return (
-                <tr key={`${r.symbol}-${r.horizon}-${i}`} className="border-t">
+                <tr 
+                  key={`${r.symbol}-${r.horizon}-${i}`} 
+                  className="border-t cursor-pointer hover:bg-gray-50"
+                  onClick={() => {
+                    setSelectedSymbol(r.symbol);
+                    loadAnalysis(r.symbol);
+                  }}
+                >
                   <td className="py-2 pr-4 font-medium">{r.symbol}</td>
                   <td className="py-2 pr-4">{r.horizon}</td>
                   <td className="py-2 pr-4 flex items-center gap-1">
                     {up ? <ArrowTrendingUpIcon className="h-4 w-4 text-green-600" /> : <ArrowTrendingDownIcon className="h-4 w-4 text-red-600" />}
                     <span className={up ? 'text-green-700' : 'text-red-700'}>
-                      {up ? 'Yükseliş' : 'Düşüş'} ({(r.prediction*100).toFixed(1)}%)
+                      {up ? 'Yükseliş' : 'Düşüş'} ({Math.abs(r.prediction*100).toFixed(1)}%)
+                    </span>
+                  </td>
+                  <td className="py-2 pr-4">
+                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${signalColor}`}>
+                      {signal}
                     </span>
                   </td>
                   <td className="py-2 pr-4">
@@ -177,33 +223,31 @@ export default function BistSignals() {
                   </td>
                   <td className="py-2 pr-4 flex items-center gap-1 text-gray-800">
                     <ClockIcon className="h-4 w-4" />
-                    Geçerlilik: {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
+                    {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
                   </td>
-                      <td className="py-2 pr-4">
-                        <button
-                          onClick={async ()=>{
-                            try {
-                              const mode = inWatch ? 'remove':'add';
-                              const qs = `symbols=${r.symbol}&mode=${mode}`;
-                              const wl = await fetch(`${API_BASE_URL}/api/watchlist/update?${qs}`).then(r=>r.json());
-                              if (Array.isArray(wl?.symbols)) setWatchlist(wl.symbols);
-                            } catch {}
-                          }}
-                          className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-700'}`}
-                        >{inWatch?'Takipte':'Takibe Al'}</button>
-                      </td>
-                      <td className="py-2 pr-4">
-                        {confPct>=85 && (
-                          <button
-                            onClick={async ()=>{
-                              try {
-                                await fetch(`${API_BASE_URL}/api/alerts/test?title=Yüksek Güven Sinyali&body=${encodeURIComponent(r.symbol+' '+r.horizon)}`);
-                              } catch {}
-                            }}
-                            className="px-2 py-1 text-xs rounded bg-blue-600 text-white"
-                          >Bildirim</button>
-                        )}
-                      </td>
+                  <td className="py-2 pr-4 flex items-center gap-2">
+                    <button
+                      onClick={async ()=>{
+                        try {
+                          const mode = inWatch ? 'remove':'add';
+                          const qs = `symbols=${r.symbol}&mode=${mode}`;
+                          const wl = await fetch(`${API_BASE_URL}/api/watchlist/update?${qs}`).then(r=>r.json());
+                          if (Array.isArray(wl?.symbols)) setWatchlist(wl.symbols);
+                        } catch {}
+                      }}
+                      className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-700'}`}
+                    >{inWatch?'Takipte':'Takibe Al'}</button>
+                    {confPct>=85 && (
+                      <button
+                        onClick={async ()=>{
+                          try {
+                            await fetch(`${API_BASE_URL}/api/alerts/test?title=Yüksek Güven Sinyali&body=${encodeURIComponent(r.symbol+' '+r.horizon)}`);
+                          } catch {}
+                        }}
+                        className="px-2 py-1 text-xs rounded bg-blue-600 text-white"
+                      >Bildirim</button>
+                    )}
+                  </td>
                 </tr>
               );
             })}
@@ -278,6 +322,80 @@ export default function BistSignals() {
           })()}
         </div>
       )}
+      </div>
+
+      {/* Sağ Panel - Analiz */}
+      <div className="w-80 bg-white rounded-lg shadow-sm p-4">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Analiz Paneli</h3>
+        
+        {selectedSymbol ? (
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <h4 className="font-medium text-blue-900">{selectedSymbol}</h4>
+              <p className="text-sm text-blue-700">Seçilen sembol için detaylı analiz</p>
+            </div>
+            
+            {analysisData ? (
+              <div className="space-y-3">
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h5 className="font-medium text-gray-900 mb-2">Tahmin Özeti</h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Beklenen Getiri:</span>
+                      <span className="font-medium">{(analysisData.predictions?.['1d']?.expected_return * 100 || 0).toFixed(2)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Yükseliş Olasılığı:</span>
+                      <span className="font-medium">{(analysisData.predictions?.['1d']?.up_prob * 100 || 0).toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Düşüş Olasılığı:</span>
+                      <span className="font-medium">{(analysisData.predictions?.['1d']?.down_prob * 100 || 0).toFixed(1)}%</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h5 className="font-medium text-gray-900 mb-2">Model Kalitesi</h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>Brier Skoru:</span>
+                      <span className="font-medium">{analysisData.calibration?.brier_score || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>ECE:</span>
+                      <span className="font-medium">{analysisData.calibration?.ece || 'N/A'}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="bg-gray-50 p-3 rounded-lg">
+                  <h5 className="font-medium text-gray-900 mb-2">Model Durumu</h5>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>PSI:</span>
+                      <span className="font-medium">{analysisData.drift?.population_stability_index || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Drift Bayrakları:</span>
+                      <span className="font-medium">{analysisData.drift?.feature_drift_flags?.join(', ') || 'Yok'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+                <p>Analiz yükleniyor...</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <p>Analiz görmek için bir sembol seçin</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
