@@ -320,8 +320,15 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
                   <p className={`text-sm ${
                     signal.change >= 0 ? 'text-green-600' : 'text-red-600'
                   }`}>
-                    {signal.change >= 0 ? '+' : ''}{signal.change}%
+                    {signal.change >= 0 ? '+' : ''}{signal.change.toFixed(1)}%
                   </p>
+                  {signal.expectedReturn && (
+                    <p className={`text-xs ${
+                      signal.expectedReturn >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      Beklenen: {signal.expectedReturn >= 0 ? '+' : ''}{(signal.expectedReturn * 100).toFixed(1)}%
+                    </p>
+                  )}
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Güven</p>
