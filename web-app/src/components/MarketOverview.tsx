@@ -29,6 +29,8 @@ export default function MarketOverview({ marketData, isLoading }: MarketOverview
   const [sortBy, setSortBy] = useState<'price' | 'change' | 'volume'>('change');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [filterSector, setFilterSector] = useState<string>('all');
+  const [selectedStock, setSelectedStock] = useState<MarketData | null>(null);
+  const [showAnalysis, setShowAnalysis] = useState(false);
 
   const sortedData = [...marketData].sort((a, b) => {
     let aValue = 0;
@@ -57,6 +59,16 @@ export default function MarketOverview({ marketData, isLoading }: MarketOverview
   const filteredData = filterSector === 'all' 
     ? sortedData 
     : sortedData.filter(stock => stock.sector === filterSector);
+
+  const handleEyeClick = (stock: MarketData) => {
+    setSelectedStock(stock);
+    setShowAnalysis(true);
+  };
+
+  const handlePlusClick = (stock: MarketData) => {
+    // Watchlist'e ekleme fonksiyonu
+    console.log(`Adding ${stock.symbol} to watchlist`);
+  };
 
   if (isLoading) {
     return (
@@ -194,12 +206,14 @@ export default function MarketOverview({ marketData, isLoading }: MarketOverview
               
               <div className="flex items-center space-x-2 ml-4">
                 <button
+                  onClick={() => handleEyeClick(stock)}
                   className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                   title="Detayları Görüntüle"
                 >
                   <EyeIcon className="h-4 w-4" />
                 </button>
                 <button
+                  onClick={() => handlePlusClick(stock)}
                   className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                   title="Watchlist'e Ekle"
                 >
@@ -210,6 +224,184 @@ export default function MarketOverview({ marketData, isLoading }: MarketOverview
           ))}
         </div>
       </div>
+
+      {/* Detaylı Analiz Modal */}
+      {showAnalysis && selectedStock && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">
+                {selectedStock.symbol} - Detaylı Analiz
+              </h3>
+              <button
+                onClick={() => setShowAnalysis(false)}
+                className="text-gray-400 hover:text-gray-600 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Temel Bilgiler */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Temel Bilgiler</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Sembol:</span>
+                    <span className="text-sm font-medium">{selectedStock.symbol}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Fiyat:</span>
+                    <span className="text-sm font-medium">₺{selectedStock.price.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Değişim:</span>
+                    <span className={`text-sm font-medium ${
+                      selectedStock.change >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                      {selectedStock.change >= 0 ? '+' : ''}{selectedStock.change.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Hacim:</span>
+                    <span className="text-sm font-medium">{selectedStock.volume.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Sektör:</span>
+                    <span className="text-sm font-medium">{selectedStock.sector || 'N/A'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Finansal Oranlar */}
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Finansal Oranlar</h4>
+                <div className="space-y-3">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">P/E Oranı:</span>
+                    <span className={`text-sm font-medium ${
+                      selectedStock.peRatio && selectedStock.peRatio < 15 ? 'text-green-600' :
+                      selectedStock.peRatio && selectedStock.peRatio > 25 ? 'text-red-600' :
+                      'text-gray-600'
+                    }`}>
+                      {selectedStock.peRatio ? selectedStock.peRatio.toFixed(1) : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Temettü Verimi:</span>
+                    <span className={`text-sm font-medium ${
+                      selectedStock.dividendYield && selectedStock.dividendYield > 3 ? 'text-green-600' :
+                      selectedStock.dividendYield && selectedStock.dividendYield < 1 ? 'text-red-600' :
+                      'text-gray-600'
+                    }`}>
+                      {selectedStock.dividendYield ? `${selectedStock.dividendYield.toFixed(1)}%` : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Piyasa Değeri:</span>
+                    <span className="text-sm font-medium">
+                      {selectedStock.marketCap ? `₺${(selectedStock.marketCap / 1000000000).toFixed(1)}B` : 'N/A'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Hacim/Fiyat:</span>
+                    <span className="text-sm font-medium">
+                      {(selectedStock.volume / selectedStock.price).toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Teknik Analiz */}
+              <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Teknik Analiz</h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center">
+                    <div className={`w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold ${
+                      selectedStock.change >= 0 ? 'bg-green-500' : 'bg-red-500'
+                    }`}>
+                      {selectedStock.change >= 0 ? '+' : ''}{selectedStock.change.toFixed(1)}%
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">GÜNLÜK DEĞİŞİM</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold bg-blue-500">
+                      {selectedStock.volume > 1000000 ? 'YÜKSEK' : 'DÜŞÜK'}
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">HACİM</p>
+                  </div>
+                  <div className="text-center">
+                    <div className={`w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold ${
+                      selectedStock.peRatio && selectedStock.peRatio < 15 ? 'bg-green-500' :
+                      selectedStock.peRatio && selectedStock.peRatio > 25 ? 'bg-red-500' :
+                      'bg-yellow-500'
+                    }`}>
+                      {selectedStock.peRatio ? selectedStock.peRatio.toFixed(0) : 'N/A'}
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">P/E ORANI</p>
+                  </div>
+                  <div className="text-center">
+                    <div className={`w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold ${
+                      selectedStock.dividendYield && selectedStock.dividendYield > 3 ? 'bg-green-500' :
+                      selectedStock.dividendYield && selectedStock.dividendYield < 1 ? 'bg-red-500' :
+                      'bg-yellow-500'
+                    }`}>
+                      {selectedStock.dividendYield ? `${selectedStock.dividendYield.toFixed(1)}%` : 'N/A'}
+                    </div>
+                    <p className="text-xs text-gray-600 font-medium">TEMETTÜ</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Önerisi */}
+              <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">AI Önerisi</h4>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Genel Değerlendirme:</span>
+                    <span className={`px-3 py-1 rounded text-sm font-medium ${
+                      selectedStock.change >= 2 ? 'bg-green-100 text-green-700' :
+                      selectedStock.change >= 0 ? 'bg-blue-100 text-blue-700' :
+                      selectedStock.change >= -2 ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {selectedStock.change >= 2 ? 'GÜÇLÜ AL' :
+                       selectedStock.change >= 0 ? 'AL' :
+                       selectedStock.change >= -2 ? 'BEKLE' : 'SAT'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600">Risk Seviyesi:</span>
+                    <span className={`px-3 py-1 rounded text-sm font-medium ${
+                      selectedStock.peRatio && selectedStock.peRatio < 15 ? 'bg-green-100 text-green-700' :
+                      selectedStock.peRatio && selectedStock.peRatio > 25 ? 'bg-red-100 text-red-700' :
+                      'bg-yellow-100 text-yellow-700'
+                    }`}>
+                      {selectedStock.peRatio && selectedStock.peRatio < 15 ? 'DÜŞÜK' :
+                       selectedStock.peRatio && selectedStock.peRatio > 25 ? 'YÜKSEK' : 'ORTA'}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-700">
+                    <p className="mb-2">
+                      {selectedStock.change >= 2 ? 
+                        `${selectedStock.symbol} güçlü yükseliş trendinde. Teknik göstergeler pozitif sinyal veriyor.` :
+                        selectedStock.change >= 0 ?
+                        `${selectedStock.symbol} pozitif momentum gösteriyor. Dikkatli takip önerilir.` :
+                        selectedStock.change >= -2 ?
+                        `${selectedStock.symbol} karışık sinyaller veriyor. Bekle ve gör stratejisi uygulanabilir.` :
+                        `${selectedStock.symbol} düşüş trendinde. Risk yönetimi önemli.`
+                      }
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      * Bu analiz AI destekli teknik analiz sonuçlarıdır. Yatırım kararlarınızı vermeden önce detaylı araştırma yapın.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
