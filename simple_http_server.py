@@ -1270,8 +1270,8 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             results = []
             for sym in symbol_list:
                 for hz in horizon_list:
-                    # Temel tahmin
-                    pred = random.uniform(-1.0, 1.0)
+                    # Temel tahmin - daha büyük değerler
+                    pred = random.uniform(-0.8, 0.8)
                     
                     # Şirket bilgileri
                     company_info = bist30_real.get(sym, {'name': sym, 'sector': 'Genel', 'pe': 12.0, 'roe': 15.0, 'debt_ratio': 0.4})
@@ -1314,8 +1314,8 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                     # Finansal güç ve makro faktörlerle güven artırımı
                     confidence = min(conf_max, base_conf + financial_strength * 0.15 + abs(macro_impact) * 0.1)
                     
-                    # Eşik kontrolü
-                    pred_threshold = 0.05 if all_mode else 0.2
+                    # Eşik kontrolü - daha düşük eşik, daha fazla tahmin
+                    pred_threshold = 0.01 if all_mode else 0.05
                     if abs(pred_adjusted) < pred_threshold:
                         continue
                         
@@ -1834,14 +1834,14 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             results = []
             for sym in symbol_list:
                 for hz in horizon_list:
-                    pred = random.uniform(-1.0, 1.0)
+                    pred = random.uniform(-0.8, 0.8)
                     # all=1 mode: lower confidence threshold, more predictions
                     conf_min = 0.45 if all_mode else 0.65
                     conf_max = 0.95
                     conf = random.uniform(conf_min, conf_max)
                     
-                    # all=1 mode: lower prediction threshold
-                    pred_threshold = 0.05 if all_mode else 0.2
+                    # all=1 mode: lower prediction threshold - daha fazla tahmin
+                    pred_threshold = 0.01 if all_mode else 0.05
                     if abs(pred) < pred_threshold:
                         continue
                     results.append({
