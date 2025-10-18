@@ -43,6 +43,16 @@ except ImportError as e:
     REAL_DATA_AVAILABLE = False
     print(f"⚠️ Gerçek veri entegrasyonu devre dışı: {e}")
 
+# Sinyal takip sistemi
+try:
+    from signal_tracker import SignalTracker
+    signal_tracker = SignalTracker()
+    SIGNAL_TRACKING_AVAILABLE = True
+    print("✅ Sinyal takip sistemi aktif!")
+except ImportError as e:
+    SIGNAL_TRACKING_AVAILABLE = False
+    print(f"⚠️ Sinyal takip sistemi devre dışı: {e}")
+
 # Ingestion client (Kafka/Redpanda) stub init
 kafka_client = None
 try:
@@ -202,6 +212,14 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_real_trading_signals(query_params)
         elif path == '/api/real/market_data':
             self.handle_real_market_data(query_params)
+        elif path == '/api/tracking/statistics':
+            self.handle_tracking_statistics(query_params)
+        elif path == '/api/tracking/pending':
+            self.handle_pending_signals(query_params)
+        elif path == '/api/tracking/update':
+            self.handle_update_signal_result(query_params)
+        elif path == '/api/tracking/report':
+            self.handle_tracking_report(query_params)
         elif path == '/api/prices':
             self.handle_price_quote(query_params)
         elif path == '/api/prices/bulk':
@@ -3209,11 +3227,26 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             # Gerçek sinyalleri al
             signals = get_real_trading_signals()
             
+            # Sinyalleri takip sistemine kaydet
+            if SIGNAL_TRACKING_AVAILABLE:
+                for signal in signals:
+                    try:
+                        signal_tracker.save_signal(
+                            symbol=signal['symbol'],
+                            signal=signal['signal'],
+                            confidence=signal['confidence'],
+                            price=signal['price'],
+                            prediction_days=1
+                        )
+                    except Exception as e:
+                        print(f"⚠️ Sinyal kaydetme hatası: {e}")
+            
             return self.send_json_response({
                 'signals': signals,
                 'timestamp': datetime.now().isoformat(),
                 'count': len(signals),
-                'source': 'yfinance'
+                'source': 'yfinance',
+                'tracking_enabled': SIGNAL_TRACKING_AVAILABLE
             })
             
         except Exception as e:
@@ -3245,6 +3278,105 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             return self.send_json_response({
                 'error': f'Gerçek piyasa verisi hatası: {str(e)}',
                 'market_data': []
+            })
+    
+    def handle_tracking_statistics(self, query_params):
+        """Sinyal takip istatistikleri endpoint"""
+        try:
+            if not SIGNAL_TRACKING_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sinyal takip sistemi devre dışı',
+                    'statistics': {}
+                })
+            
+            symbol = query_params.get('symbol')
+            stats = signal_tracker.get_statistics(symbol)
+            
+            return self.send_json_response({
+                'statistics': stats,
+                'timestamp': datetime.now().isoformat(),
+                'tracking_enabled': True
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'İstatistik hatası: {str(e)}',
+                'statistics': {}
+            })
+    
+    def handle_pending_signals(self, query_params):
+        """Sonuç bekleyen sinyaller endpoint"""
+        try:
+            if not SIGNAL_TRACKING_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sinyal takip sistemi devre dışı',
+                    'pending_signals': []
+                })
+            
+            pending = signal_tracker.get_pending_signals()
+            
+            return self.send_json_response({
+                'pending_signals': pending,
+                'count': len(pending),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Bekleyen sinyaller hatası: {str(e)}',
+                'pending_signals': []
+            })
+    
+    def handle_update_signal_result(self, query_params):
+        """Sinyal sonucu güncelleme endpoint"""
+        try:
+            if not SIGNAL_TRACKING_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sinyal takip sistemi devre dışı'
+                })
+            
+            signal_id = int(query_params.get('signal_id', 0))
+            actual_price = float(query_params.get('actual_price', 0))
+            
+            if signal_id <= 0 or actual_price <= 0:
+                return self.send_json_response({
+                    'error': 'Geçersiz signal_id veya actual_price'
+                })
+            
+            signal_tracker.update_result(signal_id, actual_price)
+            
+            return self.send_json_response({
+                'success': True,
+                'message': f'Sinyal {signal_id} sonucu güncellendi',
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Sonuç güncelleme hatası: {str(e)}'
+            })
+    
+    def handle_tracking_report(self, query_params):
+        """Detaylı takip raporu endpoint"""
+        try:
+            if not SIGNAL_TRACKING_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sinyal takip sistemi devre dışı',
+                    'report': ''
+                })
+            
+            report = signal_tracker.export_report()
+            
+            return self.send_json_response({
+                'report': report,
+                'timestamp': datetime.now().isoformat(),
+                'format': 'text'
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Rapor hatası: {str(e)}',
+                'report': ''
             })
     
     def send_json_response(self, data):
