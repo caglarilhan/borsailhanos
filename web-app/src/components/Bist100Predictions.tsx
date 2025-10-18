@@ -49,7 +49,7 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
   useEffect(() => {
     const fetchPredictions = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8081/api/bist100/predictions?timeframe=${timeframe}&limit=50`);
+        const response = await fetch(`http://127.0.0.1:9011/api/ai/bist100_predictions?horizon=${timeframe}&limit=50`);
         const data = await response.json();
         
         if (data.predictions && data.predictions.length > 0) {
@@ -73,7 +73,7 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
             reasons: pred.reasons || ['AI analizi', 'Teknik sinyaller', 'Temel faktörler'],
             riskLevel: pred.risk_level || 'Orta',
             recommendation: pred.recommendation || 'Bekle',
-            lastUpdate: pred.timestamp || new Date().toISOString()
+            lastUpdate: pred.timestamp || '2024-01-01T00:00:00.000Z'
           }));
           
           setPredictions(transformedPredictions);
@@ -141,6 +141,12 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
 
       return basePredictions.map(stock => {
         // Generate different predictions based on timeframe
+        // Use deterministic values instead of Math.random() to avoid hydration issues
+        const seed = stock.symbol.charCodeAt(0) + stock.symbol.charCodeAt(1);
+        const random1 = (seed * 0.1) % 1;
+        const random2 = (seed * 0.2) % 1;
+        const random3 = (seed * 0.3) % 1;
+        
         let changePercent = 0;
         let confidence = 0;
         let reasons: string[] = [];
@@ -149,53 +155,53 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
 
         switch (tf) {
           case '5m':
-            changePercent = Math.random() * 2 - 1; // -1% to +1%
-            confidence = 0.6 + Math.random() * 0.2; // 60-80%
+            changePercent = random1 * 2 - 1; // -1% to +1%
+            confidence = 0.6 + random2 * 0.2; // 60-80%
             reasons = ['Kısa vadeli momentum', 'Hacim analizi', 'Mikro seviye teknik sinyaller'];
             break;
           case '15m':
-            changePercent = Math.random() * 3 - 1.5; // -1.5% to +1.5%
-            confidence = 0.65 + Math.random() * 0.2; // 65-85%
+            changePercent = random2 * 3 - 1.5; // -1.5% to +1.5%
+            confidence = 0.65 + random3 * 0.2; // 65-85%
             reasons = ['15 dakikalık trend analizi', 'RSI kısa vadeli sinyaller', 'Hacim artışı'];
             break;
           case '30m':
-            changePercent = Math.random() * 4 - 2; // -2% to +2%
-            confidence = 0.7 + Math.random() * 0.2; // 70-90%
+            changePercent = random3 * 4 - 2; // -2% to +2%
+            confidence = 0.7 + random1 * 0.2; // 70-90%
             reasons = ['Yarım saatlik formasyon', 'MACD kısa vadeli', 'Teknik destek/direnç'];
             break;
           case '1h':
-            changePercent = Math.random() * 5 - 2.5; // -2.5% to +2.5%
-            confidence = 0.75 + Math.random() * 0.2; // 75-95%
+            changePercent = random1 * 5 - 2.5; // -2.5% to +2.5%
+            confidence = 0.75 + random2 * 0.2; // 75-95%
             reasons = ['Saatlik trend kırılımı', 'RSI oversold/overbought', 'Hacim ortalamanın üzerinde'];
             break;
           case '4h':
-            changePercent = Math.random() * 6 - 3; // -3% to +3%
-            confidence = 0.8 + Math.random() * 0.15; // 80-95%
+            changePercent = random2 * 6 - 3; // -3% to +3%
+            confidence = 0.8 + random3 * 0.15; // 80-95%
             reasons = ['4 saatlik formasyon', 'Güçlü teknik sinyaller', 'Pozitif momentum'];
             break;
           case '1d':
-            changePercent = Math.random() * 8 - 4; // -4% to +4%
-            confidence = 0.85 + Math.random() * 0.1; // 85-95%
+            changePercent = random3 * 8 - 4; // -4% to +4%
+            confidence = 0.85 + random1 * 0.1; // 85-95%
             reasons = ['Günlük trend analizi', 'Güçlü temel analiz', 'Pozitif haber akışı'];
             break;
           case '2d':
-            changePercent = Math.random() * 10 - 5; // -5% to +5%
-            confidence = 0.8 + Math.random() * 0.15; // 80-95%
+            changePercent = random1 * 10 - 5; // -5% to +5%
+            confidence = 0.8 + random2 * 0.15; // 80-95%
             reasons = ['2 günlük momentum', 'Sektörel trend', 'Makro ekonomik faktörler'];
             break;
           case '3d':
-            changePercent = Math.random() * 12 - 6; // -6% to +6%
-            confidence = 0.75 + Math.random() * 0.2; // 75-95%
+            changePercent = random2 * 12 - 6; // -6% to +6%
+            confidence = 0.75 + random3 * 0.2; // 75-95%
             reasons = ['3 günlük formasyon', 'Haftalık trend', 'Piyasa sentiment'];
             break;
           case '5d':
-            changePercent = Math.random() * 15 - 7.5; // -7.5% to +7.5%
-            confidence = 0.7 + Math.random() * 0.25; // 70-95%
+            changePercent = random3 * 15 - 7.5; // -7.5% to +7.5%
+            confidence = 0.7 + random1 * 0.25; // 70-95%
             reasons = ['Haftalık trend analizi', 'Sektörel rotasyon', 'Makro veriler'];
             break;
           case '1w':
-            changePercent = Math.random() * 20 - 10; // -10% to +10%
-            confidence = 0.65 + Math.random() * 0.3; // 65-95%
+            changePercent = random1 * 20 - 10; // -10% to +10%
+            confidence = 0.65 + random2 * 0.3; // 65-95%
             reasons = ['Haftalık formasyon', 'Uzun vadeli trend', 'Temel analiz güçlü'];
             break;
         }
@@ -226,14 +232,14 @@ export default function Bist100Predictions({ isLoading }: Bist100PredictionsProp
           change: Number(changePercent.toFixed(2)),
           confidence: Number(confidence.toFixed(3)),
           timeframe: tf,
-          aiScore: Number((confidence * 0.9 + Math.random() * 0.1).toFixed(3)),
-          technicalScore: Number((0.6 + Math.random() * 0.3).toFixed(3)),
-          fundamentalScore: Number((0.7 + Math.random() * 0.2).toFixed(3)),
-          sentimentScore: Number((0.5 + Math.random() * 0.4).toFixed(3)),
+          aiScore: Number((confidence * 0.9 + random1 * 0.1).toFixed(3)),
+          technicalScore: Number((0.6 + random2 * 0.3).toFixed(3)),
+          fundamentalScore: Number((0.7 + random3 * 0.2).toFixed(3)),
+          sentimentScore: Number((0.5 + random1 * 0.4).toFixed(3)),
           reasons,
           riskLevel: riskLevel as 'Düşük' | 'Orta' | 'Yüksek',
           recommendation: recommendation as 'Güçlü Al' | 'Al' | 'Bekle' | 'Sat' | 'Güçlü Sat',
-          lastUpdate: new Date().toISOString()
+          lastUpdate: '2024-01-01T00:00:00.000Z'
         };
       });
     };
