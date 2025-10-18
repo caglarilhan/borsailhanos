@@ -1695,9 +1695,9 @@ class BISTAIHandler(BaseHTTPRequestHandler):
 
     def handle_bist100_predictions(self, query_params):
         try:
-            # Gerçek BIST100 şirketleri (BIST30 + ek şirketler)
+            # Gerçek BIST100 şirketleri (BIST30 + 70 ek şirket = 100 hisse)
             bist100_real = {
-                # BIST30 şirketleri
+                # BIST30 şirketleri (30 adet)
                 'THYAO': {'name': 'Türk Hava Yolları', 'sector': 'Havacılık', 'pe': 12.5, 'roe': 18.2, 'debt_ratio': 0.45},
                 'ASELS': {'name': 'Aselsan', 'sector': 'Savunma', 'pe': 18.2, 'roe': 22.1, 'debt_ratio': 0.28},
                 'TUPRS': {'name': 'Tüpraş', 'sector': 'Enerji', 'pe': 8.9, 'roe': 25.3, 'debt_ratio': 0.35},
@@ -1729,7 +1729,7 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'SODA': {'name': 'Soda Sanayi', 'sector': 'Kimya', 'pe': 12.6, 'roe': 17.8, 'debt_ratio': 0.16},
                 'KRDMD': {'name': 'Kardemir', 'sector': 'Çelik', 'pe': 4.8, 'roe': 31.2, 'debt_ratio': 0.14},
                 
-                # BIST100'e ek şirketler
+                # BIST100'e ek şirketler (70 adet)
                 'EGEEN': {'name': 'Ege Endüstri', 'sector': 'Tekstil', 'pe': 14.6, 'roe': 11.2, 'debt_ratio': 0.36},
                 'ENJSA': {'name': 'Enka İnşaat', 'sector': 'İnşaat', 'pe': 13.8, 'roe': 14.6, 'debt_ratio': 0.29},
                 'AYGAZ': {'name': 'Aygaz', 'sector': 'Enerji', 'pe': 10.5, 'roe': 17.3, 'debt_ratio': 0.22},
@@ -1759,7 +1759,6 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'EGEPO': {'name': 'Ege Profil', 'sector': 'İnşaat', 'pe': 9.8, 'roe': 19.1, 'debt_ratio': 0.24},
                 'EKIZ': {'name': 'Ekinözü', 'sector': 'Gıda', 'pe': 15.2, 'roe': 12.6, 'debt_ratio': 0.30},
                 'EMKEL': {'name': 'Emek Elektrik', 'sector': 'Enerji', 'pe': 8.6, 'roe': 20.8, 'debt_ratio': 0.21},
-                'ENKAI': {'name': 'Enka İnşaat', 'sector': 'İnşaat', 'pe': 7.8, 'roe': 24.1, 'debt_ratio': 0.18},
                 'FMIZP': {'name': 'F-M İzmit Piston', 'sector': 'Otomotiv', 'pe': 11.7, 'roe': 17.3, 'debt_ratio': 0.27},
                 'GEDIK': {'name': 'Gedik Yatırım', 'sector': 'Finans', 'pe': 13.8, 'roe': 15.2, 'debt_ratio': 0.35},
                 'GOODY': {'name': 'Goodyear', 'sector': 'Otomotiv', 'pe': 10.9, 'roe': 18.6, 'debt_ratio': 0.23},
@@ -1782,12 +1781,10 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'OYAKC': {'name': 'Oyak Çimento', 'sector': 'İnşaat', 'pe': 6.4, 'roe': 23.1, 'debt_ratio': 0.14},
                 'PAMEL': {'name': 'Pamuklu Mensucat', 'sector': 'Tekstil', 'pe': 14.1, 'roe': 13.2, 'debt_ratio': 0.28},
                 'PENTA': {'name': 'Penta Teknoloji', 'sector': 'Teknoloji', 'pe': 18.3, 'roe': 11.4, 'debt_ratio': 0.20},
-                'PETUN': {'name': 'Petkim', 'sector': 'Petrokimya', 'pe': 9.7, 'roe': 19.2, 'debt_ratio': 0.38},
                 'PRKAB': {'name': 'Peker Kimya', 'sector': 'Kimya', 'pe': 12.7, 'roe': 16.1, 'debt_ratio': 0.24},
                 'QUAGR': {'name': 'Qua Granit', 'sector': 'İnşaat', 'pe': 10.3, 'roe': 17.8, 'debt_ratio': 0.21},
                 'RAYSG': {'name': 'Ray Sigorta', 'sector': 'Sigorta', 'pe': 13.6, 'roe': 14.9, 'debt_ratio': 0.30},
                 'RYSAS': {'name': 'Reyhan Sigorta', 'sector': 'Sigorta', 'pe': 14.8, 'roe': 13.7, 'debt_ratio': 0.32},
-                'SAHOL': {'name': 'Sabancı Holding', 'sector': 'Holding', 'pe': 10.1, 'roe': 11.8, 'debt_ratio': 0.48},
                 'SELEC': {'name': 'Selec', 'sector': 'Teknoloji', 'pe': 20.6, 'roe': 9.2, 'debt_ratio': 0.16},
                 'SILVR': {'name': 'Silverline', 'sector': 'Teknoloji', 'pe': 17.9, 'roe': 10.8, 'debt_ratio': 0.19},
                 'SMRTG': {'name': 'Smart Güneş', 'sector': 'Enerji', 'pe': 16.2, 'roe': 12.5, 'debt_ratio': 0.25},
@@ -1795,21 +1792,14 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'SUWEN': {'name': 'Suwen', 'sector': 'Tekstil', 'pe': 11.5, 'roe': 18.3, 'debt_ratio': 0.23},
                 'TATGD': {'name': 'Tat Gıda', 'sector': 'Gıda', 'pe': 15.7, 'roe': 13.6, 'debt_ratio': 0.29},
                 'TETMT': {'name': 'Tetra Tekstil', 'sector': 'Tekstil', 'pe': 12.4, 'roe': 16.7, 'debt_ratio': 0.24},
-                'THYAO': {'name': 'Türk Hava Yolları', 'sector': 'Havacılık', 'pe': 12.5, 'roe': 18.2, 'debt_ratio': 0.45},
                 'TMSN': {'name': 'TMSN', 'sector': 'Teknoloji', 'pe': 23.8, 'roe': 6.7, 'debt_ratio': 0.11},
-                'TOASO': {'name': 'Tofaş', 'sector': 'Otomotiv', 'pe': 12.7, 'roe': 18.9, 'debt_ratio': 0.33},
                 'TRCAS': {'name': 'Türk Casus', 'sector': 'Savunma', 'pe': 19.1, 'roe': 11.9, 'debt_ratio': 0.17},
                 'TRGYO': {'name': 'Torunlar GYO', 'sector': 'Gayrimenkul', 'pe': 9.6, 'roe': 15.8, 'debt_ratio': 0.26},
                 'TSKB': {'name': 'TSKB', 'sector': 'Bankacılık', 'pe': 7.2, 'roe': 19.4, 'debt_ratio': 0.72},
-                'TUPRS': {'name': 'Tüpraş', 'sector': 'Enerji', 'pe': 8.9, 'roe': 25.3, 'debt_ratio': 0.35},
                 'ULUSE': {'name': 'Ulusoy', 'sector': 'Ulaştırma', 'pe': 11.3, 'roe': 17.1, 'debt_ratio': 0.28},
                 'UNYEC': {'name': 'Uniçe', 'sector': 'Teknoloji', 'pe': 18.7, 'roe': 10.2, 'debt_ratio': 0.14},
-                'VAKBN': {'name': 'VakıfBank', 'sector': 'Bankacılık', 'pe': 5.9, 'roe': 14.8, 'debt_ratio': 0.87},
                 'VESBE': {'name': 'Vestel Beyaz Eşya', 'sector': 'Beyaz Eşya', 'pe': 10.7, 'roe': 19.6, 'debt_ratio': 0.22},
-                'VKING': {'name': 'Viking Kağıt', 'sector': 'Kağıt', 'pe': 8.9, 'roe': 20.7, 'debt_ratio': 0.18},
-                'YKBNK': {'name': 'Yapı Kredi', 'sector': 'Bankacılık', 'pe': 6.2, 'roe': 15.2, 'debt_ratio': 0.85},
-                'YUNSA': {'name': 'Yünsa', 'sector': 'Tekstil', 'pe': 13.7, 'roe': 14.8, 'debt_ratio': 0.25},
-                'ZORLU': {'name': 'Zorlu Holding', 'sector': 'Holding', 'pe': 8.1, 'roe': 16.3, 'debt_ratio': 0.37}
+                'VKING': {'name': 'Viking Kağıt', 'sector': 'Kağıt', 'pe': 8.9, 'roe': 20.7, 'debt_ratio': 0.18}
             }
             
             # Extended list for all=1 mode
