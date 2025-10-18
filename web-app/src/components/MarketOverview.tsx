@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { API_BASE_URL } from '@/lib/config';
 import { 
   ArrowTrendingUpIcon, 
   ArrowTrendingDownIcon,
@@ -65,9 +66,29 @@ export default function MarketOverview({ marketData, isLoading }: MarketOverview
     setShowAnalysis(true);
   };
 
-  const handlePlusClick = (stock: MarketData) => {
-    // Watchlist'e ekleme fonksiyonu
-    console.log(`Adding ${stock.symbol} to watchlist`);
+  const handlePlusClick = async (stock: MarketData) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/watchlist/add?symbol=${stock.symbol}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          alert(`${stock.symbol} watchlist'e eklendi!`);
+        } else {
+          alert('Ekleme hatası: ' + data.error);
+        }
+      } else {
+        alert('Ekleme hatası!');
+      }
+    } catch (error) {
+      console.error('Watchlist ekleme hatası:', error);
+      alert('Ekleme hatası!');
+    }
   };
 
   if (isLoading) {
