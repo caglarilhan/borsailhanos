@@ -34,6 +34,15 @@ except ImportError as e:
     market_regime_detector = None
     KafkaClientStub = None
 
+# Gerçek veri entegrasyonu
+try:
+    from real_data_provider import get_real_trading_signals, get_real_market_data, RealDataProvider
+    REAL_DATA_AVAILABLE = True
+    print("✅ Gerçek veri entegrasyonu aktif!")
+except ImportError as e:
+    REAL_DATA_AVAILABLE = False
+    print(f"⚠️ Gerçek veri entegrasyonu devre dışı: {e}")
+
 # Ingestion client (Kafka/Redpanda) stub init
 kafka_client = None
 try:
@@ -189,6 +198,10 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_bist30_predictions(query_params)
         elif path == '/api/ai/bist100_predictions':
             self.handle_bist100_predictions(query_params)
+        elif path == '/api/real/trading_signals':
+            self.handle_real_trading_signals(query_params)
+        elif path == '/api/real/market_data':
+            self.handle_real_market_data(query_params)
         elif path == '/api/prices':
             self.handle_price_quote(query_params)
         elif path == '/api/prices/bulk':
@@ -3183,6 +3196,56 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.send_json_response({'ok': True, 'symbols': sorted(list(self._WATCHLIST))})
         except Exception as e:
             self.send_json_response({'error': str(e)})
+    
+    def handle_real_trading_signals(self, query_params):
+        """Gerçek AI sinyalleri endpoint"""
+        try:
+            if not REAL_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Gerçek veri entegrasyonu devre dışı',
+                    'signals': []
+                })
+            
+            # Gerçek sinyalleri al
+            signals = get_real_trading_signals()
+            
+            return self.send_json_response({
+                'signals': signals,
+                'timestamp': datetime.now().isoformat(),
+                'count': len(signals),
+                'source': 'yfinance'
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Gerçek sinyal hatası: {str(e)}',
+                'signals': []
+            })
+    
+    def handle_real_market_data(self, query_params):
+        """Gerçek piyasa verisi endpoint"""
+        try:
+            if not REAL_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Gerçek veri entegrasyonu devre dışı',
+                    'market_data': []
+                })
+            
+            # Gerçek piyasa verisini al
+            market_data = get_real_market_data()
+            
+            return self.send_json_response({
+                'market_data': market_data,
+                'timestamp': datetime.now().isoformat(),
+                'count': len(market_data),
+                'source': 'yfinance'
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Gerçek piyasa verisi hatası: {str(e)}',
+                'market_data': []
+            })
     
     def send_json_response(self, data):
         json_data = json.dumps(data, indent=2)
