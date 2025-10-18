@@ -7,7 +7,8 @@ import {
   ArrowTrendingDownIcon, 
   MinusIcon,
   ExclamationTriangleIcon,
-  InformationCircleIcon
+  InformationCircleIcon,
+  ChartBarIcon
 } from '@heroicons/react/24/outline';
 
 interface TradingSignal {
@@ -37,6 +38,7 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
   const [showXAI, setShowXAI] = useState(false);
   const [allSignals, setAllSignals] = useState<TradingSignal[]>([]);
   const [showAnalysisTable, setShowAnalysisTable] = useState(false);
+  const [selectedCharts, setSelectedCharts] = useState<TradingSignal[]>([]);
 
   // Gerçek veri çekme
   useEffect(() => {
@@ -224,6 +226,14 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
     setShowAnalysisTable(true);
   };
 
+  const addToCharts = (signal: TradingSignal) => {
+    if (!selectedCharts.find(s => s.symbol === signal.symbol)) {
+      setSelectedCharts(prev => [...prev, signal]);
+      // LocalStorage'a kaydet
+      localStorage.setItem('selectedCharts', JSON.stringify([...selectedCharts, signal]));
+    }
+  };
+
   const getSignalIcon = (signal: string) => {
     switch (signal) {
       case 'BUY':
@@ -346,6 +356,13 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
                     title="XAI Açıklama"
                   >
                     <InformationCircleIcon className="h-5 w-5" />
+                  </button>
+                  <button
+                    onClick={() => addToCharts(signal)}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                    title="Grafiğe Ekle"
+                  >
+                    <ChartBarIcon className="h-5 w-5" />
                   </button>
                   {signal.confluenceScore && signal.confluenceScore >= 0.8 && (
                     <div className="flex items-center space-x-1">
