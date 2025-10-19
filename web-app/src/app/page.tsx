@@ -48,6 +48,7 @@ import Bist30Predictions from '@/components/Bist30Predictions';
 import AdvancedAnalysis from '@/components/AdvancedAnalysis';
 import SignalTrackingPanel from '@/components/SignalTrackingPanel';
 import AdvancedChartsPanel from '@/components/AdvancedChartsPanel';
+import BISTDataPanel from '@/components/BISTDataPanel';
 import PredictiveTwin from '@/components/PredictiveTwin';
 import RiskEngine from '@/components/RiskEngine';
 import ScenarioSimulator from '@/components/ScenarioSimulator';
@@ -79,7 +80,7 @@ interface MarketData {
   volume: number;
 }
 
-type TabId = 'dashboard' | 'signals' | 'bist30' | 'advanced_analysis' | 'signal_tracking' | 'advanced_charts' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'brokers' | 'crypto' | 'options' | 'watchlist' | 'advancedai' | 'patterns' | 'notifications' | 'education' | 'accuracy' | 'godmode' | 'deeplearning' | 'ensemble' | 'regime';
+type TabId = 'dashboard' | 'signals' | 'bist30' | 'advanced_analysis' | 'signal_tracking' | 'advanced_charts' | 'bist_data' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'brokers' | 'crypto' | 'options' | 'watchlist' | 'advancedai' | 'patterns' | 'notifications' | 'education' | 'accuracy' | 'godmode' | 'deeplearning' | 'ensemble' | 'regime';
 
 const tabs = [
   { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
@@ -88,6 +89,7 @@ const tabs = [
   { id: 'advanced_analysis', name: 'Gelişmiş Analiz', icon: ChartBarIcon },
   { id: 'signal_tracking', name: 'Sinyal Takip', icon: ChartBarIcon },
   { id: 'advanced_charts', name: 'Gelişmiş Grafikler', icon: ChartBarIcon },
+  { id: 'bist_data', name: 'BIST Veri Paneli', icon: ChartBarIcon },
   { id: 'market', name: 'Piyasa', icon: ChartBarIcon },
   { id: 'charts', name: 'Grafikler', icon: ChartBarIcon },
   { id: 'seckme', name: 'Seçmeki Formasyonları', icon: ArrowTrendingUpIcon },
@@ -124,7 +126,7 @@ const tabs = [
 ] as const;
 
 const groupedTabs = [
-        { group: 'Sinyaller', items: ['signals','bist30','advanced_analysis','signal_tracking','advanced_charts','bist100','anomaly','arbitrage'] as const },
+        { group: 'Sinyaller', items: ['signals','bist30','advanced_analysis','signal_tracking','advanced_charts','bist_data','bist100','anomaly','arbitrage'] as const },
   { group: 'Analiz', items: ['market','charts','patterns','sector','liquidity','events','twin','xai','sentiment'] as const },
   { group: 'Operasyon', items: ['risk','sim','watchlist','alerts','ticks','ingest','adaptive','streaming','risk_mgmt','smart_notifications'] as const },
   { group: 'Gelişmiş', items: ['aiengine','advancedai','calibration','feedback','accuracy','deeplearning','ensemble','regime','godmode','brokers','crypto','options','education'] as const }
@@ -378,6 +380,9 @@ export default function Dashboard() {
         )}
         {activeTab === 'advanced_charts' && (
           <AdvancedChartsPanel />
+        )}
+        {activeTab === 'bist_data' && (
+          <BISTDataPanel />
         )}
 
         {/* BIST 100 AI Tahminleri Tab */}

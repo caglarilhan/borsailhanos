@@ -43,6 +43,16 @@ except ImportError as e:
     REAL_DATA_AVAILABLE = False
     print(f"⚠️ Gerçek veri entegrasyonu devre dışı: {e}")
 
+# BIST veri entegrasyonu
+try:
+    from bist_data_provider import BISTDataProvider
+    bist_data_provider = BISTDataProvider()
+    BIST_DATA_AVAILABLE = True
+    print("✅ BIST veri entegrasyonu aktif!")
+except ImportError as e:
+    BIST_DATA_AVAILABLE = False
+    print(f"⚠️ BIST veri entegrasyonu devre dışı: {e}")
+
 # Sinyal takip sistemi
 try:
     from signal_tracker import SignalTracker
@@ -212,6 +222,10 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_real_trading_signals(query_params)
         elif path == '/api/real/market_data':
             self.handle_real_market_data(query_params)
+        elif path == '/api/bist/data':
+            self.handle_bist_data(query_params)
+        elif path == '/api/bist/signals':
+            self.handle_bist_signals(query_params)
         elif path == '/api/tracking/statistics':
             self.handle_tracking_statistics(query_params)
         elif path == '/api/tracking/pending':
@@ -3284,6 +3298,71 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             return self.send_json_response({
                 'error': f'Gerçek piyasa verisi hatası: {str(e)}',
                 'market_data': []
+            })
+    
+    def handle_bist_data(self, query_params):
+        """BIST hisse verisi endpoint"""
+        try:
+            if not BIST_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'BIST veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbols = query_params.get('symbols', '').split(',') if query_params.get('symbols') else None
+            period = query_params.get('period', '1d')
+            
+            data = bist_data_provider.get_bist_data(symbols, period)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': data,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'BIST veri hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_bist_signals(self, query_params):
+        """BIST AI sinyalleri endpoint"""
+        try:
+            if not BIST_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'BIST veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbols = query_params.get('symbols', '').split(',') if query_params.get('symbols') else None
+            
+            signals = bist_data_provider.get_bist_signals(symbols)
+            
+            # Sinyalleri takip sistemine kaydet
+            if SIGNAL_TRACKING_AVAILABLE:
+                for signal in signals:
+                    try:
+                        signal_tracker.save_signal(
+                            symbol=signal['symbol'],
+                            signal=signal['signal'],
+                            confidence=signal['confidence'],
+                            price=signal['price'],
+                            prediction_days=1
+                        )
+                    except Exception as e:
+                        print(f"⚠️ BIST sinyal kaydetme hatası: {e}")
+            
+            return self.send_json_response({
+                'success': True,
+                'signals': signals,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'BIST sinyal hatası: {str(e)}',
+                'success': False
             })
     
     def handle_tracking_statistics(self, query_params):
