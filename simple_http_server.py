@@ -63,6 +63,16 @@ except ImportError as e:
     FUNDAMENTAL_DATA_AVAILABLE = False
     print(f"⚠️ Fundamental veri entegrasyonu devre dışı: {e}")
 
+# Sentiment veri entegrasyonu
+try:
+    from sentiment_data_provider import SentimentDataProvider
+    sentiment_data_provider = SentimentDataProvider()
+    SENTIMENT_DATA_AVAILABLE = True
+    print("✅ Sentiment veri entegrasyonu aktif!")
+except ImportError as e:
+    SENTIMENT_DATA_AVAILABLE = False
+    print(f"⚠️ Sentiment veri entegrasyonu devre dışı: {e}")
+
 # Sinyal takip sistemi
 try:
     from signal_tracker import SignalTracker
@@ -242,6 +252,14 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_fundamental_bulk(query_params)
         elif path == '/api/fundamental/analysis':
             self.handle_fundamental_analysis(query_params)
+        elif path == '/api/sentiment/news':
+            self.handle_sentiment_news(query_params)
+        elif path == '/api/sentiment/bulk':
+            self.handle_sentiment_bulk(query_params)
+        elif path == '/api/sentiment/sector':
+            self.handle_sentiment_sector(query_params)
+        elif path == '/api/sentiment/impact':
+            self.handle_sentiment_impact(query_params)
         elif path == '/api/tracking/statistics':
             self.handle_tracking_statistics(query_params)
         elif path == '/api/tracking/pending':
@@ -3586,6 +3604,147 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             weaknesses.append(f"Negatif büyüme: {ratios['revenue_growth']:.1f}%")
         
         return weaknesses
+    
+    def handle_sentiment_news(self, query_params):
+        """Tek hisse sentiment haber analizi endpoint"""
+        try:
+            if not SENTIMENT_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sentiment veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            days_param = query_params.get('days', 7)
+            if isinstance(days_param, list):
+                days_param = days_param[0]
+            days = int(days_param)
+            
+            sentiment_data = sentiment_data_provider.get_news_sentiment(symbol, days)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': sentiment_data,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Sentiment haber analizi hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_sentiment_bulk(self, query_params):
+        """Toplu sentiment analizi endpoint"""
+        try:
+            if not SENTIMENT_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sentiment veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbols_param = query_params.get('symbols', '')
+            if isinstance(symbols_param, list):
+                symbols_param = symbols_param[0]
+            symbols = symbols_param.split(',') if symbols_param else ['AKBNK', 'GARAN', 'THYAO']
+            days_param = query_params.get('days', 7)
+            if isinstance(days_param, list):
+                days_param = days_param[0]
+            days = int(days_param)
+            
+            sentiment_data = sentiment_data_provider.get_bulk_sentiment(symbols, days)
+            
+            # Sentiment skoruna göre sırala
+            sentiment_data.sort(key=lambda x: x['avg_sentiment'], reverse=True)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': sentiment_data,
+                'count': len(sentiment_data),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Toplu sentiment analizi hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_sentiment_sector(self, query_params):
+        """Sektör sentiment analizi endpoint"""
+        try:
+            if not SENTIMENT_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sentiment veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            sector = query_params.get('sector', 'banking')
+            if isinstance(sector, list):
+                sector = sector[0]
+            days_param = query_params.get('days', 7)
+            if isinstance(days_param, list):
+                days_param = days_param[0]
+            days = int(days_param)
+            
+            sector_sentiment = sentiment_data_provider.get_sector_sentiment(sector, days)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': sector_sentiment,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Sektör sentiment analizi hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_sentiment_impact(self, query_params):
+        """Sentiment etki analizi endpoint"""
+        try:
+            if not SENTIMENT_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Sentiment veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            price_change_param = query_params.get('price_change', 0)
+            if isinstance(price_change_param, list):
+                price_change_param = price_change_param[0]
+            price_change = float(price_change_param)
+            days_param = query_params.get('days', 7)
+            if isinstance(days_param, list):
+                days_param = days_param[0]
+            days = int(days_param)
+            
+            # Sentiment verisini al
+            sentiment_data = sentiment_data_provider.get_news_sentiment(symbol, days)
+            
+            # Etki analizi yap
+            impact_analysis = sentiment_data_provider.calculate_sentiment_impact(sentiment_data, price_change)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': {
+                    'symbol': symbol,
+                    'sentiment_data': sentiment_data,
+                    'impact_analysis': impact_analysis,
+                    'timestamp': datetime.now().isoformat()
+                }
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Sentiment etki analizi hatası: {str(e)}',
+                'success': False
+            })
     
     def handle_tracking_statistics(self, query_params):
         """Sinyal takip istatistikleri endpoint"""
