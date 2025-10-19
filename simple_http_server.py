@@ -53,6 +53,16 @@ except ImportError as e:
     BIST_DATA_AVAILABLE = False
     print(f"⚠️ BIST veri entegrasyonu devre dışı: {e}")
 
+# Fundamental veri entegrasyonu
+try:
+    from fundamental_data_provider import FundamentalDataProvider
+    fundamental_data_provider = FundamentalDataProvider()
+    FUNDAMENTAL_DATA_AVAILABLE = True
+    print("✅ Fundamental veri entegrasyonu aktif!")
+except ImportError as e:
+    FUNDAMENTAL_DATA_AVAILABLE = False
+    print(f"⚠️ Fundamental veri entegrasyonu devre dışı: {e}")
+
 # Sinyal takip sistemi
 try:
     from signal_tracker import SignalTracker
@@ -226,6 +236,12 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_bist_data(query_params)
         elif path == '/api/bist/signals':
             self.handle_bist_signals(query_params)
+        elif path == '/api/fundamental/data':
+            self.handle_fundamental_data(query_params)
+        elif path == '/api/fundamental/bulk':
+            self.handle_fundamental_bulk(query_params)
+        elif path == '/api/fundamental/analysis':
+            self.handle_fundamental_analysis(query_params)
         elif path == '/api/tracking/statistics':
             self.handle_tracking_statistics(query_params)
         elif path == '/api/tracking/pending':
@@ -3364,6 +3380,212 @@ class BISTAIHandler(BaseHTTPRequestHandler):
                 'error': f'BIST sinyal hatası: {str(e)}',
                 'success': False
             })
+    
+    def handle_fundamental_data(self, query_params):
+        """Tek hisse fundamental veri endpoint"""
+        try:
+            if not FUNDAMENTAL_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Fundamental veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            if not symbol.endswith('.IS'):
+                symbol += '.IS'
+            
+            data = fundamental_data_provider.get_fundamental_data(symbol)
+            
+            if data:
+                # Finansal skor hesapla
+                financial_score = fundamental_data_provider.calculate_financial_score(data)
+                data['financial_score'] = financial_score
+                
+                return self.send_json_response({
+                    'success': True,
+                    'data': data,
+                    'timestamp': datetime.now().isoformat()
+                })
+            else:
+                return self.send_json_response({
+                    'error': f'{symbol} için veri bulunamadı',
+                    'success': False
+                })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Fundamental veri hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_fundamental_bulk(self, query_params):
+        """Toplu fundamental veri endpoint"""
+        try:
+            if not FUNDAMENTAL_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Fundamental veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbols = query_params.get('symbols', '').split(',') if query_params.get('symbols') else None
+            limit = int(query_params.get('limit', 10))
+            
+            if symbols:
+                # Sembolleri .IS ile tamamla
+                symbols = [s + '.IS' if not s.endswith('.IS') else s for s in symbols]
+            else:
+                symbols = None
+            
+            data = fundamental_data_provider.get_bulk_fundamental_data(symbols)
+            
+            # Finansal skorları hesapla ve sırala
+            for item in data:
+                financial_score = fundamental_data_provider.calculate_financial_score(item)
+                item['financial_score'] = financial_score
+            
+            # Skora göre sırala
+            data.sort(key=lambda x: x['financial_score']['total_score'], reverse=True)
+            
+            # Limit uygula
+            data = data[:limit]
+            
+            return self.send_json_response({
+                'success': True,
+                'data': data,
+                'count': len(data),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Toplu fundamental veri hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_fundamental_analysis(self, query_params):
+        """Fundamental analiz endpoint"""
+        try:
+            if not FUNDAMENTAL_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Fundamental veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            if not symbol.endswith('.IS'):
+                symbol += '.IS'
+            
+            data = fundamental_data_provider.get_fundamental_data(symbol)
+            
+            if not data:
+                return self.send_json_response({
+                    'error': f'{symbol} için veri bulunamadı',
+                    'success': False
+                })
+            
+            # Detaylı analiz
+            financial_score = fundamental_data_provider.calculate_financial_score(data)
+            
+            analysis = {
+                'symbol': data['symbol'],
+                'company_name': data['company_name'],
+                'sector': data['sector'],
+                'financial_score': financial_score,
+                'ratios': data['ratios'],
+                'dupont': data['dupont'],
+                'piotroski': data['piotroski_score'],
+                'recommendation': self._get_investment_recommendation(financial_score),
+                'strengths': self._identify_strengths(data),
+                'weaknesses': self._identify_weaknesses(data),
+                'timestamp': datetime.now().isoformat()
+            }
+            
+            return self.send_json_response({
+                'success': True,
+                'analysis': analysis
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Fundamental analiz hatası: {str(e)}',
+                'success': False
+            })
+
+    def _get_investment_recommendation(self, financial_score):
+        """Yatırım önerisi ver"""
+        score = financial_score['total_score']
+        grade = financial_score['grade']
+        
+        if score >= 80:
+            return {
+                'action': 'STRONG_BUY',
+                'confidence': 'HIGH',
+                'reason': f'Güçlü finansal sağlık ({grade}) - Yüksek skorlu şirket'
+            }
+        elif score >= 70:
+            return {
+                'action': 'BUY',
+                'confidence': 'MEDIUM',
+                'reason': f'İyi finansal sağlık ({grade}) - Güvenilir yatırım'
+            }
+        elif score >= 60:
+            return {
+                'action': 'HOLD',
+                'confidence': 'MEDIUM',
+                'reason': f'Orta finansal sağlık ({grade}) - Dikkatli takip'
+            }
+        elif score >= 50:
+            return {
+                'action': 'WEAK_HOLD',
+                'confidence': 'LOW',
+                'reason': f'Zayıf finansal sağlık ({grade}) - Riskli'
+            }
+        else:
+            return {
+                'action': 'SELL',
+                'confidence': 'HIGH',
+                'reason': f'Çok zayıf finansal sağlık ({grade}) - Kaçınılmalı'
+            }
+
+    def _identify_strengths(self, data):
+        """Güçlü yönleri belirle"""
+        strengths = []
+        ratios = data['ratios']
+        
+        if ratios['roe'] > 15:
+            strengths.append(f"Yüksek ROE: {ratios['roe']:.1f}%")
+        if ratios['net_margin'] > 10:
+            strengths.append(f"Yüksek net marj: {ratios['net_margin']:.1f}%")
+        if ratios['current_ratio'] > 2:
+            strengths.append(f"Güçlü likidite: {ratios['current_ratio']:.1f}")
+        if ratios['debt_to_equity'] < 0.5:
+            strengths.append(f"Düşük borç: {ratios['debt_to_equity']:.1f}")
+        if ratios['revenue_growth'] > 10:
+            strengths.append(f"Güçlü büyüme: {ratios['revenue_growth']:.1f}%")
+        
+        return strengths
+
+    def _identify_weaknesses(self, data):
+        """Zayıf yönleri belirle"""
+        weaknesses = []
+        ratios = data['ratios']
+        
+        if ratios['roe'] < 5:
+            weaknesses.append(f"Düşük ROE: {ratios['roe']:.1f}%")
+        if ratios['net_margin'] < 3:
+            weaknesses.append(f"Düşük net marj: {ratios['net_margin']:.1f}%")
+        if ratios['current_ratio'] < 1.5:
+            weaknesses.append(f"Zayıf likidite: {ratios['current_ratio']:.1f}")
+        if ratios['debt_to_equity'] > 1:
+            weaknesses.append(f"Yüksek borç: {ratios['debt_to_equity']:.1f}")
+        if ratios['revenue_growth'] < 0:
+            weaknesses.append(f"Negatif büyüme: {ratios['revenue_growth']:.1f}%")
+        
+        return weaknesses
     
     def handle_tracking_statistics(self, query_params):
         """Sinyal takip istatistikleri endpoint"""
