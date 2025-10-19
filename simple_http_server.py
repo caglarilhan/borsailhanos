@@ -93,6 +93,16 @@ except ImportError as e:
     FREE_REALTIME_DATA_AVAILABLE = False
     print(f"⚠️ Ücretsiz anlık veri entegrasyonu devre dışı: {e}")
 
+# Teknik formasyon motoru entegrasyonu
+try:
+    from technical_pattern_provider import TechnicalPatternProvider
+    technical_pattern_provider = TechnicalPatternProvider()
+    TECHNICAL_PATTERN_AVAILABLE = True
+    print("✅ Teknik formasyon motoru entegrasyonu aktif!")
+except ImportError as e:
+    TECHNICAL_PATTERN_AVAILABLE = False
+    print(f"⚠️ Teknik formasyon motoru entegrasyonu devre dışı: {e}")
+
 # Sinyal takip sistemi
 try:
     from signal_tracker import SignalTracker
@@ -294,6 +304,16 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_realtime_market_overview(query_params)
         elif path == '/api/realtime/technical':
             self.handle_realtime_technical(query_params)
+        elif path == '/api/patterns/analyze':
+            self.handle_patterns_analyze(query_params)
+        elif path == '/api/patterns/candlestick':
+            self.handle_patterns_candlestick(query_params)
+        elif path == '/api/patterns/harmonic':
+            self.handle_patterns_harmonic(query_params)
+        elif path == '/api/patterns/technical':
+            self.handle_patterns_technical(query_params)
+        elif path == '/api/patterns/trend':
+            self.handle_patterns_trend(query_params)
         elif path == '/api/tracking/statistics':
             self.handle_tracking_statistics(query_params)
         elif path == '/api/tracking/pending':
@@ -4047,6 +4067,216 @@ class BISTAIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             return self.send_json_response({
                 'error': f'Anlık teknik göstergeler hatası: {str(e)}',
+                'success': False
+            })
+    
+    def handle_patterns_analyze(self, query_params):
+        """Tüm formasyonları analiz et endpoint"""
+        try:
+            if not TECHNICAL_PATTERN_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Teknik formasyon motoru mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            period = query_params.get('period', '1mo')
+            if isinstance(period, list):
+                period = period[0]
+            
+            pattern_analysis = technical_pattern_provider.analyze_all_patterns(symbol, period)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': pattern_analysis,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Formasyon analizi hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_patterns_candlestick(self, query_params):
+        """Candlestick formasyonları endpoint"""
+        try:
+            if not TECHNICAL_PATTERN_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Teknik formasyon motoru mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            period = query_params.get('period', '1mo')
+            if isinstance(period, list):
+                period = period[0]
+            
+            # Veri çek
+            ticker = yf.Ticker(symbol)
+            ohlc_data = ticker.history(period=period)
+            
+            if ohlc_data.empty:
+                return self.send_json_response({
+                    'error': f'{symbol} için veri bulunamadı',
+                    'success': False
+                })
+            
+            candlestick_patterns = technical_pattern_provider.detect_candlestick_patterns(ohlc_data)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': {
+                    'symbol': symbol,
+                    'period': period,
+                    'patterns': candlestick_patterns,
+                    'pattern_count': len(candlestick_patterns),
+                    'timestamp': datetime.now().isoformat()
+                }
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Candlestick formasyon hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_patterns_harmonic(self, query_params):
+        """Harmonic formasyonları endpoint"""
+        try:
+            if not TECHNICAL_PATTERN_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Teknik formasyon motoru mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            period = query_params.get('period', '3mo')  # Harmonic patterns için daha uzun periyot
+            if isinstance(period, list):
+                period = period[0]
+            
+            # Veri çek
+            ticker = yf.Ticker(symbol)
+            ohlc_data = ticker.history(period=period)
+            
+            if ohlc_data.empty:
+                return self.send_json_response({
+                    'error': f'{symbol} için veri bulunamadı',
+                    'success': False
+                })
+            
+            harmonic_patterns = technical_pattern_provider.detect_harmonic_patterns(ohlc_data)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': {
+                    'symbol': symbol,
+                    'period': period,
+                    'patterns': harmonic_patterns,
+                    'pattern_count': len(harmonic_patterns),
+                    'timestamp': datetime.now().isoformat()
+                }
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Harmonic formasyon hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_patterns_technical(self, query_params):
+        """Teknik formasyonları endpoint"""
+        try:
+            if not TECHNICAL_PATTERN_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Teknik formasyon motoru mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            period = query_params.get('period', '3mo')
+            if isinstance(period, list):
+                period = period[0]
+            
+            # Veri çek
+            ticker = yf.Ticker(symbol)
+            ohlc_data = ticker.history(period=period)
+            
+            if ohlc_data.empty:
+                return self.send_json_response({
+                    'error': f'{symbol} için veri bulunamadı',
+                    'success': False
+                })
+            
+            technical_patterns = technical_pattern_provider.detect_technical_patterns(ohlc_data)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': {
+                    'symbol': symbol,
+                    'period': period,
+                    'patterns': technical_patterns,
+                    'pattern_count': len(technical_patterns),
+                    'timestamp': datetime.now().isoformat()
+                }
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Teknik formasyon hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_patterns_trend(self, query_params):
+        """Trend formasyonları endpoint"""
+        try:
+            if not TECHNICAL_PATTERN_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Teknik formasyon motoru mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            period = query_params.get('period', '1mo')
+            if isinstance(period, list):
+                period = period[0]
+            
+            # Veri çek
+            ticker = yf.Ticker(symbol)
+            ohlc_data = ticker.history(period=period)
+            
+            if ohlc_data.empty:
+                return self.send_json_response({
+                    'error': f'{symbol} için veri bulunamadı',
+                    'success': False
+                })
+            
+            trend_patterns = technical_pattern_provider.detect_trend_patterns(ohlc_data)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': {
+                    'symbol': symbol,
+                    'period': period,
+                    'patterns': trend_patterns,
+                    'pattern_count': len(trend_patterns),
+                    'timestamp': datetime.now().isoformat()
+                }
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Trend formasyon hatası: {str(e)}',
                 'success': False
             })
     
