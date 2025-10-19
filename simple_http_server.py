@@ -73,6 +73,26 @@ except ImportError as e:
     SENTIMENT_DATA_AVAILABLE = False
     print(f"⚠️ Sentiment veri entegrasyonu devre dışı: {e}")
 
+# Grey TOPSIS entegrasyonu
+try:
+    from grey_topsis_provider import GreyTOPSISProvider
+    grey_topsis_provider = GreyTOPSISProvider()
+    GREY_TOPSIS_AVAILABLE = True
+    print("✅ Grey TOPSIS entegrasyonu aktif!")
+except ImportError as e:
+    GREY_TOPSIS_AVAILABLE = False
+    print(f"⚠️ Grey TOPSIS entegrasyonu devre dışı: {e}")
+
+# Ücretsiz anlık veri entegrasyonu
+try:
+    from free_realtime_data_provider import FreeRealTimeDataProvider
+    free_realtime_provider = FreeRealTimeDataProvider()
+    FREE_REALTIME_DATA_AVAILABLE = True
+    print("✅ Ücretsiz anlık veri entegrasyonu aktif!")
+except ImportError as e:
+    FREE_REALTIME_DATA_AVAILABLE = False
+    print(f"⚠️ Ücretsiz anlık veri entegrasyonu devre dışı: {e}")
+
 # Sinyal takip sistemi
 try:
     from signal_tracker import SignalTracker
@@ -260,6 +280,20 @@ class BISTAIHandler(BaseHTTPRequestHandler):
             self.handle_sentiment_sector(query_params)
         elif path == '/api/sentiment/impact':
             self.handle_sentiment_impact(query_params)
+        elif path == '/api/topsis/ranking':
+            self.handle_topsis_ranking(query_params)
+        elif path == '/api/topsis/top_stocks':
+            self.handle_topsis_top_stocks(query_params)
+        elif path == '/api/topsis/sector_analysis':
+            self.handle_topsis_sector_analysis(query_params)
+        elif path == '/api/realtime/price':
+            self.handle_realtime_price(query_params)
+        elif path == '/api/realtime/bulk':
+            self.handle_realtime_bulk(query_params)
+        elif path == '/api/realtime/market_overview':
+            self.handle_realtime_market_overview(query_params)
+        elif path == '/api/realtime/technical':
+            self.handle_realtime_technical(query_params)
         elif path == '/api/tracking/statistics':
             self.handle_tracking_statistics(query_params)
         elif path == '/api/tracking/pending':
@@ -3743,6 +3777,276 @@ class BISTAIHandler(BaseHTTPRequestHandler):
         except Exception as e:
             return self.send_json_response({
                 'error': f'Sentiment etki analizi hatası: {str(e)}',
+                'success': False
+            })
+    
+    def handle_topsis_ranking(self, query_params):
+        """Grey TOPSIS sıralama endpoint"""
+        try:
+            if not GREY_TOPSIS_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Grey TOPSIS sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            # Mock hisse verisi (gerçek implementasyonda fundamental + sentiment verisi birleştirilecek)
+            mock_stocks = [
+                {
+                    'symbol': 'AKBNK',
+                    'company_name': 'Akbank T.A.S.',
+                    'sector': 'Banking',
+                    'ratios': {
+                        'roe': 17.96, 'roa': 1.63, 'net_margin': 28.20,
+                        'current_ratio': 1.2, 'debt_to_equity': 0.8,
+                        'pe_ratio': 6.62, 'revenue_growth': 15.5
+                    },
+                    'sentiment': {'sentiment_score': 0.67, 'news_count': 3},
+                    'technical': {'rsi_score': 65, 'macd_signal': 0.5, 'trend_strength': 0.8}
+                },
+                {
+                    'symbol': 'GARAN',
+                    'company_name': 'Garanti BBVA',
+                    'sector': 'Banking',
+                    'ratios': {
+                        'roe': 15.2, 'roa': 1.4, 'net_margin': 25.8,
+                        'current_ratio': 1.1, 'debt_to_equity': 0.9,
+                        'pe_ratio': 7.1, 'revenue_growth': 12.3
+                    },
+                    'sentiment': {'sentiment_score': 0.45, 'news_count': 2},
+                    'technical': {'rsi_score': 58, 'macd_signal': 0.3, 'trend_strength': 0.6}
+                },
+                {
+                    'symbol': 'THYAO',
+                    'company_name': 'Turkish Airlines',
+                    'sector': 'Aviation',
+                    'ratios': {
+                        'roe': 12.8, 'roa': 0.9, 'net_margin': 8.5,
+                        'current_ratio': 0.8, 'debt_to_equity': 1.2,
+                        'pe_ratio': 12.5, 'revenue_growth': 25.8
+                    },
+                    'sentiment': {'sentiment_score': 0.78, 'news_count': 5},
+                    'technical': {'rsi_score': 72, 'macd_signal': 0.8, 'trend_strength': 0.9}
+                }
+            ]
+            
+            ranking_result = grey_topsis_provider.calculate_grey_topsis_ranking(mock_stocks)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': ranking_result,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'TOPSIS sıralama hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_topsis_top_stocks(self, query_params):
+        """TOPSIS en iyi hisseler endpoint"""
+        try:
+            if not GREY_TOPSIS_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Grey TOPSIS sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            top_n = int(query_params.get('top_n', 5))
+            
+            # Mock veri (aynı)
+            mock_stocks = [
+                {
+                    'symbol': 'AKBNK', 'company_name': 'Akbank T.A.S.', 'sector': 'Banking',
+                    'ratios': {'roe': 17.96, 'roa': 1.63, 'net_margin': 28.20, 'current_ratio': 1.2, 'debt_to_equity': 0.8, 'pe_ratio': 6.62, 'revenue_growth': 15.5},
+                    'sentiment': {'sentiment_score': 0.67, 'news_count': 3},
+                    'technical': {'rsi_score': 65, 'macd_signal': 0.5, 'trend_strength': 0.8}
+                },
+                {
+                    'symbol': 'GARAN', 'company_name': 'Garanti BBVA', 'sector': 'Banking',
+                    'ratios': {'roe': 15.2, 'roa': 1.4, 'net_margin': 25.8, 'current_ratio': 1.1, 'debt_to_equity': 0.9, 'pe_ratio': 7.1, 'revenue_growth': 12.3},
+                    'sentiment': {'sentiment_score': 0.45, 'news_count': 2},
+                    'technical': {'rsi_score': 58, 'macd_signal': 0.3, 'trend_strength': 0.6}
+                },
+                {
+                    'symbol': 'THYAO', 'company_name': 'Turkish Airlines', 'sector': 'Aviation',
+                    'ratios': {'roe': 12.8, 'roa': 0.9, 'net_margin': 8.5, 'current_ratio': 0.8, 'debt_to_equity': 1.2, 'pe_ratio': 12.5, 'revenue_growth': 25.8},
+                    'sentiment': {'sentiment_score': 0.78, 'news_count': 5},
+                    'technical': {'rsi_score': 72, 'macd_signal': 0.8, 'trend_strength': 0.9}
+                }
+            ]
+            
+            top_result = grey_topsis_provider.get_top_stocks(mock_stocks, top_n)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': top_result,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'TOPSIS top stocks hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_topsis_sector_analysis(self, query_params):
+        """TOPSIS sektör analizi endpoint"""
+        try:
+            if not GREY_TOPSIS_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Grey TOPSIS sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            # Mock veri (sektörlere göre)
+            mock_stocks = [
+                {
+                    'symbol': 'AKBNK', 'company_name': 'Akbank T.A.S.', 'sector': 'Banking',
+                    'ratios': {'roe': 17.96, 'roa': 1.63, 'net_margin': 28.20, 'current_ratio': 1.2, 'debt_to_equity': 0.8, 'pe_ratio': 6.62, 'revenue_growth': 15.5},
+                    'sentiment': {'sentiment_score': 0.67, 'news_count': 3},
+                    'technical': {'rsi_score': 65, 'macd_signal': 0.5, 'trend_strength': 0.8}
+                },
+                {
+                    'symbol': 'GARAN', 'company_name': 'Garanti BBVA', 'sector': 'Banking',
+                    'ratios': {'roe': 15.2, 'roa': 1.4, 'net_margin': 25.8, 'current_ratio': 1.1, 'debt_to_equity': 0.9, 'pe_ratio': 7.1, 'revenue_growth': 12.3},
+                    'sentiment': {'sentiment_score': 0.45, 'news_count': 2},
+                    'technical': {'rsi_score': 58, 'macd_signal': 0.3, 'trend_strength': 0.6}
+                },
+                {
+                    'symbol': 'THYAO', 'company_name': 'Turkish Airlines', 'sector': 'Aviation',
+                    'ratios': {'roe': 12.8, 'roa': 0.9, 'net_margin': 8.5, 'current_ratio': 0.8, 'debt_to_equity': 1.2, 'pe_ratio': 12.5, 'revenue_growth': 25.8},
+                    'sentiment': {'sentiment_score': 0.78, 'news_count': 5},
+                    'technical': {'rsi_score': 72, 'macd_signal': 0.8, 'trend_strength': 0.9}
+                }
+            ]
+            
+            sector_result = grey_topsis_provider.analyze_sector_performance(mock_stocks)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': sector_result,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'TOPSIS sektör analizi hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_realtime_price(self, query_params):
+        """Anlık fiyat endpoint"""
+        try:
+            if not FREE_REALTIME_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Ücretsiz anlık veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            source = query_params.get('source', 'yfinance')
+            if isinstance(source, list):
+                source = source[0]
+            
+            price_data = free_realtime_provider.get_realtime_price(symbol, source)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': price_data,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Anlık fiyat hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_realtime_bulk(self, query_params):
+        """Toplu anlık fiyat endpoint"""
+        try:
+            if not FREE_REALTIME_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Ücretsiz anlık veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbols_param = query_params.get('symbols', '')
+            if isinstance(symbols_param, list):
+                symbols_param = symbols_param[0]
+            symbols = symbols_param.split(',') if symbols_param else ['AKBNK.IS', 'GARAN.IS', 'THYAO.IS']
+            source = query_params.get('source', 'yfinance')
+            if isinstance(source, list):
+                source = source[0]
+            
+            prices = free_realtime_provider.get_bulk_realtime_prices(symbols, source)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': prices,
+                'count': len(prices),
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Toplu anlık fiyat hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_realtime_market_overview(self, query_params):
+        """Piyasa genel durumu endpoint"""
+        try:
+            if not FREE_REALTIME_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Ücretsiz anlık veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            market_overview = free_realtime_provider.get_market_overview()
+            
+            return self.send_json_response({
+                'success': True,
+                'data': market_overview,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Piyasa genel durumu hatası: {str(e)}',
+                'success': False
+            })
+
+    def handle_realtime_technical(self, query_params):
+        """Anlık teknik göstergeler endpoint"""
+        try:
+            if not FREE_REALTIME_DATA_AVAILABLE:
+                return self.send_json_response({
+                    'error': 'Ücretsiz anlık veri sağlayıcısı mevcut değil',
+                    'success': False
+                })
+            
+            symbol = query_params.get('symbol', 'AKBNK.IS')
+            if isinstance(symbol, list):
+                symbol = symbol[0]
+            period = query_params.get('period', '1d')
+            if isinstance(period, list):
+                period = period[0]
+            
+            technical_data = free_realtime_provider.get_technical_indicators(symbol, period)
+            
+            return self.send_json_response({
+                'success': True,
+                'data': technical_data,
+                'timestamp': datetime.now().isoformat()
+            })
+            
+        except Exception as e:
+            return self.send_json_response({
+                'error': f'Anlık teknik göstergeler hatası: {str(e)}',
                 'success': False
             })
     
