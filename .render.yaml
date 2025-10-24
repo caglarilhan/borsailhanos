@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: bist-ai-trader
+    env: docker
+    dockerfilePath: ./Dockerfile
+    dockerBuildContextDirectory: .
+    plan: free
+    branch: render-deploy
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://bist-ai-trader.onrender.com
+      - key: FINNHUB_API_KEY
+        sync: false

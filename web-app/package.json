@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
+    "build:render": "cp next.config.render.js next.config.js && next build",
     "start": "next start",
     "lint": "eslint"
   },
