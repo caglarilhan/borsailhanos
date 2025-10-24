@@ -18,3 +18,7 @@ services:
         value: "1"
       - key: UVICORN_WORKERS
         value: "2"
+      - key: REDIS_URL
+        value: ""
+      - key: DATABASE_URL
+        value: ""

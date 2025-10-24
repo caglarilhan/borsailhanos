@@ -30,6 +30,12 @@ pydantic>=2.0.0
 # Firebase (opsiyonel)
 firebase-admin>=6.5.0
 
+# Database (opsiyonel)
+psycopg2-binary>=2.9.0
+
+# Cache (opsiyonel)
+redis>=4.5.0
+
 # Logging and Utilities
 logging
 typing

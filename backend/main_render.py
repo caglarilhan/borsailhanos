@@ -4,6 +4,28 @@ from fastapi.middleware.cors import CORSMiddleware
 import os
 import uvicorn
 
+# Redis ve Database opsiyonel hale getir
+try:
+    import redis
+    redis_client = redis.from_url(os.getenv("REDIS_URL", "")) if os.getenv("REDIS_URL") else None
+    print("✅ Redis bağlantısı aktif")
+except Exception as e:
+    print(f"⚠️ Redis devre dışı (Render Free plan): {e}")
+    redis_client = None
+
+try:
+    import psycopg2
+    database_url = os.getenv("DATABASE_URL")
+    if database_url:
+        db_connection = psycopg2.connect(database_url)
+        print("✅ Database bağlantısı aktif")
+    else:
+        print("⚠️ DATABASE_URL tanımlı değil")
+        db_connection = None
+except Exception as e:
+    print(f"⚠️ Database devre dışı: {e}")
+    db_connection = None
+
 app = FastAPI(title="BIST AI Smart Trader", version="2.0")
 
 # CORS middleware
