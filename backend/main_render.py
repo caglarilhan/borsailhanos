@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import uvicorn
 
 app = FastAPI(title="BIST AI Smart Trader", version="2.0")
 
@@ -54,5 +55,5 @@ def get_signals():
     }
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))  # Render otomatik PORT atar
+    uvicorn.run(app, host="0.0.0.0", port=port)

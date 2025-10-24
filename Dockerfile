@@ -10,7 +10,7 @@ RUN npm install
 COPY web-app .
 RUN npm run build:render
 
-# ---------- 2. BACKEND (FastAPI / Flask) ----------
+# ---------- 2. BACKEND (FastAPI) ----------
 FROM python:3.11-slim AS backend
 WORKDIR /app
 
@@ -32,4 +32,4 @@ COPY --from=backend /app .
 EXPOSE 8000
 
 # Başlatıcı komut: backend + static dosyalar
-CMD ["uvicorn", "main_render:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "main_render.py"]
