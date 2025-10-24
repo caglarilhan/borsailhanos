@@ -17,6 +17,19 @@ import asyncio
 import json
 import time
 import requests
+from enum import Enum
+
+# StrategyType enum tanımı
+class StrategyType(Enum):
+    """Strateji türleri"""
+    BUY_AND_HOLD = "buy_and_hold"
+    MOVING_AVERAGE_CROSS = "moving_average_cross"
+    RSI_MEAN_REVERSION = "rsi_mean_reversion"
+    BOLLINGER_BANDS = "bollinger_bands"
+    MOMENTUM = "momentum"
+    MEAN_REVERSION = "mean_reversion"
+    BREAKOUT = "breakout"
+    SCALPING = "scalping"
 try:
     from monitoring.metrics import track_request, track_prediction, track_error, get_metrics
     from prometheus_client import CONTENT_TYPE_LATEST

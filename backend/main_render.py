@@ -32,6 +32,10 @@ def health():
         "environment": os.getenv("NODE_ENV", "development")
     }
 
+@app.get("/")
+def health_check():
+    return {"status": "ok", "message": "Backend çalışıyor 🚀"}
+
 @app.get("/api/signals")
 def get_signals():
     """Mock AI signals for testing"""
