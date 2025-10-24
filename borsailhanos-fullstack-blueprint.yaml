@@ -1,0 +1,64 @@
+services:
+  # =============================
+  # 🧠 BACKEND (API SERVER)
+  # =============================
+  - type: web
+    name: borsailhanos-backend
+    env: docker
+    plan: free
+    region: frankfurt
+    branch: render-deploy
+    dockerfilePath: ./Dockerfile
+    buildContext: .
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: CORS_ORIGIN
+        value: https://www.borsailhanos.com
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: UVICORN_WORKERS
+        value: "2"
+      - key: REDIS_URL
+        value: ""
+      - key: DATABASE_URL
+        value: ""
+    domains:
+      - api.borsailhanos.com
+    autoDeploy: true
+
+  # =============================
+  # 💻 FRONTEND (NEXT.JS)
+  # =============================
+  - type: web
+    name: borsailhanos-frontend
+    env: node
+    plan: free
+    region: frankfurt
+    branch: render-deploy
+    rootDir: web-app
+    buildCommand: npm install && npm run build:render
+    startCommand: npm run start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_BASE_URL
+        value: https://api.borsailhanos.com
+    domains:
+      - app.borsailhanos.com
+      - www.borsailhanos.com
+    autoDeploy: true
+
+  # =============================
+  # 🌍 REDIRECT SERVICE (ANA DOMAİN)
+  # =============================
+  - type: redirect
+    name: borsailhanos-root-redirect
+    env: static
+    region: frankfurt
+    plan: free
+    redirects:
+      - from: borsailhanos.com
+        to: https://www.borsailhanos.com
