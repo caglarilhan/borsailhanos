@@ -14,3 +14,7 @@ services:
         value: https://bist-ai-trader.onrender.com
       - key: FINNHUB_API_KEY
         sync: false
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: UVICORN_WORKERS
+        value: "2"

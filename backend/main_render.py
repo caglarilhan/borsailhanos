@@ -56,4 +56,12 @@ def get_signals():
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))  # Render otomatik PORT atar
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    workers = int(os.environ.get("UVICORN_WORKERS", 1))  # Worker sayısı
+    
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=port,
+        workers=workers,
+        log_level="info"
+    )

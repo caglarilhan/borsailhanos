@@ -29,6 +29,10 @@ WORKDIR /app
 COPY --from=frontend /frontend/out /app/static
 COPY --from=backend /app .
 
+# Performance optimizations for Render Free Plan
+ENV PYTHONUNBUFFERED=1
+ENV UVICORN_WORKERS=2
+
 EXPOSE 8000
 
 # Başlatıcı komut: backend + static dosyalar
