@@ -1,418 +1,400 @@
-/**
- * 🚀 BIST AI Smart Trader - Realtime Hook
- * ======================================
- * 
- * WebSocket bağlantısını frontend'e bağlayan React hook.
- * Gerçek zamanlı fiyat güncellemeleri ve sinyal değişikliklerini yönetir.
- * 
- * Özellikler:
- * - WebSocket bağlantı yönetimi
- * - Otomatik yeniden bağlanma
- * - Sinyal ve fiyat güncellemeleri
- * - Smart notifications
- * - Connection status tracking
- */
+import { useState, useEffect, useRef, useCallback } from 'react';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-
-interface PriceData {
-  symbol: string;
-  price: number;
-  change: number;
-  change_pct: number;
-  volume: number;
-  timestamp: string;
-}
-
-interface SignalData {
-  symbol: string;
-  signal: 'BUY' | 'SELL' | 'HOLD' | 'STRONG_BUY' | 'STRONG_SELL';
-  confidence: number;
-  timestamp: string;
-  source: string;
-  metadata?: {
-    old_signal?: string;
-    signal_strength?: string;
-    confidence_change?: number;
+interface RealtimeData {
+  prices: Record<string, any>;
+  signals: any[];
+  notifications: any[];
+  connectionStatus: {
+    connected: boolean;
+    reconnecting: boolean;
+    error: string | null;
+  };
+  performanceStats: {
+    latency: number;
+    memoryUsage: number;
+    cpuUsage: number;
+    inferenceCount: number;
   };
 }
 
-interface NotificationData {
-  type: string;
-  symbol?: string;
-  signal?: string;
-  confidence?: number;
-  message: string;
-  timestamp: string;
-  priority: 'low' | 'medium' | 'high' | 'critical';
+interface UseRealtimeReturn extends RealtimeData {
+  connect: () => void;
+  disconnect: () => void;
+  subscribeToSymbol: (symbol: string) => void;
+  unsubscribeFromSymbol: (symbol: string) => void;
+  getActiveSymbols: () => string[];
+  requestNotificationPermission: () => Promise<boolean>;
+  subscribeToWebPush: () => Promise<void>;
+  isConnected: boolean;
+  isReconnecting: boolean;
+  hasError: boolean;
 }
 
-interface ConnectionStatus {
-  connected: boolean;
-  reconnecting: boolean;
-  error: string | null;
-  lastConnected: string | null;
-}
-
-interface RealtimeData {
-  prices: Record<string, PriceData>;
-  signals: Record<string, SignalData>;
-  notifications: NotificationData[];
-  connectionStatus: ConnectionStatus;
-}
-
-interface UseRealtimeOptions {
-  autoConnect?: boolean;
-  reconnectAttempts?: number;
-  reconnectDelay?: number;
-  serverUrl?: string;
-  onNotification?: (notification: NotificationData) => void;
-  onSignalChange?: (signal: SignalData) => void;
-  onPriceUpdate?: (price: PriceData) => void;
-}
-
-export const useRealtime = (options: UseRealtimeOptions = {}) => {
-  const {
-    autoConnect = true,
-    reconnectAttempts = 5,
-    reconnectDelay = 3000,
-    serverUrl = process.env.NEXT_PUBLIC_REALTIME_URL || 'ws://localhost:8002',
-    onNotification,
-    onSignalChange,
-    onPriceUpdate
-  } = options;
-
-  const socketRef = useRef<Socket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnectAttemptsRef = useRef(0);
-
+export const useRealtime = (): UseRealtimeReturn => {
   const [data, setData] = useState<RealtimeData>({
     prices: {},
-    signals: {},
+    signals: [],
     notifications: [],
     connectionStatus: {
       connected: false,
       reconnecting: false,
-      error: null,
-      lastConnected: null
+      error: null
+    },
+    performanceStats: {
+      latency: 0,
+      memoryUsage: 0,
+      cpuUsage: 0,
+      inferenceCount: 0
     }
   });
 
-  // WebSocket bağlantısını başlat
+  const socketRef = useRef<WebSocket | null>(null);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const subscribedSymbolsRef = useRef<Set<string>>(new Set());
+  const reconnectAttemptsRef = useRef(0);
+  const maxReconnectAttempts = 10;
+  const reconnectDelay = 5000; // 5 seconds
+  const fallbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fallbackIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startFallbackMode = useCallback(() => {
+    console.log('🔄 Starting fallback mode - using REST API');
+    
+    // Clear any existing fallback interval
+    if (fallbackIntervalRef.current) {
+      clearInterval(fallbackIntervalRef.current);
+    }
+    
+    // Start fallback polling every 5 seconds
+    fallbackIntervalRef.current = setInterval(async () => {
+      try {
+        // Fetch signals
+        const signalsResponse = await fetch('/api/signals');
+        if (signalsResponse.ok) {
+          const signals = await signalsResponse.json();
+          setData(prev => ({
+            ...prev,
+            signals: signals || []
+          }));
+        }
+        
+        // Fetch prices
+        const pricesResponse = await fetch('/api/prices');
+        if (pricesResponse.ok) {
+          const prices = await pricesResponse.json();
+          setData(prev => ({
+            ...prev,
+            prices: { ...prev.prices, ...prices }
+          }));
+        }
+        
+        console.log('📡 Fallback data fetched successfully');
+      } catch (error) {
+        console.error('❌ Fallback fetch failed:', error);
+      }
+    }, 5000);
+  }, []);
+
+  const stopFallbackMode = useCallback(() => {
+    if (fallbackIntervalRef.current) {
+      clearInterval(fallbackIntervalRef.current);
+      fallbackIntervalRef.current = null;
+      console.log('🔄 Fallback mode stopped');
+    }
+  }, []);
+
   const connect = useCallback(() => {
-    if (socketRef.current?.connected) {
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
 
+    const wsUrl = process.env.NEXT_PUBLIC_REALTIME_URL || 'ws://localhost:8081';
+    
     try {
-      console.log('🔌 Connecting to WebSocket server:', serverUrl);
+      socketRef.current = new WebSocket(wsUrl);
       
-      socketRef.current = io(serverUrl, {
-        transports: ['websocket', 'polling'],
-        timeout: 10000,
-        reconnection: false, // Manuel reconnection kullanacağız
-        autoConnect: false
-      });
-
-      // Bağlantı event'leri
-      socketRef.current.on('connect', () => {
-        console.log('✅ WebSocket connected');
-        reconnectAttemptsRef.current = 0;
-        
+      socketRef.current.onopen = () => {
+        console.log('🔗 WebSocket connected');
         setData(prev => ({
           ...prev,
           connectionStatus: {
             connected: true,
             reconnecting: false,
-            error: null,
-            lastConnected: new Date().toISOString()
+            error: null
           }
         }));
-      });
+        
+        reconnectAttemptsRef.current = 0;
+        
+        // Stop fallback mode when WebSocket reconnects
+        stopFallbackMode();
+        
+        // Start heartbeat
+        heartbeatIntervalRef.current = setInterval(() => {
+          if (socketRef.current?.readyState === WebSocket.OPEN) {
+            socketRef.current.send(JSON.stringify({ type: 'ping' }));
+          }
+        }, 30000);
+        
+        // Resubscribe to symbols
+        subscribedSymbolsRef.current.forEach(symbol => {
+          socketRef.current?.send(JSON.stringify({
+            type: 'subscribe',
+            symbol: symbol
+          }));
+        });
+      };
 
-      socketRef.current.on('disconnect', (reason) => {
-        console.log('❌ WebSocket disconnected:', reason);
+      socketRef.current.onmessage = (event) => {
+        try {
+          const message = JSON.parse(event.data);
+          
+          switch (message.type) {
+            case 'pong':
+              // Update latency
+              setData(prev => ({
+                ...prev,
+                performanceStats: {
+                  ...prev.performanceStats,
+                  latency: Date.now() - message.timestamp
+                }
+              }));
+              break;
+              
+            case 'signals':
+              setData(prev => ({
+                ...prev,
+                signals: message.signals || []
+              }));
+              break;
+              
+            case 'prices':
+            case 'price_update':
+              setData(prev => ({
+                ...prev,
+                prices: { ...prev.prices, ...message.prices }
+              }));
+              break;
+              
+            case 'notification':
+              setData(prev => ({
+                ...prev,
+                notifications: [...prev.notifications, message.notification]
+              }));
+              break;
+              
+            case 'performance_stats':
+              setData(prev => ({
+                ...prev,
+                performanceStats: {
+                  latency: message.latency || 0,
+                  memoryUsage: message.memory_usage || 0,
+                  cpuUsage: message.cpu_usage || 0,
+                  inferenceCount: message.inference_count || 0
+                }
+              }));
+              break;
+              
+            case 'connection':
+              console.log('📡 Connection status:', message.status);
+              break;
+              
+            case 'heartbeat':
+              // Server heartbeat - no action needed
+              break;
+              
+            default:
+              console.log('📨 Unknown message type:', message.type);
+          }
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error);
+        }
+      };
+
+      socketRef.current.onclose = (event) => {
+        console.log('🔌 WebSocket disconnected:', event.code, event.reason);
         
         setData(prev => ({
           ...prev,
           connectionStatus: {
-            ...prev.connectionStatus,
             connected: false,
-            error: reason
+            reconnecting: true,
+            error: null
           }
         }));
-
-        // Otomatik yeniden bağlanma
-        if (reconnectAttemptsRef.current < reconnectAttempts) {
-          handleReconnect();
-        }
-      });
-
-      socketRef.current.on('connect_error', (error) => {
-        console.error('❌ WebSocket connection error:', error);
         
+        // Clear heartbeat
+        if (heartbeatIntervalRef.current) {
+          clearInterval(heartbeatIntervalRef.current);
+          heartbeatIntervalRef.current = null;
+        }
+        
+        // Start fallback mode after 3 failed attempts
+        if (reconnectAttemptsRef.current >= 3) {
+          console.log('🔄 Starting fallback mode after 3 failed attempts');
+          startFallbackMode();
+        }
+        
+        // Attempt to reconnect
+        if (reconnectAttemptsRef.current < maxReconnectAttempts) {
+          reconnectAttemptsRef.current++;
+          console.log(`🔄 Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts})...`);
+          
+          reconnectTimeoutRef.current = setTimeout(() => {
+            connect();
+          }, reconnectDelay);
+        } else {
+          console.error('❌ Max reconnection attempts reached - staying in fallback mode');
+          setData(prev => ({
+            ...prev,
+            connectionStatus: {
+              connected: false,
+              reconnecting: false,
+              error: 'Connection failed - using fallback mode'
+            }
+          }));
+        }
+      };
+
+      socketRef.current.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
         setData(prev => ({
           ...prev,
           connectionStatus: {
-            ...prev.connectionStatus,
             connected: false,
-            error: error.message
+            reconnecting: false,
+            error: 'Connection error'
           }
         }));
-      });
-
-      // Fiyat güncellemeleri
-      socketRef.current.on('price_update', (payload: { symbol: string; data: PriceData; timestamp: string }) => {
-        console.log('📈 Price update received:', payload.symbol, payload.data.price);
-        
-        setData(prev => ({
-          ...prev,
-          prices: {
-            ...prev.prices,
-            [payload.symbol]: payload.data
-          }
-        }));
-
-        // Callback çağır
-        if (onPriceUpdate) {
-          onPriceUpdate(payload.data);
-        }
-      });
-
-      // Sinyal güncellemeleri
-      socketRef.current.on('signal_update', (payload: { symbol: string; data: SignalData; changed: boolean; timestamp: string }) => {
-        console.log('🔔 Signal update received:', payload.symbol, payload.data.signal);
-        
-        setData(prev => ({
-          ...prev,
-          signals: {
-            ...prev.signals,
-            [payload.symbol]: payload.data
-          }
-        }));
-
-        // Callback çağır
-        if (onSignalChange && payload.changed) {
-          onSignalChange(payload.data);
-        }
-      });
-
-      // Smart notifications
-      socketRef.current.on('smart_notification', (notification: NotificationData) => {
-        console.log('📱 Smart notification received:', notification.message);
-        
-        setData(prev => ({
-          ...prev,
-          notifications: [notification, ...prev.notifications].slice(0, 50) // Son 50 bildirim
-        }));
-
-        // Callback çağır
-        if (onNotification) {
-          onNotification(notification);
-        }
-
-        // Tarayıcı bildirimi göster
-        showBrowserNotification(notification);
-      });
-
-      // Bağlantı durumu
-      socketRef.current.on('connection_status', (status) => {
-        console.log('📊 Connection status:', status);
-      });
-
-      // Abonelik onayları
-      socketRef.current.on('subscription_confirmed', (data) => {
-        console.log('✅ Subscription confirmed:', data.symbol);
-      });
-
-      socketRef.current.on('unsubscription_confirmed', (data) => {
-        console.log('❌ Unsubscription confirmed:', data.symbol);
-      });
-
-      // Aktif semboller
-      socketRef.current.on('active_symbols', (data) => {
-        console.log('📊 Active symbols:', data.symbols);
-      });
-
-      // Hata mesajları
-      socketRef.current.on('error', (error) => {
-        console.error('❌ Socket error:', error);
-      });
-
-      // Bağlantıyı başlat
-      socketRef.current.connect();
+      };
 
     } catch (error) {
       console.error('❌ Failed to create WebSocket connection:', error);
-      
       setData(prev => ({
         ...prev,
         connectionStatus: {
-          ...prev.connectionStatus,
           connected: false,
-          error: error instanceof Error ? error.message : 'Connection failed'
+          reconnecting: false,
+          error: 'Failed to create connection'
         }
       }));
     }
-  }, [serverUrl, reconnectAttempts, onNotification, onSignalChange, onPriceUpdate]);
+  }, []);
 
-  // Yeniden bağlanma
-  const handleReconnect = useCallback(() => {
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-    }
-
-    reconnectAttemptsRef.current++;
-    
-    setData(prev => ({
-      ...prev,
-      connectionStatus: {
-        ...prev.connectionStatus,
-        reconnecting: true,
-        error: `Reconnecting... (${reconnectAttemptsRef.current}/${reconnectAttempts})`
-      }
-    }));
-
-    reconnectTimeoutRef.current = setTimeout(() => {
-      console.log(`🔄 Reconnection attempt ${reconnectAttemptsRef.current}/${reconnectAttempts}`);
-      connect();
-    }, reconnectDelay);
-  }, [connect, reconnectDelay, reconnectAttempts]);
-
-  // Bağlantıyı kes
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
-
+    
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
+    }
+    
+    if (fallbackIntervalRef.current) {
+      clearInterval(fallbackIntervalRef.current);
+      fallbackIntervalRef.current = null;
+    }
+    
     if (socketRef.current) {
-      socketRef.current.disconnect();
+      socketRef.current.close();
       socketRef.current = null;
     }
-
+    
     setData(prev => ({
       ...prev,
       connectionStatus: {
         connected: false,
         reconnecting: false,
-        error: null,
-        lastConnected: prev.connectionStatus.lastConnected
+        error: null
       }
     }));
   }, []);
 
-  // Sembol aboneliği
   const subscribeToSymbol = useCallback((symbol: string) => {
-    if (socketRef.current?.connected) {
-      console.log('📡 Subscribing to symbol:', symbol);
-      socketRef.current.emit('subscribe_symbol', { symbol: symbol.toUpperCase() });
-    } else {
-      console.warn('⚠️ Cannot subscribe: WebSocket not connected');
+    subscribedSymbolsRef.current.add(symbol);
+    
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({
+        type: 'subscribe',
+        symbol: symbol
+      }));
     }
   }, []);
 
-  // Sembol aboneliğinden çık
   const unsubscribeFromSymbol = useCallback((symbol: string) => {
-    if (socketRef.current?.connected) {
-      console.log('📡 Unsubscribing from symbol:', symbol);
-      socketRef.current.emit('unsubscribe_symbol', { symbol: symbol.toUpperCase() });
-    } else {
-      console.warn('⚠️ Cannot unsubscribe: WebSocket not connected');
+    subscribedSymbolsRef.current.delete(symbol);
+    
+    if (socketRef.current?.readyState === WebSocket.OPEN) {
+      socketRef.current.send(JSON.stringify({
+        type: 'unsubscribe',
+        symbol: symbol
+      }));
     }
   }, []);
 
-  // Aktif sembolleri getir
   const getActiveSymbols = useCallback(() => {
-    if (socketRef.current?.connected) {
-      socketRef.current.emit('get_active_symbols');
-    }
+    return Array.from(subscribedSymbolsRef.current);
   }, []);
 
-  // Tarayıcı bildirimi göster
-  const showBrowserNotification = useCallback((notification: NotificationData) => {
-    if ('Notification' in window && Notification.permission === 'granted') {
-      const browserNotification = new Notification(notification.message, {
-        icon: '/icons/notification-icon.png',
-        badge: '/icons/badge-icon.png',
-        tag: `bist-ai-${notification.type}`,
-        requireInteraction: notification.priority === 'high' || notification.priority === 'critical',
-        data: {
-          symbol: notification.symbol,
-          type: notification.type
-        }
-      });
-
-      browserNotification.onclick = () => {
-        window.focus();
-        browserNotification.close();
-      };
+  const requestNotificationPermission = useCallback(async (): Promise<boolean> => {
+    if (!('Notification' in window)) {
+      console.log('❌ This browser does not support notifications');
+      return false;
     }
+
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+
+    if (Notification.permission === 'denied') {
+      console.log('❌ Notification permission denied');
+      return false;
+    }
+
+    const permission = await Notification.requestPermission();
+    return permission === 'granted';
   }, []);
 
-  // Bildirim izni iste
-  const requestNotificationPermission = useCallback(async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      console.log('📱 Notification permission:', permission);
-      return permission === 'granted';
+  const subscribeToWebPush = useCallback(async () => {
+    const hasPermission = await requestNotificationPermission();
+    
+    if (!hasPermission) {
+      console.log('❌ Cannot subscribe to push notifications without permission');
+      return;
     }
-    return Notification.permission === 'granted';
-  }, []);
 
-  // Web Push aboneliği
-  const subscribeToWebPush = useCallback(async (userId: string) => {
     try {
       const registration = await navigator.serviceWorker.ready;
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_KEY
       });
 
-      // Backend'e aboneliği gönder
-      const response = await fetch('/api/notifications/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId,
-          subscription: subscription.toJSON()
-        })
-      });
-
-      if (response.ok) {
-        console.log('✅ Web push subscription successful');
-        return true;
-      } else {
-        console.error('❌ Web push subscription failed');
-        return false;
+      // Send subscription to backend
+      if (socketRef.current?.readyState === WebSocket.OPEN) {
+        socketRef.current.send(JSON.stringify({
+          type: 'push_subscription',
+          subscription: subscription
+        }));
       }
+
+      console.log('✅ Push notification subscription successful');
     } catch (error) {
-      console.error('❌ Web push subscription error:', error);
-      return false;
+      console.error('❌ Failed to subscribe to push notifications:', error);
     }
-  }, []);
+  }, [requestNotificationPermission]);
 
-  // Component mount/unmount
+  // Auto-connect on mount
   useEffect(() => {
-    if (autoConnect) {
-      connect();
-    }
-
+    connect();
+    
     return () => {
       disconnect();
     };
-  }, [autoConnect, connect, disconnect]);
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      if (reconnectTimeoutRef.current) {
-        clearTimeout(reconnectTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [connect, disconnect]);
 
   return {
     // Data
@@ -420,7 +402,8 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
     signals: data.signals,
     notifications: data.notifications,
     connectionStatus: data.connectionStatus,
-    
+    performanceStats: data.performanceStats,
+
     // Actions
     connect,
     disconnect,
@@ -429,12 +412,10 @@ export const useRealtime = (options: UseRealtimeOptions = {}) => {
     getActiveSymbols,
     requestNotificationPermission,
     subscribeToWebPush,
-    
+
     // Utilities
     isConnected: data.connectionStatus.connected,
     isReconnecting: data.connectionStatus.reconnecting,
     hasError: !!data.connectionStatus.error
   };
 };
-
-export default useRealtime;

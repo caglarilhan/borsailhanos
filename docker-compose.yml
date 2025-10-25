@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # Backend Services
   backend:
     build: .
     ports:
@@ -8,15 +9,105 @@ services:
     environment:
       - APP_ENV=production
       - LOG_LEVEL=info
+      - DATABASE_URL=sqlite:///./bist_ai.db
     volumes:
       - ./backend:/app
+      - ./logs:/app/logs
+      - ./ai:/app/ai
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/"]
       interval: 30s
       timeout: 10s
       retries: 3
+    networks:
+      - bist-ai-network
 
+  realtime:
+    build: .
+    ports:
+      - "8081:8081"
+    environment:
+      - APP_ENV=production
+      - LOG_LEVEL=info
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - bist-ai-network
+
+  health-check:
+    build: .
+    ports:
+      - "8001:8001"
+    environment:
+      - APP_ENV=production
+      - LOG_LEVEL=info
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - bist-ai-network
+
+  watchlist:
+    build: .
+    ports:
+      - "8002:8002"
+    environment:
+      - APP_ENV=production
+      - LOG_LEVEL=info
+      - DATABASE_URL=sqlite:///./bist_ai.db
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - bist-ai-network
+
+  notification:
+    build: .
+    ports:
+      - "8003:8003"
+    environment:
+      - APP_ENV=production
+      - LOG_LEVEL=info
+      - VAPID_PRIVATE_KEY=your-vapid-private-key
+      - VAPID_PUBLIC_KEY=your-vapid-public-key
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - bist-ai-network
+
+  monitoring:
+    build: .
+    ports:
+      - "8004:8004"
+    environment:
+      - APP_ENV=production
+      - LOG_LEVEL=info
+      - DATABASE_URL=sqlite:///./bist_ai.db
+    volumes:
+      - ./backend:/app
+      - ./logs:/app/logs
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - bist-ai-network
+
+  # Frontend Service
   frontend:
     build:
       context: ./web-app
@@ -25,11 +116,71 @@ services:
       - "3000:3000"
     environment:
       - NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
+      - NEXT_PUBLIC_REALTIME_URL=ws://localhost:8081
+      - NODE_ENV=production
     depends_on:
       - backend
+      - realtime
     restart: unless-stopped
+    networks:
+      - bist-ai-network
+
+  # Monitoring Services
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3010:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=simpod-json-datasource
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - backend
+      - monitoring
+    restart: unless-stopped
+    networks:
+      - bist-ai-network
+
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - bist-ai-network
+
+  # Database (Optional - for future use)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - bist-ai-network
+
+volumes:
+  grafana-data:
+  prometheus-data:
+  redis-data:
 
 networks:
-  default:
-    name: bist-ai-network
-
+  bist-ai-network:
+    driver: bridge

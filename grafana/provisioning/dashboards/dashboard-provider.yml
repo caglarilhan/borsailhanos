@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: 'BIST AI Dashboards'
+    orgId: 1
+    folder: 'BIST AI Smart Trader'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards

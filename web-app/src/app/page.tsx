@@ -59,11 +59,11 @@ import WatchlistDropdown from '@/components/WatchlistDropdown';
 import TickInspector from '@/components/TickInspector';
 import SectorStrength from '@/components/SectorStrength';
 import LiquidityHeatmap from '@/components/LiquidityHeatmap';
-import LiveDataFeed from '@/components/LiveDataFeed';
-import LiveModeTest from '@/components/LiveModeTest';
-import AutoTuning from '@/components/AutoTuning';
-import ExplainabilityDashboard from '@/components/ExplainabilityDashboard';
-import TradeHistory from '@/components/TradeHistory';
+// import LiveDataFeed from '@/components/LiveDataFeed';
+// import LiveModeTest from '@/components/LiveModeTest';
+// import AutoTuning from '@/components/AutoTuning';
+// import ExplainabilityDashboard from '@/components/ExplainabilityDashboard';
+// import TradeHistory from '@/components/TradeHistory';
 import RiskManagement from '@/components/RiskManagement';
 import LiveStreaming from '@/components/LiveStreaming';
 import PatternRecognition from '@/components/PatternRecognition';
@@ -81,6 +81,14 @@ interface TradingSignal {
   price: number;
   change: number;
   timestamp: string;
+  xaiExplanation?: string;
+  shapValues?: Record<string, number>;
+  confluenceScore?: number;
+  marketRegime?: string;
+  sentimentScore?: number;
+  expectedReturn?: number;
+  stopLoss?: number;
+  takeProfit?: number;
 }
 
 interface MarketData {
@@ -88,9 +96,13 @@ interface MarketData {
   price: number;
   change: number;
   volume: number;
+  marketCap?: number;
+  sector?: string;
+  peRatio?: number;
+  dividendYield?: number;
 }
 
-type TabId = 'dashboard' | 'signals' | 'bist30' | 'advanced_analysis' | 'signal_tracking' | 'advanced_charts' | 'bist_data' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'brokers' | 'crypto' | 'options' | 'watchlist' | 'advancedai' | 'patterns' | 'notifications' | 'education' | 'accuracy' | 'godmode' | 'deeplearning' | 'ensemble' | 'regime';
+type TabId = 'dashboard' | 'signals' | 'bist30' | 'advanced_analysis' | 'signal_tracking' | 'advanced_charts' | 'bist_data' | 'market' | 'charts' | 'seckme' | 'alerts' | 'bist100' | 'aiengine' | 'brokers' | 'crypto' | 'options' | 'watchlist' | 'advancedai' | 'patterns' | 'notifications' | 'education' | 'accuracy' | 'godmode' | 'deeplearning' | 'ensemble' | 'regime' | 'twin' | 'risk' | 'sim' | 'xai' | 'ingest' | 'adaptive' | 'ticks' | 'sector';
 
 const tabs = [
   { id: 'dashboard', name: 'Dashboard', icon: ChartBarIcon },
@@ -477,7 +489,7 @@ export default function Dashboard() {
         )}
 
         {activeTab === 'sim' && (
-          <ScenarioSimulator />
+          <ScenarioSimulator symbol="THYAO" currentPrice={325.50} />
         )}
 
         {activeTab === 'xai' && (

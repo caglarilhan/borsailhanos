@@ -54,6 +54,8 @@ try:
     from realtime.socket_server import socket_app, data_manager
     from events.signal_events import signal_event_manager
     from notifications.signal_alert import notification_service
+    from ai.auto_retrain import auto_retrain_pipeline
+    from ai.model_logger import model_logger
     REALTIME_AVAILABLE = True
 except ImportError:
     REALTIME_AVAILABLE = False

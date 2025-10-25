@@ -1,107 +1,473 @@
-'use client';
+/**
+ * 🚀 BIST AI Smart Trader - Scenario Simulator UI
+ * ==============================================
+ * 
+ * Kullanıcının değişkenleri girip senaryoyu görselleştirmesi için React komponenti.
+ * Predictive Twin Engine ile entegre çalışır.
+ * 
+ * Özellikler:
+ * - Senaryo seçimi
+ * - Parametre ayarlama
+ * - Görsel simülasyon
+ * - Risk analizi
+ * - Portfolio simülasyonu
+ */
 
-import React, { useState } from 'react';
-import { API_BASE_URL } from '@/lib/config';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  PlayIcon, 
+  ChartBarIcon, 
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ArrowTrendingUpIcon,
+  ArrowTrendingDownIcon,
+  MinusIcon
+} from '@heroicons/react/24/outline';
 
-export default function ScenarioSimulator() {
-  const [scenarios, setScenarios] = useState<number>(500);
-  const [rate, setRate] = useState<number>(0.25);
-  const [fx, setFx] = useState<number>(35);
-  const [vix, setVix] = useState<number>(18);
-  const [result, setResult] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
-  const [profile, setProfile] = useState<'conservative'|'balanced'|'aggressive'>('balanced');
+interface Scenario {
+  name: string;
+  description: string;
+  parameters: {
+    trend_multiplier: number;
+    volatility_multiplier: number;
+    volume_multiplier: number;
+  };
+  probability: number;
+  impact: 'positive' | 'negative' | 'neutral';
+}
 
-  const run = async () => {
-    setLoading(true);
-    try {
-      const url = `${API_BASE_URL}/api/simulate?scenarios=${scenarios}&rate=${rate}&fx=${fx}&vix=${vix}`;
-      const res = await fetch(url, { cache: 'no-store' });
-      const json = await res.json();
-      // profil bazlı beklenen getiri ayarlaması (gösterim amaçlı): agresif +%20, konservatif -%20
-      const mult = profile==='aggressive' ? 1.2 : profile==='conservative' ? 0.8 : 1.0;
-      if (json?.summary) {
-        json.summary.avg_return = Number(json.summary.avg_return) * mult;
-      }
-      setResult(json);
-    } catch {
-      setResult(null);
-    } finally {
-      setLoading(false);
+interface SimulationResult {
+  symbol: string;
+  scenario: string;
+  current_price: number;
+  predicted_price: number;
+  price_change: number;
+  price_change_pct: number;
+  confidence_interval: [number, number];
+  probability: number;
+  risk_score: number;
+  expected_return: number;
+  volatility: number;
+  simulation_data: Array<{
+    run: number;
+    final_price: number;
+    price_change_pct: number;
+    max_price: number;
+    min_price: number;
+    volatility: number;
+  }>;
+  timestamp: string;
+}
+
+interface ScenarioSimulatorProps {
+  symbol: string;
+  currentPrice: number;
+  onSimulationComplete?: (result: SimulationResult) => void;
+}
+
+const ScenarioSimulator: React.FC<ScenarioSimulatorProps> = ({
+  symbol,
+  currentPrice,
+  onSimulationComplete
+}) => {
+  // State
+  const [selectedScenario, setSelectedScenario] = useState<string>('bull_market');
+  const [customParameters, setCustomParameters] = useState({
+    trend_multiplier: 1.0,
+    volatility_multiplier: 1.0,
+    volume_multiplier: 1.0,
+    forecast_days: 30,
+    monte_carlo_runs: 1000
+  });
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  // Senaryo tanımları
+  const scenarios: Record<string, Scenario> = {
+    bull_market: {
+      name: 'Bull Market',
+      description: 'Güçlü yükseliş trendi',
+      parameters: {
+        trend_multiplier: 1.5,
+        volatility_multiplier: 0.8,
+        volume_multiplier: 1.3
+      },
+      probability: 0.3,
+      impact: 'positive'
+    },
+    bear_market: {
+      name: 'Bear Market',
+      description: 'Düşüş trendi',
+      parameters: {
+        trend_multiplier: -1.2,
+        volatility_multiplier: 1.5,
+        volume_multiplier: 1.2
+      },
+      probability: 0.2,
+      impact: 'negative'
+    },
+    sideways_market: {
+      name: 'Sideways Market',
+      description: 'Yatay hareket',
+      parameters: {
+        trend_multiplier: 0.1,
+        volatility_multiplier: 0.6,
+        volume_multiplier: 0.8
+      },
+      probability: 0.3,
+      impact: 'neutral'
+    },
+    high_volatility: {
+      name: 'High Volatility',
+      description: 'Yüksek volatilite',
+      parameters: {
+        trend_multiplier: 0.0,
+        volatility_multiplier: 2.0,
+        volume_multiplier: 1.5
+      },
+      probability: 0.15,
+      impact: 'neutral'
+    },
+    low_volatility: {
+      name: 'Low Volatility',
+      description: 'Düşük volatilite',
+      parameters: {
+        trend_multiplier: 0.2,
+        volatility_multiplier: 0.4,
+        volume_multiplier: 0.7
+      },
+      probability: 0.05,
+      impact: 'neutral'
     }
   };
 
+  // Senaryo simülasyonu çalıştır
+  const runSimulation = useCallback(async () => {
+    try {
+      setIsSimulating(true);
+      setError(null);
+
+      const response = await fetch('/api/ai/simulate-scenario', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          symbol,
+          scenario_name: selectedScenario,
+          current_price: currentPrice,
+          custom_parameters: customParameters
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Simulation failed: ${response.statusText}`);
+      }
+
+      const result: SimulationResult = await response.json();
+      setSimulationResult(result);
+      
+      if (onSimulationComplete) {
+        onSimulationComplete(result);
+      }
+
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Simulation failed');
+      console.error('Simulation error:', err);
+    } finally {
+      setIsSimulating(false);
+    }
+  }, [symbol, selectedScenario, currentPrice, customParameters, onSimulationComplete]);
+
+  // Senaryo değiştiğinde parametreleri güncelle
+  useEffect(() => {
+    const scenario = scenarios[selectedScenario];
+    if (scenario) {
+      setCustomParameters(prev => ({
+        ...prev,
+        ...scenario.parameters
+      }));
+    }
+  }, [selectedScenario]);
+
+  // Impact icon'u getir
+  const getImpactIcon = (impact: string) => {
+    switch (impact) {
+      case 'positive':
+        return <ArrowTrendingUpIcon className="w-5 h-5 text-green-500" />;
+      case 'negative':
+        return <ArrowTrendingDownIcon className="w-5 h-5 text-red-500" />;
+      default:
+        return <MinusIcon className="w-5 h-5 text-gray-500" />;
+    }
+  };
+
+  // Risk seviyesi rengi
+  const getRiskColor = (riskScore: number) => {
+    if (riskScore < 30) return 'text-green-600';
+    if (riskScore < 60) return 'text-yellow-600';
+    return 'text-red-600';
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow-sm">
-      <div className="px-4 py-3 border-b flex items-center justify-between">
-        <div className="text-sm font-semibold text-gray-900">Scenario Simulator</div>
-        <div className="flex items-center gap-3">
-          <select value={profile} onChange={(e)=>setProfile(e.target.value as any)} className="px-2 py-1 border rounded text-xs">
-            <option value="conservative">Konservatif</option>
-            <option value="balanced">Dengeli</option>
-            <option value="aggressive">Agresif</option>
-          </select>
-          <label className="text-xs text-gray-600">Faiz: {rate}
-            <input type="range" min="0" max="1" step="0.01" value={rate} onChange={(e)=>setRate(Number(e.target.value))} className="ml-2" />
-          </label>
-          <label className="text-xs text-gray-600">Kur: {fx}
-            <input type="range" min="10" max="60" step="1" value={fx} onChange={(e)=>setFx(Number(e.target.value))} className="ml-2" />
-          </label>
-          <label className="text-xs text-gray-600">VIX: {vix}
-            <input type="range" min="10" max="40" step="1" value={vix} onChange={(e)=>setVix(Number(e.target.value))} className="ml-2" />
-          </label>
-          <button onClick={run} className="px-3 py-1 text-sm bg-blue-600 text-white rounded disabled:opacity-50" disabled={loading}>{loading?'Çalışıyor…':'Simüle Et'}</button>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">
+          🎯 Senaryo Simülatörü
+        </h3>
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          {symbol} - ₺{currentPrice.toFixed(2)}
         </div>
       </div>
-      <div className="p-4 space-y-3">
-        {!result && <div className="text-sm text-gray-500">Sonuç yok</div>}
-        {result && (
-          <>
-            <div className="text-sm text-gray-700">Ortalama Getiri: <span className="font-medium">{(result.summary?.avg_return*100).toFixed(2)}%</span></div>
-            <div className="text-sm text-gray-700">VaR 95: <span className="font-medium">{(result.summary?.var_95*100).toFixed(2)}%</span> | VaR 99: <span className="font-medium">{(result.summary?.var_99*100).toFixed(2)}%</span></div>
-            <div className="text-xs text-gray-500">Örnek PnL (100 örnek): {Array.isArray(result.pnl_samples) ? result.pnl_samples.slice(0,10).map((v:number)=> (v*100).toFixed(1)+'%').join(', ') : '-'}</div>
-          </>
-        )}
+
+      {/* Senaryo Seçimi */}
+      <div className="mb-6">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+          Senaryo Seçin
+        </label>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {Object.entries(scenarios).map(([key, scenario]) => (
+            <button
+              key={key}
+              onClick={() => setSelectedScenario(key)}
+              className={`p-3 rounded-lg border-2 transition-all ${
+                selectedScenario === key
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                  : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-medium text-gray-900 dark:text-white">
+                  {scenario.name}
+                </span>
+                {getImpactIcon(scenario.impact)}
+              </div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                {scenario.description}
+              </p>
+              <div className="mt-2 text-xs text-gray-500">
+                Olasılık: %{(scenario.probability * 100).toFixed(0)}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
-      <div className="px-4 py-2 border-t flex items-center gap-2">
-        <button
-          onClick={async ()=>{
-            try {
-              const r = await fetch(`${API_BASE_URL}/api/scenario/presets`, { cache: 'no-store' });
-              const j = await r.json();
-              if (Array.isArray(j?.presets) && j.presets.length>0) {
-                const p = j.presets[0];
-                setRate(p.rate); setFx(p.fx); setVix(p.vix);
-              }
-            } catch {}
-          }}
-          className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"
-        >FED Dovish</button>
-        <button
-          onClick={async ()=>{
-            try {
-              const r = await fetch(`${API_BASE_URL}/api/scenario/presets`, { cache: 'no-store' });
-              const j = await r.json();
-              const p = j.presets?.find((x:any)=>x.id==='tcmb_hike');
-              if (p) { setRate(p.rate); setFx(p.fx); setVix(p.vix); }
-            } catch {}
-          }}
-          className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"
-        >TCMB Hike</button>
-        <button
-          onClick={async ()=>{
-            try {
-              const r = await fetch(`${API_BASE_URL}/api/scenario/presets`, { cache: 'no-store' });
-              const j = await r.json();
-              const p = j.presets?.find((x:any)=>x.id==='opec_cut');
-              if (p) { setRate(p.rate); setFx(p.fx); setVix(p.vix); }
-            } catch {}
-          }}
-          className="text-xs px-2 py-1 rounded bg-gray-100 text-gray-700"
-        >OPEC Cut</button>
+
+      {/* Parametre Ayarları */}
+      <div className="mb-6">
+        <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          Parametre Ayarları
+        </h4>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Trend Çarpanı
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={customParameters.trend_multiplier}
+              onChange={(e) => setCustomParameters(prev => ({
+                ...prev,
+                trend_multiplier: parseFloat(e.target.value)
+              }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Volatilite Çarpanı
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={customParameters.volatility_multiplier}
+              onChange={(e) => setCustomParameters(prev => ({
+                ...prev,
+                volatility_multiplier: parseFloat(e.target.value)
+              }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Hacim Çarpanı
+            </label>
+            <input
+              type="number"
+              step="0.1"
+              value={customParameters.volume_multiplier}
+              onChange={(e) => setCustomParameters(prev => ({
+                ...prev,
+                volume_multiplier: parseFloat(e.target.value)
+              }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Tahmin Günü
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="365"
+              value={customParameters.forecast_days}
+              onChange={(e) => setCustomParameters(prev => ({
+                ...prev,
+                forecast_days: parseInt(e.target.value)
+              }))}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:text-white"
+            />
+          </div>
+        </div>
       </div>
+
+      {/* Simülasyon Butonu */}
+      <div className="mb-6">
+        <button
+          onClick={runSimulation}
+          disabled={isSimulating}
+          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+        >
+          {isSimulating ? (
+            <>
+              <ClockIcon className="w-5 h-5 mr-2 animate-spin" />
+              Simülasyon Çalışıyor...
+            </>
+          ) : (
+            <>
+              <PlayIcon className="w-5 h-5 mr-2" />
+              Simülasyonu Başlat
+            </>
+          )}
+        </button>
+      </div>
+
+      {/* Hata Mesajı */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+          <div className="flex items-center">
+            <ExclamationTriangleIcon className="w-5 h-5 text-red-500 mr-2" />
+            <span className="text-red-700 dark:text-red-400">{error}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Simülasyon Sonuçları */}
+      {simulationResult && (
+        <div className="space-y-6">
+          {/* Özet */}
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Simülasyon Sonuçları
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  ₺{simulationResult.predicted_price.toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Tahmin Edilen Fiyat
+                </div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${
+                  simulationResult.price_change_pct >= 0 ? 'text-green-600' : 'text-red-600'
+                }`}>
+                  {simulationResult.price_change_pct >= 0 ? '+' : ''}{simulationResult.price_change_pct.toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Fiyat Değişimi
+                </div>
+              </div>
+              <div className="text-center">
+                <div className={`text-2xl font-bold ${getRiskColor(simulationResult.risk_score)}`}>
+                  {simulationResult.risk_score.toFixed(0)}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Risk Skoru
+                </div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {simulationResult.expected_return.toFixed(1)}%
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Beklenen Getiri
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Güven Aralığı */}
+          <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+            <h5 className="font-semibold text-gray-900 dark:text-white mb-2">
+              📊 Güven Aralığı (%95)
+            </h5>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Alt Sınır: ₺{simulationResult.confidence_interval[0].toFixed(2)}
+              </span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">
+                Üst Sınır: ₺{simulationResult.confidence_interval[1].toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          {/* Senaryo Bilgileri */}
+          <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+            <h5 className="font-semibold text-gray-900 dark:text-white mb-2">
+              🎯 Senaryo Detayları
+            </h5>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Senaryo:</span>
+                <div className="font-medium text-gray-900 dark:text-white">
+                  {scenarios[simulationResult.scenario]?.name}
+                </div>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Olasılık:</span>
+                <div className="font-medium text-gray-900 dark:text-white">
+                  %{(simulationResult.probability * 100).toFixed(0)}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Simülasyon İstatistikleri */}
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-4">
+            <h5 className="font-semibold text-gray-900 dark:text-white mb-2">
+              📈 Simülasyon İstatistikleri
+            </h5>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Toplam Simülasyon:</span>
+                <div className="font-medium text-gray-900 dark:text-white">
+                  {simulationResult.simulation_data.length} adet
+                </div>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Volatilite:</span>
+                <div className="font-medium text-gray-900 dark:text-white">
+                  {simulationResult.volatility.toFixed(1)}%
+                </div>
+              </div>
+              <div>
+                <span className="text-sm text-gray-600 dark:text-gray-400">Simülasyon Tarihi:</span>
+                <div className="font-medium text-gray-900 dark:text-white">
+                  {new Date(simulationResult.timestamp).toLocaleString('tr-TR')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
+};
 
-
+export default ScenarioSimulator;
