@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { API_BASE_URL } from '@/lib/config';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export default function CalibrationPanel() {
   const [prob, setProb] = useState(0.7);

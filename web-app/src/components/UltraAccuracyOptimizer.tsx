@@ -50,7 +50,7 @@ interface UltraAccuracyOptimizerProps {
   isLoading: boolean;
 }
 
-import { API_BASE_URL } from '@/lib/config';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 const UltraAccuracyOptimizer: React.FC<UltraAccuracyOptimizerProps> = ({ isLoading }) => {
   const [improvementPlan, setImprovementPlan] = useState<ImprovementPlan | null>(null);

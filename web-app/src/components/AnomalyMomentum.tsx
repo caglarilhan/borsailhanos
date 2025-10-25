@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { API_BASE_URL } from '@/lib/config';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 interface HybridSignal { symbol: string; anomaly: number; kama: number; hull: number; trigger: boolean; strength: number }
 async function notify(symbol: string, strength: number) {
