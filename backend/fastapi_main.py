@@ -48,6 +48,16 @@ from middleware.rate_limiter import APIRateLimitMiddleware
 from core.cache import initialize_cache, close_cache, cache_manager, cached_ops, cache_result
 from core.database import initialize_database, close_database, db_manager
 import pandas as pd
+
+# Realtime WebSocket imports
+try:
+    from realtime.socket_server import socket_app, data_manager
+    from events.signal_events import signal_event_manager
+    from notifications.signal_alert import notification_service
+    REALTIME_AVAILABLE = True
+except ImportError:
+    REALTIME_AVAILABLE = False
+    print("⚠️ Realtime modules not available - running without WebSocket support")
 import numpy as np
 
 # Local imports
@@ -188,6 +198,98 @@ async def add_security_headers(request: Request, call_next):
 
 # Global instances
 websocket_connector = None
+
+# Realtime WebSocket endpoints
+if REALTIME_AVAILABLE:
+    @app.get("/api/realtime/status")
+    async def get_realtime_status():
+        """Realtime server durumu"""
+        return {
+            "status": "active",
+            "websocket_enabled": True,
+            "active_connections": len(data_manager.subscribers),
+            "subscribed_symbols": list(data_manager.subscribers.keys()),
+            "uptime": datetime.now().isoformat(),
+            "features": [
+                "real_time_prices",
+                "signal_updates", 
+                "smart_notifications",
+                "jwt_auth",
+                "rate_limiting"
+            ]
+        }
+    
+    @app.post("/api/realtime/broadcast/price")
+    async def broadcast_price_update(symbol: str, price_data: dict):
+        """Fiyat güncellemesi yayınla (internal API)"""
+        try:
+            await data_manager.broadcast_price_update(symbol.upper(), price_data)
+            return {"status": "success", "message": f"Price update broadcasted for {symbol}"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/realtime/broadcast/signal")
+    async def broadcast_signal_update(symbol: str, signal_data: dict):
+        """Sinyal güncellemesi yayınla (internal API)"""
+        try:
+            await data_manager.broadcast_signal_update(symbol.upper(), signal_data)
+            return {"status": "success", "message": f"Signal update broadcasted for {symbol}"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/realtime/connections")
+    async def get_connections():
+        """Aktif bağlantıları listele"""
+        return {
+            "total_connections": len(data_manager.subscribers),
+            "subscribed_symbols": list(data_manager.subscribers.keys()),
+            "uptime": datetime.now().isoformat()
+        }
+    
+    @app.post("/api/notifications/subscribe")
+    async def subscribe_to_notifications(user_id: str, subscription: dict):
+        """Web Push aboneliği"""
+        try:
+            success = notification_service.add_web_push_subscription(user_id, subscription)
+            if success:
+                return {"status": "success", "message": "Web push subscription added"}
+            else:
+                return {"status": "error", "message": "Subscription already exists"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/notifications/send")
+    async def send_notification(notification_data: dict):
+        """Bildirim gönder (internal API)"""
+        try:
+            from notifications.signal_alert import Notification, NotificationType, Priority
+            
+            notification = Notification(
+                id=notification_data.get('id', f"notif_{datetime.now().strftime('%Y%m%d_%H%M%S')}"),
+                type=NotificationType(notification_data.get('type', 'signal_change')),
+                title=notification_data.get('title', 'BIST AI Alert'),
+                message=notification_data.get('message', ''),
+                priority=Priority(notification_data.get('priority', 'medium')),
+                user_id=notification_data.get('user_id'),
+                symbol=notification_data.get('symbol'),
+                metadata=notification_data.get('metadata', {})
+            )
+            
+            success = await notification_service.send_notification(notification)
+            return {"status": "success" if success else "failed", "message": "Notification processed"}
+            
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+else:
+    @app.get("/api/realtime/status")
+    async def get_realtime_status():
+        """Realtime server durumu (disabled)"""
+        return {
+            "status": "disabled",
+            "websocket_enabled": False,
+            "message": "Realtime modules not available",
+            "uptime": datetime.now().isoformat()
+        }
 topsis_ranking = None
 fundamental_analyzer = None
 technical_engine = None

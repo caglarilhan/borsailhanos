@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { API_BASE_URL } from '@/lib/config';
+import useRealtime from '@/hooks/useRealtime';
 import { 
   ArrowTrendingUpIcon, 
   ArrowTrendingDownIcon, 
@@ -40,11 +41,70 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
   const [showAnalysisTable, setShowAnalysisTable] = useState(false);
   const [selectedCharts, setSelectedCharts] = useState<TradingSignal[]>([]);
 
-  // Backend'den gerçek veri çek
+  // Realtime WebSocket hook
+  const {
+    prices,
+    signals: realtimeSignals,
+    notifications,
+    connectionStatus,
+    subscribeToSymbol,
+    unsubscribeFromSymbol,
+    isConnected
+  } = useRealtime({
+    serverUrl: process.env.NEXT_PUBLIC_REALTIME_URL || 'ws://localhost:8002',
+    onSignalChange: (signal) => {
+      console.log('🔔 Real-time signal change:', signal);
+      // Sinyal değişikliğinde UI'ı güncelle
+      setAllSignals(prev => {
+        const updated = prev.filter(s => s.symbol !== signal.symbol);
+        return [...updated, {
+          symbol: signal.symbol,
+          signal: signal.signal as 'BUY' | 'SELL' | 'HOLD',
+          confidence: signal.confidence,
+          price: prices[signal.symbol]?.price || 0,
+          change: prices[signal.symbol]?.change || 0,
+          timestamp: signal.timestamp,
+          xaiExplanation: signal.metadata?.explanation,
+          confluenceScore: signal.metadata?.confluence_score,
+          marketRegime: signal.metadata?.market_regime,
+          sentimentScore: signal.metadata?.sentiment_score
+        }];
+      });
+    },
+    onPriceUpdate: (price) => {
+      console.log('📈 Real-time price update:', price);
+      // Fiyat güncellemesinde UI'ı güncelle
+      setAllSignals(prev => prev.map(signal => 
+        signal.symbol === price.symbol 
+          ? { ...signal, price: price.price, change: price.change }
+          : signal
+      ));
+    },
+    onNotification: (notification) => {
+      console.log('📱 Smart notification:', notification);
+      // Bildirim göster (toast, modal, vs.)
+    }
+  });
+
+  // Popüler sembollere otomatik abone ol
   useEffect(() => {
-    const fetchSignals = async () => {
+    const popularSymbols = ['THYAO', 'TUPRS', 'ASELS', 'SISE', 'EREGL'];
+    popularSymbols.forEach(symbol => {
+      subscribeToSymbol(symbol);
+    });
+    
+    return () => {
+      popularSymbols.forEach(symbol => {
+        unsubscribeFromSymbol(symbol);
+      });
+    };
+  }, [subscribeToSymbol, unsubscribeFromSymbol]);
+
+  // Backend'den gerçek veri çek (fallback)
+  useEffect(() => {
+    const fetchRealSignals = async () => {
       try {
-        const response = await fetch(`${API_BASE_URL}/api/real/trading_signals`);
+        const response = await fetch(`${API_BASE_URL}/api/signals`);
         const data = await response.json();
         
         if (data.signals && Array.isArray(data.signals)) {
@@ -132,12 +192,44 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
       }
     };
 
-    fetchSignals();
-    
-    // 30 saniyede bir güncelle
-    const interval = setInterval(fetchSignals, 30000);
-    return () => clearInterval(interval);
-  }, []);
+        setAllSignals(backendSignals);
+      }
+    } catch (error) {
+      console.error('❌ Error fetching signals:', error);
+      // Fallback: mock data kullan
+      const mockSignals: TradingSignal[] = [
+        {
+          symbol: "THYAO",
+          signal: "BUY",
+          confidence: 0.87,
+          price: 245.50,
+          change: 2.3,
+          timestamp: new Date().toISOString(),
+          xaiExplanation: "EMA Cross + RSI Oversold",
+          shapValues: {'Technical': 0.4, 'Fundamental': 0.3, 'Sentiment': 0.2, 'Macro': 0.1},
+          confluenceScore: 0.87,
+          marketRegime: 'Bullish',
+          sentimentScore: 0.7,
+          expectedReturn: 14.5,
+          stopLoss: 235.0,
+          takeProfit: 260.0
+        }
+      ];
+      setAllSignals(mockSignals);
+    }
+  };
+
+  fetchRealSignals();
+  
+  // 30 saniyede bir güncelle (sadece WebSocket bağlı değilse)
+  const interval = setInterval(() => {
+    if (!isConnected) {
+      fetchRealSignals();
+    }
+  }, 30000);
+  
+  return () => clearInterval(interval);
+}, [isConnected]);
 
   const getSignalIcon = (signal: string) => {
     switch (signal) {
@@ -173,6 +265,16 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
         <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
           <ChartBarIcon className="w-6 h-6 text-blue-600" />
           AI Trading Sinyalleri
+          {/* Connection Status Indicator */}
+          <div className="flex items-center gap-2 ml-4">
+            <div className={`w-3 h-3 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            <span className={`text-sm ${isConnected ? 'text-green-600' : 'text-red-600'}`}>
+              {isConnected ? 'Canlı Bağlantı' : 'Bağlantı Yok'}
+            </span>
+            {connectionStatus.reconnecting && (
+              <span className="text-sm text-yellow-600">Yeniden bağlanıyor...</span>
+            )}
+          </div>
         </h2>
         <div className="flex gap-2">
           <button
