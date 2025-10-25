@@ -1,27 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 @import "tailwindcss";
 
+/* BIST AI Institutional Theme v3.3 - Deep Graphite + Electric Cyan */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0B0C10;
+  --foreground: #E5E5EA;
+  --card: #1F1F2E;
+  --cyan: #00E0FF;
+  --gold: #FFB600;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: 'Inter', var(--font-geist-sans);
+  --font-mono: 'JetBrains Mono', var(--font-geist-mono);
 }
 
-/* Force light theme background to ensure sağ panel siyah görünmez */
+/* Dark theme default */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #ffffff;
-    --foreground: #171717;
+    --background: #0B0C10;
+    --foreground: #E5E5EA;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', -apple-system, system-ui, sans-serif;
+}
+
+/* Glassmorphism Cards */
+.glass-card {
+  background: rgba(31, 31, 46, 0.75);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 224, 255, 0.3);
+  box-shadow: 0 0 20px rgba(0, 224, 255, 0.2);
+}
+
+/* Glow Effects */
+.glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 224, 255, 0.3);
+}
+
+.glow-gold {
+  box-shadow: 0 0 20px rgba(255, 182, 0, 0.3);
+}
+
+.glow-success {
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+/* Pulse Animation */
+@keyframes glow-pulse {
+  0%, 100% { 
+    box-shadow: 0 0 15px rgba(0,224,255,0.25); 
+  }
+  50% { 
+    box-shadow: 0 0 30px rgba(0,224,255,0.5); 
+  }
+}
+
+.animate-glow {
+  animation: glow-pulse 2.5s ease-in-out infinite;
 }

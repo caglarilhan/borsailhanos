@@ -82,7 +82,7 @@ export default function OptionsAnalysis({ isLoading }: OptionsAnalysisProps) {
   const loadOptionChain = async () => {
     try {
       const expiration = selectedExpiration || '';
-      const response = await fetch(`http://localhost:8081/api/options/chain/${selectedSymbol}${expiration ? `?expiration=${expiration}` : ''}`);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/options/chain/${selectedSymbol}${expiration ? `?expiration=${expiration}` : ''}`);
       const data = await response.json();
       setOptionChain(data);
     } catch (error) {

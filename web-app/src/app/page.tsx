@@ -150,7 +150,38 @@ export default function Dashboard() {
   const [godMode, setGodMode] = useState(true);
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
 
-  // Mock data for demonstration
+  // Backend'den market data çek
+  useEffect(() => {
+    const fetchMarketData = async () => {
+      try {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/market/overview`);
+        const data = await response.json();
+        
+        if (data.markets && Array.isArray(data.markets)) {
+          setMarketData(data.markets);
+          console.log('✅ Market data yüklendi:', data.markets.length);
+        }
+      } catch (error) {
+        console.error('❌ Market data hatası, mock data kullanılıyor:', error);
+        // Fallback mock data
+        setMarketData([
+          { symbol: 'TUPRS', price: 180.30, change: 3.1, volume: 12500000 },
+          { symbol: 'THYAO', price: 245.50, change: 2.3, volume: 8900000 },
+          { symbol: 'SISE', price: 32.50, change: -1.2, volume: 15200000 },
+          { symbol: 'EREGL', price: 55.80, change: 1.8, volume: 9800000 },
+          { symbol: 'ASELS', price: 48.20, change: -1.8, volume: 7600000 }
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchMarketData();
+    const interval = setInterval(fetchMarketData, 60000); // 60 saniyede bir
+    return () => clearInterval(interval);
+  }, []);
+
+  // Mock signals for demonstration
   useEffect(() => {
     const mockSignals: TradingSignal[] = [
       {
@@ -230,59 +261,61 @@ export default function Dashboard() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-graphite-900 flex flex-col items-center justify-center">
+        <div className="text-3xl font-bold text-cyan-400 mb-6 animate-glow">BIST AI Smart Trader</div>
+        <div className="w-48 h-1 bg-gradient-primary animate-pulse rounded-full"></div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b">
+    <div className="min-h-screen bg-graphite-900">
+      {/* Header - Institutional Style */}
+      <header className="glass-card border-b border-cyan-500/20 shadow-glow-cyan sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <ChartBarIcon className="h-8 w-8 text-blue-600" />
-              <h1 className="ml-2 text-xl font-bold text-gray-900">BIST AI Smart Trader</h1>
+            <div className="flex items-center gap-3">
+              <ChartBarIcon className="h-8 w-8 text-cyan-400 animate-pulse-slow" />
+              <h1 className="text-xl font-bold text-cyan-400">BIST AI Smart Trader</h1>
+              <span className="text-xs text-gold-500 font-mono">v3.3</span>
             </div>
             <div className="flex items-center space-x-4">
-              <BellIcon className="h-6 w-6 text-gray-400" />
-              <Cog6ToothIcon className="h-6 w-6 text-gray-400" />
+              <BellIcon className="h-6 w-6 text-gray-400 hover:text-cyan-400 transition cursor-pointer" />
+              <Cog6ToothIcon className="h-6 w-6 text-gray-400 hover:text-cyan-400 transition cursor-pointer" />
               <WatchlistDropdown />
-              <div className="flex items-center space-x-2">
-                <UserCircleIcon className="h-8 w-8 text-gray-400" />
-                <span className="text-sm font-medium text-gray-700">{user.name}</span>
+              <div className="flex items-center space-x-2 px-3 py-1 glass-card">
+                <UserCircleIcon className="h-8 w-8 text-cyan-400" />
+                <span className="text-sm font-medium text-gray-200">{user.name}</span>
               </div>
-              <ArrowRightOnRectangleIcon className="h-6 w-6 text-gray-400" />
+              <ArrowRightOnRectangleIcon className="h-6 w-6 text-gray-400 hover:text-danger-500 transition cursor-pointer" />
             </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Navigation Tabs */}
+        {/* Navigation Tabs - Institutional Style */}
         <div className="mb-8">
           <div className="space-y-4">
             {groupedTabs.map(section => (
               <div key={section.group}>
-                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{section.group}</div>
-                <div className="border-b border-gray-200">
+                <div className="text-xs font-semibold text-cyan-400 uppercase tracking-wide mb-3 font-mono">{section.group}</div>
+                <div className="border-b border-graphite-700">
                   <nav className="-mb-px flex flex-wrap gap-3">
                     {tabs.filter(t => (section.items as readonly string[]).includes(t.id)).map((tab) => (
                       <button
                         key={tab.id}
                         onClick={() => setActiveTab(tab.id as TabId)}
-                        className={`flex items-center space-x-2 py-2 px-2 border-b-2 font-medium text-sm ${
+                        className={`flex items-center space-x-2 py-3 px-4 border-b-2 font-medium text-sm transition-all duration-200 ${
                           activeTab === tab.id
-                            ? 'border-blue-500 text-blue-600'
-                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                            ? 'border-cyan-500 text-cyan-400 bg-graphite-800/50 shadow-glow-cyan'
+                            : 'border-transparent text-gray-400 hover:text-cyan-300 hover:border-cyan-500/50 hover:bg-graphite-800/30'
                         }`}
                       >
                         <tab.icon className="h-5 w-5" />
                         <span>{tab.name}</span>
                         {tab.id === 'godmode' && godMode && (
-                          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                          <div className="w-2 h-2 bg-success-500 rounded-full animate-glow"></div>
                         )}
                       </button>
                     ))}
@@ -296,41 +329,41 @@ export default function Dashboard() {
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <>
-            {/* Stats Cards */}
+            {/* Stats Cards - Institutional Glassmorphism */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="glass-card shadow-glow-success p-6 hover:scale-105 transition-transform duration-200">
                 <div className="flex items-center">
-                  <ArrowTrendingUpIcon className="h-8 w-8 text-green-500" />
+                  <ArrowTrendingUpIcon className="h-8 w-8 text-success-500" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Toplam Kar</p>
-                    <p className="text-2xl font-bold text-green-600">+₺12,450</p>
+                    <p className="text-sm font-medium text-gray-400">Toplam Kar</p>
+                    <p className="text-2xl font-bold text-success-500">+₺12,450</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="glass-card shadow-glow-cyan p-6 hover:scale-105 transition-transform duration-200">
                 <div className="flex items-center">
-                  <ChartBarIcon className="h-8 w-8 text-blue-500" />
+                  <ChartBarIcon className="h-8 w-8 text-cyan-400" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Aktif Sinyaller</p>
-                    <p className="text-2xl font-bold text-blue-600">{signals.length}</p>
+                    <p className="text-sm font-medium text-gray-400">Aktif Sinyaller</p>
+                    <p className="text-2xl font-bold text-cyan-400">{signals.length}</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="glass-card shadow-glow-gold p-6 hover:scale-105 transition-transform duration-200">
                 <div className="flex items-center">
-                  <ArrowTrendingUpIcon className="h-8 w-8 text-purple-500" />
+                  <ArrowTrendingUpIcon className="h-8 w-8 text-gold-500" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Doğruluk Oranı</p>
-                    <p className="text-2xl font-bold text-purple-600">87.3%</p>
+                    <p className="text-sm font-medium text-gray-400">Doğruluk Oranı</p>
+                    <p className="text-2xl font-bold text-gold-500">87.3%</p>
                   </div>
                 </div>
               </div>
-              <div className="bg-white rounded-lg shadow p-6">
+              <div className="glass-card shadow-card p-6 hover:scale-105 transition-transform duration-200">
                 <div className="flex items-center">
-                  <ArrowTrendingDownIcon className="h-8 w-8 text-red-500" />
+                  <ShieldCheckIcon className="h-8 w-8 text-gray-400" />
                   <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-500">Risk Skoru</p>
-                    <p className="text-2xl font-bold text-red-600">Düşük</p>
+                    <p className="text-sm font-medium text-gray-400">Risk Skoru</p>
+                    <p className="text-2xl font-bold text-gray-300">Düşük</p>
                   </div>
                 </div>
               </div>

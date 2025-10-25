@@ -25,6 +25,7 @@ export default function RiskEngine() {
   const [lotStep, setLotStep] = useState<number>(1);
   const [maxPositions, setMaxPositions] = useState<number>(5);
   const [profile, setProfile] = useState<'conservative'|'balanced'|'aggressive'>('balanced');
+  const [hedge, setHedge] = useState<number>(0);
 
   const run = async () => {
     setLoading(true);

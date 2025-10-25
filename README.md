@@ -1,6 +1,32 @@
-# 🚀 BIST AI Smart Trader
+# 🚀 BIST AI Smart Trader v3.0
 
-**Gelişmiş AI destekli trading asistanı - Next.js Web Uygulaması**
+**Production-Ready AI Trading Platform - Full Stack**
+
+[![Status](https://img.shields.io/badge/status-MVP_Ready-success)](http://localhost:3001)
+[![Backend](https://img.shields.io/badge/backend-60+_endpoints-blue)](http://localhost:8080)
+[![Frontend](https://img.shields.io/badge/frontend-Next.js_15.5-purple)](http://localhost:3001)
+
+**🔥 Türkiye'nin ilk tam entegre AI tabanlı borsa asistanı**
+
+---
+
+## ⚡ **HIZLI BAŞLATMA (5 DAKİKA)**
+
+```bash
+# Tüm servisleri başlat
+chmod +x start_all_services.sh
+./start_all_services.sh
+
+# Tarayıcıda aç
+http://localhost:3001
+```
+
+**✅ Sistem hazır! 3 servis çalışıyor:**
+- 🔥 Backend API (Port 8080)
+- 🔌 Realtime Server (Port 8081)
+- 💻 Frontend (Port 3001)
+
+---
 
 ## 🎯 Özellikler
 

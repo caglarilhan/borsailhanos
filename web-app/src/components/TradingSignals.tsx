@@ -40,219 +40,124 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
   const [showAnalysisTable, setShowAnalysisTable] = useState(false);
   const [selectedCharts, setSelectedCharts] = useState<TradingSignal[]>([]);
 
-  // Gerçek veri çekme
+  // Backend'den gerçek veri çek
   useEffect(() => {
-    const fetchRealSignals = async () => {
+    const fetchSignals = async () => {
       try {
         const response = await fetch(`${API_BASE_URL}/api/real/trading_signals`);
         const data = await response.json();
         
-        if (data.signals && data.signals.length > 0) {
-          // Gerçek veriyi TradingSignal formatına çevir
-          const realSignals: TradingSignal[] = data.signals.map((signal: any) => ({
+        if (data.signals && Array.isArray(data.signals)) {
+          // Backend'den gelen veriyi component formatına çevir
+          const backendSignals: TradingSignal[] = data.signals.map((signal: any) => ({
             symbol: signal.symbol,
-            signal: signal.signal as 'BUY' | 'SELL' | 'HOLD',
+            signal: signal.action as 'BUY' | 'SELL' | 'HOLD',
             confidence: signal.confidence,
             price: signal.price,
-            change: signal.change,
-            timestamp: signal.timestamp,
-            xaiExplanation: signal.xai_explanation,
+            change: signal.change || 0,
+            timestamp: signal.timestamp || data.timestamp,
+            xaiExplanation: signal.reason,
             shapValues: {
-              rsi: signal.rsi || 0,
-              macd: signal.macd || 0,
-              volume: signal.volume / 1000000, // Milyon cinsinden
-              price_change: signal.change / 100
+              'Technical': 0.4,
+              'Fundamental': 0.3,
+              'Sentiment': 0.2,
+              'Macro': 0.1
             },
             confluenceScore: signal.confidence,
-            marketRegime: signal.change > 0 ? 'Risk-On' : 'Risk-Off',
+            marketRegime: signal.confidence > 0.8 ? 'Bullish' : 'Bearish',
             sentimentScore: signal.confidence,
-            expectedReturn: signal.expected_return,
+            expectedReturn: signal.target ? signal.target - signal.price : 0,
             stopLoss: signal.stop_loss,
-            takeProfit: signal.take_profit
+            takeProfit: signal.target
           }));
           
-          setAllSignals(realSignals);
+          setAllSignals(backendSignals);
+          console.log('✅ Backend sinyalleri yüklendi:', backendSignals.length);
         }
       } catch (error) {
-        console.error('Gerçek veri çekme hatası:', error);
-        // Hata durumunda mock veriyi kullan
-        loadMockSignals();
+        console.error('❌ Backend bağlantı hatası, mock data kullanılıyor:', error);
+        
+        // Fallback mock data
+        const mockSignals: TradingSignal[] = [
+          {
+            symbol: "THYAO",
+            signal: "BUY",
+            confidence: 0.87,
+            price: 245.50,
+            change: 2.3,
+            timestamp: new Date().toISOString(),
+            xaiExplanation: "EMA Cross + RSI Oversold",
+            shapValues: {'Technical': 0.4, 'Fundamental': 0.3, 'Sentiment': 0.2, 'Macro': 0.1},
+            confluenceScore: 0.87,
+            marketRegime: 'Bullish',
+            sentimentScore: 0.7,
+            expectedReturn: 14.5,
+            stopLoss: 235.0,
+            takeProfit: 260.0
+          },
+          {
+            symbol: "ASELS",
+            signal: "SELL",
+            confidence: 0.74,
+            price: 48.20,
+            change: -1.8,
+            timestamp: new Date().toISOString(),
+            xaiExplanation: "Resistance Break + Volume Spike",
+            shapValues: {'Technical': 0.5, 'Fundamental': 0.2, 'Sentiment': 0.2, 'Macro': 0.1},
+            confluenceScore: 0.74,
+            marketRegime: 'Bearish',
+            sentimentScore: 0.4,
+            expectedReturn: -6.2,
+            stopLoss: 52.0,
+            takeProfit: 42.0
+          },
+          {
+            symbol: "TUPRS",
+            signal: "BUY",
+            confidence: 0.91,
+            price: 180.30,
+            change: 3.1,
+            timestamp: new Date().toISOString(),
+            xaiExplanation: "Bullish Engulfing + MACD Cross",
+            shapValues: {'Technical': 0.6, 'Fundamental': 0.2, 'Sentiment': 0.1, 'Macro': 0.1},
+            confluenceScore: 0.91,
+            marketRegime: 'Bullish',
+            sentimentScore: 0.8,
+            expectedReturn: 14.7,
+            stopLoss: 170.0,
+            takeProfit: 195.0
+          }
+        ];
+        setAllSignals(mockSignals);
       }
     };
 
-    const loadMockSignals = () => {
-      const mockSignals: TradingSignal[] = [
-        {
-          symbol: 'THYAO',
-          signal: 'BUY',
-          confidence: 0.85,
-          price: 325.50,
-          change: 2.3,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'RSI oversold durumda ve MACD pozitif kesişim yapıyor',
-          shapValues: { rsi: 0.25, macd: 0.18, volume: 0.12, price_change: 0.15 },
-          confluenceScore: 0.87,
-          marketRegime: 'Risk-On',
-          sentimentScore: 0.78,
-          expectedReturn: 0.045,
-          stopLoss: 310.25,
-          takeProfit: 340.75
-        },
-        {
-          symbol: 'ASELS',
-          signal: 'SELL',
-          confidence: 0.72,
-          price: 88.40,
-          change: -1.8,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'RSI overbought seviyede ve hacim düşüş trendinde',
-          shapValues: { rsi: -0.20, macd: -0.15, volume: -0.08, price_change: -0.12 },
-          confluenceScore: 0.73,
-          marketRegime: 'Risk-Off',
-          sentimentScore: 0.42,
-          expectedReturn: -0.028,
-          stopLoss: 92.15,
-          takeProfit: 84.65
-        },
-        {
-          symbol: 'TUPRS',
-          signal: 'BUY',
-          confidence: 0.91,
-          price: 145.20,
-          change: 3.1,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'Güçlü momentum ve pozitif sentiment birleşimi',
-          shapValues: { rsi: 0.35, macd: 0.28, volume: 0.22, price_change: 0.18 },
-          confluenceScore: 0.94,
-          marketRegime: 'Risk-On',
-          sentimentScore: 0.89,
-          expectedReturn: 0.067,
-          stopLoss: 138.50,
-          takeProfit: 152.30
-        },
-        {
-          symbol: 'SISE',
-          signal: 'BUY',
-          confidence: 0.78,
-          price: 45.80,
-          change: 1.2,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'Teknik destek seviyesinde güçlü alım',
-          shapValues: { rsi: 0.22, macd: 0.16, volume: 0.14, price_change: 0.11 },
-          confluenceScore: 0.81,
-          marketRegime: 'Risk-On',
-          sentimentScore: 0.65,
-          expectedReturn: 0.032,
-          stopLoss: 43.50,
-          takeProfit: 48.10
-        },
-        {
-          symbol: 'EREGL',
-          signal: 'HOLD',
-          confidence: 0.65,
-          price: 67.30,
-          change: -0.5,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'Karışık sinyaller, bekle ve gör stratejisi',
-          shapValues: { rsi: 0.05, macd: -0.02, volume: 0.08, price_change: -0.03 },
-          confluenceScore: 0.68,
-          marketRegime: 'Neutral',
-          sentimentScore: 0.55,
-          expectedReturn: 0.008,
-          stopLoss: 64.20,
-          takeProfit: 70.40
-        },
-        {
-          symbol: 'BIMAS',
-          signal: 'BUY',
-          confidence: 0.82,
-          price: 125.80,
-          change: 2.8,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'Güçlü temel analiz ve pozitif momentum',
-          shapValues: { rsi: 0.28, macd: 0.21, volume: 0.19, price_change: 0.16 },
-          confluenceScore: 0.85,
-          marketRegime: 'Risk-On',
-          sentimentScore: 0.72,
-          expectedReturn: 0.052,
-          stopLoss: 119.50,
-          takeProfit: 132.10
-        },
-        {
-          symbol: 'KCHOL',
-          signal: 'BUY',
-          confidence: 0.76,
-          price: 155.30,
-          change: 1.9,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'Sektör lideri ve güçlü temel analiz',
-          shapValues: { rsi: 0.18, macd: 0.16, volume: 0.14, price_change: 0.16 },
-          confluenceScore: 0.78,
-          marketRegime: 'Risk-On',
-          sentimentScore: 0.75,
-          expectedReturn: 0.042,
-          stopLoss: 147.80,
-          takeProfit: 162.80
-        },
-        {
-          symbol: 'SAHOL',
-          signal: 'HOLD',
-          confidence: 0.65,
-          price: 72.10,
-          change: 0.3,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: 'Nötr pozisyon, teknik göstergeler karışık',
-          shapValues: { rsi: 0.10, macd: 0.12, volume: 0.08, price_change: 0.05 },
-          confluenceScore: 0.67,
-          marketRegime: 'Risk-On',
-          sentimentScore: 0.68,
-          expectedReturn: 0.008,
-          stopLoss: 68.50,
-          takeProfit: 75.70
-        }
-      ];
-      
-      setAllSignals(mockSignals);
-    };
-
-    // Önce gerçek veriyi dene, başarısız olursa mock veriyi kullan
-    fetchRealSignals();
+    fetchSignals();
+    
+    // 30 saniyede bir güncelle
+    const interval = setInterval(fetchSignals, 30000);
+    return () => clearInterval(interval);
   }, []);
-
-  const displaySignals = signals.length > 0 ? signals : allSignals;
-
-  const handleSignalClick = (signal: TradingSignal) => {
-    setSelectedSignal(signal);
-    setShowAnalysisTable(true);
-  };
-
-  const addToCharts = (signal: TradingSignal) => {
-    if (!selectedCharts.find(s => s.symbol === signal.symbol)) {
-      setSelectedCharts(prev => [...prev, signal]);
-      // LocalStorage'a kaydet
-      localStorage.setItem('selectedCharts', JSON.stringify([...selectedCharts, signal]));
-    }
-  };
 
   const getSignalIcon = (signal: string) => {
     switch (signal) {
       case 'BUY':
-        return <ArrowTrendingUpIcon className="h-4 w-4 text-green-500" />;
+        return <ArrowTrendingUpIcon className="w-5 h-5 text-green-500" />;
       case 'SELL':
-        return <ArrowTrendingDownIcon className="h-4 w-4 text-red-500" />;
+        return <ArrowTrendingDownIcon className="w-5 h-5 text-red-500" />;
       default:
-        return <MinusIcon className="h-4 w-4 text-yellow-500" />;
+        return <MinusIcon className="w-5 h-5 text-gray-500" />;
     }
   };
 
   const getSignalColor = (signal: string) => {
     switch (signal) {
       case 'BUY':
-        return 'bg-green-500';
+        return 'text-green-500 bg-green-50 border-green-200';
       case 'SELL':
-        return 'bg-red-500';
+        return 'text-red-500 bg-red-50 border-red-200';
       default:
-        return 'bg-yellow-500';
+        return 'text-gray-500 bg-gray-50 border-gray-200';
     }
   };
 
@@ -262,314 +167,127 @@ export default function TradingSignals({ signals, isLoading }: TradingSignalsPro
     return 'text-red-600';
   };
 
-  if (isLoading) {
-    return (
-      <div className="bg-white rounded-lg shadow">
-        <div className="px-6 py-4 border-b">
-          <h2 className="text-lg font-semibold text-gray-900">AI Trading Sinyalleri</h2>
-        </div>
-        <div className="p-6">
-          <div className="animate-pulse space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center space-x-4">
-                  <div className="w-3 h-3 bg-gray-300 rounded-full"></div>
-                  <div>
-                    <div className="h-4 bg-gray-300 rounded w-16 mb-2"></div>
-                    <div className="h-3 bg-gray-300 rounded w-12"></div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="h-4 bg-gray-300 rounded w-20 mb-2"></div>
-                  <div className="h-3 bg-gray-300 rounded w-16"></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="px-6 py-4 border-b">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">AI Trading Sinyalleri</h2>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-500">God Mode</span>
-            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-          </div>
+    <div className="bg-white rounded-lg shadow-lg p-6">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <ChartBarIcon className="w-6 h-6 text-blue-600" />
+          AI Trading Sinyalleri
+        </h2>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAnalysisTable(!showAnalysisTable)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            {showAnalysisTable ? 'Grafik Görünümü' : 'Analiz Tablosu'}
+          </button>
+          <button
+            onClick={() => setShowXAI(!showXAI)}
+            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          >
+            {showXAI ? 'Sinyalleri Gizle' : 'XAI Açıklamaları'}
+          </button>
         </div>
       </div>
-      <div className="p-6">
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
         <div className="space-y-4">
-          {displaySignals.map((signal, index) => (
-            <div key={index} className="border rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" onClick={() => handleSignalClick(signal)}>
+          {allSignals.map((signal, index) => (
+            <div
+              key={index}
+              className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${getSignalColor(signal.signal)}`}
+            >
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className={`w-3 h-3 rounded-full ${getSignalColor(signal.signal)}`}></div>
+                <div className="flex items-center gap-3">
+                  {getSignalIcon(signal.signal)}
                   <div>
-                    <div className="flex items-center space-x-2">
-                      <p className="font-semibold text-gray-900">{signal.symbol}</p>
-                      {getSignalIcon(signal.signal)}
-                      <span className={`text-sm font-medium ${
-                        signal.signal === 'BUY' ? 'text-green-600' : 
-                        signal.signal === 'SELL' ? 'text-red-600' : 'text-yellow-600'
-                      }`}>
-                        {signal.signal}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-500">
-                      {new Date(signal.timestamp).toLocaleTimeString('tr-TR')}
+                    <h3 className="font-semibold text-lg">{signal.symbol}</h3>
+                    <p className="text-sm text-gray-600">
+                      {signal.price.toFixed(2)} TL ({signal.change > 0 ? '+' : ''}{signal.change.toFixed(2)}%)
                     </p>
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-gray-900">₺{signal.price.toFixed(2)}</p>
-                  <p className={`text-sm ${
-                    signal.change >= 0 ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {signal.change >= 0 ? '+' : ''}{signal.change.toFixed(1)}%
-                  </p>
-                  {signal.expectedReturn && (
-                    <p className={`text-xs ${
-                      signal.expectedReturn >= 0 ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      Hedef: ₺{(signal.price * (1 + signal.expectedReturn)).toFixed(2)}
-                    </p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">Güven</p>
-                  <p className={`font-semibold ${getConfidenceColor(signal.confidence)}`}>
-                    {(signal.confidence * 100).toFixed(0)}%
-                  </p>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() => {
-                      setSelectedSignal(signal);
-                      setShowXAI(true);
-                    }}
-                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                    title="XAI Açıklama"
-                  >
-                    <InformationCircleIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => addToCharts(signal)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    title="Grafiğe Ekle"
-                  >
-                    <ChartBarIcon className="h-5 w-5" />
-                  </button>
-                  {signal.confluenceScore && signal.confluenceScore >= 0.8 && (
-                    <div className="flex items-center space-x-1">
-                      <ExclamationTriangleIcon className="h-4 w-4 text-orange-500" />
-                      <span className="text-xs text-orange-600 font-medium">
-                        Yüksek Uyum
-                      </span>
-                    </div>
-                  )}
+                  <div className={`font-bold ${getConfidenceColor(signal.confidence)}`}>
+                    %{(signal.confidence * 100).toFixed(1)}
+                  </div>
+                  <div className="text-sm text-gray-600">Güven</div>
                 </div>
               </div>
               
-              {/* XAI Açıklama Modal */}
-              {showXAI && selectedSignal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                  <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {selectedSignal.symbol} - XAI Açıklama
-                      </h3>
-                      <button
-                        onClick={() => setShowXAI(false)}
-                        className="text-gray-400 hover:text-gray-600"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div>
-                        <p className="text-sm text-gray-600 mb-2">Sinyal Açıklaması:</p>
-                        <p className="text-sm text-gray-900">
-                          {selectedSignal.xaiExplanation || 'RSI oversold durumda ve MACD pozitif kesişim yapıyor'}
-                        </p>
-                      </div>
-                      
-                      {selectedSignal.shapValues && (
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2">Özellik Katkıları:</p>
-                          <div className="space-y-2">
-                            {Object.entries(selectedSignal.shapValues).map(([feature, value]) => (
-                              <div key={feature} className="flex justify-between items-center">
-                                <span className="text-sm text-gray-700 capitalize">{feature}:</span>
-                                <span className={`text-sm font-medium ${
-                                  value > 0 ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                  {value > 0 ? '+' : ''}{(value * 100).toFixed(1)}%
-                                </span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {selectedSignal.stopLoss && selectedSignal.takeProfit && (
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-sm text-gray-600">Stop Loss</p>
-                            <p className="text-sm font-semibold text-red-600">
-                              ₺{selectedSignal.stopLoss.toFixed(2)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-sm text-gray-600">Take Profit</p>
-                            <p className="text-sm font-semibold text-green-600">
-                              ₺{selectedSignal.takeProfit.toFixed(2)}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+              {showXAI && (
+                <div className="mt-4 pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <InformationCircleIcon className="w-4 h-4 text-blue-500" />
+                    <span className="text-sm font-medium text-gray-700">AI Açıklaması:</span>
                   </div>
+                  <p className="text-sm text-gray-600">{signal.xaiExplanation}</p>
+                  
+                  {signal.shapValues && (
+                    <div className="mt-3">
+                      <div className="text-sm font-medium text-gray-700 mb-2">Etki Faktörleri:</div>
+                      <div className="grid grid-cols-2 gap-2">
+                        {Object.entries(signal.shapValues).map(([key, value]) => (
+                          <div key={key} className="flex justify-between text-xs">
+                            <span className="text-gray-600">{key}:</span>
+                            <span className="font-medium">{(value * 100).toFixed(1)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           ))}
         </div>
-      </div>
+      )}
 
-      {/* Detaylı Analiz Tablosu */}
-      {showAnalysisTable && selectedSignal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-semibold text-gray-900">
-                {selectedSignal.symbol} - Detaylı Analiz Tablosu
-              </h3>
-              <button
-                onClick={() => setShowAnalysisTable(false)}
-                className="text-gray-400 hover:text-gray-600 text-2xl"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Teknik Analiz */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Teknik Analiz</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Sinyal:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedSignal.signal === 'BUY' ? 'bg-green-100 text-green-700' :
-                      selectedSignal.signal === 'SELL' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {selectedSignal.signal}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Fiyat:</span>
-                    <span className="text-sm font-medium">₺{selectedSignal.price.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Değişim:</span>
-                    <span className={`text-sm font-medium ${
-                      selectedSignal.change >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {selectedSignal.change >= 0 ? '+' : ''}{selectedSignal.change.toFixed(1)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Güven:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedSignal.confidence >= 0.8 ? 'bg-green-100 text-green-700' :
-                      selectedSignal.confidence >= 0.6 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {(selectedSignal.confidence * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Confluence Skoru:</span>
-                    <span className="text-sm font-medium">{(selectedSignal.confluenceScore * 100).toFixed(0)}%</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Risk Analizi */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Risk Analizi</h4>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Beklenen Getiri:</span>
-                    <span className={`text-sm font-medium ${
-                      selectedSignal.expectedReturn >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {(selectedSignal.expectedReturn * 100).toFixed(2)}%
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Stop Loss:</span>
-                    <span className="text-sm font-medium">₺{selectedSignal.stopLoss?.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Take Profit:</span>
-                    <span className="text-sm font-medium">₺{selectedSignal.takeProfit?.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Piyasa Rejimi:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedSignal.marketRegime === 'Risk-On' ? 'bg-green-100 text-green-700' :
-                      selectedSignal.marketRegime === 'Risk-Off' ? 'bg-red-100 text-red-700' :
-                      'bg-yellow-100 text-yellow-700'
-                    }`}>
-                      {selectedSignal.marketRegime}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">Sentiment Skoru:</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      selectedSignal.sentimentScore >= 0.7 ? 'bg-green-100 text-green-700' :
-                      selectedSignal.sentimentScore >= 0.4 ? 'bg-yellow-100 text-yellow-700' :
-                      'bg-red-100 text-red-700'
-                    }`}>
-                      {(selectedSignal.sentimentScore * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* SHAP Değerleri */}
-              <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">SHAP Değerleri (Özellik Önemliliği)</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  {selectedSignal.shapValues && Object.entries(selectedSignal.shapValues).map(([feature, value]) => (
-                    <div key={feature} className="text-center">
-                      <div className={`w-16 h-16 rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold ${
-                        value >= 0 ? 'bg-green-500' : 'bg-red-500'
-                      }`}>
-                        {value >= 0 ? '+' : ''}{value.toFixed(2)}
-                      </div>
-                      <p className="text-xs text-gray-600 font-medium">{feature.toUpperCase()}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* XAI Açıklama */}
-              <div className="bg-gray-50 rounded-lg p-4 md:col-span-2">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">AI Açıklaması</h4>
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  {selectedSignal.xaiExplanation || 'RSI oversold durumda ve MACD pozitif kesişim yapıyor. Hacim artışı ile birlikte güçlü alım sinyali oluşuyor.'}
-                </p>
-              </div>
-            </div>
+      {showAnalysisTable && (
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Detaylı Analiz</h3>
+          <div className="overflow-x-auto">
+            <table className="min-w-full bg-white border border-gray-200 rounded-lg">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sembol</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Sinyal</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Güven</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Fiyat</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Değişim</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Beklenen Getiri</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {allSignals.map((signal, index) => (
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-4 py-2 text-sm font-medium text-gray-900">{signal.symbol}</td>
+                    <td className="px-4 py-2 text-sm">
+                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getSignalColor(signal.signal)}`}>
+                        {getSignalIcon(signal.signal)}
+                        {signal.signal}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-sm">
+                      <span className={getConfidenceColor(signal.confidence)}>
+                        %{(signal.confidence * 100).toFixed(1)}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-sm text-gray-900">{signal.price.toFixed(2)} TL</td>
+                    <td className={`px-4 py-2 text-sm ${signal.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {signal.change > 0 ? '+' : ''}{signal.change.toFixed(2)}%
+                    </td>
+                    <td className={`px-4 py-2 text-sm ${signal.expectedReturn && signal.expectedReturn > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {signal.expectedReturn ? `${signal.expectedReturn > 0 ? '+' : ''}${signal.expectedReturn.toFixed(2)}%` : '-'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}

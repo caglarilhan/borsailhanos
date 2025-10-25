@@ -71,7 +71,7 @@ export default function CryptoTrading({ isLoading }: CryptoTradingProps) {
   const loadCryptoData = async () => {
     try {
       // Load prices
-      const pricesResponse = await fetch('http://localhost:8081/api/crypto/prices');
+      const pricesResponse = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/crypto/prices`);
       const pricesData = await pricesResponse.json();
       setPrices(pricesData.prices || {});
 
