@@ -4,8 +4,16 @@ import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, TrendingUp, Activity, AlertCircle } from 'lucide-react';
 
+interface SummaryData {
+  marketSentiment: number;
+  strongestSector: string;
+  sectorChange: number;
+  topSignals: string[];
+  lastUpdate: Date;
+}
+
 export default function AIInsightSummary() {
-  const [summary, setSummary] = useState({
+  const [summary, setSummary] = useState<SummaryData>({
     marketSentiment: 71,
     strongestSector: 'Teknoloji',
     sectorChange: 3.8,
@@ -13,8 +21,8 @@ export default function AIInsightSummary() {
     lastUpdate: new Date()
   });
   
-  const [mounted, setMounted] = useState(false);
-  const [timeString, setTimeString] = useState('');
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [timeString, setTimeString] = useState<string>('');
   
   useEffect(() => {
     setMounted(true);
