@@ -3,6 +3,7 @@ from typing import List, Optional
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
+import asyncio
 
 # V3.2 Institutional Grade Modules
 try:

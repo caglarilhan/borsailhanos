@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 // V5.0 Enterprise Components
 import RiskManagementPanel from './V50/RiskManagementPanel';
@@ -115,6 +116,26 @@ export default function DashboardV33() {
   const handleFeedback = () => {
     alert('💬 Geri bildirim formu açılacak...');
   };
+  
+  // WebSocket connection for realtime data
+  const { connected, error, lastMessage } = useWebSocket({
+    url: 'ws://localhost:8080/signals/stream',
+    onMessage: (data) => {
+      console.log('📊 Realtime data received:', data);
+      if (data.signal) {
+        setRealtimeUpdates(prev => ({
+          signals: prev.signals + 1,
+          risk: prev.risk
+        }));
+        setAlerts(prev => [...prev, {
+          id: `signal-${Date.now()}`,
+          message: `🔔 ${data.symbol}: ${data.signal} sinyali (Güven: ${(data.confidence * 100).toFixed(0)}%)`,
+          type: 'success',
+          timestamp: new Date()
+        }]);
+      }
+    }
+  });
   
   // Initialize sentiment data
   useEffect(() => {
@@ -377,8 +398,8 @@ export default function DashboardV33() {
                   </span>
                 ) : (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }} suppressHydrationWarning>
-                    <div style={{ width: '6px', height: '6px', background: '#10b981', borderRadius: '50%', animation: 'pulse 2s infinite' }}></div>
-                    Canlı • {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} • İzleme: {watchlist.join(', ')}
+                    <div style={{ width: '6px', height: '6px', background: connected ? '#10b981' : '#ef4444', borderRadius: '50%', animation: connected ? 'pulse 2s infinite' : 'none' }}></div>
+                    {connected ? 'Canlı' : 'Offline'} • {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} • İzleme: {watchlist.join(', ')}
                     {realtimeUpdates.signals > 0 && (
                       <span style={{ fontSize: '10px', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '600', color: '#10b981' }}>
                         +{realtimeUpdates.signals}
