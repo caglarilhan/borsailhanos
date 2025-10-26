@@ -700,24 +700,30 @@ export default function DashboardV33() {
 
         {/* ALL FEATURES BY CATEGORY */}
         <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '48px', color: '#0f172a', letterSpacing: '-1px' }}>Tüm Özellikler</h2>
+          <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '24px', color: '#0f172a', letterSpacing: '-0.5px' }}>Tüm Özellikler</h2>
           
           {/* SINYALLER */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #06b6d4', color: '#0f172a', letterSpacing: '-0.8px' }}>
-              📊 SINYALLER <span style={{ fontSize: '16px', color: '#06b6d4', fontWeight: '600' }}>(9 özellik)</span>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #06b6d4', color: '#0f172a', letterSpacing: '-0.3px' }}>
+              📊 SINYALLER <span style={{ fontSize: '11px', color: '#06b6d4', fontWeight: '600' }}>(9 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
               {allFeatures.signals.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
                   backdropFilter: 'blur(12px)',
                   border: '2px solid rgba(6,182,212,0.25)', 
-                  borderRadius: '16px', 
-                  padding: '28px', 
+                  borderRadius: '12px', 
+                  padding: '16px', 
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(6,182,212,0.08)'
+                }} onClick={() => {
+                  alert(`🚀 ${f} özelliği açılıyor...`);
+                  // İlgili panel state'ini aç
+                  if (f.includes('AI Sinyaller')) setShowTraderGPT(true);
+                  else if (f.includes('Portföy')) setShowV50Module(true);
+                  else if (f.includes('Görselleştirme')) setShowAdvancedViz(true);
                 }} onMouseEnter={(e) => { 
                   setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#06b6d4'; 
@@ -729,16 +735,16 @@ export default function DashboardV33() {
                   e.currentTarget.style.boxShadow = '0 6px 20px rgba(6,182,212,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#0f172a', letterSpacing: '-0.2px' }}>{f}</div>
                 </div>
         ))}
       </div>
           </div>
 
           {/* ANALIZ */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #3b82f6', color: '#0f172a', letterSpacing: '-0.8px' }}>
-              📈 ANALIZ <span style={{ fontSize: '16px', color: '#3b82f6', fontWeight: '600' }}>(10 özellik)</span>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6', color: '#0f172a', letterSpacing: '-0.3px' }}>
+              📈 ANALIZ <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>(10 özellik)</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.analysis.map((f, idx) => (
@@ -762,16 +768,16 @@ export default function DashboardV33() {
                   e.currentTarget.style.boxShadow = '0 6px 20px rgba(59,130,246,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#0f172a', letterSpacing: '-0.2px' }}>{f}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* OPERASYON */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #10b981', color: '#0f172a', letterSpacing: '-0.8px' }}>
-              🔧 OPERASYON <span style={{ fontSize: '16px', color: '#10b981', fontWeight: '600' }}>(8 özellik)</span>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #10b981', color: '#0f172a', letterSpacing: '-0.3px' }}>
+              🔧 OPERASYON <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600' }}>(8 özellik)</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.operations.map((f, idx) => (
@@ -795,16 +801,16 @@ export default function DashboardV33() {
                   e.currentTarget.style.boxShadow = '0 6px 20px rgba(16,185,129,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#0f172a', letterSpacing: '-0.2px' }}>{f}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* GELIŞMİŞ */}
-          <div style={{ marginBottom: '28px' }}>
-            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #8b5cf6', color: '#0f172a', letterSpacing: '-0.8px' }}>
-              ⚡ GELIŞMİŞ <span style={{ fontSize: '16px', color: '#8b5cf6', fontWeight: '600' }}>(13 özellik)</span>
+          <div style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #8b5cf6', color: '#0f172a', letterSpacing: '-0.3px' }}>
+              ⚡ GELIŞMİŞ <span style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: '600' }}>(13 özellik)</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.advanced.map((f, idx) => (
@@ -828,7 +834,7 @@ export default function DashboardV33() {
                   e.currentTarget.style.boxShadow = '0 6px 20px rgba(139,92,246,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#0f172a', letterSpacing: '-0.2px' }}>{f}</div>
                 </div>
               ))}
             </div>
@@ -1382,7 +1388,7 @@ export default function DashboardV33() {
                     <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>{s.symbol}</div>
                     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Kaynaklar: {s.sources.join(', ')}</div>
                   </div>
-                  <div style={{ fontSize: '28px', fontWeight: 'bold', color: s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308' }}>{s.sentiment}%</div>
+                  <div style={{ fontSize: '16px', fontWeight: 'bold', color: s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308' }}>{s.sentiment}%</div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
                   <div style={{ flex: 1, padding: '12px', background: 'rgba(16,185,129,0.2)', borderRadius: '8px', textAlign: 'center' }}>
@@ -1583,7 +1589,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   🤖 TraderGPT - AI Yatırım Asistanı
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1632,7 +1638,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   🏆 Trader Seviye Sistemi
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1680,7 +1686,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   📊 Gelişmiş Görselleştirme Hub
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1728,7 +1734,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   🧠 AI Güven Açıklama (SHAP)
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1776,7 +1782,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   💬 Cognitive AI Yorumlar
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1824,7 +1830,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   🔄 AI Geri Bildirim Sistemi
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1872,7 +1878,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   📈 Adaptive Volatility Model
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1920,7 +1926,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   🧠 Meta-Model Engine
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -1968,7 +1974,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   💎 Abonelik Planları
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -2016,7 +2022,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   🎯 Strateji Oluşturucu
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
@@ -2136,7 +2142,7 @@ export default function DashboardV33() {
           }}>
             <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                <h2 style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
                   🚀 V5.0 Enterprise Intelligence
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
