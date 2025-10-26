@@ -17,6 +17,7 @@ import CognitiveAI from './V60/CognitiveAI';
 import FeedbackLoop from './V60/FeedbackLoop';
 import VolatilityModel from './V60/VolatilityModel';
 import MetaModelEngine from './V60/MetaModelEngine';
+import SubscriptionTiers from './V60/SubscriptionTiers';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -49,6 +50,7 @@ export default function DashboardV33() {
   const [showFeedbackLoop, setShowFeedbackLoop] = useState(false);
   const [showVolatilityModel, setShowVolatilityModel] = useState(false);
   const [showMetaModel, setShowMetaModel] = useState(false);
+  const [showSubscription, setShowSubscription] = useState(false);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -486,6 +488,30 @@ export default function DashboardV33() {
               aria-label="Meta-Model Engine"
             >
               🧠 Meta-Model
+            </button>
+            <button 
+              onClick={() => setShowSubscription(!showSubscription)}
+              style={{ 
+                padding: '12px 24px', 
+                background: showSubscription ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : 'linear-gradient(135deg, #fbbf24, #d97706)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(251,191,36,0.4)',
+                transition: 'all 0.2s',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="Abonelik planları"
+            >
+              💎 Planlar
             </button>
             <button 
               style={{ 
@@ -1559,7 +1585,7 @@ export default function DashboardV33() {
                 }}
               >
                 ✕ Kapat
-              </button>
+            </button>
             </div>
 
             <div style={{
@@ -1607,8 +1633,8 @@ export default function DashboardV33() {
                 }}
               >
                 ✕ Kapat
-              </button>
-            </div>
+            </button>
+          </div>
 
             <div style={{
               background: 'rgba(255,255,255,0.95)',
@@ -1617,7 +1643,7 @@ export default function DashboardV33() {
               border: '1px solid rgba(236,72,153,0.2)'
             }}>
               <AIConfidenceBreakdown />
-            </div>
+        </div>
           </div>
         )}
 
@@ -1782,10 +1808,58 @@ export default function DashboardV33() {
                 </h2>
                 <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
                   FinBERT + Llama3 + Mistral Ensemble • Ağırlıklı ortalama • %91.5 doğruluk
+            </p>
+          </div>
+              <button 
+                onClick={() => setShowMetaModel(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+          </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(236,72,153,0.2)'
+            }}>
+              <MetaModelEngine />
+          </div>
+          </div>
+        )}
+
+        {/* Subscription Tiers */}
+        {showSubscription && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(251,191,36,0.1), rgba(245,158,11,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(251,191,36,0.3)',
+            boxShadow: '0 20px 60px rgba(251,191,36,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  💎 Abonelik Planları
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  Basic / Pro Trader / Institutional • Yıllık planlarda 2 ay ücretsiz
                 </p>
               </div>
               <button 
-                onClick={() => setShowMetaModel(false)}
+                onClick={() => setShowSubscription(false)}
                 style={{
                   padding: '12px 24px',
                   background: '#ef4444',
@@ -1806,9 +1880,9 @@ export default function DashboardV33() {
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
               padding: '32px',
-              border: '1px solid rgba(236,72,153,0.2)'
+              border: '1px solid rgba(251,191,36,0.2)'
             }}>
-              <MetaModelEngine />
+              <SubscriptionTiers />
             </div>
           </div>
         )}
