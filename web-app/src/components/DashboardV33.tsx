@@ -66,6 +66,56 @@ export default function DashboardV33() {
   const [showFilter, setShowFilter] = useState(false);
   const [filterAccuracy, setFilterAccuracy] = useState<number | null>(null);
   
+  // Button Handlers
+  const handleWatchlistClick = () => {
+    setShowWatchlist(!showWatchlist);
+    console.log('📋 Watchlist toggled');
+  };
+  
+  const handleAdminClick = () => {
+    setShowAdmin(!showAdmin);
+    console.log('⚙️ Admin panel toggled');
+  };
+  
+  const handleFilterClick = () => {
+    setShowFilter(!showFilter);
+    console.log('🔍 Filter toggled');
+  };
+  
+  const handleHighAccuracyFilter = () => {
+    setFilterAccuracy(80);
+    console.log('✅ High accuracy filter applied');
+  };
+  
+  const handlePortfolioRebalance = async () => {
+    setPortfolioRebalance(true);
+    console.log('🔄 Portfolio rebalancing...');
+    // Simulate API call
+    setTimeout(() => {
+      setPortfolioRebalance(false);
+      console.log('✅ Portfolio rebalanced');
+    }, 2000);
+  };
+  
+  const handleShare = async () => {
+    const data = {
+      title: 'BIST AI Smart Trader',
+      text: `AI doğruluk: ${metrics[0].value}`,
+      url: window.location.href
+    };
+    
+    if (navigator.share) {
+      await navigator.share(data);
+    } else {
+      await navigator.clipboard.writeText(window.location.href);
+      alert('Link kopyalandı!');
+    }
+  };
+  
+  const handleFeedback = () => {
+    alert('💬 Geri bildirim formu açılacak...');
+  };
+  
   // Initialize sentiment data
   useEffect(() => {
     setSentimentData([
@@ -533,7 +583,7 @@ export default function DashboardV33() {
               🎯 Strateji Oluştur
             </button>
             <button 
-              onClick={() => setShowWatchlist(!showWatchlist)}
+              onClick={handleWatchlistClick}
               style={{ 
                 padding: '8px 14px', 
                 background: showWatchlist ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -554,7 +604,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">📋</span> Watchlist
             </button>
             <button 
-              onClick={() => setShowAdmin(!showAdmin)}
+              onClick={handleAdminClick}
               style={{ 
                 padding: '8px 14px', 
                 background: showAdmin ? '#333' : '#000', 
@@ -911,7 +961,7 @@ export default function DashboardV33() {
                 <span aria-hidden="true">🔽</span> Filtrele
             </button>
               <button 
-                onClick={() => setFilterAccuracy(filterAccuracy === 80 ? null : 80)}
+                onClick={handleHighAccuracyFilter}
                 style={{ 
                   padding: '8px 16px', 
                   background: filterAccuracy === 80 ? '#06b6d4' : '#fff', 
@@ -1309,7 +1359,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <button 
-              onClick={() => setPortfolioRebalance(!portfolioRebalance)}
+              onClick={handlePortfolioRebalance}
               style={{ 
                 padding: '10px 20px', 
                 background: portfolioRebalance ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, #8b5cf6, #a78bfa)', 
@@ -1456,23 +1506,7 @@ export default function DashboardV33() {
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button 
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: 'BIST AI Smart Trader',
-                        text: `AI Doğruluk: ${aiLearning.accuracy}% | Ortalama Kâr: +12.5%`,
-                        url: window.location.href
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      setAlerts(prev => [...prev, { 
-                        id: `share-${Date.now()}`, 
-                        message: '📋 Link kopyalandı!', 
-                        type: 'success', 
-                        timestamp: new Date() 
-                      }]);
-                    }
-                  }}
+                  onClick={handleShare}
                   style={{ 
                     padding: '10px 16px', 
                     background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -2105,7 +2139,7 @@ export default function DashboardV33() {
                 🏆 Seviye 5
               </button>
               <button
-                onClick={() => setShowFeedbackLoop(true)}
+                onClick={handleFeedback}
                 style={{
                   padding: '8px 16px',
                   background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
