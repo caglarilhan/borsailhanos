@@ -17,6 +17,7 @@ export default function DashboardV33() {
   const [alerts, setAlerts] = useState<{id: string, message: string, type: 'success' | 'info', timestamp: Date}[]>([]);
   const [portfolioRebalance, setPortfolioRebalance] = useState(false);
   const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
+  const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
   
   // Event-Driven AI - Bilanço takvimi
   useEffect(() => {
@@ -76,10 +77,12 @@ export default function DashboardV33() {
     { name: 'Otomotiv', change: 2.1, color: '#10b981', subSectors: [{ name: 'Otomobil', change: 2.8 }, { name: 'Yedek Parça', change: 1.2 }] },
   ];
   
-  // AI Confidence Breakdown (SHAP-like explanation)
-  const aiConfidence = {
+  // AI Confidence Breakdown (SHAP-like explanation) - Multi-market
+  const aiConfidence: Record<string, { factors: { name: string, contribution: number, positive: boolean }[] }> = {
     'THYAO': { factors: [{ name: 'RSI Momentum', contribution: 35, positive: true }, { name: 'Volume Surge', contribution: 30, positive: true }, { name: 'MACD Cross', contribution: 25, positive: true }, { name: 'Support Level', contribution: 10, positive: true }] },
     'TUPRS': { factors: [{ name: 'Resistance Zone', contribution: -40, positive: false }, { name: 'Volume Decrease', contribution: -30, positive: false }, { name: 'Bearish Pattern', contribution: -20, positive: false }, { name: 'Market Stress', contribution: -10, positive: false }] },
+    'AAPL': { factors: [{ name: 'AI Chip Demand', contribution: 40, positive: true }, { name: 'iPhone Sales', contribution: 25, positive: true }, { name: 'Services Growth', contribution: 20, positive: true }, { name: 'Market Cap', contribution: 15, positive: true }] },
+    'NVDA': { factors: [{ name: 'GPU Demand', contribution: 45, positive: true }, { name: 'AI Infrastructure', contribution: 30, positive: true }, { name: 'Data Center', contribution: 15, positive: true }, { name: 'Automotive', contribution: 10, positive: true }] },
   };
   
   // Correlation Matrix
@@ -134,15 +137,38 @@ export default function DashboardV33() {
     ],
   };
 
-  const signals = [
-    { symbol: 'THYAO', signal: 'BUY', price: 245.50, target: 268.30, change: 9.3, comment: 'Güçlü teknik formasyon ve pozitif momentum', accuracy: 89.2 },
-    { symbol: 'TUPRS', signal: 'SELL', price: 180.30, target: 165.20, change: -8.4, comment: 'Direnç seviyesinde satış baskısı', accuracy: 76.5 },
-    { symbol: 'ASELS', signal: 'HOLD', price: 48.20, target: 49.10, change: 1.9, comment: 'Piyasa belirsizliği - bekleme', accuracy: 81.3 },
-    { symbol: 'EREGL', signal: 'BUY', price: 55.80, target: 62.40, change: 11.8, comment: 'Yükseliş formasyonu tespit edildi', accuracy: 88.7 },
-    { symbol: 'SISE', signal: 'BUY', price: 32.50, target: 36.80, change: 13.2, comment: 'Ters başlı omuz formasyonu', accuracy: 91.5 },
-    { symbol: 'GARAN', signal: 'BUY', price: 185.40, target: 228.20, change: 23.1, comment: 'Güçlü kırılım ve yukarı trend', accuracy: 92.3 },
-    { symbol: 'AKBNK', signal: 'BUY', price: 162.80, target: 198.60, change: 22.0, comment: 'Pozitif hacim sinyalleri', accuracy: 91.8 },
-  ];
+  // Multi-market signals data
+  const marketSignals = {
+    'BIST': [
+      { symbol: 'THYAO', signal: 'BUY', price: 245.50, target: 268.30, change: 9.3, comment: 'Güçlü teknik formasyon ve pozitif momentum', accuracy: 89.2 },
+      { symbol: 'TUPRS', signal: 'SELL', price: 180.30, target: 165.20, change: -8.4, comment: 'Direnç seviyesinde satış baskısı', accuracy: 76.5 },
+      { symbol: 'ASELS', signal: 'HOLD', price: 48.20, target: 49.10, change: 1.9, comment: 'Piyasa belirsizliği - bekleme', accuracy: 81.3 },
+      { symbol: 'EREGL', signal: 'BUY', price: 55.80, target: 62.40, change: 11.8, comment: 'Yükseliş formasyonu tespit edildi', accuracy: 88.7 },
+      { symbol: 'SISE', signal: 'BUY', price: 32.50, target: 36.80, change: 13.2, comment: 'Ters başlı omuz formasyonu', accuracy: 91.5 },
+      { symbol: 'GARAN', signal: 'BUY', price: 185.40, target: 228.20, change: 23.1, comment: 'Güçlü kırılım ve yukarı trend', accuracy: 92.3 },
+      { symbol: 'AKBNK', signal: 'BUY', price: 162.80, target: 198.60, change: 22.0, comment: 'Pozitif hacim sinyalleri', accuracy: 91.8 },
+    ],
+    'NYSE': [
+      { symbol: 'AAPL', signal: 'BUY', price: 185.20, target: 195.80, change: 5.7, comment: 'Strong technical breakout, high volume', accuracy: 89.5 },
+      { symbol: 'MSFT', signal: 'BUY', price: 420.50, target: 438.30, change: 4.2, comment: 'AI infrastructure momentum', accuracy: 92.1 },
+      { symbol: 'JPM', signal: 'HOLD', price: 178.40, target: 180.10, change: 1.0, comment: 'Rate decision pending', accuracy: 78.3 },
+      { symbol: 'BAC', signal: 'BUY', price: 38.60, target: 41.80, change: 8.3, comment: 'Banking sector recovery', accuracy: 85.2 },
+      { symbol: 'WMT', signal: 'SELL', price: 165.30, target: 155.20, change: -6.1, comment: 'Resistance level rejection', accuracy: 82.7 },
+      { symbol: 'DIS', signal: 'BUY', price: 112.80, target: 122.40, change: 8.5, comment: 'Content monetization growth', accuracy: 88.9 },
+      { symbol: 'CVX', signal: 'BUY', price: 152.60, target: 165.20, change: 8.3, comment: 'Energy sector bullish trend', accuracy: 86.4 },
+    ],
+    'NASDAQ': [
+      { symbol: 'GOOGL', signal: 'BUY', price: 145.80, target: 155.30, change: 6.5, comment: 'Search dominance + AI integration', accuracy: 91.2 },
+      { symbol: 'AMZN', signal: 'BUY', price: 178.40, target: 192.80, change: 8.1, comment: 'AWS growth and retail recovery', accuracy: 93.5 },
+      { symbol: 'META', signal: 'BUY', price: 485.20, target: 520.40, change: 7.3, comment: 'Reels monetization + Metaverse', accuracy: 90.8 },
+      { symbol: 'NVDA', signal: 'BUY', price: 895.50, target: 950.30, change: 6.1, comment: 'AI chip demand surge', accuracy: 94.2 },
+      { symbol: 'TSLA', signal: 'HOLD', price: 248.60, target: 252.40, change: 1.5, comment: 'Elon factor + production delays', accuracy: 75.8 },
+      { symbol: 'ADBE', signal: 'BUY', price: 612.80, target: 650.20, change: 6.1, comment: 'Creative Cloud expansion', accuracy: 88.7 },
+      { symbol: 'NFLX', signal: 'BUY', price: 485.30, target: 515.60, change: 6.2, comment: 'Subscriber growth + price hikes', accuracy: 87.3 },
+    ],
+  };
+  
+  const signals = marketSignals[selectedMarket];
 
   const metrics = [
     { label: 'Toplam Kâr', value: '₺125.000', change: '+12.5%', color: '#10b981', icon: '💰', pulse: true },
@@ -486,7 +512,45 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>AI Sinyalleri</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Sinyalleri</h2>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {(['BIST', 'NYSE', 'NASDAQ'] as const).map((market) => (
+                  <button
+                    key={market}
+                    onClick={() => setSelectedMarket(market)}
+                    style={{
+                      padding: '10px 20px',
+                      background: selectedMarket === market ? 'linear-gradient(135deg, #06b6d4, #3b82f6)' : 'rgba(255,255,255,0.8)',
+                      color: selectedMarket === market ? '#fff' : '#0f172a',
+                      border: selectedMarket === market ? 'none' : '2px solid rgba(6,182,212,0.3)',
+                      borderRadius: '10px',
+                      fontSize: '13px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      outline: 'none',
+                      boxShadow: selectedMarket === market ? '0 6px 20px rgba(6,182,212,0.4)' : 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (selectedMarket !== market) {
+                        e.currentTarget.style.borderColor = '#06b6d4';
+                        e.currentTarget.style.background = 'rgba(6,182,212,0.05)';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (selectedMarket !== market) {
+                        e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)';
+                        e.currentTarget.style.background = 'rgba(255,255,255,0.8)';
+                      }
+                    }}
+                    aria-label={`${market} borsası sinyalleri`}
+                  >
+                    {market === 'BIST' ? '🇹🇷' : market === 'NYSE' ? '🇺🇸' : '🇺🇸'} {market}
+                  </button>
+                ))}
+              </div>
+            </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button 
                 style={{ 
@@ -561,8 +625,12 @@ export default function DashboardV33() {
                         {s.signal}
                       </span>
                     </td>
-                    <td style={{ padding: '24px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ₺${s.price.toFixed(2)}`}>₺{s.price.toFixed(2)}</td>
-                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ₺${s.target.toFixed(2)}`}>₺{s.target.toFixed(2)}</td>
+                    <td style={{ padding: '24px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}`}>
+                      {selectedMarket === 'BIST' ? '₺' : '$'}{s.price.toFixed(2)}
+                    </td>
+                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}`}>
+                      {selectedMarket === 'BIST' ? '₺' : '$'}{s.target.toFixed(2)}
+                    </td>
                     <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${s.change > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change)}`}>
                       {s.change > 0 ? '↑' : '↓'} {Math.abs(s.change)}%
                     </td>
@@ -573,7 +641,7 @@ export default function DashboardV33() {
                           <div style={{ height: '100%', background: `linear-gradient(90deg, #06b6d4, #3b82f6)`, width: `${s.accuracy}%`, transition: 'width 0.5s' }}></div>
                         </div>
                         <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }} aria-label={`Doğruluk oranı: ${s.accuracy} yüzde`}>{s.accuracy}%</span>
-                        {(s.symbol === 'THYAO' || s.symbol === 'TUPRS') && (
+                        {(selectedMarket === 'BIST' && (s.symbol === 'THYAO' || s.symbol === 'TUPRS')) || (selectedMarket === 'NYSE' && s.symbol === 'AAPL') || (selectedMarket === 'NASDAQ' && s.symbol === 'NVDA') ? (
                           <button 
                             onClick={() => setSelectedForXAI(s.symbol)}
                             style={{ 
