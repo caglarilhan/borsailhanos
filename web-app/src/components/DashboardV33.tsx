@@ -3,6 +3,8 @@
 import React, { useState } from 'react';
 
 export default function DashboardV33() {
+  const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
+
   const allFeatures = {
     signals: [
       'AI Sinyalleri', 'BIST 30 AI Tahminleri', 'BIST 100 AI Tahminleri', 
@@ -45,205 +47,214 @@ export default function DashboardV33() {
   return (
     <div style={{ 
       minHeight: '100vh', 
-      background: 'linear-gradient(to bottom, #ffffff, #f0f9ff)', 
+      background: 'linear-gradient(to bottom, #ffffff, #f0f9ff, #e0f2fe)', 
       color: '#0f172a',
       fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
     }}>
       {/* Header */}
       <header style={{ 
-        background: 'rgba(255,255,255,0.8)', 
-        backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid rgba(6,182,212,0.2)', 
-        padding: '20px 40px',
+        background: 'rgba(255,255,255,0.85)', 
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(6,182,212,0.3)', 
+        padding: '24px 40px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        boxShadow: '0 4px 20px rgba(6,182,212,0.1)'
+        boxShadow: '0 4px 30px rgba(6,182,212,0.15)'
       }}>
         <div style={{ maxWidth: '1600px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '48px', height: '48px', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', boxShadow: '0 4px 20px rgba(6,182,212,0.3)' }}>AI</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '20px', boxShadow: '0 6px 30px rgba(6,182,212,0.4)' }}>AI</div>
             <div>
-              <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a' }}>BIST AI Smart Trader</h1>
-              <div style={{ fontSize: '12px', color: '#64748b' }}>v4.0 Professional</div>
+              <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
+              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>v4.0 Professional Edition</div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ display: 'flex', gap: '12px' }}>
             <button style={{ 
-              padding: '10px 20px', 
+              padding: '12px 24px', 
               background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
               color: '#fff', 
               border: 'none', 
-              borderRadius: '8px',
-              fontWeight: '600',
+              borderRadius: '10px',
+              fontWeight: '700',
               fontSize: '14px',
               cursor: 'pointer',
-              boxShadow: '0 4px 12px rgba(6,182,212,0.3)',
+              boxShadow: '0 6px 20px rgba(6,182,212,0.4)',
               transition: 'all 0.2s'
-            }}>Watchlist</button>
+            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>Watchlist</button>
             <button style={{ 
-              padding: '10px 20px', 
+              padding: '12px 24px', 
               background: '#000', 
               color: '#fff', 
               border: 'none', 
-              borderRadius: '8px',
-              fontWeight: '600',
+              borderRadius: '10px',
+              fontWeight: '700',
               fontSize: '14px',
-              cursor: 'pointer'
-            }}>Admin</button>
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>Admin</button>
           </div>
         </div>
       </header>
 
-      <main style={{ padding: '40px', maxWidth: '1600px', margin: '0 auto' }}>
+      <main style={{ padding: '48px', maxWidth: '1600px', margin: '0 auto' }}>
         {/* Metrics */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '60px' }}>
-          {metrics.map((m) => (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '28px', marginBottom: '70px' }}>
+          {metrics.map((m, idx) => (
             <div key={m.label} style={{ 
-              background: 'rgba(255,255,255,0.7)', 
-              backdropFilter: 'blur(16px)',
-              border: '1px solid rgba(6,182,212,0.2)', 
-              borderRadius: '16px', 
-              padding: '32px',
-              boxShadow: '0 8px 32px rgba(6,182,212,0.1)',
-              transition: 'all 0.3s'
+              background: 'rgba(255,255,255,0.75)', 
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(6,182,212,0.25)', 
+              borderRadius: '20px', 
+              padding: '36px',
+              boxShadow: '0 10px 40px rgba(6,182,212,0.15)',
+              transition: 'all 0.3s ease'
             }} onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 12px 40px rgba(6,182,212,0.2)';
+              e.currentTarget.style.transform = 'translateY(-6px)';
+              e.currentTarget.style.boxShadow = '0 16px 50px rgba(6,182,212,0.25)';
             }} onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 8px 32px rgba(6,182,212,0.1)';
+              e.currentTarget.style.boxShadow = '0 10px 40px rgba(6,182,212,0.15)';
             }}>
-              <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '12px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{m.label}</div>
-              <div style={{ fontSize: '42px', fontWeight: 'bold', marginBottom: '8px', color: '#0f172a' }}>{m.value}</div>
-              <div style={{ fontSize: '14px', color: m.color, fontWeight: '700' }}>{m.change}</div>
+              <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '12px' }}>{m.label}</div>
+              <div style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '10px', color: '#0f172a', lineHeight: '1.1' }}>{m.value}</div>
+              <div style={{ fontSize: '15px', color: m.color, fontWeight: '800' }}>{m.change}</div>
             </div>
           ))}
         </div>
 
         {/* ALL FEATURES BY CATEGORY */}
-        <div style={{ marginBottom: '60px' }}>
-          <h2 style={{ fontSize: '32px', fontWeight: 'bold', marginBottom: '40px', color: '#0f172a' }}>Tüm Özellikler</h2>
+        <div style={{ marginBottom: '70px' }}>
+          <h2 style={{ fontSize: '36px', fontWeight: 'bold', marginBottom: '48px', color: '#0f172a', letterSpacing: '-1px' }}>Tüm Özellikler</h2>
           
           {/* SINYALLER */}
-          <div style={{ marginBottom: '50px' }}>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '20px', paddingBottom: '12px', borderBottom: '3px solid #06b6d4', color: '#0f172a' }}>
-              📊 SINYALLER (9 özellik)
+          <div style={{ marginBottom: '60px' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #06b6d4', color: '#0f172a' }}>
+              📊 SINYALLER <span style={{ fontSize: '18px', color: '#06b6d4', fontWeight: 'normal' }}>(9 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.signals.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(6,182,212,0.2)', 
-                  borderRadius: '12px', 
-                  padding: '24px', 
+                  backdropFilter: 'blur(12px)',
+                  border: '2px solid rgba(6,182,212,0.25)', 
+                  borderRadius: '16px', 
+                  padding: '28px', 
                   cursor: 'pointer', 
-                  transition: 'all 0.3s',
-                  boxShadow: '0 4px 12px rgba(6,182,212,0.05)'
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 6px 20px rgba(6,182,212,0.08)'
                 }} onMouseEnter={(e) => { 
+                  setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#06b6d4'; 
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(6,182,212,0.2)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(6,182,212,0.25)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
                 }} onMouseLeave={(e) => { 
-                  e.currentTarget.style.borderColor = 'rgba(6,182,212,0.2)'; 
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(6,182,212,0.05)';
+                  setHoveredFeature(null);
+                  e.currentTarget.style.borderColor = 'rgba(6,182,212,0.25)'; 
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(6,182,212,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* ANALIZ */}
-          <div style={{ marginBottom: '50px' }}>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '20px', paddingBottom: '12px', borderBottom: '3px solid #3b82f6', color: '#0f172a' }}>
-              📈 ANALIZ (10 özellik)
+          <div style={{ marginBottom: '60px' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #3b82f6', color: '#0f172a' }}>
+              📈 ANALIZ <span style={{ fontSize: '18px', color: '#3b82f6', fontWeight: 'normal' }}>(10 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.analysis.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(59,130,246,0.2)', 
-                  borderRadius: '12px', 
-                  padding: '24px', 
+                  backdropFilter: 'blur(12px)',
+                  border: '2px solid rgba(59,130,246,0.25)', 
+                  borderRadius: '16px', 
+                  padding: '28px', 
                   cursor: 'pointer', 
-                  transition: 'all 0.3s',
-                  boxShadow: '0 4px 12px rgba(59,130,246,0.05)'
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 6px 20px rgba(59,130,246,0.08)'
                 }} onMouseEnter={(e) => { 
+                  setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#3b82f6'; 
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(59,130,246,0.2)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(59,130,246,0.25)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
                 }} onMouseLeave={(e) => { 
-                  e.currentTarget.style.borderColor = 'rgba(59,130,246,0.2)'; 
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(59,130,246,0.05)';
+                  setHoveredFeature(null);
+                  e.currentTarget.style.borderColor = 'rgba(59,130,246,0.25)'; 
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(59,130,246,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* OPERASYON */}
-          <div style={{ marginBottom: '50px' }}>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '20px', paddingBottom: '12px', borderBottom: '3px solid #10b981', color: '#0f172a' }}>
-              🔧 OPERASYON (8 özellik)
+          <div style={{ marginBottom: '60px' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #10b981', color: '#0f172a' }}>
+              🔧 OPERASYON <span style={{ fontSize: '18px', color: '#10b981', fontWeight: 'normal' }}>(8 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.operations.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(16,185,129,0.2)', 
-                  borderRadius: '12px', 
-                  padding: '24px', 
+                  backdropFilter: 'blur(12px)',
+                  border: '2px solid rgba(16,185,129,0.25)', 
+                  borderRadius: '16px', 
+                  padding: '28px', 
                   cursor: 'pointer', 
-                  transition: 'all 0.3s',
-                  boxShadow: '0 4px 12px rgba(16,185,129,0.05)'
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 6px 20px rgba(16,185,129,0.08)'
                 }} onMouseEnter={(e) => { 
+                  setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#10b981'; 
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(16,185,129,0.2)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(16,185,129,0.25)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
                 }} onMouseLeave={(e) => { 
-                  e.currentTarget.style.borderColor = 'rgba(16,185,129,0.2)'; 
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.05)';
+                  setHoveredFeature(null);
+                  e.currentTarget.style.borderColor = 'rgba(16,185,129,0.25)'; 
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(16,185,129,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
                 </div>
               ))}
             </div>
           </div>
 
           {/* GELIŞMİŞ */}
-          <div style={{ marginBottom: '50px' }}>
-            <div style={{ fontSize: '22px', fontWeight: 'bold', marginBottom: '20px', paddingBottom: '12px', borderBottom: '3px solid #8b5cf6', color: '#0f172a' }}>
-              ⚡ GELIŞMİŞ (13 özellik)
+          <div style={{ marginBottom: '60px' }}>
+            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #8b5cf6', color: '#0f172a' }}>
+              ⚡ GELIŞMİŞ <span style={{ fontSize: '18px', color: '#8b5cf6', fontWeight: 'normal' }}>(13 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.advanced.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
-                  backdropFilter: 'blur(8px)',
-                  border: '1px solid rgba(139,92,246,0.2)', 
-                  borderRadius: '12px', 
-                  padding: '24px', 
+                  backdropFilter: 'blur(12px)',
+                  border: '2px solid rgba(139,92,246,0.25)', 
+                  borderRadius: '16px', 
+                  padding: '28px', 
                   cursor: 'pointer', 
-                  transition: 'all 0.3s',
-                  boxShadow: '0 4px 12px rgba(139,92,246,0.05)'
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: '0 6px 20px rgba(139,92,246,0.08)'
                 }} onMouseEnter={(e) => { 
+                  setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#8b5cf6'; 
-                  e.currentTarget.style.boxShadow = '0 8px 24px rgba(139,92,246,0.2)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 12px 40px rgba(139,92,246,0.25)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
                 }} onMouseLeave={(e) => { 
-                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.2)'; 
-                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(139,92,246,0.05)';
+                  setHoveredFeature(null);
+                  e.currentTarget.style.borderColor = 'rgba(139,92,246,0.25)'; 
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(139,92,246,0.08)';
                   e.currentTarget.style.transform = 'translateY(0)';
                 }}>
-                  <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{f}</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
                 </div>
               ))}
             </div>
@@ -253,86 +264,108 @@ export default function DashboardV33() {
         {/* AI Signals Table */}
         <div style={{ 
           background: 'rgba(255,255,255,0.8)', 
-          backdropFilter: 'blur(16px)',
-          border: '1px solid rgba(6,182,212,0.2)', 
-          borderRadius: '16px', 
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)', 
+          borderRadius: '20px', 
           overflow: 'hidden',
-          boxShadow: '0 8px 32px rgba(6,182,212,0.1)'
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '24px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.1), #fff)' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a' }}>AI Sinyalleri</h2>
-            <div style={{ display: 'flex', gap: '8px' }}>
+          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>AI Sinyalleri</h2>
+            <div style={{ display: 'flex', gap: '10px' }}>
               <button style={{ 
-                padding: '8px 16px', 
+                padding: '10px 20px', 
                 background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
                 color: '#fff', 
                 border: 'none', 
-                borderRadius: '8px', 
-                fontSize: '13px', 
-                fontWeight: '600', 
+                borderRadius: '10px', 
+                fontSize: '14px', 
+                fontWeight: '700', 
                 cursor: 'pointer',
-                boxShadow: '0 4px 12px rgba(6,182,212,0.3)'
+                boxShadow: '0 6px 20px rgba(6,182,212,0.4)',
+                transition: 'all 0.2s'
               }}>Filtrele</button>
               <button style={{ 
-                padding: '8px 16px', 
+                padding: '10px 20px', 
                 background: '#fff', 
                 color: '#000', 
-                border: '1px solid rgba(6,182,212,0.2)', 
-                borderRadius: '8px', 
-                fontSize: '13px', 
-                fontWeight: '600', 
-                cursor: 'pointer'
-              }}>%80+ Doğruluk</button>
+                border: '2px solid rgba(6,182,212,0.3)', 
+                borderRadius: '10px', 
+                fontSize: '14px', 
+                fontWeight: '700', 
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)'; e.currentTarget.style.background = '#fff'; }}>%80+ Doğruluk</button>
             </div>
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ background: 'rgba(240,249,255,0.5)' }}>
+              <thead style={{ background: 'rgba(240,249,255,0.6)' }}>
                 <tr>
-                  <th style={{ padding: '20px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sembol</th>
-                  <th style={{ padding: '20px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sinyal</th>
-                  <th style={{ padding: '20px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mevcut Fiyat</th>
-                  <th style={{ padding: '20px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Beklenen Fiyat</th>
-                  <th style={{ padding: '20px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Değişim</th>
-                  <th style={{ padding: '20px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Yorumu</th>
-                  <th style={{ padding: '20px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Doğruluk</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sembol</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sinyal</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mevcut Fiyat</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Beklenen Fiyat</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Değişim</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Yorumu</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Doğruluk</th>
                 </tr>
               </thead>
               <tbody>
                 {signals.map((s, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(6,182,212,0.05)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(240,249,255,0.5)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}>
-                    <td style={{ padding: '20px', fontWeight: 'bold', fontSize: '15px', color: '#0f172a' }}>{s.symbol}</td>
-                    <td style={{ padding: '20px' }}>
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}>
+                    <td style={{ padding: '24px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
+                    <td style={{ padding: '24px' }}>
                       <span style={{
-                        padding: '6px 14px',
+                        padding: '8px 16px',
                         borderRadius: '20px',
                         fontSize: '12px',
                         fontWeight: 'bold',
-                        background: s.signal === 'BUY' ? 'linear-gradient(135deg, #dcfce7, #bbf7d0)' : s.signal === 'SELL' ? 'linear-gradient(135deg, #fee2e2, #fecaca)' : '#f3f4f6',
+                        background: s.signal === 'BUY' ? 'linear-gradient(135deg, #dcfce7, #86efac)' : s.signal === 'SELL' ? 'linear-gradient(135deg, #fee2e2, #fca5a5)' : '#f3f4f6',
                         color: s.signal === 'BUY' ? '#16a34a' : s.signal === 'SELL' ? '#dc2626' : '#6b7280',
-                        boxShadow: s.signal === 'BUY' ? '0 2px 8px rgba(22,163,74,0.2)' : s.signal === 'SELL' ? '0 2px 8px rgba(220,38,38,0.2)' : 'none'
+                        boxShadow: s.signal === 'BUY' ? '0 4px 12px rgba(22,163,74,0.3)' : s.signal === 'SELL' ? '0 4px 12px rgba(220,38,38,0.3)' : 'none'
                       }}>
                         {s.signal}
                       </span>
                     </td>
-                    <td style={{ padding: '20px', fontSize: '15px', color: '#0f172a', fontWeight: '500' }}>₺{s.price.toFixed(2)}</td>
-                    <td style={{ padding: '20px', fontSize: '15px', fontWeight: 'bold' }}>₺{s.target.toFixed(2)}</td>
-                    <td style={{ padding: '20px', fontSize: '15px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }}>
+                    <td style={{ padding: '24px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }}>₺{s.price.toFixed(2)}</td>
+                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>₺{s.target.toFixed(2)}</td>
+                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }}>
                       {s.change > 0 ? '↑' : '↓'} {Math.abs(s.change)}%
                     </td>
-                    <td style={{ padding: '20px', fontSize: '14px', color: '#64748b', fontStyle: 'italic' }}>{s.comment}</td>
-                    <td style={{ padding: '20px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ width: '80px', height: '6px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
-                          <div style={{ height: '100%', background: `linear-gradient(90deg, #06b6d4, #3b82f6)`, width: `${s.accuracy || 85}%`, transition: 'width 0.3s' }}></div>
+                    <td style={{ padding: '24px', fontSize: '15px', color: '#64748b', fontStyle: 'italic', maxWidth: '300px' }}>{s.comment}</td>
+                    <td style={{ padding: '24px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                        <div style={{ width: '100px', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: `linear-gradient(90deg, #06b6d4, #3b82f6)`, width: `${s.accuracy}%`, transition: 'width 0.5s' }}></div>
                         </div>
-                        <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#0f172a' }}>{s.accuracy}%</span>
+                        <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }}>{s.accuracy}%</span>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+
+        {/* Chart Placeholder */}
+        <div style={{ 
+          marginTop: '60px',
+          background: 'rgba(255,255,255,0.8)', 
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)', 
+          borderRadius: '20px', 
+          overflow: 'hidden',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a' }}>AI Prediction Chart</h2>
+            <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>Gerçek zamanlı teknik analiz ve trend tahmini</div>
+          </div>
+          <div style={{ padding: '60px', textAlign: 'center' }}>
+            <div style={{ fontSize: '18px', color: '#64748b', marginBottom: '12px' }}>📊 Grafik Alanı</div>
+            <div style={{ fontSize: '14px', color: '#94a3b8' }}>Chart.js veya Recharts ile entegre edilecek</div>
           </div>
         </div>
       </main>
