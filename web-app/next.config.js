@@ -116,10 +116,7 @@ const nextConfig = {
   trailingSlash: false,
 
   // Turbopack configuration (Next.js 16)
-  // Set empty object to use Turbopack with webpack config
-  experimental: {
-    turbo: {},
-  },
+  // Turbopack is enabled by default in Next.js 16
 };
 
 module.exports = nextConfig;
