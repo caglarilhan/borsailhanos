@@ -5,6 +5,7 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContai
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
+  const [visibleSignals, setVisibleSignals] = useState(5);
   
   // Sample chart data (30 days)
   const chartData = Array.from({ length: 30 }, (_, i) => ({
@@ -80,29 +81,45 @@ export default function DashboardV33() {
             </div>
           </div>
           <div style={{ display: 'flex', gap: '12px' }}>
-            <button style={{ 
-              padding: '12px 24px', 
-              background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
-              color: '#fff', 
-              border: 'none', 
-              borderRadius: '10px',
-              fontWeight: '700',
-              fontSize: '14px',
-              cursor: 'pointer',
-              boxShadow: '0 6px 20px rgba(6,182,212,0.4)',
-              transition: 'all 0.2s'
-            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>Watchlist</button>
-            <button style={{ 
-              padding: '12px 24px', 
-              background: '#000', 
-              color: '#fff', 
-              border: 'none', 
-              borderRadius: '10px',
-              fontWeight: '700',
-              fontSize: '14px',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }} onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}>Admin</button>
+            <button 
+              style={{ 
+                padding: '12px 24px', 
+                background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(6,182,212,0.4)',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }} 
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="İzleme listesini aç"
+            >
+              Watchlist
+            </button>
+            <button 
+              style={{ 
+                padding: '12px 24px', 
+                background: '#000', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }} 
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="Admin paneline git"
+            >
+              Admin
+            </button>
           </div>
         </div>
       </header>
@@ -282,29 +299,43 @@ export default function DashboardV33() {
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
             <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>AI Sinyalleri</h2>
             <div style={{ display: 'flex', gap: '10px' }}>
-              <button style={{ 
-                padding: '10px 20px', 
-                background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: '10px', 
-                fontSize: '14px', 
-                fontWeight: '700', 
-                cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(6,182,212,0.4)',
-                transition: 'all 0.2s'
-              }}>Filtrele</button>
-              <button style={{ 
-                padding: '10px 20px', 
-                background: '#fff', 
-                color: '#000', 
-                border: '2px solid rgba(6,182,212,0.3)', 
-                borderRadius: '10px', 
-                fontSize: '14px', 
-                fontWeight: '700', 
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)'; e.currentTarget.style.background = '#fff'; }}>%80+ Doğruluk</button>
+              <button 
+                style={{ 
+                  padding: '10px 20px', 
+                  background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '10px', 
+                  fontSize: '14px', 
+                  fontWeight: '700', 
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(6,182,212,0.4)',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                aria-label="Sinyal filtrelerini aç"
+              >
+                Filtrele
+              </button>
+              <button 
+                style={{ 
+                  padding: '10px 20px', 
+                  background: '#fff', 
+                  color: '#000', 
+                  border: '2px solid rgba(6,182,212,0.3)', 
+                  borderRadius: '10px', 
+                  fontSize: '14px', 
+                  fontWeight: '700', 
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }} 
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} 
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)'; e.currentTarget.style.background = '#fff'; }}
+                aria-label="Yüzde 80 üstü doğruluk filtrele"
+              >
+                %80+ Doğruluk
+              </button>
             </div>
           </div>
           <div style={{ overflowX: 'auto' }}>
@@ -321,8 +352,8 @@ export default function DashboardV33() {
                 </tr>
               </thead>
               <tbody>
-                {signals.map((s, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }}>
+                {signals.slice(0, visibleSignals).map((s, idx) => (
+                  <tr key={idx} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={`${s.symbol} - ${s.signal} sinyali, Fiyat: ₺${s.price.toFixed(2)}, Beklenen: ₺${s.target.toFixed(2)}`}>
                     <td style={{ padding: '24px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
                     <td style={{ padding: '24px' }}>
                       <span style={{
@@ -333,22 +364,22 @@ export default function DashboardV33() {
                         background: s.signal === 'BUY' ? 'linear-gradient(135deg, #dcfce7, #86efac)' : s.signal === 'SELL' ? 'linear-gradient(135deg, #fee2e2, #fca5a5)' : '#f3f4f6',
                         color: s.signal === 'BUY' ? '#16a34a' : s.signal === 'SELL' ? '#dc2626' : '#6b7280',
                         boxShadow: s.signal === 'BUY' ? '0 4px 12px rgba(22,163,74,0.3)' : s.signal === 'SELL' ? '0 4px 12px rgba(220,38,38,0.3)' : 'none'
-                      }}>
+                      }} aria-label={`Sinyal tipi: ${s.signal}`}>
                         {s.signal}
                       </span>
                     </td>
-                    <td style={{ padding: '24px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }}>₺{s.price.toFixed(2)}</td>
-                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>₺{s.target.toFixed(2)}</td>
-                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }}>
+                    <td style={{ padding: '24px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ₺${s.price.toFixed(2)}`}>₺{s.price.toFixed(2)}</td>
+                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ₺${s.target.toFixed(2)}`}>₺{s.target.toFixed(2)}</td>
+                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${s.change > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change)}`}>
                       {s.change > 0 ? '↑' : '↓'} {Math.abs(s.change)}%
                     </td>
                     <td style={{ padding: '24px', fontSize: '15px', color: '#64748b', fontStyle: 'italic', maxWidth: '300px' }}>{s.comment}</td>
                     <td style={{ padding: '24px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                        <div style={{ width: '100px', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
+                        <div style={{ width: '100px', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }} role="progressbar" aria-valuenow={s.accuracy} aria-valuemin={0} aria-valuemax={100}>
                           <div style={{ height: '100%', background: `linear-gradient(90deg, #06b6d4, #3b82f6)`, width: `${s.accuracy}%`, transition: 'width 0.5s' }}></div>
                         </div>
-                        <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }}>{s.accuracy}%</span>
+                        <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }} aria-label={`Doğruluk oranı: ${s.accuracy} yüzde`}>{s.accuracy}%</span>
                       </div>
                     </td>
                   </tr>
@@ -356,6 +387,31 @@ export default function DashboardV33() {
               </tbody>
             </table>
           </div>
+          {signals.length > visibleSignals && (
+            <div style={{ padding: '24px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'center' }}>
+              <button 
+                onClick={() => setVisibleSignals(signals.length)}
+                style={{ 
+                  padding: '12px 32px', 
+                  background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '10px',
+                  fontSize: '14px', 
+                  fontWeight: '700', 
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(6,182,212,0.4)',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }} 
+                onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(6,182,212,0.5)'; }} 
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(6,182,212,0.4)'; }}
+                aria-label={`${signals.length - visibleSignals} sinyal daha göster`}
+              >
+                {signals.length - visibleSignals} Daha Fazla Sinyal Göster
+              </button>
+            </div>
+          )}
         </div>
 
         {/* AI Prediction Chart */}
