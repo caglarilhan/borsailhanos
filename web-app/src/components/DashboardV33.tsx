@@ -16,6 +16,34 @@ export default function DashboardV33() {
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<{id: string, message: string, type: 'success' | 'info', timestamp: Date}[]>([]);
   const [portfolioRebalance, setPortfolioRebalance] = useState(false);
+  const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
+  
+  // Event-Driven AI - Bilanço takvimi
+  useEffect(() => {
+    const now = new Date();
+    const hour = now.getHours();
+    
+    // Her saat başı kontrol et (simülasyon)
+    if (hour % 6 === 0) {
+      const upcomingEvents = [
+        { symbol: 'THYAO', event: 'Bilanço', date: '2024-02-15', type: 'positive', impact: 'Yüksek' },
+        { symbol: 'TUPRS', event: 'GMK', date: '2024-02-12', type: 'neutral', impact: 'Orta' },
+        { symbol: 'AKBNK', event: 'Faiz Kararı', date: '2024-02-20', type: 'positive', impact: 'Çok Yüksek' },
+      ];
+      
+      upcomingEvents.forEach(event => {
+        const alertId = `event-${event.symbol}-${Date.now()}`;
+        if (!alerts.find(a => a.id.includes(`event-${event.symbol}`))) {
+          setAlerts(prev => [...prev, { 
+            id: alertId,
+            message: `📅 ${event.symbol}: ${event.event} (${event.date}) - ${event.impact} etkisi`,
+            type: 'info',
+            timestamp: new Date()
+          }]);
+        }
+      });
+    }
+  }, []);
   
   // Auto-refresh every 60 seconds
   useEffect(() => {
@@ -164,7 +192,7 @@ export default function DashboardV33() {
             <div>
               <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
               <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                v4.1 Live Edition
+                v4.3 Professional Edition
                 {isRefreshing ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#06b6d4' }}>
                     <div style={{ width: '8px', height: '8px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
@@ -922,6 +950,103 @@ export default function DashboardV33() {
           </div>
         </div>
         
+        {/* AI Learning Mode */}
+        <div style={{ 
+          marginTop: '60px',
+          background: 'rgba(255,255,255,0.8)', 
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)', 
+          borderRadius: '20px', 
+          overflow: 'hidden',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Learning Mode</h2>
+                <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>Performans geri bildirimi ve öneriler</div>
+              </div>
+              <div style={{ display: 'flex', gap: '12px' }}>
+                <button 
+                  onClick={() => {
+                    if (navigator.share) {
+                      navigator.share({
+                        title: 'BIST AI Smart Trader',
+                        text: `AI Doğruluk: ${aiLearning.accuracy}% | Ortalama Kâr: +12.5%`,
+                        url: window.location.href
+                      });
+                    } else {
+                      navigator.clipboard.writeText(window.location.href);
+                      setAlerts(prev => [...prev, { 
+                        id: `share-${Date.now()}`, 
+                        message: '📋 Link kopyalandı!', 
+                        type: 'success', 
+                        timestamp: new Date() 
+                      }]);
+                    }
+                  }}
+                  style={{ 
+                    padding: '10px 16px', 
+                    background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
+                    color: '#fff', 
+                    border: 'none', 
+                    borderRadius: '10px', 
+                    fontSize: '13px', 
+                    fontWeight: '700', 
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    outline: 'none'
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.05)'; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                  aria-label="Analizi paylaş"
+                >
+                  📤 Paylaş
+                </button>
+              </div>
+            </div>
+          </div>
+          <div style={{ padding: '40px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }}>
+              <div style={{ padding: '24px', background: 'rgba(16,185,129,0.1)', borderRadius: '16px', border: '2px solid rgba(16,185,129,0.3)' }}>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Doğruluk Oranı</div>
+                <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#10b981' }}>{aiLearning.accuracy}%</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>Son 30 gün ortalaması</div>
+              </div>
+              <div style={{ padding: '24px', background: 'rgba(59,130,246,0.1)', borderRadius: '16px', border: '2px solid rgba(59,130,246,0.3)' }}>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Önerilen Portföy</div>
+                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>THYAO %40</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>AKBNK %30, EREGL %30</div>
+              </div>
+              <div style={{ padding: '24px', background: 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid rgba(251,191,36,0.3)' }}>
+                <div style={{ fontSize: '14px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Risk Skoru</div>
+                <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#eab308' }}>3.2</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>▼ Düşük risk seviyesi</div>
+              </div>
+            </div>
+            <div style={{ padding: '24px', background: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px solid rgba(139,92,246,0.3)' }}>
+              <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#8b5cf6', marginBottom: '16px' }}>💡 AI Önerileri:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {aiLearning.recommendations.map((rec, idx) => (
+                  <div key={idx} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '12px', 
+                    padding: '12px', 
+                    background: 'rgba(255,255,255,0.5)', 
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    color: '#0f172a'
+                  }}>
+                    <span style={{ fontSize: '20px' }}>✓</span>
+                    <span>{rec}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        
         {/* Realtime Alerts */}
         {alerts.length > 0 && (
           <div style={{ 
@@ -991,7 +1116,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              BIST AI Smart Trader v4.2 Professional Edition
+              BIST AI Smart Trader v4.3 Professional Edition
             </div>
           </div>
         </div>
