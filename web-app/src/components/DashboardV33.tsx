@@ -10,6 +10,7 @@ import { BacktestViewer } from './V50/BacktestViewer';
 
 // V6.0 Advanced Components
 import TraderGPT from './V60/TraderGPT';
+import GamificationSystem from './V60/GamificationSystem';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -35,6 +36,7 @@ export default function DashboardV33() {
   const [showV50Module, setShowV50Module] = useState(false);
   const [v50ActiveTab, setV50ActiveTab] = useState<'risk' | 'portfolio' | 'backtest'>('risk');
   const [showTraderGPT, setShowTraderGPT] = useState(false);
+  const [showGamification, setShowGamification] = useState(false);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -1342,7 +1344,55 @@ export default function DashboardV33() {
           </div>
           </div>
         )}
-        
+
+        {/* Gamification System */}
+        {showGamification && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(251,191,36,0.1), rgba(249,115,22,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(251,191,36,0.3)',
+            boxShadow: '0 20px 60px rgba(251,191,36,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  🏆 Trader Seviye Sistemi
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  Puanlar kazan, seviye atla, başarımları topla
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowGamification(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+            </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(251,191,36,0.2)'
+            }}>
+              <GamificationSystem />
+            </div>
+          </div>
+        )}
+
         {/* Footer Stats */}
         <div style={{ 
           marginTop: '80px',
@@ -1369,8 +1419,29 @@ export default function DashboardV33() {
                 <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {mounted && new Date().toLocaleTimeString('tr-TR')}
               </div>
             </div>
-            <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              BIST AI Smart Trader v4.6 Professional Edition
+            <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+              <button
+                onClick={() => setShowGamification(true)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                🏆 Seviye 5
+              </button>
+              <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+                BIST AI Smart Trader v4.6 Professional Edition
+              </div>
             </div>
           </div>
         </div>
