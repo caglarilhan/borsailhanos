@@ -1,9 +1,18 @@
 "use client";
 
 import React, { useState } from 'react';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
+  
+  // Sample chart data (30 days)
+  const chartData = Array.from({ length: 30 }, (_, i) => ({
+    day: `Gün ${i + 1}`,
+    actual: 240 + Math.random() * 20 - 10,
+    predicted: 242 + i * 0.8 + Math.random() * 15 - 7,
+    confidence: 85 + Math.random() * 10
+  }));
 
   const allFeatures = {
     signals: [
@@ -349,7 +358,7 @@ export default function DashboardV33() {
           </div>
         </div>
 
-        {/* Chart Placeholder */}
+        {/* AI Prediction Chart */}
         <div style={{ 
           marginTop: '60px',
           background: 'rgba(255,255,255,0.8)', 
@@ -360,12 +369,72 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a' }}>AI Prediction Chart</h2>
-            <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>Gerçek zamanlı teknik analiz ve trend tahmini</div>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Prediction Chart</h2>
+            <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+              <span>Gerçek zamanlı teknik analiz ve trend tahmini</span>
+              <span style={{ padding: '6px 14px', background: 'rgba(6,182,212,0.15)', borderRadius: '20px', fontSize: '12px', fontWeight: '700', color: '#06b6d4' }}>THYAO - 30 Günlük Trend</span>
+            </div>
           </div>
-          <div style={{ padding: '60px', textAlign: 'center' }}>
-            <div style={{ fontSize: '18px', color: '#64748b', marginBottom: '12px' }}>📊 Grafik Alanı</div>
-            <div style={{ fontSize: '14px', color: '#94a3b8' }}>Chart.js veya Recharts ile entegre edilecek</div>
+          <div style={{ padding: '40px', aspectRatio: '16/9' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis 
+                  dataKey="day" 
+                  stroke="#64748b" 
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis 
+                  stroke="#64748b" 
+                  tick={{ fontSize: 12 }}
+                  domain={['auto', 'auto']}
+                  label={{ value: 'Fiyat (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '13px', fontWeight: '600' } }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'rgba(255,255,255,0.95)', 
+                    border: '1px solid rgba(6,182,212,0.3)', 
+                    borderRadius: '12px',
+                    padding: '12px',
+                    boxShadow: '0 10px 40px rgba(6,182,212,0.2)'
+                  }}
+                  labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}
+                  itemStyle={{ fontSize: '14px', color: '#64748b' }}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }}
+                  iconType="line"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="actual" 
+                  stroke="#3b82f6" 
+                  strokeWidth={3}
+                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
+                  name="Gerçek Fiyat"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="predicted" 
+                  stroke="#06b6d4" 
+                  strokeWidth={3}
+                  strokeDasharray="5 5"
+                  dot={{ fill: '#06b6d4', strokeWidth: 2, r: 5 }}
+                  name="AI Tahmini"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <span style={{ fontWeight: '700', color: '#06b6d4' }}>Ortalama Doğruluk:</span> 87.3%
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <span style={{ fontWeight: '700', color: '#10b981' }}>Son Tahmin:</span> ₺268.30 <span style={{ color: '#10b981' }}>(+9.3%)</span>
+            </div>
           </div>
         </div>
       </main>
