@@ -9,6 +9,9 @@ export default function DashboardV33() {
   const [lastUpdate, setLastUpdate] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
+  const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
+  const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
+  const [portfolioStocks, setPortfolioStocks] = useState<{symbol: string, count: number}[]>([]);
   
   // Auto-refresh every 60 seconds
   useEffect(() => {
@@ -40,6 +43,27 @@ export default function DashboardV33() {
     { name: 'Gıda', change: -0.8, color: '#ef4444' },
     { name: 'Otomotiv', change: 2.1, color: '#10b981' },
   ];
+  
+  // AI Confidence Breakdown (SHAP-like explanation)
+  const aiConfidence = {
+    'THYAO': { factors: [{ name: 'RSI Momentum', contribution: 35, positive: true }, { name: 'Volume Surge', contribution: 30, positive: true }, { name: 'MACD Cross', contribution: 25, positive: true }, { name: 'Support Level', contribution: 10, positive: true }] },
+    'TUPRS': { factors: [{ name: 'Resistance Zone', contribution: -40, positive: false }, { name: 'Volume Decrease', contribution: -30, positive: false }, { name: 'Bearish Pattern', contribution: -20, positive: false }, { name: 'Market Stress', contribution: -10, positive: false }] },
+  };
+  
+  // Correlation Matrix
+  const correlationMatrix = [
+    { stock1: 'THYAO', stock2: 'AKBNK', correlation: 0.72 },
+    { stock1: 'THYAO', stock2: 'EREGL', correlation: 0.68 },
+    { stock1: 'AKBNK', stock2: 'GARAN', correlation: 0.85 },
+    { stock1: 'EREGL', stock2: 'SISE', correlation: 0.86 },
+  ];
+  
+  // Portfolio Simulator Data (30 days)
+  const portfolioData = Array.from({ length: 30 }, (_, i) => ({
+    day: `Gün ${i + 1}`,
+    value: 100000 + i * 350 + Math.random() * 200 - 100,
+    profit: i * 350
+  }));
 
   const allFeatures = {
     signals: [
@@ -477,6 +501,27 @@ export default function DashboardV33() {
                           <div style={{ height: '100%', background: `linear-gradient(90deg, #06b6d4, #3b82f6)`, width: `${s.accuracy}%`, transition: 'width 0.5s' }}></div>
                         </div>
                         <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }} aria-label={`Doğruluk oranı: ${s.accuracy} yüzde`}>{s.accuracy}%</span>
+                        {(s.symbol === 'THYAO' || s.symbol === 'TUPRS') && (
+                          <button 
+                            onClick={() => setSelectedForXAI(s.symbol)}
+                            style={{ 
+                              padding: '8px 12px', 
+                              background: 'rgba(139,92,246,0.1)', 
+                              color: '#8b5cf6', 
+                              border: '1px solid rgba(139,92,246,0.3)', 
+                              borderRadius: '8px',
+                              cursor: 'pointer',
+                              fontSize: '13px',
+                              fontWeight: '700',
+                              transition: 'all 0.2s'
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.2)'; e.currentTarget.style.borderColor = '#8b5cf6'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; }}
+                            aria-label={`AI açıklamasını göster: ${s.symbol}`}
+                          >
+                            🧠
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -587,6 +632,159 @@ export default function DashboardV33() {
             </div>
             <div style={{ fontSize: '13px', color: '#64748b' }}>
               <span style={{ fontWeight: '700', color: '#10b981' }}>Son Tahmin:</span> ₺268.30 <span style={{ color: '#10b981' }}>(+9.3%)</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* XAI Explainability Panel */}
+        {selectedForXAI && aiConfidence[selectedForXAI as keyof typeof aiConfidence] && (
+          <div style={{ 
+            marginTop: '40px',
+            background: 'rgba(255,255,255,0.8)', 
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(6,182,212,0.3)', 
+            borderRadius: '20px', 
+            overflow: 'hidden',
+            boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+          }}>
+            <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Güven Analizi</h2>
+                  <div style={{ fontSize: '14px', color: '#64748b' }}>{selectedForXAI} - AI sinyalinin detaylı açıklaması</div>
+                </div>
+                <button onClick={() => setSelectedForXAI(null)} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}>✕ Kapat</button>
+              </div>
+            </div>
+            <div style={{ padding: '40px' }}>
+              {aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.map((factor, idx) => (
+                <div key={idx} style={{ marginBottom: '20px', padding: '16px', background: factor.positive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '12px', border: `2px solid ${factor.positive ? '#10b981' : '#ef4444'}40` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{factor.name}</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: factor.positive ? '#10b981' : '#ef4444' }}>
+                      {factor.contribution > 0 ? '+' : ''}{factor.contribution}%
+                    </div>
+                  </div>
+                  <div style={{ width: '100%', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
+                    <div style={{ height: '100%', background: `linear-gradient(90deg, ${factor.positive ? '#10b981' : '#ef4444'}, ${factor.positive ? '#34d399' : '#f87171'})`, width: `${Math.abs(factor.contribution)}%`, transition: 'width 0.5s' }}></div>
+                  </div>
+                </div>
+              ))}
+              <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(6,182,212,0.1)', borderRadius: '12px' }}>
+                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600' }}>💡 Açıklama:</div>
+                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
+                  Bu sinyal, yukarıdaki faktörlerin kombinasyonuna dayanmaktadır. Her faktörün AI tahminine katkısı yüzde olarak gösterilmiştir.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Correlation Matrix */}
+        <div style={{ 
+          marginTop: '60px',
+          background: 'rgba(255,255,255,0.8)', 
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)', 
+          borderRadius: '20px', 
+          overflow: 'hidden',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>🔗 Hisse Korelasyonu</h2>
+            <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>Pair trading ve korelasyon analizi</div>
+          </div>
+          <div style={{ padding: '40px', display: 'grid', gap: '16px' }}>
+            {correlationMatrix.map((corr, idx) => (
+              <div key={idx} style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '16px', 
+                padding: '20px', 
+                background: 'rgba(6,182,212,0.05)', 
+                borderRadius: '12px',
+                border: '1px solid rgba(6,182,212,0.2)'
+              }}>
+                <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a', minWidth: '80px' }}>{corr.stock1}</div>
+                <div style={{ flex: 1, height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden', position: 'relative' }}>
+                  <div style={{ width: `${Math.abs(corr.correlation) * 100}%`, height: '100%', background: corr.correlation > 0.7 ? 'linear-gradient(90deg, #10b981, #34d399)' : corr.correlation > 0.5 ? 'linear-gradient(90deg, #3b82f6, #60a5fa)' : 'linear-gradient(90deg, #eab308, #fbbf24)', transition: 'width 0.5s' }}></div>
+                </div>
+                <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a', minWidth: '80px' }}>{corr.stock2}</div>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', color: corr.correlation > 0.7 ? '#10b981' : corr.correlation > 0.5 ? '#3b82f6' : '#eab308', minWidth: '50px', textAlign: 'right' }}>
+                  {(corr.correlation * 100).toFixed(0)}%
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
+        {/* Portfolio Simulator */}
+        <div style={{ 
+          marginTop: '60px',
+          background: 'rgba(255,255,255,0.8)', 
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)', 
+          borderRadius: '20px', 
+          overflow: 'hidden',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
+            <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>AI sinyalleriyle 30 günlük portföy performansı simülasyonu</div>
+          </div>
+          <div style={{ padding: '40px', aspectRatio: '16/9' }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={portfolioData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                <XAxis 
+                  dataKey="day" 
+                  stroke="#64748b" 
+                  tick={{ fontSize: 12 }}
+                  angle={-45}
+                  textAnchor="end"
+                  height={80}
+                />
+                <YAxis 
+                  stroke="#64748b" 
+                  tick={{ fontSize: 12 }}
+                  domain={['auto', 'auto']}
+                  label={{ value: 'Portföy Değeri (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '13px', fontWeight: '600' } }}
+                />
+                <Tooltip 
+                  contentStyle={{ 
+                    background: 'rgba(255,255,255,0.95)', 
+                    border: '1px solid rgba(6,182,212,0.3)', 
+                    borderRadius: '12px',
+                    padding: '12px',
+                    boxShadow: '0 10px 40px rgba(6,182,212,0.2)'
+                  }}
+                  labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}
+                  formatter={(value: any) => [`₺${value.toLocaleString('tr-TR')}`, 'Portföy Değeri']}
+                />
+                <Legend 
+                  wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }}
+                  iconType="line"
+                />
+                <Line 
+                  type="monotone" 
+                  dataKey="value" 
+                  stroke="#10b981" 
+                  strokeWidth={3}
+                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
+                  name="Portföy Değeri"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+          <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <span style={{ fontWeight: '700', color: '#10b981' }}>Başlangıç:</span> ₺100.000
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <span style={{ fontWeight: '700', color: '#10b981' }}>Tahmini Kâr:</span> ₺10.500 <span style={{ color: '#10b981' }}>(+10.5%)</span>
+            </div>
+            <div style={{ fontSize: '13px', color: '#64748b' }}>
+              <span style={{ fontWeight: '700', color: '#10b981' }}>Son Değer:</span> ₺110.500
             </div>
           </div>
         </div>
