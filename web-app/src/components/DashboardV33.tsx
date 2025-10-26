@@ -600,30 +600,30 @@ export default function DashboardV33() {
 
       <main style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
         {/* Metrics - Compact */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '40px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {metrics.map((m, idx) => (
             <div key={m.label} style={{ 
               background: 'rgba(255,255,255,0.75)', 
               backdropFilter: 'blur(20px)',
               border: '1px solid rgba(6,182,212,0.25)', 
-              borderRadius: '16px', 
-              padding: '20px',
+              borderRadius: '12px', 
+              padding: '14px',
               boxShadow: '0 3px 12px rgba(6,182,212,0.12)',
               transition: 'all 0.3s ease',
               position: 'relative'
             }} onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-4px)';
-              e.currentTarget.style.boxShadow = '0 12px 40px rgba(6,182,212,0.2)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 8px 24px rgba(6,182,212,0.15)';
               e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
             }} onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 6px 24px rgba(6,182,212,0.12)';
+              e.currentTarget.style.boxShadow = '0 3px 12px rgba(6,182,212,0.12)';
               e.currentTarget.style.background = 'rgba(255,255,255,0.75)';
             }}>
-              <div style={{ fontSize: '20px', marginBottom: '6px', lineHeight: '1' }}>{m.icon}</div>
-              <div style={{ fontSize: '10px', color: '#475569', marginBottom: '8px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{m.label}</div>
-              <div style={{ fontSize: '28px', fontWeight: '800', marginBottom: '6px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none', letterSpacing: '-0.5px' }}>{m.value}</div>
-              <div style={{ fontSize: '11px', color: m.color, fontWeight: '900' }}>{m.change}</div>
+              <div style={{ fontSize: '16px', marginBottom: '4px', lineHeight: '1' }}>{m.icon}</div>
+              <div style={{ fontSize: '9px', color: '#475569', marginBottom: '6px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{m.label}</div>
+              <div style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none', letterSpacing: '-0.3px' }}>{m.value}</div>
+              <div style={{ fontSize: '10px', color: m.color, fontWeight: '800' }}>{m.change}</div>
             </div>
           ))}
         </div>
