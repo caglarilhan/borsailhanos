@@ -38,7 +38,7 @@ export default function AIInsightSummary() {
           En güçlü sektör: <strong className="text-cyan-400">{summary.strongestSector}</strong> (+{summary.sectorChange}%).
         </p>
         <p className="text-gray-300">
-          AI, <strong className="text-purple-400">{summary.topSignals.join('</strong> ve <strong className="text-purple-400">')}</strong> için yükseliş sinyali tespit etti.
+          AI, <strong className="text-purple-400">{summary.topSignals.join(', ')}</strong> için yükseliş sinyali tespit etti.
         </p>
         <p className="text-gray-400 text-xs flex items-center gap-2">
           <Activity className="w-4 h-4" />
