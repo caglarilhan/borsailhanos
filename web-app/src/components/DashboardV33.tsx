@@ -13,6 +13,9 @@ export default function DashboardV33() {
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
   const [portfolioStocks, setPortfolioStocks] = useState<{symbol: string, count: number}[]>([]);
   const [sentimentData, setSentimentData] = useState<any>(null);
+  const [hoveredSector, setHoveredSector] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<{id: string, message: string, type: 'success' | 'info', timestamp: Date}[]>([]);
+  const [portfolioRebalance, setPortfolioRebalance] = useState(false);
   
   // Auto-refresh every 60 seconds
   useEffect(() => {
@@ -35,14 +38,14 @@ export default function DashboardV33() {
     confidence: 85 + Math.random() * 10
   }));
   
-  // Sector Heatmap Data
+  // Sector Heatmap Data with sub-sectors
   const sectors = [
-    { name: 'Sanayi', change: 2.3, color: '#10b981' },
-    { name: 'Bankacılık', change: -1.4, color: '#ef4444' },
-    { name: 'Teknoloji', change: 3.8, color: '#10b981' },
-    { name: 'İnşaat', change: 1.2, color: '#10b981' },
-    { name: 'Gıda', change: -0.8, color: '#ef4444' },
-    { name: 'Otomotiv', change: 2.1, color: '#10b981' },
+    { name: 'Sanayi', change: 2.3, color: '#10b981', subSectors: [{ name: 'Makine', change: 3.2 }, { name: 'Enerji', change: 1.5 }] },
+    { name: 'Bankacılık', change: -1.4, color: '#ef4444', subSectors: [{ name: 'Mevduat', change: -0.8 }, { name: 'Yatırım', change: -2.1 }] },
+    { name: 'Teknoloji', change: 3.8, color: '#10b981', subSectors: [{ name: 'Yazılım', change: 4.5 }, { name: 'Donanım', change: 2.8 }] },
+    { name: 'İnşaat', change: 1.2, color: '#10b981', subSectors: [{ name: 'Rezidans', change: 0.8 }, { name: 'Ticari', change: 1.9 }] },
+    { name: 'Gıda', change: -0.8, color: '#ef4444', subSectors: [{ name: 'Perakende', change: 0.5 }, { name: 'Üretim', change: -1.8 }] },
+    { name: 'Otomotiv', change: 2.1, color: '#10b981', subSectors: [{ name: 'Otomobil', change: 2.8 }, { name: 'Yedek Parça', change: 1.2 }] },
   ];
   
   // AI Confidence Breakdown (SHAP-like explanation)
@@ -126,6 +129,16 @@ export default function DashboardV33() {
         @keyframes pulse {
           0%, 100% { opacity: 1; }
           50% { opacity: 0.6; }
+        }
+        @keyframes slideInRight {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
         }
       `}</style>
       <div style={{ 
@@ -265,9 +278,11 @@ export default function DashboardV33() {
                 transition: 'all 0.3s',
                 cursor: 'pointer'
               }} onMouseEnter={(e) => {
+                setHoveredSector(sector.name);
                 e.currentTarget.style.transform = 'scale(1.05)';
                 e.currentTarget.style.boxShadow = `0 8px 30px ${sector.color}30`;
               }} onMouseLeave={(e) => {
+                setHoveredSector(null);
                 e.currentTarget.style.transform = 'scale(1)';
                 e.currentTarget.style.boxShadow = 'none';
               }}>
@@ -278,6 +293,19 @@ export default function DashboardV33() {
                 <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
                   {sector.change > 0 ? 'Yükseliş trendi' : 'Düşüş trendi'}
                 </div>
+                {hoveredSector === sector.name && sector.subSectors && (
+                  <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,255,255,0.8)', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>Alt Sektörler:</div>
+                    {sector.subSectors.map((sub, subIdx) => (
+                      <div key={subIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '6px' }}>
+                        <span style={{ color: '#0f172a' }}>{sub.name}</span>
+                        <span style={{ fontWeight: 'bold', color: sub.change > 0 ? '#10b981' : '#ef4444' }}>
+                          {sub.change > 0 ? '+' : ''}{sub.change}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -792,16 +820,46 @@ export default function DashboardV33() {
               </LineChart>
             </ResponsiveContainer>
           </div>
-          <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              <span style={{ fontWeight: '700', color: '#10b981' }}>Başlangıç:</span> ₺100.000
+          <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', gap: '24px', flex: 1 }}>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                <span style={{ fontWeight: '700', color: '#10b981' }}>Başlangıç:</span> ₺100.000
+              </div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                <span style={{ fontWeight: '700', color: '#10b981' }}>Tahmini Kâr:</span> ₺10.500 <span style={{ color: '#10b981' }}>(+10.5%)</span>
+              </div>
+              <div style={{ fontSize: '13px', color: '#64748b' }}>
+                <span style={{ fontWeight: '700', color: '#10b981' }}>Son Değer:</span> ₺110.500
+              </div>
             </div>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              <span style={{ fontWeight: '700', color: '#10b981' }}>Tahmini Kâr:</span> ₺10.500 <span style={{ color: '#10b981' }}>(+10.5%)</span>
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              <span style={{ fontWeight: '700', color: '#10b981' }}>Son Değer:</span> ₺110.500
-            </div>
+            <button 
+              onClick={() => setPortfolioRebalance(!portfolioRebalance)}
+              style={{ 
+                padding: '10px 20px', 
+                background: portfolioRebalance ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, #8b5cf6, #a78bfa)', 
+                color: portfolioRebalance ? '#8b5cf6' : '#fff', 
+                border: '1px solid rgba(139,92,246,0.3)', 
+                borderRadius: '10px', 
+                fontSize: '13px', 
+                fontWeight: '700', 
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                if (!portfolioRebalance) {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(139,92,246,0.4)';
+                }
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+              aria-label="Portföy rebalance'ını yeniden hesapla"
+            >
+              {portfolioRebalance ? '✓ Yeniden Hesaplandı' : '🔄 Rebalance (5 gün)'}
+            </button>
           </div>
         </div>
         
@@ -860,6 +918,80 @@ export default function DashboardV33() {
             </div>
             <div style={{ fontSize: '13px', color: '#64748b' }}>
               <span style={{ fontWeight: '700', color: '#10b981' }}>Ortalama Duygu:</span> 72.5% Pozitif
+            </div>
+          </div>
+        </div>
+        
+        {/* Realtime Alerts */}
+        {alerts.length > 0 && (
+          <div style={{ 
+            position: 'fixed',
+            top: '120px',
+            right: '20px',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+            maxWidth: '400px'
+          }}>
+            {alerts.slice(-3).map((alert) => (
+              <div key={alert.id} style={{ 
+                background: alert.type === 'success' ? 'rgba(16,185,129,0.95)' : 'rgba(59,130,246,0.95)',
+                backdropFilter: 'blur(20px)',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                color: '#fff',
+                animation: 'slideInRight 0.4s ease-out',
+                border: '1px solid rgba(255,255,255,0.2)'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ fontSize: '24px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '14px', fontWeight: '700', marginBottom: '4px' }}>{alert.message}</div>
+                    <div style={{ fontSize: '12px', opacity: 0.9 }}>{alert.timestamp.toLocaleTimeString('tr-TR')}</div>
+                  </div>
+                  <button 
+                    onClick={() => setAlerts(alerts.filter(a => a.id !== alert.id))}
+                    style={{ fontSize: '20px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px', lineHeight: '1' }}
+                    aria-label="Bildirimi kapat"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        
+        {/* Footer Stats */}
+        <div style={{ 
+          marginTop: '80px',
+          marginBottom: '40px',
+          padding: '24px 40px',
+          background: 'rgba(255,255,255,0.9)', 
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)', 
+          borderRadius: '20px', 
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', fontSize: '14px', color: '#64748b' }}>
+            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+              <div>
+                <span style={{ fontWeight: '700', color: '#3b82f6' }}>AI:</span> 15 aktif sinyal
+              </div>
+              <div>
+                <span style={{ fontWeight: '700', color: '#10b981' }}>Ortalama Doğruluk:</span> 87.3%
+              </div>
+              <div>
+                <span style={{ fontWeight: '700', color: '#ef4444' }}>Ortalama Risk:</span> Düşük
+              </div>
+              <div>
+                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {new Date().toLocaleTimeString('tr-TR')}
+              </div>
+            </div>
+            <div style={{ fontSize: '12px', color: '#94a3b8' }}>
+              BIST AI Smart Trader v4.2 Professional Edition
             </div>
           </div>
         </div>
