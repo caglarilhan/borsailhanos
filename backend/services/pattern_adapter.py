@@ -78,3 +78,4 @@ def detect_patterns_from_ohlcv(df: pd.DataFrame) -> List[Dict]:
 
 
 
+

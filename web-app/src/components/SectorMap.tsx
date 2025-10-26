@@ -98,3 +98,4 @@ const SectorMap: React.FC<SectorMapProps> = ({ className }) => {
 
 export default SectorMap;
 
+

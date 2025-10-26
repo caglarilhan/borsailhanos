@@ -83,3 +83,4 @@ export const useAppStore = create<AppState>((set) => ({
   setIsConnected: (connected) => set({ isConnected: connected }),
 }));
 
+

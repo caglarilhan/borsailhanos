@@ -318,3 +318,4 @@ const SectorHeatmap: React.FC<SectorHeatmapProps> = ({ isLoading = false }) => {
 
 export default SectorHeatmap;
 
+
