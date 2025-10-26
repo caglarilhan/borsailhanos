@@ -1,5 +1,6 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
+import type { Metadata } from "next";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -7,6 +8,16 @@ const inter = Inter({
   display: "swap",
   weight: ["300", "400", "500", "600", "700", "800"],
 });
+
+export const metadata: Metadata = {
+  title: "BIST AI Smart Trader",
+  description: "AI-powered quantitative trading dashboard",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+  },
+};
 
 export default function RootLayout({
   children,
