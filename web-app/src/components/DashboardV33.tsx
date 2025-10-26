@@ -1089,6 +1089,19 @@ export default function DashboardV33() {
             </div>
           </div>
         </div>
+
+        {/* Multi-Timeframe Analyzer - AI Chart altına eklendi */}
+        <div style={{ 
+          marginTop: '40px',
+          padding: '32px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <MultiTimeframeAnalyzer />
+        </div>
         
         {/* XAI Explainability Panel */}
         {selectedForXAI && aiConfidence[selectedForXAI as keyof typeof aiConfidence] && (
@@ -1272,6 +1285,32 @@ export default function DashboardV33() {
             </button>
           </div>
         </div>
+
+        {/* Backtesting Preview - Portföy altına eklendi */}
+        <div style={{ 
+          marginTop: '40px',
+          padding: '32px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <BacktestingPreview />
+        </div>
+
+        {/* Risk Attribution - Portföy altına eklendi */}
+        <div style={{ 
+          marginTop: '40px',
+          padding: '32px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <RiskAttribution />
+        </div>
         
         {/* FinBERT Sentiment Tracker */}
         <div style={{ 
@@ -1331,6 +1370,19 @@ export default function DashboardV33() {
               <span style={{ fontWeight: '700', color: '#10b981' }}>Ortalama Duygu:</span> 72.5% Pozitif
             </div>
           </div>
+        </div>
+
+        {/* AI News Trigger - Sentiment altına eklendi */}
+        <div style={{ 
+          marginTop: '40px',
+          padding: '32px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <AINewsTrigger />
         </div>
         
         {/* AI Learning Mode */}
