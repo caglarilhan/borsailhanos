@@ -8,6 +8,9 @@ import { RiskManagementPanel } from './V50/RiskManagementPanel';
 import { PortfolioOptimizer } from './V50/PortfolioOptimizer';
 import { BacktestViewer } from './V50/BacktestViewer';
 
+// V6.0 Advanced Components
+import TraderGPT from './V60/TraderGPT';
+
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [visibleSignals, setVisibleSignals] = useState(5);
@@ -31,6 +34,7 @@ export default function DashboardV33() {
   const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
   const [showV50Module, setShowV50Module] = useState(false);
   const [v50ActiveTab, setV50ActiveTab] = useState<'risk' | 'portfolio' | 'backtest'>('risk');
+  const [showTraderGPT, setShowTraderGPT] = useState(false);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -326,6 +330,30 @@ export default function DashboardV33() {
               İzleme: {watchlist.join(', ')}
             </div>
             <button 
+              onClick={() => setShowTraderGPT(!showTraderGPT)}
+              style={{ 
+                padding: '12px 24px', 
+                background: showTraderGPT ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(245,158,11,0.4)',
+                transition: 'all 0.2s',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }} 
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="TraderGPT ile konuş"
+            >
+              🤖 TraderGPT
+            </button>
+            <button 
               style={{ 
                 padding: '12px 24px', 
                 background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -385,7 +413,7 @@ export default function DashboardV33() {
             >
               {showV50Module ? 'V5.0 ✨' : 'V5.0 Enterprise'}
             </button>
-          </div>
+        </div>
         </div>
       </header>
 
@@ -464,8 +492,8 @@ export default function DashboardV33() {
                         <span style={{ color: '#0f172a' }}>{sub.name}</span>
                         <span style={{ fontWeight: 'bold', color: sub.change > 0 ? '#10b981' : '#ef4444' }}>
                           {sub.change > 0 ? '+' : ''}{sub.change}%
-                        </span>
-                      </div>
+        </span>
+      </div>
                     ))}
                   </div>
                 )}
@@ -507,8 +535,8 @@ export default function DashboardV33() {
                 }}>
                   <div style={{ fontWeight: 'bold', fontSize: '17px', color: '#0f172a', letterSpacing: '-0.3px' }}>{f}</div>
                 </div>
-              ))}
-            </div>
+        ))}
+      </div>
           </div>
 
           {/* ANALIZ */}
@@ -609,7 +637,7 @@ export default function DashboardV33() {
               ))}
             </div>
           </div>
-        </div>
+          </div>
 
         {/* AI Signals Table */}
         <div style={{ 
@@ -656,7 +684,7 @@ export default function DashboardV33() {
                     aria-label={`${market} borsası sinyalleri`}
                   >
                     {market === 'BIST' ? '🇹🇷' : market === 'NYSE' ? '🇺🇸' : '🇺🇸'} {market}
-                  </button>
+            </button>
                 ))}
               </div>
             </div>
@@ -678,7 +706,7 @@ export default function DashboardV33() {
                 aria-label="Sinyal filtrelerini aç"
               >
                 Filtrele
-              </button>
+            </button>
               <button 
                 style={{ 
                   padding: '10px 20px', 
@@ -697,9 +725,9 @@ export default function DashboardV33() {
                 aria-label="Yüzde 80 üstü doğruluk filtrele"
               >
                 %80+ Doğruluk
-              </button>
-            </div>
+            </button>
           </div>
+        </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: 'rgba(240,249,255,0.8)' }}>
@@ -1265,6 +1293,55 @@ export default function DashboardV33() {
             ))}
           </div>
         )}
+
+        {/* TraderGPT Chat Assistant */}
+        {showTraderGPT && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(245,158,11,0.3)',
+            boxShadow: '0 20px 60px rgba(245,158,11,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  🤖 TraderGPT - AI Yatırım Asistanı
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  Sorularınızı sorun, size bugün hangi hisseleri izlemeniz gerektiğini söyleyeyim
+            </p>
+          </div>
+              <button 
+                onClick={() => setShowTraderGPT(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+          </div>
+
+            {/* TraderGPT Content */}
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(245,158,11,0.2)'
+            }}>
+              <TraderGPT />
+          </div>
+          </div>
+        )}
         
         {/* Footer Stats */}
         <div style={{ 
@@ -1315,8 +1392,8 @@ export default function DashboardV33() {
                 </h2>
                 <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
                   Risk Management • Portfolio Optimization • Backtesting
-                </p>
-              </div>
+            </p>
+          </div>
               <button 
                 onClick={() => setShowV50Module(false)}
                 style={{
