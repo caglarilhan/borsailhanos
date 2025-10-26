@@ -12,6 +12,7 @@ import { BacktestViewer } from './V50/BacktestViewer';
 import TraderGPT from './V60/TraderGPT';
 import GamificationSystem from './V60/GamificationSystem';
 import AdvancedVisualizationHub from './V60/AdvancedVisualizationHub';
+import AIConfidenceBreakdown from './V60/AIConfidenceBreakdown';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -39,6 +40,7 @@ export default function DashboardV33() {
   const [showTraderGPT, setShowTraderGPT] = useState(false);
   const [showGamification, setShowGamification] = useState(false);
   const [showAdvancedViz, setShowAdvancedViz] = useState(false);
+  const [showAIConfidence, setShowAIConfidence] = useState(false);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -380,6 +382,30 @@ export default function DashboardV33() {
               aria-label="Gelişmiş görselleştirme hub"
             >
               📊 Viz Hub
+            </button>
+            <button 
+              onClick={() => setShowAIConfidence(!showAIConfidence)}
+              style={{ 
+                padding: '12px 24px', 
+                background: showAIConfidence ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(236,72,153,0.4)',
+                transition: 'all 0.2s',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="AI güven açıklama"
+            >
+              🧠 AI Açıklama
             </button>
             <button 
               style={{ 
@@ -1463,6 +1489,54 @@ export default function DashboardV33() {
               border: '1px solid rgba(139,92,246,0.2)'
             }}>
               <AdvancedVisualizationHub />
+            </div>
+          </div>
+        )}
+
+        {/* AI Confidence Breakdown */}
+        {showAIConfidence && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(139,92,246,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(236,72,153,0.3)',
+            boxShadow: '0 20px 60px rgba(236,72,153,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  🧠 AI Güven Açıklama (SHAP)
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  AI sinyallerinin kaynağı • Faktör analizi • SHAP değerleri
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowAIConfidence(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+            </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(236,72,153,0.2)'
+            }}>
+              <AIConfidenceBreakdown />
             </div>
           </div>
         )}
