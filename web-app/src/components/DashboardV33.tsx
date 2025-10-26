@@ -3,6 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
+// V5.0 Enterprise Components
+import { RiskManagementPanel } from './V50/RiskManagementPanel';
+import { PortfolioOptimizer } from './V50/PortfolioOptimizer';
+import { BacktestViewer } from './V50/BacktestViewer';
+
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [visibleSignals, setVisibleSignals] = useState(5);
@@ -24,6 +29,8 @@ export default function DashboardV33() {
   const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
   const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
+  const [showV50Module, setShowV50Module] = useState(false);
+  const [v50ActiveTab, setV50ActiveTab] = useState<'risk' | 'portfolio' | 'backtest'>('risk');
   
   // Initialize sentiment data
   useEffect(() => {
@@ -356,6 +363,27 @@ export default function DashboardV33() {
               aria-label="Admin paneline git"
             >
               Admin
+            </button>
+            <button 
+              style={{ 
+                padding: '12px 24px', 
+                background: showV50Module ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none',
+                boxShadow: '0 6px 20px rgba(139,92,246,0.4)',
+              }} 
+              onClick={() => setShowV50Module(!showV50Module)}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="V5.0 Enterprise modülünü aç"
+            >
+              {showV50Module ? 'V5.0 ✨' : 'V5.0 Enterprise'}
             </button>
           </div>
         </div>
@@ -1269,6 +1297,85 @@ export default function DashboardV33() {
             </div>
           </div>
         </div>
+
+        {/* V5.0 Enterprise Module */}
+        {showV50Module && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(139,92,246,0.3)',
+            boxShadow: '0 20px 60px rgba(139,92,246,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  🚀 V5.0 Enterprise Intelligence
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  Risk Management • Portfolio Optimization • Backtesting
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowV50Module(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+            </div>
+
+            {/* V5.0 Tabs */}
+            <div style={{ display: 'flex', gap: '12px', marginBottom: '32px', flexWrap: 'wrap' }}>
+              {(['risk', 'portfolio', 'backtest'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setV50ActiveTab(tab)}
+                  style={{
+                    padding: '12px 24px',
+                    background: v50ActiveTab === tab 
+                      ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' 
+                      : 'rgba(255,255,255,0.7)',
+                    color: v50ActiveTab === tab ? '#fff' : '#0f172a',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontWeight: '700',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {tab === 'risk' && '🛡️ Risk Management'}
+                  {tab === 'portfolio' && '💎 Portfolio Optimizer'}
+                  {tab === 'backtest' && '🧪 Backtesting'}
+                </button>
+              ))}
+            </div>
+
+            {/* V5.0 Content */}
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(139,92,246,0.2)'
+            }}>
+              {v50ActiveTab === 'risk' && <RiskManagementPanel />}
+              {v50ActiveTab === 'portfolio' && <PortfolioOptimizer />}
+              {v50ActiveTab === 'backtest' && <BacktestViewer />}
+            </div>
+          </div>
+        )}
       </main>
     </div>
     </>
