@@ -7,6 +7,14 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContai
 import { RiskManagementPanel } from './V50/RiskManagementPanel';
 import { PortfolioOptimizer } from './V50/PortfolioOptimizer';
 import { BacktestViewer } from './V50/BacktestViewer';
+import AIInsightSummary from './V50/AIInsightSummary';
+import RealtimeAlerts from './V50/RealtimeAlerts';
+import AIConfidenceMeter from './V50/AIConfidenceMeter';
+import BacktestingPreview from './V50/BacktestingPreview';
+import MultiTimeframeAnalyzer from './V50/MultiTimeframeAnalyzer';
+import RiskAttribution from './V50/RiskAttribution';
+import AINewsTrigger from './V50/AINewsTrigger';
+import TraderGPTSidebar from './V50/TraderGPTSidebar';
 
 // V6.0 Advanced Components
 import TraderGPT from './V60/TraderGPT';
@@ -2111,6 +2119,9 @@ export default function DashboardV33() {
             </div>
           </div>
         )}
+
+        {/* TraderGPT Sidebar */}
+        <TraderGPTSidebar />
       </main>
     </div>
     </>
