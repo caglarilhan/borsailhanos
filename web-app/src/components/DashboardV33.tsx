@@ -28,6 +28,7 @@ import VolatilityModel from './V60/VolatilityModel';
 import MetaModelEngine from './V60/MetaModelEngine';
 import SubscriptionTiers from './V60/SubscriptionTiers';
 import StrategyBuilder from './V60/StrategyBuilder';
+import InvestorPanel from './V60/InvestorPanel';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -76,6 +77,7 @@ export default function DashboardV33() {
   const [showMetaModel, setShowMetaModel] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
   const [showStrategyBuilder, setShowStrategyBuilder] = useState(false);
+  const [showInvestorPanel, setShowInvestorPanel] = useState(false);
   const [showWatchlist, setShowWatchlist] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
@@ -618,6 +620,30 @@ export default function DashboardV33() {
               aria-label="Strateji oluştur"
             >
               🎯 Strateji Oluştur
+            </button>
+            <button 
+              onClick={() => setShowInvestorPanel(!showInvestorPanel)}
+              style={{ 
+                padding: '8px 14px', 
+                background: showInvestorPanel ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '11px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
+                transition: 'all 0.2s',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="AI Yatırımcı Analizi"
+            >
+              🎯 AI Yatırımcı
             </button>
             <button 
               onClick={handleWatchlistClick}
@@ -2090,6 +2116,19 @@ export default function DashboardV33() {
             }}>
               <SubscriptionTiers />
             </div>
+          </div>
+        )}
+
+        {/* Investor Panel - V6.0 */}
+        {showInvestorPanel && (
+          <div style={{ 
+            margin: '16px 0',
+            padding: '16px',
+            background: 'rgba(255,255,255,0.95)',
+            borderRadius: '20px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
+          }}>
+            <InvestorPanel />
           </div>
         )}
 
