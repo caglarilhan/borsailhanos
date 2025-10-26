@@ -13,6 +13,7 @@ import TraderGPT from './V60/TraderGPT';
 import GamificationSystem from './V60/GamificationSystem';
 import AdvancedVisualizationHub from './V60/AdvancedVisualizationHub';
 import AIConfidenceBreakdown from './V60/AIConfidenceBreakdown';
+import CognitiveAI from './V60/CognitiveAI';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function DashboardV33() {
   const [showGamification, setShowGamification] = useState(false);
   const [showAdvancedViz, setShowAdvancedViz] = useState(false);
   const [showAIConfidence, setShowAIConfidence] = useState(false);
+  const [showCognitiveAI, setShowCognitiveAI] = useState(false);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -406,6 +408,30 @@ export default function DashboardV33() {
               aria-label="AI güven açıklama"
             >
               🧠 AI Açıklama
+            </button>
+            <button 
+              onClick={() => setShowCognitiveAI(!showCognitiveAI)}
+              style={{ 
+                padding: '12px 24px', 
+                background: showCognitiveAI ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(16,185,129,0.4)',
+                transition: 'all 0.2s',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="Cognitive AI yorumlar"
+            >
+              💬 AI Yorum
             </button>
             <button 
               style={{ 
@@ -1537,6 +1563,54 @@ export default function DashboardV33() {
               border: '1px solid rgba(236,72,153,0.2)'
             }}>
               <AIConfidenceBreakdown />
+            </div>
+          </div>
+        )}
+
+        {/* Cognitive AI Comments */}
+        {showCognitiveAI && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(16,185,129,0.3)',
+            boxShadow: '0 20px 60px rgba(16,185,129,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  💬 Cognitive AI Yorumlar
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  AI sinyal açıklamaları • Doğal dil analizi • Aksiyon önerileri
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowCognitiveAI(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+            </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(16,185,129,0.2)'
+            }}>
+              <CognitiveAI />
             </div>
           </div>
         )}
