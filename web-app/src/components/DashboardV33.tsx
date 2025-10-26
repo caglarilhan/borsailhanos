@@ -1277,6 +1277,8 @@ export default function DashboardV33() {
               </div>
             </div>
           </div>
+            </div>
+          </div>
         </div>
         
         {/* Realtime Alerts */}
