@@ -297,36 +297,37 @@ export default function DashboardV33() {
         color: '#0f172a',
         fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
       }}>
-      {/* Header */}
+      {/* Header - Compact */}
       <header style={{ 
-        background: 'rgba(255,255,255,0.85)', 
+        background: 'rgba(255,255,255,0.95)', 
         backdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(6,182,212,0.3)', 
-        padding: '24px 40px',
+        borderBottom: '1px solid rgba(6,182,212,0.2)', 
+        padding: '12px 32px',
         position: 'sticky',
         top: 0,
         zIndex: 50,
-        boxShadow: '0 4px 30px rgba(6,182,212,0.15)'
+        boxShadow: '0 2px 20px rgba(0,0,0,0.08)'
       }}>
         <div style={{ maxWidth: '1600px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '20px', boxShadow: '0 6px 30px rgba(6,182,212,0.4)' }}>AI</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 20px rgba(6,182,212,0.3)' }}>AI</div>
             <div>
-              <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
-              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                v4.6 Professional Edition
+              <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.3px', lineHeight: '1.2' }}>
+                BIST AI Smart Trader <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>v4.6 Pro</span>
+              </h1>
+              <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                 {isRefreshing ? (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#06b6d4' }}>
-                    <div style={{ width: '8px', height: '8px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#06b6d4' }}>
+                    <div style={{ width: '6px', height: '6px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
                     Güncelleniyor...
                   </span>
                 ) : (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }} suppressHydrationWarning>
-                    <div style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%', animation: 'pulse 2s infinite' }}></div>
-                    Canlı • {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }} suppressHydrationWarning>
+                    <div style={{ width: '6px', height: '6px', background: '#10b981', borderRadius: '50%', animation: 'pulse 2s infinite' }}></div>
+                    Canlı • {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} • İzleme: {watchlist.join(', ')}
                     {realtimeUpdates.signals > 0 && (
-                      <span style={{ fontSize: '11px', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '8px', fontWeight: '600', color: '#10b981' }}>
-                        +{realtimeUpdates.signals} sinyal
+                      <span style={{ fontSize: '10px', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '600', color: '#10b981' }}>
+                        +{realtimeUpdates.signals}
                       </span>
                     )}
                   </span>
@@ -334,57 +335,54 @@ export default function DashboardV33() {
               </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <div style={{ fontSize: '12px', color: '#64748b', marginRight: '12px' }}>
-              İzleme: {watchlist.join(', ')}
-            </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
               onClick={() => setShowTraderGPT(!showTraderGPT)}
               style={{ 
-                padding: '12px 24px', 
+                padding: '8px 16px', 
                 background: showTraderGPT ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
                 color: '#fff', 
                 border: 'none', 
-                borderRadius: '10px',
+                borderRadius: '8px',
                 fontWeight: '700',
-                fontSize: '14px',
+                fontSize: '12px',
                 cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(245,158,11,0.4)',
+                boxShadow: '0 2px 8px rgba(245,158,11,0.3)',
                 transition: 'all 0.2s',
                 outline: 'none',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '6px'
               }} 
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="TraderGPT ile konuş"
             >
-              🤖 TraderGPT
+              🤖 GPT
             </button>
             <button 
               onClick={() => setShowAdvancedViz(!showAdvancedViz)}
               style={{ 
-                padding: '12px 24px', 
+                padding: '8px 16px', 
                 background: showAdvancedViz ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
-                borderRadius: '10px',
+                borderRadius: '8px',
                 fontWeight: '700',
-                fontSize: '14px',
+                fontSize: '12px',
                 cursor: 'pointer',
-                boxShadow: '0 6px 20px rgba(139,92,246,0.4)',
+                boxShadow: '0 2px 8px rgba(139,92,246,0.3)',
                 transition: 'all 0.2s',
                 outline: 'none',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '8px'
+                gap: '6px'
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="Gelişmiş görselleştirme hub"
             >
-              📊 Viz Hub
+              📊 Viz
             </button>
             <button 
               onClick={() => setShowAIConfidence(!showAIConfidence)}
@@ -594,30 +592,32 @@ export default function DashboardV33() {
         </div>
       </header>
 
-      <main style={{ padding: '48px', maxWidth: '1600px', margin: '0 auto' }}>
-        {/* Metrics */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '28px', marginBottom: '70px' }}>
+      <main style={{ padding: '32px', maxWidth: '1600px', margin: '0 auto' }}>
+        {/* Metrics - Compact */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '40px' }}>
           {metrics.map((m, idx) => (
             <div key={m.label} style={{ 
               background: 'rgba(255,255,255,0.75)', 
               backdropFilter: 'blur(20px)',
               border: '1px solid rgba(6,182,212,0.25)', 
-              borderRadius: '20px', 
-              padding: '36px',
-              boxShadow: '0 10px 40px rgba(6,182,212,0.15)',
+              borderRadius: '16px', 
+              padding: '20px',
+              boxShadow: '0 6px 24px rgba(6,182,212,0.12)',
               transition: 'all 0.3s ease',
               position: 'relative'
             }} onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'translateY(-6px)';
-              e.currentTarget.style.boxShadow = '0 16px 50px rgba(6,182,212,0.25)';
+              e.currentTarget.style.transform = 'translateY(-4px)';
+              e.currentTarget.style.boxShadow = '0 12px 40px rgba(6,182,212,0.2)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.95)';
             }} onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'translateY(0)';
-              e.currentTarget.style.boxShadow = '0 10px 40px rgba(6,182,212,0.15)';
+              e.currentTarget.style.boxShadow = '0 6px 24px rgba(6,182,212,0.12)';
+              e.currentTarget.style.background = 'rgba(255,255,255,0.75)';
             }}>
-              <div style={{ fontSize: '32px', marginBottom: '12px', lineHeight: '1' }}>{m.icon}</div>
-              <div style={{ fontSize: '12px', color: '#475569', marginBottom: '16px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1.5px' }}>{m.label}</div>
-              <div style={{ fontSize: '52px', fontWeight: '800', marginBottom: '12px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none', letterSpacing: '-1px' }}>{m.value}</div>
-              <div style={{ fontSize: '16px', color: m.color, fontWeight: '900' }}>{m.change}</div>
+              <div style={{ fontSize: '24px', marginBottom: '8px', lineHeight: '1' }}>{m.icon}</div>
+              <div style={{ fontSize: '11px', color: '#475569', marginBottom: '10px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px' }}>{m.label}</div>
+              <div style={{ fontSize: '36px', fontWeight: '800', marginBottom: '8px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none', letterSpacing: '-0.5px' }}>{m.value}</div>
+              <div style={{ fontSize: '13px', color: m.color, fontWeight: '900' }}>{m.change}</div>
             </div>
           ))}
         </div>
