@@ -316,7 +316,7 @@ export default function DashboardV33() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 20px rgba(6,182,212,0.3)' }}>AI</div>
             <div>
-              <h1 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.3px', lineHeight: '1.2' }}>
+              <h1 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.3px', lineHeight: '1.2' }}>
                 BIST AI Smart Trader <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>v4.6 Pro</span>
               </h1>
               <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
@@ -622,7 +622,7 @@ export default function DashboardV33() {
             }}>
               <div style={{ fontSize: '16px', marginBottom: '4px', lineHeight: '1' }}>{m.icon}</div>
               <div style={{ fontSize: '9px', color: '#475569', marginBottom: '6px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.3px' }}>{m.label}</div>
-              <div style={{ fontSize: '22px', fontWeight: '800', marginBottom: '4px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none', letterSpacing: '-0.3px' }}>{m.value}</div>
+              <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '4px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none', letterSpacing: '-0.3px' }}>{m.value}</div>
               <div style={{ fontSize: '10px', color: m.color, fontWeight: '800' }}>{m.change}</div>
             </div>
           ))}
@@ -652,7 +652,7 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📊 Sektör Isı Haritası</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📊 Sektör Isı Haritası</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Piyasa geneli sektörel performans analizi</div>
           </div>
           <div style={{ padding: '28px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
@@ -674,7 +674,7 @@ export default function DashboardV33() {
                 e.currentTarget.style.boxShadow = 'none';
               }}>
                 <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '14px', color: '#0f172a', letterSpacing: '-0.3px' }}>{sector.name}</div>
-                <div style={{ fontSize: '36px', fontWeight: '900', color: sector.color, lineHeight: '1', textShadow: `0 2px 8px ${sector.color}30` }}>
+                <div style={{ fontSize: '24px', fontWeight: '900', color: sector.color, lineHeight: '1', textShadow: `0 2px 8px ${sector.color}30` }}>
                   {sector.change > 0 ? '↑' : '↓'} {Math.abs(sector.change)}%
                 </div>
                 <div style={{ fontSize: '13px', color: '#64748b', marginTop: '10px', fontWeight: '600' }}>
@@ -700,7 +700,7 @@ export default function DashboardV33() {
 
         {/* ALL FEATURES BY CATEGORY */}
         <div style={{ marginBottom: '32px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 'bold', marginBottom: '24px', color: '#0f172a', letterSpacing: '-0.5px' }}>Tüm Özellikler</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '24px', color: '#0f172a', letterSpacing: '-0.5px' }}>Tüm Özellikler</h2>
           
           {/* SINYALLER */}
           <div style={{ marginBottom: '16px' }}>
@@ -852,7 +852,7 @@ export default function DashboardV33() {
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-              <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Sinyalleri</h2>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Sinyalleri</h2>
               <div style={{ display: 'flex', gap: '10px' }}>
                 {(['BIST', 'NYSE', 'NASDAQ'] as const).map((market) => (
                   <button
@@ -1074,7 +1074,7 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Prediction Chart</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Prediction Chart</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '24px' }}>
               <span>Gerçek zamanlı teknik analiz ve trend tahmini</span>
               <span style={{ padding: '6px 14px', background: 'rgba(6,182,212,0.15)', borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: '#06b6d4' }}>THYAO - 30 Günlük Trend</span>
@@ -1170,7 +1170,7 @@ export default function DashboardV33() {
             <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Güven Analizi</h2>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Güven Analizi</h2>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>{selectedForXAI} - AI sinyalinin detaylı açıklaması</div>
                 </div>
                 <button onClick={() => setSelectedForXAI(null)} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}>✕ Kapat</button>
@@ -1211,7 +1211,7 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>🔗 Hisse Korelasyonu</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>🔗 Hisse Korelasyonu</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Pair trading ve korelasyon analizi</div>
           </div>
           <div style={{ padding: '28px', display: 'grid', gap: '16px' }}>
@@ -1249,7 +1249,7 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>AI sinyalleriyle 30 günlük portföy performansı simülasyonu</div>
           </div>
           <div style={{ padding: '28px', aspectRatio: '16/9' }}>
@@ -1376,7 +1376,7 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📰 FinBERT Sentiment Tracker</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📰 FinBERT Sentiment Tracker</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Türkçe haber ve duygu analizi (pozitif/negatif/nötr)</div>
           </div>
           <div style={{ padding: '28px' }}>
@@ -1385,7 +1385,7 @@ export default function DashboardV33() {
               <div key={idx} style={{ marginBottom: '32px', padding: '24px', background: s.sentiment > 70 ? 'rgba(16,185,129,0.1)' : s.sentiment < 50 ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)', borderRadius: '16px', border: `2px solid ${s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308'}40` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <div>
-                    <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>{s.symbol}</div>
+                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>{s.symbol}</div>
                     <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Kaynaklar: {s.sources.join(', ')}</div>
                   </div>
                   <div style={{ fontSize: '16px', fontWeight: 'bold', color: s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308' }}>{s.sentiment}%</div>
@@ -1451,7 +1451,7 @@ export default function DashboardV33() {
           <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
-                <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Learning Mode</h2>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Learning Mode</h2>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Performans geri bildirimi ve öneriler</div>
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
@@ -1498,7 +1498,7 @@ export default function DashboardV33() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }}>
               <div style={{ padding: '24px', background: 'rgba(16,185,129,0.1)', borderRadius: '16px', border: '2px solid rgba(16,185,129,0.3)' }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Doğruluk Oranı</div>
-                <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#10b981' }}>{aiLearning.accuracy}%</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>{aiLearning.accuracy}%</div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Son 30 gün ortalaması</div>
               </div>
               <div style={{ padding: '24px', background: 'rgba(59,130,246,0.1)', borderRadius: '16px', border: '2px solid rgba(59,130,246,0.3)' }}>
@@ -1508,7 +1508,7 @@ export default function DashboardV33() {
               </div>
               <div style={{ padding: '24px', background: 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid rgba(251,191,36,0.3)' }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Risk Skoru</div>
-                <div style={{ fontSize: '36px', fontWeight: 'bold', color: '#eab308' }}>3.2</div>
+                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#eab308' }}>3.2</div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>▼ Düşük risk seviyesi</div>
               </div>
             </div>
@@ -1526,7 +1526,7 @@ export default function DashboardV33() {
                     fontSize: '11px',
                     color: '#0f172a'
                   }}>
-                    <span style={{ fontSize: '20px' }}>✓</span>
+                    <span style={{ fontSize: '16px' }}>✓</span>
                     <span>{rec}</span>
                   </div>
                 ))}
@@ -1559,14 +1559,14 @@ export default function DashboardV33() {
                 border: '1px solid rgba(255,255,255,0.2)'
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{ fontSize: '24px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
+                  <div style={{ fontSize: '18px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '4px' }}>{alert.message}</div>
                     <div style={{ fontSize: '11px', opacity: 0.9 }}>{alert.timestamp.toLocaleTimeString('tr-TR')}</div>
                   </div>
                   <button 
                     onClick={() => setAlerts(alerts.filter(a => a.id !== alert.id))}
-                    style={{ fontSize: '20px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px', lineHeight: '1' }}
+                    style={{ fontSize: '16px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px', lineHeight: '1' }}
                     aria-label="Bildirimi kapat"
                   >
                     ✕
