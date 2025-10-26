@@ -1,11 +1,27 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [visibleSignals, setVisibleSignals] = useState(5);
+  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
+  
+  // Auto-refresh every 60 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setIsRefreshing(true);
+      setTimeout(() => {
+        setLastUpdate(new Date());
+        setIsRefreshing(false);
+      }, 1000);
+    }, 60000);
+    
+    return () => clearInterval(interval);
+  }, []);
   
   // Sample chart data (30 days)
   const chartData = Array.from({ length: 30 }, (_, i) => ({
@@ -14,6 +30,16 @@ export default function DashboardV33() {
     predicted: 242 + i * 0.8 + Math.random() * 15 - 7,
     confidence: 85 + Math.random() * 10
   }));
+  
+  // Sector Heatmap Data
+  const sectors = [
+    { name: 'Sanayi', change: 2.3, color: '#10b981' },
+    { name: 'Bankacılık', change: -1.4, color: '#ef4444' },
+    { name: 'Teknoloji', change: 3.8, color: '#10b981' },
+    { name: 'İnşaat', change: 1.2, color: '#10b981' },
+    { name: 'Gıda', change: -0.8, color: '#ef4444' },
+    { name: 'Otomotiv', change: 2.1, color: '#10b981' },
+  ];
 
   const allFeatures = {
     signals: [
@@ -48,19 +74,26 @@ export default function DashboardV33() {
   ];
 
   const metrics = [
-    { label: 'Toplam Kâr', value: '₺125.000', change: '+12.5%', color: '#10b981' },
-    { label: 'Aktif Sinyaller', value: '15', change: '+3 yeni', color: '#3b82f6' },
-    { label: 'Doğruluk Oranı', value: '87.3%', change: '+2.1%', color: '#10b981' },
-    { label: 'Risk Skoru', value: '3.2', change: '▼ Düşük', color: '#10b981' },
+    { label: 'Toplam Kâr', value: '₺125.000', change: '+12.5%', color: '#10b981', icon: '💰', pulse: true },
+    { label: 'Aktif Sinyaller', value: '15', change: '+3 yeni', color: '#3b82f6', icon: '🎯', pulse: true },
+    { label: 'Doğruluk Oranı', value: '87.3%', change: '+2.1%', color: '#10b981', icon: '📊', pulse: false },
+    { label: 'Risk Skoru', value: '3.2', change: '▼ Düşük', color: '#10b981', icon: '⚠️', pulse: false },
   ];
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      background: 'linear-gradient(to bottom, #ffffff, #f0f9ff, #e0f2fe)', 
-      color: '#0f172a',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-    }}>
+    <>
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
+      <div style={{ 
+        minHeight: '100vh', 
+        background: 'linear-gradient(to bottom, #ffffff, #f0f9ff, #e0f2fe)', 
+        color: '#0f172a',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+      }}>
       {/* Header */}
       <header style={{ 
         background: 'rgba(255,255,255,0.85)', 
@@ -77,10 +110,26 @@ export default function DashboardV33() {
             <div style={{ width: '52px', height: '52px', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '20px', boxShadow: '0 6px 30px rgba(6,182,212,0.4)' }}>AI</div>
             <div>
               <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
-              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>v4.0 Professional Edition</div>
+              <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                v4.1 Live Edition
+                {isRefreshing ? (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#06b6d4' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
+                    Güncelleniyor...
+                  </span>
+                ) : (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%' }}></div>
+                    Canlı • {lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ fontSize: '12px', color: '#64748b', marginRight: '12px' }}>
+              İzleme: {watchlist.join(', ')}
+            </div>
             <button 
               style={{ 
                 padding: '12px 24px', 
@@ -135,7 +184,8 @@ export default function DashboardV33() {
               borderRadius: '20px', 
               padding: '36px',
               boxShadow: '0 10px 40px rgba(6,182,212,0.15)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              position: 'relative'
             }} onMouseEnter={(e) => {
               e.currentTarget.style.transform = 'translateY(-6px)';
               e.currentTarget.style.boxShadow = '0 16px 50px rgba(6,182,212,0.25)';
@@ -143,11 +193,54 @@ export default function DashboardV33() {
               e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.boxShadow = '0 10px 40px rgba(6,182,212,0.15)';
             }}>
+              <div style={{ fontSize: '32px', marginBottom: '8px', lineHeight: '1' }}>{m.icon}</div>
               <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '12px' }}>{m.label}</div>
-              <div style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '10px', color: '#0f172a', lineHeight: '1.1' }}>{m.value}</div>
+              <div style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '10px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none' }}>{m.value}</div>
               <div style={{ fontSize: '15px', color: m.color, fontWeight: '800' }}>{m.change}</div>
             </div>
           ))}
+        </div>
+        
+        {/* Sector Heatmap */}
+        <div style={{ 
+          marginBottom: '70px',
+          background: 'rgba(255,255,255,0.8)', 
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)', 
+          borderRadius: '20px', 
+          overflow: 'hidden',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📊 Sektör Isı Haritası</h2>
+            <div style={{ fontSize: '14px', color: '#64748b', marginTop: '8px' }}>Piyasa geneli sektörel performans analizi</div>
+          </div>
+          <div style={{ padding: '40px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+            {sectors.map((sector, idx) => (
+              <div key={idx} style={{ 
+                background: sector.change > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                border: `2px solid ${sector.color}40`,
+                borderRadius: '16px', 
+                padding: '24px',
+                transition: 'all 0.3s',
+                cursor: 'pointer'
+              }} onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.05)';
+                e.currentTarget.style.boxShadow = `0 8px 30px ${sector.color}30`;
+              }} onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}>
+                <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#0f172a' }}>{sector.name}</div>
+                <div style={{ fontSize: '32px', fontWeight: 'bold', color: sector.color, lineHeight: '1' }}>
+                  {sector.change > 0 ? '↑' : '↓'} {Math.abs(sector.change)}%
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
+                  {sector.change > 0 ? 'Yükseliş trendi' : 'Düşüş trendi'}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* ALL FEATURES BY CATEGORY */}
@@ -363,8 +456,12 @@ export default function DashboardV33() {
                         fontWeight: 'bold',
                         background: s.signal === 'BUY' ? 'linear-gradient(135deg, #dcfce7, #86efac)' : s.signal === 'SELL' ? 'linear-gradient(135deg, #fee2e2, #fca5a5)' : '#f3f4f6',
                         color: s.signal === 'BUY' ? '#16a34a' : s.signal === 'SELL' ? '#dc2626' : '#6b7280',
-                        boxShadow: s.signal === 'BUY' ? '0 4px 12px rgba(22,163,74,0.3)' : s.signal === 'SELL' ? '0 4px 12px rgba(220,38,38,0.3)' : 'none'
+                        boxShadow: s.signal === 'BUY' ? '0 4px 12px rgba(22,163,74,0.3)' : s.signal === 'SELL' ? '0 4px 12px rgba(220,38,38,0.3)' : 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '6px'
                       }} aria-label={`Sinyal tipi: ${s.signal}`}>
+                        <span>{s.signal === 'BUY' ? '🟢' : s.signal === 'SELL' ? '🔴' : '🟡'}</span>
                         {s.signal}
                       </span>
                     </td>
@@ -495,5 +592,6 @@ export default function DashboardV33() {
         </div>
       </main>
     </div>
+    </>
   );
 }
