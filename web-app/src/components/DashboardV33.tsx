@@ -119,20 +119,22 @@ export default function DashboardV33() {
   
   // WebSocket connection for realtime data
   const { connected, error, lastMessage } = useWebSocket({
-    url: 'ws://localhost:8080/signals/stream',
+    url: 'ws://localhost:8081/ws',
     onMessage: (data) => {
       console.log('📊 Realtime data received:', data);
-      if (data.signal) {
+      if (data.signals && data.signals.length > 0) {
         setRealtimeUpdates(prev => ({
           signals: prev.signals + 1,
           risk: prev.risk
         }));
-        setAlerts(prev => [...prev, {
-          id: `signal-${Date.now()}`,
-          message: `🔔 ${data.symbol}: ${data.signal} sinyali (Güven: ${(data.confidence * 100).toFixed(0)}%)`,
-          type: 'success',
-          timestamp: new Date()
-        }]);
+        data.signals.forEach((signal: any) => {
+          setAlerts(prev => [...prev, {
+            id: `signal-${Date.now()}-${signal.symbol}`,
+            message: `🔔 ${signal.symbol}: ${signal.signal} sinyali (Güven: ${(signal.confidence * 100).toFixed(0)}%)`,
+            type: 'success',
+            timestamp: new Date()
+          }]);
+        });
       }
     }
   });
