@@ -362,7 +362,7 @@ export default function DashboardV33() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="TraderGPT ile konuş"
             >
-              🤖 GPT
+              <span aria-hidden="true">🤖</span> GPT
             </button>
             <button 
               onClick={() => setShowAdvancedViz(!showAdvancedViz)}
@@ -386,7 +386,7 @@ export default function DashboardV33() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="Gelişmiş görselleştirme hub"
             >
-              📊 Viz
+              <span aria-hidden="true">📊</span> Viz
             </button>
             <button 
               onClick={() => setShowAIConfidence(!showAIConfidence)}
@@ -410,7 +410,7 @@ export default function DashboardV33() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="AI güven açıklama"
             >
-              🧠 AI
+              <span aria-hidden="true">🧠</span> AI
             </button>
             <button 
               onClick={() => setShowCognitiveAI(!showCognitiveAI)}
@@ -551,7 +551,7 @@ export default function DashboardV33() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="İzleme listesini aç"
             >
-              📋 Watchlist
+              <span aria-hidden="true">📋</span> Watchlist
             </button>
             <button 
               onClick={() => setShowAdmin(!showAdmin)}
@@ -571,7 +571,7 @@ export default function DashboardV33() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="Admin paneline git"
             >
-              ⚙️ Admin
+              <span aria-hidden="true">⚙️</span> Admin
             </button>
             <button 
               style={{ 
@@ -902,7 +902,7 @@ export default function DashboardV33() {
                 }}
                 aria-label="Sinyal filtrelerini aç"
               >
-                🔽 Filtrele
+                <span aria-hidden="true">🔽</span> Filtrele
             </button>
               <button 
                 onClick={() => setFilterAccuracy(filterAccuracy === 80 ? null : 80)}
