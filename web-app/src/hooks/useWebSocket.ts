@@ -38,6 +38,12 @@ export function useWebSocket({
   const pingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const connect = useCallback(() => {
+    // SAFETY: Don't connect if URL is empty or invalid
+    if (!url || url.trim() === '') {
+      console.warn('⚠️ WebSocket: URL is empty, skipping connection');
+      return;
+    }
+    
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }

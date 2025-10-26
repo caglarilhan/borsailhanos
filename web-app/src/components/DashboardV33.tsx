@@ -131,16 +131,21 @@ export default function DashboardV33() {
     alert('💬 Geri bildirim formu açılacak...');
   };
   
-  // WebSocket connection for realtime data
+  // WebSocket connection for realtime data - SAFE
   const [wsUrl, setWsUrl] = useState<string>('');
+  const [shouldConnectWS, setShouldConnectWS] = useState(false);
   
   useEffect(() => {
     // Set WebSocket URL after mount to prevent SSR issues
-    setWsUrl('ws://localhost:8081/ws');
+    if (typeof window !== 'undefined') {
+      const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081/ws';
+      setWsUrl(url);
+      setShouldConnectWS(true);
+    }
   }, []);
   
   const { connected, error, lastMessage } = useWebSocket({
-    url: wsUrl,
+    url: shouldConnectWS ? wsUrl : '', // Empty URL prevents connection
     onMessage: (data) => {
       if (!data) return;
       console.log('📊 Realtime data received:', data);
