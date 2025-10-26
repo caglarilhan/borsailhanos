@@ -6,8 +6,13 @@ import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContai
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [visibleSignals, setVisibleSignals] = useState(5);
-  const [lastUpdate, setLastUpdate] = useState(new Date());
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
   const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
   const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
@@ -296,9 +301,9 @@ export default function DashboardV33() {
                     Güncelleniyor...
                   </span>
                 ) : (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }} suppressHydrationWarning>
                     <div style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%', animation: 'pulse 2s infinite' }}></div>
-                    Canlı • {lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    Canlı • {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                     {realtimeUpdates.signals > 0 && (
                       <span style={{ fontSize: '11px', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '8px', fontWeight: '600', color: '#10b981' }}>
                         +{realtimeUpdates.signals} sinyal
@@ -1256,7 +1261,7 @@ export default function DashboardV33() {
                 <span style={{ fontWeight: '700', color: '#ef4444' }}>Ortalama Risk:</span> Düşük
               </div>
               <div>
-                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {new Date().toLocaleTimeString('tr-TR')}
+                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {mounted && new Date().toLocaleTimeString('tr-TR')}
               </div>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8' }}>
