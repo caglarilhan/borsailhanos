@@ -9,52 +9,18 @@ const nextConfig = {
 
   // Image optimization
   images: {
-    domains: ['localhost', 'api.borsailhanos.com'],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'localhost' },
+      { protocol: 'https', hostname: 'api.borsailhanos.com' },
+    ],
     formats: ['image/webp', 'image/avif'],
     minimumCacheTTL: 60,
   },
 
-  // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
-    // Production optimizations
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-            common: {
-              name: 'common',
-              minChunks: 2,
-              chunks: 'all',
-              enforce: true,
-            },
-          },
-        },
-      };
-    }
-
-    // Bundle analyzer (optional)
-    if (process.env.ANALYZE === 'true') {
-      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          openAnalyzer: false,
-        })
-      );
-    }
-
-    return config;
-  },
-
-  // Output configuration
-  output: 'standalone',
+  // Webpack optimizations (migrated to Turbopack in Next.js 16)
+  // Removed webpack config for Turbopack compatibility
+  
+  // Output configuration (standalone removed for Next.js 16 compatibility)
 
   // Environment variables
   env: {
@@ -134,12 +100,8 @@ const nextConfig = {
     ignoreBuildErrors: true,
   },
 
-  // ESLint configuration
-  eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
-  },
+  // ESLint configuration (moved to next.config.ts or removed in Next.js 16)
+  // No longer supported in next.config.js
 
   // Compression
   compress: true,
@@ -152,6 +114,12 @@ const nextConfig = {
 
   // Trailing slash
   trailingSlash: false,
+
+  // Turbopack configuration (Next.js 16)
+  // Set empty object to use Turbopack with webpack config
+  experimental: {
+    turbo: {},
+  },
 };
 
 module.exports = nextConfig;
