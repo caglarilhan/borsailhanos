@@ -27,6 +27,12 @@ fastapi>=0.100.0
 uvicorn>=0.23.0
 pydantic>=2.0.0
 
+# V3.2: Institutional Grade Modules
+sentry-sdk>=1.35.0
+cryptography>=41.0.0
+qrcode[pil]>=7.4.2
+pytz>=2023.3
+
 # Firebase (opsiyonel)
 firebase-admin>=6.5.0
 

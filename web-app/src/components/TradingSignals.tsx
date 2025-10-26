@@ -87,7 +87,7 @@ const TradingSignals: React.FC<TradingSignalsProps> = (props) => {
   const fetchRealSignals = async () => {
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:8000/api/signals');
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/signals`);
       if (response.ok) {
         const backendSignals = await response.json();
         setAllSignals(backendSignals);

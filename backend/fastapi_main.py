@@ -135,6 +135,34 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# V3.2: Sentry Integration
+try:
+    from backend.services.sentry_client import sentry_client
+    if sentry_client.sentry_enabled:
+        logger.info("✅ Sentry error tracking enabled")
+except ImportError as e:
+    logger.warning(f"⚠️ Sentry not available: {e}")
+
+# V3.2: Global exception handler with Sentry
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler with Sentry"""
+    try:
+        from backend.services.sentry_client import sentry_client
+        if sentry_client.sentry_enabled:
+            sentry_client.capture_error(exc, context={
+                'path': str(request.url),
+                'method': request.method
+            })
+    except ImportError:
+        pass
+    
+    from fastapi.responses import JSONResponse
+    return JSONResponse(
+        status_code=500,
+        content={"error": str(exc), "detail": "Internal server error"}
+    )
+
 # FastAPI app
 app = FastAPI(
     title="BIST AI Smart Trader API",
@@ -161,14 +189,36 @@ SUPPORTED_MARKETS = {
 # Rate limiting middleware
 app.add_middleware(APIRateLimitMiddleware)
 
-# CORS middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["http://localhost:8001", "http://localhost:3000", "https://localhost"],  # Restrict origins
-    allow_credentials=True,
-    allow_methods=["GET", "POST"],  # Restrict methods
-    allow_headers=["*"],
-)
+# V3.2: CORS Whitelist (Institutional Grade)
+try:
+    from backend.middleware.cors_whitelist import cors_whitelist
+    # Replace wildcard CORS with whitelist
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=cors_whitelist.allowed_origins,
+        allow_credentials=True,
+        allow_methods=cors_whitelist.allowed_methods,
+        allow_headers=cors_whitelist.allowed_headers,
+        expose_headers=[
+            "X-RateLimit-Limit",
+            "X-RateLimit-Remaining",
+            "X-RateLimit-Reset",
+            "X-Request-ID",
+            "X-Response-Time"
+        ],
+        max_age=3600
+    )
+    logger.info("✅ CORS Whitelist enabled")
+except ImportError as e:
+    logger.warning(f"⚠️ CORS Whitelist not available: {e}")
+    # Fallback to basic CORS
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:8001", "http://localhost:3000", "https://localhost"],
+        allow_credentials=True,
+        allow_methods=["GET", "POST"],
+        allow_headers=["*"],
+    )
 
 # Metrics middleware
 @app.middleware("http")

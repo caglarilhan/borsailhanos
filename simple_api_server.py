@@ -357,7 +357,7 @@ async def predict_single_stock(
             "prediction": prediction,
             "timestamp": datetime.now().isoformat()
         }
-    except Exception as e:
+        except Exception as e:
         return {"error": str(e)}
 
 @app.get("/api/bist100/models/status")
@@ -383,7 +383,7 @@ async def get_prediction_history(
             return {"error": "BIST100 predictor not available"}
         
         history = await bist100_predictor.get_prediction_history(symbol, hours)
-        return {
+    return {
             "history": history,
             "symbol": symbol,
             "hours": hours,
@@ -467,7 +467,7 @@ async def place_order_all_brokers(request: dict):
             return {"error": "Symbol and quantity are required"}
         
         results = await broker_manager.place_order_all_brokers(symbol, quantity, order_type, price)
-        return {
+            return {
             "orders": results,
             "timestamp": datetime.now().isoformat()
         }
@@ -529,7 +529,7 @@ async def get_crypto_predictions(
         # Sort by confidence
         predictions.sort(key=lambda x: x.get("confidence", 0), reverse=True)
         
-        return {
+    return {
             "predictions": predictions,
             "timeframe": timeframe,
             "count": len(predictions),

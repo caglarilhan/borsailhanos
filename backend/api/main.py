@@ -1,8 +1,18 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Depends, Request
 from typing import List, Optional
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 import json
+
+# V3.2 Institutional Grade Modules
+try:
+    from backend.services.sentry_client import sentry_client
+    from backend.services.two_factor_auth import two_factor_auth
+    from backend.services.api_key_rotation import api_key_rotation
+    V32_MODULES_AVAILABLE = True
+except ImportError as e:
+    print(f"⚠️ V3.2 modules not available: {e}")
+    V32_MODULES_AVAILABLE = False
 
 # Local imports
 try:
@@ -38,7 +48,26 @@ except ImportError as e:
     get_signals_cache = None
     ask_service = None
 
-app = FastAPI(title="BIST AI Smart Trader API", version="2.0.0")
+app = FastAPI(title="BIST AI Smart Trader API", version="3.2.0")
+
+# V3.2: Sentry Integration
+if V32_MODULES_AVAILABLE:
+    try:
+        # Sentry is already initialized globally in sentry_client
+        print("✅ Sentry error tracking enabled")
+    except Exception as e:
+        print(f"⚠️ Sentry initialization: {e}")
+
+# V3.2: Global exception handler
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Global exception handler with Sentry"""
+    if V32_MODULES_AVAILABLE:
+        sentry_client.capture_error(exc, context={
+            'path': str(request.url),
+            'method': request.method
+        })
+    raise HTTPException(status_code=500, detail=str(exc))
 
 # Advanced AI endpoints
 try:
@@ -148,6 +177,69 @@ async def stream_signals():
     
     return StreamingResponse(generate(), media_type="text/plain")
 
+@app.get("/api/market/overview")
+async def get_market_overview():
+    """Get market overview data"""
+    try:
+        # Mock market data for now
+        markets = [
+            {"symbol": "TUPRS", "price": 180.30, "change": 3.1, "volume": 12500000, "sector": "Holding"},
+            {"symbol": "THYAO", "price": 245.50, "change": 2.3, "volume": 8900000, "sector": "Bankacılık"},
+            {"symbol": "SISE", "price": 32.50, "change": -1.2, "volume": 15200000, "sector": "Sanayi"},
+            {"symbol": "EREGL", "price": 55.80, "change": 1.8, "volume": 9800000, "sector": "Sanayi"},
+            {"symbol": "ASELS", "price": 48.20, "change": -1.8, "volume": 7600000, "sector": "Savunma"}
+        ]
+        return {"markets": markets, "timestamp": "2025-10-25T13:35:00Z"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/signals")
+async def get_signals():
+    """Get AI trading signals"""
+    try:
+        # Mock signals data for now
+        signals = [
+            {
+                "symbol": "THYAO",
+                "signal": "BUY",
+                "confidence": 85.2,
+                "price": 245.50,
+                "change": 2.3,
+                "timestamp": "2025-10-25T13:35:00Z",
+                "xaiExplanation": "Güçlü teknik formasyon ve pozitif momentum sinyalleri",
+                "confluenceScore": 92,
+                "marketRegime": "Risk-On",
+                "sentimentScore": 15.3
+            },
+            {
+                "symbol": "TUPRS",
+                "signal": "SELL",
+                "confidence": 78.7,
+                "price": 180.30,
+                "change": -1.8,
+                "timestamp": "2025-10-25T13:35:00Z",
+                "xaiExplanation": "Direnç seviyesinde satış baskısı tespit edildi",
+                "confluenceScore": 88,
+                "marketRegime": "Risk-Off",
+                "sentimentScore": -8.2
+            },
+            {
+                "symbol": "ASELS",
+                "signal": "HOLD",
+                "confidence": 72.1,
+                "price": 48.20,
+                "change": 0.5,
+                "timestamp": "2025-10-25T13:35:00Z",
+                "xaiExplanation": "Piyasa belirsizliği nedeniyle bekleme pozisyonu",
+                "confluenceScore": 75,
+                "marketRegime": "Neutral",
+                "sentimentScore": 2.1
+            }
+        ]
+        return {"signals": signals, "timestamp": "2025-10-25T13:35:00Z"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/ask")
 async def ask_question(request: AskRequest):
     """Ask a question to the AI assistant"""
@@ -162,6 +254,117 @@ async def ask_question(request: AskRequest):
             return {"question": request.question, "answer": "AI service not available"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+# V3.2: Two-Factor Authentication Endpoints
+if V32_MODULES_AVAILABLE:
+    class TwoFactorSetup(BaseModel):
+        user_id: str
+        user_email: str
+    
+    class TwoFactorVerify(BaseModel):
+        user_id: str
+        code: str
+    
+    @app.post("/api/v3.2/auth/2fa/setup")
+    async def setup_2fa(setup: TwoFactorSetup):
+        """Setup 2FA for a user"""
+        try:
+            result = two_factor_auth.setup_2fa(setup.user_id, setup.user_email)
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/v3.2/auth/2fa/verify")
+    async def verify_2fa(verify: TwoFactorVerify):
+        """Verify 2FA code"""
+        try:
+            is_valid = two_factor_auth.verify_2fa(verify.user_id, verify.code)
+            return {
+                "valid": is_valid,
+                "message": "2FA verified" if is_valid else "Invalid code"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/v3.2/auth/2fa/disable")
+    async def disable_2fa(user_id: str):
+        """Disable 2FA for a user"""
+        try:
+            success = two_factor_auth.disable_2fa(user_id)
+            return {"success": success, "message": "2FA disabled" if success else "Failed to disable"}
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/v3.2/auth/2fa/status")
+    async def get_2fa_status(user_id: str):
+        """Get 2FA status for a user"""
+        try:
+            is_enabled = two_factor_auth.is_2fa_enabled(user_id)
+            stats = two_factor_auth.get_stats()
+            return {
+                "user_id": user_id,
+                "2fa_enabled": is_enabled,
+                "stats": stats
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    # API Key Management Endpoints
+    @app.post("/api/v3.2/auth/api-key/create")
+    async def create_api_key(user_id: str, permissions: List[str] = ["read"]):
+        """Create a new API key"""
+        try:
+            key = api_key_rotation.create_api_key(user_id, permissions)
+            return {
+                "user_id": user_id,
+                "api_key": key,
+                "message": "API key created successfully"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/v3.2/auth/api-key/rotate")
+    async def rotate_api_key(user_id: str):
+        """Rotate API key for a user"""
+        try:
+            new_key = api_key_rotation.rotate_api_key(user_id)
+            return {
+                "user_id": user_id,
+                "new_api_key": new_key,
+                "message": "API key rotated successfully"
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/v3.2/auth/api-key/verify")
+    async def verify_api_key(api_key: str):
+        """Verify an API key"""
+        try:
+            result = api_key_rotation.verify_api_key(api_key)
+            return {
+                "valid": result is not None,
+                "result": result
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.get("/api/v3.2/auth/api-key/stats")
+    async def get_api_key_stats():
+        """Get API key rotation statistics"""
+        try:
+            stats = api_key_rotation.get_stats()
+            return stats
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+    
+    @app.post("/api/v3.2/auth/api-key/auto-rotate")
+    async def auto_rotate_keys():
+        """Automatically rotate keys that need rotation"""
+        try:
+            result = api_key_rotation.auto_rotate_keys()
+            return result
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,21 +1,12 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({ 
   subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "BIST AI Smart Trader",
-  description: "Yapay zeka destekli BIST hisse senedi analiz ve tahmin platformu",
-};
 
 export default function RootLayout({
   children,
@@ -23,14 +14,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning={true}>
+    <html lang="tr" className={inter.variable} suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-graphite-900 text-gray-200`}
-        suppressHydrationWarning={true}
+        className="antialiased font-inter"
+        suppressHydrationWarning
       >
-        <div suppressHydrationWarning={true}>
-          {children}
-        </div>
+        {children}
       </body>
     </html>
   );
