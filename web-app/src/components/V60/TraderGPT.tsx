@@ -46,7 +46,7 @@ export default function TraderGPT() {
     // Simulate AI response
     setTimeout(() => {
       const responses: Record<string, string> = {
-        'bugün hangi hisseleri izlemeliyim': 'Bugün özellikle THYAO, AKBNK ve EREGL\'i izlemenizi öneririm. AI sinyallerine göre: THYAO'da güçlü momentum var (RSI 71). AKBNK\'da son 3 günde %5 pozitif trend görülüyor. EREGL ise destek seviyesine yakın, kısa vade fırsat olabilir.',
+        'bugün hangi hisseleri izlemeliyim': 'Bugün özellikle THYAO, AKBNK ve EREGL\'i izlemenizi öneririm. AI sinyallerine göre: THYAO\'da güçlü momentum var (RSI 71). AKBNK\'da son 3 günde %5 pozitif trend görülüyor. EREGL ise destek seviyesine yakın, kısa vade fırsat olabilir.',
         'risk': 'Portföyünüzdeki risk seviyesi şu anda DÜŞÜK (CVaR: %3.2). En yüksek risk taşıyan pozisyon THYAO (%40 ağırlık). Önerim: Ağırlığı AKBNK ve EREGL\'e dağıtarak riski dengeliyin. Hedging için BIST30 short pozisyonu ekleyebilirsiniz.',
         'portfolio': 'Mevcut portföyünüz (THYAO %40, AKBNK %30, EREGL %30) için optimal ağırlık dağılımı: THYAO %35, AKBNK %35, EREGL %30. Bu dağılım ile Sharpe ratio 1.85\'e yükselir ve beklenen getiri %18\'dir.',
         'al sat': 'AI sinyallerine göre: THYAO için BUY sinyali mevcut (%85 güven). Hedef: 255 ₺, Stop-Loss: 240 ₺. AKBNK için BEKLE sinyali. EREGL için SELL sinyali (%72 güven). Hedef: 45 ₺, Stop-Loss: 48 ₺.'
