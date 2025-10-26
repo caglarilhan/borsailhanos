@@ -289,7 +289,7 @@ export default function DashboardV33() {
             <div>
               <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
               <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                v4.7 Professional Edition
+                v4.9 Professional Edition
                 {isRefreshing ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#06b6d4' }}>
                     <div style={{ width: '8px', height: '8px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
@@ -1062,21 +1062,22 @@ export default function DashboardV33() {
                 <span style={{ fontWeight: '700', color: '#10b981' }}>Son Değer:</span> ₺110.500
               </div>
             </div>
-            <button 
-              onClick={() => setPortfolioRebalance(!portfolioRebalance)}
-              style={{ 
-                padding: '10px 20px', 
-                background: portfolioRebalance ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, #8b5cf6, #a78bfa)', 
-                color: portfolioRebalance ? '#8b5cf6' : '#fff', 
-                border: '1px solid rgba(139,92,246,0.3)', 
-                borderRadius: '10px', 
-                fontSize: '13px', 
-                fontWeight: '700', 
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }}
-              onMouseEnter={(e) => {
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button 
+                onClick={() => setPortfolioRebalance(!portfolioRebalance)}
+                style={{ 
+                  padding: '10px 20px', 
+                  background: portfolioRebalance ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, #8b5cf6, #a78bfa)', 
+                  color: portfolioRebalance ? '#8b5cf6' : '#fff', 
+                  border: '1px solid rgba(139,92,246,0.3)', 
+                  borderRadius: '10px', 
+                  fontSize: '13px', 
+                  fontWeight: '700', 
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }}
+                onMouseEnter={(e) => {
                 if (!portfolioRebalance) {
                   e.currentTarget.style.transform = 'translateY(-2px)';
                   e.currentTarget.style.boxShadow = '0 6px 20px rgba(139,92,246,0.4)';
@@ -1088,7 +1089,36 @@ export default function DashboardV33() {
               }}
               aria-label="Portföy rebalance'ını yeniden hesapla"
             >
-              {portfolioRebalance ? '✓ Yeniden Hesaplandı' : '🔄 Rebalance (5 gün)'}
+              {portfolioRebalance ? '✓ Yeniden Hesaplandı' : '🔄 Rebalance'}
+            </button>
+            <button 
+              onClick={() => {
+                setPortfolioRebalance(true);
+                setTimeout(() => setPortfolioRebalance(false), 2000);
+              }}
+              style={{ 
+                padding: '10px 20px', 
+                background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px', 
+                fontSize: '13px', 
+                fontWeight: '700', 
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-2px)';
+                e.currentTarget.style.boxShadow = '0 6px 20px rgba(6,182,212,0.4)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow = 'none';
+              }}
+              aria-label="Portföy 5 gün rebalance"
+            >
+              📈 5 Gün Tahmini
             </button>
           </div>
         </div>
@@ -1318,7 +1348,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              BIST AI Smart Trader v4.7 Professional Edition
+              BIST AI Smart Trader v4.9 Professional Edition
             </div>
           </div>
         </div>
