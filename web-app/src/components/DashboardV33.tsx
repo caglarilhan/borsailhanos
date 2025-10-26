@@ -35,9 +35,23 @@ export default function DashboardV33() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [portfolioData, setPortfolioData] = useState<any[]>([]);
   
   useEffect(() => {
     setMounted(true);
+    // Initialize chart data after mount (prevents hydration error)
+    setChartData(Array.from({ length: 30 }, (_, i) => ({
+      day: `Gün ${i + 1}`,
+      actual: 240 + Math.random() * 20 - 10,
+      predicted: 242 + i * 0.8 + Math.random() * 15 - 7,
+      confidence: 85 + Math.random() * 10
+    })));
+    setPortfolioData(Array.from({ length: 30 }, (_, i) => ({
+      day: `Gün ${i + 1}`,
+      value: 100000 + i * 350 + Math.random() * 200 - 100,
+      profit: i * 350
+    })));
   }, []);
   const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
   const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
@@ -236,14 +250,6 @@ export default function DashboardV33() {
     return () => clearInterval(sentimentInterval);
   }, []);
   
-  // Sample chart data (30 days)
-  const chartData = Array.from({ length: 30 }, (_, i) => ({
-    day: `Gün ${i + 1}`,
-    actual: 240 + Math.random() * 20 - 10,
-    predicted: 242 + i * 0.8 + Math.random() * 15 - 7,
-    confidence: 85 + Math.random() * 10
-  }));
-  
   // Sector Heatmap Data with sub-sectors
   const sectors = [
     { name: 'Sanayi', change: 2.3, color: '#10b981', subSectors: [{ name: 'Makine', change: 3.2 }, { name: 'Enerji', change: 1.5 }] },
@@ -269,13 +275,6 @@ export default function DashboardV33() {
     { stock1: 'AKBNK', stock2: 'GARAN', correlation: 0.85 },
     { stock1: 'EREGL', stock2: 'SISE', correlation: 0.86 },
   ];
-  
-  // Portfolio Simulator Data (30 days)
-  const portfolioData = Array.from({ length: 30 }, (_, i) => ({
-    day: `Gün ${i + 1}`,
-    value: 100000 + i * 350 + Math.random() * 200 - 100,
-    profit: i * 350
-  }));
   
   // FinBERT Türkçe Sentiment Data (from state)
   const sentimentAnalysis = sentimentData || [];
