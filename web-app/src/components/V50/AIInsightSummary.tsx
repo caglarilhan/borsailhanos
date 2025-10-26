@@ -18,8 +18,10 @@ export default function AIInsightSummary() {
   
   useEffect(() => {
     setMounted(true);
-    setTimeString(summary.lastUpdate.toLocaleTimeString('tr-TR'));
-  }, [summary.lastUpdate]);
+    if (summary?.lastUpdate) {
+      setTimeString(summary.lastUpdate.toLocaleTimeString('tr-TR'));
+    }
+  }, [summary?.lastUpdate]);
 
   return (
     <motion.div
@@ -38,7 +40,14 @@ export default function AIInsightSummary() {
           En güçlü sektör: <strong className="text-cyan-400">{summary.strongestSector}</strong> (+{summary.sectorChange}%).
         </p>
         <p className="text-gray-300">
-          AI, <strong className="text-purple-400">{summary.topSignals.join(', ')}</strong> için yükseliş sinyali tespit etti.
+          AI,{' '}
+          {summary?.topSignals?.map((sig, i) => (
+            <React.Fragment key={i}>
+              <strong className="text-purple-400">{sig}</strong>
+              {i < summary.topSignals.length - 1 ? ' ve ' : ''}
+            </React.Fragment>
+          ))}{' '}
+          için yükseliş sinyali tespit etti.
         </p>
         <p className="text-gray-400 text-xs flex items-center gap-2">
           <Activity className="w-4 h-4" />
