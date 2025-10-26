@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Brain, TrendingUp, Activity, AlertCircle } from 'lucide-react';
+import { useSSRFixer } from '@/hooks/useSSRFixer';
 
 interface SummaryData {
   marketSentiment: number;
@@ -13,6 +14,7 @@ interface SummaryData {
 }
 
 export default function AIInsightSummary() {
+  const ready = useSSRFixer(); // Hydration koruması
   const [summary, setSummary] = useState<SummaryData>({
     marketSentiment: 71,
     strongestSector: 'Teknoloji',
@@ -25,11 +27,15 @@ export default function AIInsightSummary() {
   const [timeString, setTimeString] = useState<string>('');
   
   useEffect(() => {
+    if (!ready) return;
     setMounted(true);
     if (summary?.lastUpdate) {
       setTimeString(summary.lastUpdate.toLocaleTimeString('tr-TR'));
     }
-  }, [summary?.lastUpdate]);
+  }, [ready, summary?.lastUpdate]);
+  
+  // SSR'de hiçbir şey render etme
+  if (!ready) return null;
 
   return (
     <motion.div
