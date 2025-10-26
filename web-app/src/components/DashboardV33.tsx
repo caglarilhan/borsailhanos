@@ -621,6 +621,19 @@ export default function DashboardV33() {
             </div>
           ))}
         </div>
+
+        {/* AI Insight Summary - Metrics altına eklendi */}
+        <div style={{ 
+          marginBottom: '40px',
+          padding: '32px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <AIInsightSummary />
+        </div>
         
         {/* Sector Heatmap */}
         <div style={{ 
@@ -1010,6 +1023,32 @@ export default function DashboardV33() {
           )}
         </div>
 
+        {/* AI Confidence Meter - Signals tablosunun altına eklendi */}
+        <div style={{ 
+          marginTop: '40px',
+          padding: '32px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <AIConfidenceMeter />
+        </div>
+
+        {/* Realtime Alerts - Signals tablosunun altına eklendi */}
+        <div style={{ 
+          marginTop: '40px',
+          padding: '32px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <RealtimeAlerts />
+        </div>
+        
         {/* AI Prediction Chart */}
         <div style={{ 
           marginTop: '60px',
