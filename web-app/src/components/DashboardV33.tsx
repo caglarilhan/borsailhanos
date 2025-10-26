@@ -132,22 +132,32 @@ export default function DashboardV33() {
   };
   
   // WebSocket connection for realtime data
+  const [wsUrl, setWsUrl] = useState<string>('');
+  
+  useEffect(() => {
+    // Set WebSocket URL after mount to prevent SSR issues
+    setWsUrl('ws://localhost:8081/ws');
+  }, []);
+  
   const { connected, error, lastMessage } = useWebSocket({
-    url: 'ws://localhost:8081/ws',
+    url: wsUrl,
     onMessage: (data) => {
+      if (!data) return;
       console.log('📊 Realtime data received:', data);
-      if (data.signals && data.signals.length > 0) {
+      if (data.signals && Array.isArray(data.signals) && data.signals.length > 0) {
         setRealtimeUpdates(prev => ({
           signals: prev.signals + 1,
           risk: prev.risk
         }));
         data.signals.forEach((signal: any) => {
-          setAlerts(prev => [...prev, {
-            id: `signal-${Date.now()}-${signal.symbol}`,
-            message: `🔔 ${signal.symbol}: ${signal.signal} sinyali (Güven: ${(signal.confidence * 100).toFixed(0)}%)`,
-            type: 'success',
-            timestamp: new Date()
-          }]);
+          if (signal && signal.symbol) {
+            setAlerts(prev => [...prev, {
+              id: `signal-${Date.now()}-${signal.symbol}`,
+              message: `🔔 ${signal.symbol}: ${signal.signal} sinyali (Güven: ${(signal.confidence * 100).toFixed(0)}%)`,
+              type: 'success',
+              timestamp: new Date()
+            }]);
+          }
         });
       }
     }
@@ -1153,8 +1163,9 @@ export default function DashboardV33() {
             </div>
           </div>
           <div style={{ padding: '16px', aspectRatio: '16/9' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            {chartData && chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis 
                   dataKey="day" 
@@ -1204,6 +1215,11 @@ export default function DashboardV33() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: '13px' }}>
+                📊 Grafik yükleniyor...
+              </div>
+            )}
           </div>
           <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '13px', color: '#64748b' }}>
@@ -1325,8 +1341,9 @@ export default function DashboardV33() {
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>AI sinyalleriyle 30 günlük portföy performansı simülasyonu</div>
           </div>
           <div style={{ padding: '16px', aspectRatio: '16/9' }}>
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={portfolioData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+            {portfolioData && portfolioData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={portfolioData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
                 <XAxis 
                   dataKey="day" 
@@ -1367,6 +1384,11 @@ export default function DashboardV33() {
                 />
               </LineChart>
             </ResponsiveContainer>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: '13px' }}>
+                📊 Grafik yükleniyor...
+              </div>
+            )}
           </div>
           <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
