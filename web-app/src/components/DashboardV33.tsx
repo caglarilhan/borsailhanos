@@ -18,6 +18,7 @@ import FeedbackLoop from './V60/FeedbackLoop';
 import VolatilityModel from './V60/VolatilityModel';
 import MetaModelEngine from './V60/MetaModelEngine';
 import SubscriptionTiers from './V60/SubscriptionTiers';
+import StrategyBuilder from './V60/StrategyBuilder';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -51,6 +52,7 @@ export default function DashboardV33() {
   const [showVolatilityModel, setShowVolatilityModel] = useState(false);
   const [showMetaModel, setShowMetaModel] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
+  const [showStrategyBuilder, setShowStrategyBuilder] = useState(false);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -512,6 +514,30 @@ export default function DashboardV33() {
               aria-label="Abonelik planları"
             >
               💎 Planlar
+            </button>
+            <button 
+              onClick={() => setShowStrategyBuilder(!showStrategyBuilder)}
+              style={{ 
+                padding: '12px 24px', 
+                background: showStrategyBuilder ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #059669)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '14px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(16,185,129,0.4)',
+                transition: 'all 0.2s',
+                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="Strateji oluştur"
+            >
+              🎯 Strateji Oluştur
             </button>
             <button 
               style={{ 
@@ -1883,6 +1909,54 @@ export default function DashboardV33() {
               border: '1px solid rgba(251,191,36,0.2)'
             }}>
               <SubscriptionTiers />
+            </div>
+          </div>
+        )}
+
+        {/* Strategy Builder */}
+        {showStrategyBuilder && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(16,185,129,0.3)',
+            boxShadow: '0 20px 60px rgba(16,185,129,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  🎯 Strateji Oluşturucu
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  5 adımda özel yatırım stratejisi oluştur
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowStrategyBuilder(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+            </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(16,185,129,0.2)'
+            }}>
+              <StrategyBuilder />
             </div>
           </div>
         )}
