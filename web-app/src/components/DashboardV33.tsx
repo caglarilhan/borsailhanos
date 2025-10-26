@@ -18,6 +18,41 @@ export default function DashboardV33() {
   const [portfolioRebalance, setPortfolioRebalance] = useState(false);
   const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
+  const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
+  
+  // Initialize sentiment data
+  useEffect(() => {
+    setSentimentData([
+      { symbol: 'THYAO', sentiment: 82, positive: 68, negative: 18, neutral: 14, sources: ['Bloomberg HT', 'Anadolu Ajansı', 'Hürriyet'] },
+      { symbol: 'AKBNK', sentiment: 75, positive: 56, negative: 24, neutral: 20, sources: ['Şebnem Turhan', 'Para Dergisi'] },
+      { symbol: 'EREGL', sentiment: 88, positive: 72, negative: 10, neutral: 18, sources: ['KAP', 'Dünya'] },
+      { symbol: 'TUPRS', sentiment: 45, positive: 28, negative: 52, neutral: 20, sources: ['Bloomberg', 'Haberler.com'] },
+    ]);
+  }, []);
+  
+  // Realtime Data Fetch Simulation (15s interval)
+  useEffect(() => {
+    const realtimeInterval = setInterval(() => {
+      // Simulate realtime updates
+      setRealtimeUpdates(prev => ({
+        signals: prev.signals + Math.floor(Math.random() * 2),
+        risk: Math.random() * 0.5 - 0.25 // -0.25 to +0.25 change
+      }));
+      
+      // Add alert for new signal
+      if (Math.random() > 0.7) {
+        const newSymbol = ['AAPL', 'THYAO', 'NVDA', 'MSFT'][Math.floor(Math.random() * 4)];
+        setAlerts(prev => [...prev, {
+          id: `realtime-${Date.now()}`,
+          message: `🔔 Yeni sinyal: ${newSymbol} - AI analizi güncellendi`,
+          type: 'success',
+          timestamp: new Date()
+        }]);
+      }
+    }, 15000); // 15 seconds
+    
+    return () => clearInterval(realtimeInterval);
+  }, []);
   
   // Event-Driven AI - Bilanço takvimi
   useEffect(() => {
@@ -57,6 +92,47 @@ export default function DashboardV33() {
     }, 60000);
     
     return () => clearInterval(interval);
+  }, []);
+  
+  // Risk Engine Update Cron (10 min)
+  useEffect(() => {
+    const riskInterval = setInterval(() => {
+      // Simulate risk engine update with realtimeUpdates.risk
+      setMetrics(prev => prev.map(m => {
+        if (m.label === 'Ortalama Risk') {
+          const currentRisk = parseFloat(m.value.replace('%', ''));
+          const newRisk = Math.max(15, Math.min(45, currentRisk + (realtimeUpdates.risk * 2)));
+          return { 
+            ...m, 
+            value: `${newRisk.toFixed(1)}%`, 
+            color: newRisk < 20 ? '#10b981' : newRisk < 35 ? '#f59e0b' : '#ef4444',
+            pulse: newRisk > 35
+          };
+        }
+        return m;
+      }));
+      console.log('🔒 Risk Engine updated');
+    }, 600000); // 10 minutes
+    
+    return () => clearInterval(riskInterval);
+  }, [realtimeUpdates.risk]);
+  
+  // FinBERT Sentiment Update Cron (10 min)
+  useEffect(() => {
+    const sentimentInterval = setInterval(() => {
+      setSentimentData(prev => {
+        if (!prev) return null;
+        return prev.map(s => ({
+          ...s,
+          sentiment: Math.max(40, Math.min(95, s.sentiment + (Math.random() * 10 - 5))),
+          positive: Math.max(20, Math.min(80, s.positive + (Math.random() * 10 - 5))),
+          negative: Math.max(10, Math.min(50, s.negative + (Math.random() * 10 - 5))),
+        }));
+      });
+      console.log('📊 FinBERT Sentiment updated');
+    }, 600000); // 10 minutes
+    
+    return () => clearInterval(sentimentInterval);
   }, []);
   
   // Sample chart data (30 days)
@@ -100,13 +176,8 @@ export default function DashboardV33() {
     profit: i * 350
   }));
   
-  // FinBERT Türkçe Sentiment Data
-  const sentimentAnalysis = [
-    { symbol: 'THYAO', sentiment: 82, positive: 68, negative: 18, neutral: 14, sources: ['Bloomberg HT', 'Anadolu Ajansı', 'Hürriyet'] },
-    { symbol: 'AKBNK', sentiment: 75, positive: 56, negative: 24, neutral: 20, sources: ['Şebnem Turhan', 'Para Dergisi'] },
-    { symbol: 'EREGL', sentiment: 88, positive: 72, negative: 10, neutral: 18, sources: ['KAP', 'Dünya'] },
-    { symbol: 'TUPRS', sentiment: 45, positive: 28, negative: 52, neutral: 20, sources: ['Bloomberg', 'Haberler.com'] },
-  ];
+  // FinBERT Türkçe Sentiment Data (from state)
+  const sentimentAnalysis = sentimentData || [];
   
   const sentimentChartData = sentimentAnalysis.map((s, i) => ({
     symbol: s.symbol,
@@ -218,16 +289,21 @@ export default function DashboardV33() {
             <div>
               <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
               <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                v4.5 Professional Edition
+                v4.6 Professional Edition
                 {isRefreshing ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#06b6d4' }}>
                     <div style={{ width: '8px', height: '8px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
                     Güncelleniyor...
                   </span>
                 ) : (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }}>
-                    <div style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%' }}></div>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#10b981' }}>
+                    <div style={{ width: '8px', height: '8px', background: '#10b981', borderRadius: '50%', animation: 'pulse 2s infinite' }}></div>
                     Canlı • {lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    {realtimeUpdates.signals > 0 && (
+                      <span style={{ fontSize: '11px', background: 'rgba(16,185,129,0.1)', padding: '2px 8px', borderRadius: '8px', fontWeight: '600', color: '#10b981' }}>
+                        +{realtimeUpdates.signals} sinyal
+                      </span>
+                    )}
                   </span>
                 )}
               </div>
@@ -1184,7 +1260,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              BIST AI Smart Trader v4.5 Professional Edition
+              BIST AI Smart Trader v4.6 Professional Edition
             </div>
           </div>
         </div>
