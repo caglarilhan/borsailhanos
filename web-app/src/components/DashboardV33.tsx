@@ -61,6 +61,10 @@ export default function DashboardV33() {
   const [showMetaModel, setShowMetaModel] = useState(false);
   const [showSubscription, setShowSubscription] = useState(false);
   const [showStrategyBuilder, setShowStrategyBuilder] = useState(false);
+  const [showWatchlist, setShowWatchlist] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
+  const [filterAccuracy, setFilterAccuracy] = useState<number | null>(null);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -529,16 +533,17 @@ export default function DashboardV33() {
               🎯 Strateji Oluştur
             </button>
             <button 
+              onClick={() => setShowWatchlist(!showWatchlist)}
               style={{ 
                 padding: '8px 14px', 
-                background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
+                background: showWatchlist ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
                 color: '#fff', 
                 border: 'none', 
-                borderRadius: '10px',
+                borderRadius: '8px',
                 fontWeight: '700',
                 fontSize: '11px',
                 cursor: 'pointer',
-                boxShadow: '0 2px 8px rgba(6,182,212,0.4)',
+                boxShadow: '0 2px 8px rgba(6,182,212,0.3)',
                 transition: 'all 0.2s',
                 outline: 'none'
               }} 
@@ -546,15 +551,16 @@ export default function DashboardV33() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="İzleme listesini aç"
             >
-              Watchlist
+              📋 Watchlist
             </button>
             <button 
+              onClick={() => setShowAdmin(!showAdmin)}
               style={{ 
                 padding: '8px 14px', 
-                background: '#000', 
+                background: showAdmin ? '#333' : '#000', 
                 color: '#fff', 
                 border: 'none', 
-                borderRadius: '10px',
+                borderRadius: '8px',
                 fontWeight: '700',
                 fontSize: '11px',
                 cursor: 'pointer',
@@ -565,7 +571,7 @@ export default function DashboardV33() {
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="Admin paneline git"
             >
-              Admin
+              ⚙️ Admin
             </button>
             <button 
               style={{ 
@@ -880,38 +886,40 @@ export default function DashboardV33() {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button 
+                onClick={() => setShowFilter(!showFilter)}
                 style={{ 
-                  padding: '10px 20px', 
-                  background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
+                  padding: '8px 16px', 
+                  background: showFilter ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
                   color: '#fff', 
                   border: 'none', 
-                  borderRadius: '10px', 
+                  borderRadius: '8px', 
                   fontSize: '11px', 
                   fontWeight: '700', 
                   cursor: 'pointer',
-                  boxShadow: '0 2px 8px rgba(6,182,212,0.4)',
+                  boxShadow: '0 2px 8px rgba(6,182,212,0.3)',
                   transition: 'all 0.2s',
                   outline: 'none'
                 }}
                 aria-label="Sinyal filtrelerini aç"
               >
-                Filtrele
+                🔽 Filtrele
             </button>
               <button 
+                onClick={() => setFilterAccuracy(filterAccuracy === 80 ? null : 80)}
                 style={{ 
-                  padding: '10px 20px', 
-                  background: '#fff', 
-                  color: '#000', 
+                  padding: '8px 16px', 
+                  background: filterAccuracy === 80 ? '#06b6d4' : '#fff', 
+                  color: filterAccuracy === 80 ? '#fff' : '#000', 
                   border: '2px solid rgba(6,182,212,0.3)', 
-                  borderRadius: '10px', 
+                  borderRadius: '8px', 
                   fontSize: '11px', 
                   fontWeight: '700', 
                   cursor: 'pointer',
                   transition: 'all 0.2s',
                   outline: 'none'
                 }} 
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} 
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)'; e.currentTarget.style.background = '#fff'; }}
+                onMouseEnter={(e) => { if (filterAccuracy !== 80) { e.currentTarget.style.borderColor = '#06b6d4'; e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }}} 
+                onMouseLeave={(e) => { if (filterAccuracy !== 80) { e.currentTarget.style.borderColor = 'rgba(6,182,212,0.3)'; e.currentTarget.style.background = '#fff'; } }}
                 aria-label="Yüzde 80 üstü doğruluk filtrele"
               >
                 %80+ Doğruluk
