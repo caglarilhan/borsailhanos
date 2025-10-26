@@ -14,6 +14,7 @@ import GamificationSystem from './V60/GamificationSystem';
 import AdvancedVisualizationHub from './V60/AdvancedVisualizationHub';
 import AIConfidenceBreakdown from './V60/AIConfidenceBreakdown';
 import CognitiveAI from './V60/CognitiveAI';
+import FeedbackLoop from './V60/FeedbackLoop';
 
 export default function DashboardV33() {
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
@@ -43,6 +44,7 @@ export default function DashboardV33() {
   const [showAdvancedViz, setShowAdvancedViz] = useState(false);
   const [showAIConfidence, setShowAIConfidence] = useState(false);
   const [showCognitiveAI, setShowCognitiveAI] = useState(false);
+  const [showFeedbackLoop, setShowFeedbackLoop] = useState(false);
   
   // Initialize sentiment data
   useEffect(() => {
@@ -1031,7 +1033,7 @@ export default function DashboardV33() {
                 <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600' }}>💡 Açıklama:</div>
                 <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
                   Bu sinyal, yukarıdaki faktörlerin kombinasyonuna dayanmaktadır. Her faktörün AI tahminine katkısı yüzde olarak gösterilmiştir.
-                </div>
+      </div>
               </div>
             </div>
           </div>
@@ -1330,8 +1332,8 @@ export default function DashboardV33() {
               </div>
             </div>
           </div>
-        </div>
-        
+          </div>
+
         {/* Realtime Alerts */}
         {alerts.length > 0 && (
           <div style={{ 
@@ -1367,7 +1369,7 @@ export default function DashboardV33() {
                     aria-label="Bildirimi kapat"
                   >
                     ✕
-                  </button>
+            </button>
                 </div>
               </div>
             ))}
@@ -1408,7 +1410,7 @@ export default function DashboardV33() {
                 }}
               >
                 ✕ Kapat
-              </button>
+            </button>
           </div>
 
             {/* TraderGPT Content */}
@@ -1457,8 +1459,8 @@ export default function DashboardV33() {
                 }}
               >
                 ✕ Kapat
-              </button>
-            </div>
+            </button>
+          </div>
 
             <div style={{
               background: 'rgba(255,255,255,0.95)',
@@ -1467,7 +1469,7 @@ export default function DashboardV33() {
               border: '1px solid rgba(251,191,36,0.2)'
             }}>
               <GamificationSystem />
-            </div>
+        </div>
           </div>
         )}
 
@@ -1615,6 +1617,54 @@ export default function DashboardV33() {
           </div>
         )}
 
+        {/* Feedback Loop */}
+        {showFeedbackLoop && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '40px',
+            background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(139,92,246,0.3)',
+            boxShadow: '0 20px 60px rgba(139,92,246,0.2)'
+          }}>
+            <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '28px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  🔄 AI Geri Bildirim Sistemi
+                </h2>
+                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>
+                  AI'ya feedback ver • Doğruluk skorunu artır • Ödüller kazan
+            </p>
+          </div>
+              <button 
+                onClick={() => setShowFeedbackLoop(false)}
+                style={{
+                  padding: '12px 24px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '14px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+          </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '32px',
+              border: '1px solid rgba(139,92,246,0.2)'
+            }}>
+              <FeedbackLoop />
+          </div>
+          </div>
+        )}
+
         {/* Footer Stats */}
         <div style={{ 
           marginTop: '80px',
@@ -1660,6 +1710,25 @@ export default function DashboardV33() {
                 }}
               >
                 🏆 Seviye 5
+              </button>
+              <button
+                onClick={() => setShowFeedbackLoop(true)}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+              >
+                🔄 Feedback
               </button>
               <div style={{ fontSize: '12px', color: '#94a3b8' }}>
                 BIST AI Smart Trader v4.6 Professional Edition
