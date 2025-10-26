@@ -218,7 +218,7 @@ export default function DashboardV33() {
             <div>
               <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
               <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                v4.3 Professional Edition
+                v4.5 Professional Edition
                 {isRefreshing ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#06b6d4' }}>
                     <div style={{ width: '8px', height: '8px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
@@ -300,10 +300,10 @@ export default function DashboardV33() {
               e.currentTarget.style.transform = 'translateY(0)';
               e.currentTarget.style.boxShadow = '0 10px 40px rgba(6,182,212,0.15)';
             }}>
-              <div style={{ fontSize: '32px', marginBottom: '8px', lineHeight: '1' }}>{m.icon}</div>
-              <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1px', fontSize: '12px' }}>{m.label}</div>
-              <div style={{ fontSize: '48px', fontWeight: 'bold', marginBottom: '10px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none' }}>{m.value}</div>
-              <div style={{ fontSize: '15px', color: m.color, fontWeight: '800' }}>{m.change}</div>
+              <div style={{ fontSize: '32px', marginBottom: '12px', lineHeight: '1' }}>{m.icon}</div>
+              <div style={{ fontSize: '12px', color: '#475569', marginBottom: '16px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '1.5px' }}>{m.label}</div>
+              <div style={{ fontSize: '52px', fontWeight: '800', marginBottom: '12px', color: '#0f172a', lineHeight: '1.1', animation: m.pulse ? 'pulse 2s ease-in-out infinite' : 'none', letterSpacing: '-1px' }}>{m.value}</div>
+              <div style={{ fontSize: '16px', color: m.color, fontWeight: '900' }}>{m.change}</div>
             </div>
           ))}
         </div>
@@ -334,18 +334,18 @@ export default function DashboardV33() {
               }} onMouseEnter={(e) => {
                 setHoveredSector(sector.name);
                 e.currentTarget.style.transform = 'scale(1.05)';
-                e.currentTarget.style.boxShadow = `0 8px 30px ${sector.color}30`;
+                e.currentTarget.style.boxShadow = `0 12px 40px ${sector.color}40`;
               }} onMouseLeave={(e) => {
                 setHoveredSector(null);
                 e.currentTarget.style.transform = 'scale(1)';
                 e.currentTarget.style.boxShadow = 'none';
               }}>
-                <div style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#0f172a' }}>{sector.name}</div>
-                <div style={{ fontSize: '32px', fontWeight: 'bold', color: sector.color, lineHeight: '1' }}>
+                <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '14px', color: '#0f172a', letterSpacing: '-0.3px' }}>{sector.name}</div>
+                <div style={{ fontSize: '36px', fontWeight: '900', color: sector.color, lineHeight: '1', textShadow: `0 2px 8px ${sector.color}30` }}>
                   {sector.change > 0 ? '↑' : '↓'} {Math.abs(sector.change)}%
                 </div>
-                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '8px' }}>
-                  {sector.change > 0 ? 'Yükseliş trendi' : 'Düşüş trendi'}
+                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '10px', fontWeight: '600' }}>
+                  {sector.change > 0 ? 'Yükseliş trendi ↗' : 'Düşüş trendi ↘'}
                 </div>
                 {hoveredSector === sector.name && sector.subSectors && (
                   <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,255,255,0.8)', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
@@ -371,8 +371,8 @@ export default function DashboardV33() {
           
           {/* SINYALLER */}
           <div style={{ marginBottom: '60px' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #06b6d4', color: '#0f172a' }}>
-              📊 SINYALLER <span style={{ fontSize: '18px', color: '#06b6d4', fontWeight: 'normal' }}>(9 özellik)</span>
+            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #06b6d4', color: '#0f172a', letterSpacing: '-0.8px' }}>
+              📊 SINYALLER <span style={{ fontSize: '16px', color: '#06b6d4', fontWeight: '600' }}>(9 özellik)</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.signals.map((f, idx) => (
@@ -404,8 +404,8 @@ export default function DashboardV33() {
 
           {/* ANALIZ */}
           <div style={{ marginBottom: '60px' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #3b82f6', color: '#0f172a' }}>
-              📈 ANALIZ <span style={{ fontSize: '18px', color: '#3b82f6', fontWeight: 'normal' }}>(10 özellik)</span>
+            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #3b82f6', color: '#0f172a', letterSpacing: '-0.8px' }}>
+              📈 ANALIZ <span style={{ fontSize: '16px', color: '#3b82f6', fontWeight: '600' }}>(10 özellik)</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.analysis.map((f, idx) => (
@@ -437,8 +437,8 @@ export default function DashboardV33() {
 
           {/* OPERASYON */}
           <div style={{ marginBottom: '60px' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #10b981', color: '#0f172a' }}>
-              🔧 OPERASYON <span style={{ fontSize: '18px', color: '#10b981', fontWeight: 'normal' }}>(8 özellik)</span>
+            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #10b981', color: '#0f172a', letterSpacing: '-0.8px' }}>
+              🔧 OPERASYON <span style={{ fontSize: '16px', color: '#10b981', fontWeight: '600' }}>(8 özellik)</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.operations.map((f, idx) => (
@@ -470,8 +470,8 @@ export default function DashboardV33() {
 
           {/* GELIŞMİŞ */}
           <div style={{ marginBottom: '60px' }}>
-            <div style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '24px', paddingBottom: '16px', borderBottom: '4px solid #8b5cf6', color: '#0f172a' }}>
-              ⚡ GELIŞMİŞ <span style={{ fontSize: '18px', color: '#8b5cf6', fontWeight: 'normal' }}>(13 özellik)</span>
+            <div style={{ fontSize: '28px', fontWeight: '900', marginBottom: '28px', paddingBottom: '20px', borderBottom: '4px solid #8b5cf6', color: '#0f172a', letterSpacing: '-0.8px' }}>
+              ⚡ GELIŞMİŞ <span style={{ fontSize: '16px', color: '#8b5cf6', fontWeight: '600' }}>(13 özellik)</span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
               {allFeatures.advanced.map((f, idx) => (
@@ -593,15 +593,15 @@ export default function DashboardV33() {
           </div>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead style={{ background: 'rgba(240,249,255,0.6)' }}>
+              <thead style={{ background: 'rgba(240,249,255,0.8)' }}>
                 <tr>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sembol</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Sinyal</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Mevcut Fiyat</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Beklenen Fiyat</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Değişim</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>AI Yorumu</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: 'bold', color: '#64748b', borderBottom: '2px solid rgba(6,182,212,0.15)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Doğruluk</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Sembol</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Sinyal</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Mevcut Fiyat</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Beklenen Fiyat</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Değişim</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>AI Yorumu</th>
+                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Doğruluk</th>
                 </tr>
               </thead>
               <tbody>
@@ -1184,7 +1184,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              BIST AI Smart Trader v4.3 Professional Edition
+              BIST AI Smart Trader v4.5 Professional Edition
             </div>
           </div>
         </div>
