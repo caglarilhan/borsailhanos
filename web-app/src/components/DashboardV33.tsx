@@ -598,7 +598,7 @@ export default function DashboardV33() {
         </div>
       </header>
 
-      <main style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
+      <main style={{ padding: '12px', maxWidth: '1600px', margin: '0 auto' }}>
         {/* Metrics - Compact */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {metrics.map((m, idx) => (
@@ -631,7 +631,7 @@ export default function DashboardV33() {
         {/* AI Insight Summary - Metrics altına eklendi */}
         <div style={{ 
           marginBottom: '40px',
-          padding: '24px',
+          padding: '12px',
           background: 'rgba(255,255,255,0.8)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(6,182,212,0.3)',
@@ -651,17 +651,17 @@ export default function DashboardV33() {
           overflow: 'hidden',
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📊 Sektör Isı Haritası</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Piyasa geneli sektörel performans analizi</div>
           </div>
-          <div style={{ padding: '28px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px' }}>
+          <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
             {sectors.map((sector, idx) => (
               <div key={idx} style={{ 
                 background: sector.change > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
                 border: `2px solid ${sector.color}40`,
                 borderRadius: '16px', 
-                padding: '24px',
+                padding: '12px',
                 transition: 'all 0.3s',
                 cursor: 'pointer'
               }} onMouseEnter={(e) => {
@@ -674,7 +674,7 @@ export default function DashboardV33() {
                 e.currentTarget.style.boxShadow = 'none';
               }}>
                 <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '14px', color: '#0f172a', letterSpacing: '-0.3px' }}>{sector.name}</div>
-                <div style={{ fontSize: '24px', fontWeight: '900', color: sector.color, lineHeight: '1', textShadow: `0 2px 8px ${sector.color}30` }}>
+                <div style={{ fontSize: '20px', fontWeight: '900', color: sector.color, lineHeight: '1', textShadow: `0 2px 8px ${sector.color}30` }}>
                   {sector.change > 0 ? '↑' : '↓'} {Math.abs(sector.change)}%
                 </div>
                 <div style={{ fontSize: '13px', color: '#64748b', marginTop: '10px', fontWeight: '600' }}>
@@ -746,14 +746,14 @@ export default function DashboardV33() {
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6', color: '#0f172a', letterSpacing: '-0.3px' }}>
               📈 ANALIZ <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>(10 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
               {allFeatures.analysis.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
                   backdropFilter: 'blur(12px)',
                   border: '2px solid rgba(59,130,246,0.25)', 
                   borderRadius: '16px', 
-                  padding: '28px', 
+                  padding: '16px', 
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(59,130,246,0.08)'
@@ -779,14 +779,14 @@ export default function DashboardV33() {
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #10b981', color: '#0f172a', letterSpacing: '-0.3px' }}>
               🔧 OPERASYON <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600' }}>(8 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
               {allFeatures.operations.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
                   backdropFilter: 'blur(12px)',
                   border: '2px solid rgba(16,185,129,0.25)', 
                   borderRadius: '16px', 
-                  padding: '28px', 
+                  padding: '16px', 
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(16,185,129,0.08)'
@@ -812,14 +812,14 @@ export default function DashboardV33() {
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #8b5cf6', color: '#0f172a', letterSpacing: '-0.3px' }}>
               ⚡ GELIŞMİŞ <span style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: '600' }}>(13 özellik)</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '12px' }}>
               {allFeatures.advanced.map((f, idx) => (
                 <div key={idx} style={{ 
                   background: 'rgba(255,255,255,0.8)', 
                   backdropFilter: 'blur(12px)',
                   border: '2px solid rgba(139,92,246,0.25)', 
                   borderRadius: '16px', 
-                  padding: '28px', 
+                  padding: '16px', 
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(139,92,246,0.08)'
@@ -850,7 +850,7 @@ export default function DashboardV33() {
           overflow: 'hidden',
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Sinyalleri</h2>
               <div style={{ display: 'flex', gap: '10px' }}>
@@ -936,20 +936,20 @@ export default function DashboardV33() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: 'rgba(240,249,255,0.8)' }}>
                 <tr>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Sembol</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Sinyal</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Mevcut Fiyat</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Beklenen Fiyat</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Değişim</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>AI Yorumu</th>
-                  <th style={{ padding: '24px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Doğruluk</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Sembol</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Sinyal</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Mevcut Fiyat</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Beklenen Fiyat</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Değişim</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>AI Yorumu</th>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '13px', fontWeight: '800', color: '#475569', borderBottom: '3px solid rgba(6,182,212,0.3)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>Doğruluk</th>
                 </tr>
               </thead>
               <tbody>
                 {signals.slice(0, visibleSignals).map((s, idx) => (
                   <tr key={idx} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={`${s.symbol} - ${s.signal} sinyali, Fiyat: ₺${s.price.toFixed(2)}, Beklenen: ₺${s.target.toFixed(2)}`}>
-                    <td style={{ padding: '24px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
-                    <td style={{ padding: '24px' }}>
+                    <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
+                    <td style={{ padding: '12px' }}>
                       <span style={{
                         padding: '8px 16px',
                         borderRadius: '20px',
@@ -966,17 +966,17 @@ export default function DashboardV33() {
                         {s.signal}
                       </span>
                     </td>
-                    <td style={{ padding: '24px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}`}>
+                    <td style={{ padding: '12px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}`}>
                       {selectedMarket === 'BIST' ? '₺' : '$'}{s.price.toFixed(2)}
                     </td>
-                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}`}>
+                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}`}>
                       {selectedMarket === 'BIST' ? '₺' : '$'}{s.target.toFixed(2)}
                     </td>
-                    <td style={{ padding: '24px', fontSize: '16px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${s.change > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change)}`}>
+                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${s.change > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change)}`}>
                       {s.change > 0 ? '↑' : '↓'} {Math.abs(s.change)}%
                     </td>
-                    <td style={{ padding: '24px', fontSize: '15px', color: '#64748b', fontStyle: 'italic', maxWidth: '300px' }}>{s.comment}</td>
-                    <td style={{ padding: '24px' }}>
+                    <td style={{ padding: '12px', fontSize: '15px', color: '#64748b', fontStyle: 'italic', maxWidth: '300px' }}>{s.comment}</td>
+                    <td style={{ padding: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                         <div style={{ width: '100px', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }} role="progressbar" aria-valuenow={s.accuracy} aria-valuemin={0} aria-valuemax={100}>
                           <div style={{ height: '100%', background: `linear-gradient(90deg, #06b6d4, #3b82f6)`, width: `${s.accuracy}%`, transition: 'width 0.5s' }}></div>
@@ -1011,7 +1011,7 @@ export default function DashboardV33() {
             </table>
           </div>
           {signals.length > visibleSignals && (
-            <div style={{ padding: '24px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ padding: '12px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'center' }}>
               <button 
                 onClick={() => setVisibleSignals(signals.length)}
                 style={{ 
@@ -1040,7 +1040,7 @@ export default function DashboardV33() {
         {/* AI Confidence Meter - Signals tablosunun altına eklendi */}
         <div style={{ 
           marginTop: '40px',
-          padding: '24px',
+          padding: '12px',
           background: 'rgba(255,255,255,0.8)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(6,182,212,0.3)',
@@ -1053,7 +1053,7 @@ export default function DashboardV33() {
         {/* Realtime Alerts - Signals tablosunun altına eklendi */}
         <div style={{ 
           marginTop: '40px',
-          padding: '24px',
+          padding: '12px',
           background: 'rgba(255,255,255,0.8)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(6,182,212,0.3)',
@@ -1073,14 +1073,14 @@ export default function DashboardV33() {
           overflow: 'hidden',
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Prediction Chart</h2>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span>Gerçek zamanlı teknik analiz ve trend tahmini</span>
               <span style={{ padding: '6px 14px', background: 'rgba(6,182,212,0.15)', borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: '#06b6d4' }}>THYAO - 30 Günlük Trend</span>
             </div>
           </div>
-          <div style={{ padding: '28px', aspectRatio: '16/9' }}>
+          <div style={{ padding: '16px', aspectRatio: '16/9' }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -1146,7 +1146,7 @@ export default function DashboardV33() {
         {/* Multi-Timeframe Analyzer - AI Chart altına eklendi */}
         <div style={{ 
           marginTop: '40px',
-          padding: '24px',
+          padding: '12px',
           background: 'rgba(255,255,255,0.8)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(6,182,212,0.3)',
@@ -1167,7 +1167,7 @@ export default function DashboardV33() {
             overflow: 'hidden',
             boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
           }}>
-            <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Güven Analizi</h2>
@@ -1176,7 +1176,7 @@ export default function DashboardV33() {
                 <button onClick={() => setSelectedForXAI(null)} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}>✕ Kapat</button>
               </div>
             </div>
-            <div style={{ padding: '28px' }}>
+            <div style={{ padding: '16px' }}>
               {aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.map((factor, idx) => (
                 <div key={idx} style={{ marginBottom: '20px', padding: '16px', background: factor.positive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '12px', border: `2px solid ${factor.positive ? '#10b981' : '#ef4444'}40` }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
@@ -1210,17 +1210,17 @@ export default function DashboardV33() {
           overflow: 'hidden',
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>🔗 Hisse Korelasyonu</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Pair trading ve korelasyon analizi</div>
           </div>
-          <div style={{ padding: '28px', display: 'grid', gap: '16px' }}>
+          <div style={{ padding: '16px', display: 'grid', gap: '16px' }}>
             {correlationMatrix.map((corr, idx) => (
               <div key={idx} style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
                 gap: '16px', 
-                padding: '20px', 
+                padding: '12px', 
                 background: 'rgba(6,182,212,0.05)', 
                 borderRadius: '12px',
                 border: '1px solid rgba(6,182,212,0.2)'
@@ -1248,11 +1248,11 @@ export default function DashboardV33() {
           overflow: 'hidden',
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>AI sinyalleriyle 30 günlük portföy performansı simülasyonu</div>
           </div>
-          <div style={{ padding: '28px', aspectRatio: '16/9' }}>
+          <div style={{ padding: '16px', aspectRatio: '16/9' }}>
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={portfolioData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
@@ -1297,7 +1297,7 @@ export default function DashboardV33() {
             </ResponsiveContainer>
           </div>
           <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
-            <div style={{ display: 'flex', gap: '24px', flex: 1 }}>
+            <div style={{ display: 'flex', gap: '12px', flex: 1 }}>
               <div style={{ fontSize: '13px', color: '#64748b' }}>
                 <span style={{ fontWeight: '700', color: '#10b981' }}>Başlangıç:</span> ₺100.000
               </div>
@@ -1342,7 +1342,7 @@ export default function DashboardV33() {
         {/* Backtesting Preview - Portföy altına eklendi */}
         <div style={{ 
           marginTop: '40px',
-          padding: '24px',
+          padding: '12px',
           background: 'rgba(255,255,255,0.8)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(6,182,212,0.3)',
@@ -1355,7 +1355,7 @@ export default function DashboardV33() {
         {/* Risk Attribution - Portföy altına eklendi */}
         <div style={{ 
           marginTop: '40px',
-          padding: '24px',
+          padding: '12px',
           background: 'rgba(255,255,255,0.8)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(6,182,212,0.3)',
@@ -1375,14 +1375,14 @@ export default function DashboardV33() {
           overflow: 'hidden',
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
             <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📰 FinBERT Sentiment Tracker</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Türkçe haber ve duygu analizi (pozitif/negatif/nötr)</div>
           </div>
-          <div style={{ padding: '28px' }}>
+          <div style={{ padding: '16px' }}>
             {/* @ts-ignore */}
             {sentimentAnalysis.map((s: any, idx: number) => (
-              <div key={idx} style={{ marginBottom: '32px', padding: '24px', background: s.sentiment > 70 ? 'rgba(16,185,129,0.1)' : s.sentiment < 50 ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)', borderRadius: '16px', border: `2px solid ${s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308'}40` }}>
+              <div key={idx} style={{ marginBottom: '32px', padding: '12px', background: s.sentiment > 70 ? 'rgba(16,185,129,0.1)' : s.sentiment < 50 ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)', borderRadius: '16px', border: `2px solid ${s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308'}40` }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>{s.symbol}</div>
@@ -1428,7 +1428,7 @@ export default function DashboardV33() {
         {/* AI News Trigger - Sentiment altına eklendi */}
         <div style={{ 
           marginTop: '40px',
-          padding: '24px',
+          padding: '12px',
           background: 'rgba(255,255,255,0.8)',
           backdropFilter: 'blur(20px)',
           border: '1px solid rgba(6,182,212,0.3)',
@@ -1448,7 +1448,7 @@ export default function DashboardV33() {
           overflow: 'hidden',
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
+          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Learning Mode</h2>
@@ -1494,25 +1494,25 @@ export default function DashboardV33() {
               </div>
             </div>
           </div>
-          <div style={{ padding: '28px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '24px', marginBottom: '32px' }}>
-              <div style={{ padding: '24px', background: 'rgba(16,185,129,0.1)', borderRadius: '16px', border: '2px solid rgba(16,185,129,0.3)' }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px', marginBottom: '32px' }}>
+              <div style={{ padding: '12px', background: 'rgba(16,185,129,0.1)', borderRadius: '16px', border: '2px solid rgba(16,185,129,0.3)' }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Doğruluk Oranı</div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#10b981' }}>{aiLearning.accuracy}%</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>{aiLearning.accuracy}%</div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Son 30 gün ortalaması</div>
               </div>
-              <div style={{ padding: '24px', background: 'rgba(59,130,246,0.1)', borderRadius: '16px', border: '2px solid rgba(59,130,246,0.3)' }}>
+              <div style={{ padding: '12px', background: 'rgba(59,130,246,0.1)', borderRadius: '16px', border: '2px solid rgba(59,130,246,0.3)' }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Önerilen Portföy</div>
                 <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>THYAO %40</div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>AKBNK %30, EREGL %30</div>
               </div>
-              <div style={{ padding: '24px', background: 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid rgba(251,191,36,0.3)' }}>
+              <div style={{ padding: '12px', background: 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid rgba(251,191,36,0.3)' }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Risk Skoru</div>
-                <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#eab308' }}>3.2</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#eab308' }}>3.2</div>
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>▼ Düşük risk seviyesi</div>
               </div>
             </div>
-            <div style={{ padding: '24px', background: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px solid rgba(139,92,246,0.3)' }}>
+            <div style={{ padding: '12px', background: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px solid rgba(139,92,246,0.3)' }}>
               <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#8b5cf6', marginBottom: '16px' }}>💡 AI Önerileri:</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {aiLearning.recommendations.map((rec, idx) => (
@@ -1581,7 +1581,7 @@ export default function DashboardV33() {
         {showTraderGPT && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(245,158,11,0.3)',
@@ -1618,7 +1618,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(245,158,11,0.2)'
             }}>
               <TraderGPT />
@@ -1630,7 +1630,7 @@ export default function DashboardV33() {
         {showGamification && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(251,191,36,0.1), rgba(249,115,22,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(251,191,36,0.3)',
@@ -1666,7 +1666,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(251,191,36,0.2)'
             }}>
               <GamificationSystem />
@@ -1678,7 +1678,7 @@ export default function DashboardV33() {
         {showAdvancedViz && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(6,182,212,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(139,92,246,0.3)',
@@ -1714,7 +1714,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(139,92,246,0.2)'
             }}>
               <AdvancedVisualizationHub />
@@ -1726,7 +1726,7 @@ export default function DashboardV33() {
         {showAIConfidence && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(139,92,246,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(236,72,153,0.3)',
@@ -1762,7 +1762,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(236,72,153,0.2)'
             }}>
               <AIConfidenceBreakdown />
@@ -1774,7 +1774,7 @@ export default function DashboardV33() {
         {showCognitiveAI && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(16,185,129,0.3)',
@@ -1810,7 +1810,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(16,185,129,0.2)'
             }}>
               <CognitiveAI />
@@ -1822,7 +1822,7 @@ export default function DashboardV33() {
         {showFeedbackLoop && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(139,92,246,0.3)',
@@ -1858,7 +1858,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(139,92,246,0.2)'
             }}>
               <FeedbackLoop />
@@ -1870,7 +1870,7 @@ export default function DashboardV33() {
         {showVolatilityModel && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(249,115,22,0.1), rgba(239,68,68,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(249,115,22,0.3)',
@@ -1906,7 +1906,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(249,115,22,0.2)'
             }}>
               <VolatilityModel />
@@ -1918,7 +1918,7 @@ export default function DashboardV33() {
         {showMetaModel && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(139,92,246,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(236,72,153,0.3)',
@@ -1954,7 +1954,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(236,72,153,0.2)'
             }}>
               <MetaModelEngine />
@@ -1966,7 +1966,7 @@ export default function DashboardV33() {
         {showSubscription && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(251,191,36,0.1), rgba(245,158,11,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(251,191,36,0.3)',
@@ -2002,7 +2002,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(251,191,36,0.2)'
             }}>
               <SubscriptionTiers />
@@ -2014,7 +2014,7 @@ export default function DashboardV33() {
         {showStrategyBuilder && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(16,185,129,0.3)',
@@ -2050,7 +2050,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(16,185,129,0.2)'
             }}>
               <StrategyBuilder />
@@ -2069,8 +2069,8 @@ export default function DashboardV33() {
           borderRadius: '20px', 
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px', fontSize: '11px', color: '#64748b' }}>
-            <div style={{ display: 'flex', gap: '24px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '11px', color: '#64748b' }}>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <div>
                 <span style={{ fontWeight: '700', color: '#3b82f6' }}>AI:</span> 15 aktif sinyal
               </div>
@@ -2134,7 +2134,7 @@ export default function DashboardV33() {
         {showV50Module && (
           <div style={{ 
             margin: '48px 0',
-            padding: '28px',
+            padding: '16px',
             background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',
             borderRadius: '24px',
             border: '2px solid rgba(139,92,246,0.3)',
@@ -2199,7 +2199,7 @@ export default function DashboardV33() {
             <div style={{
               background: 'rgba(255,255,255,0.95)',
               borderRadius: '20px',
-              padding: '24px',
+              padding: '12px',
               border: '1px solid rgba(139,92,246,0.2)'
             }}>
               {v50ActiveTab === 'risk' && <RiskManagementPanel />}
