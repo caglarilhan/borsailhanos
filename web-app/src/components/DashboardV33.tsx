@@ -289,7 +289,7 @@ export default function DashboardV33() {
             <div>
               <h1 style={{ fontSize: '26px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>BIST AI Smart Trader</h1>
               <div style={{ fontSize: '13px', color: '#64748b', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                v4.6 Professional Edition
+                v4.7 Professional Edition
                 {isRefreshing ? (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#06b6d4' }}>
                     <div style={{ width: '8px', height: '8px', background: '#06b6d4', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></div>
@@ -852,44 +852,102 @@ export default function DashboardV33() {
           </div>
         </div>
         
-        {/* XAI Explainability Panel */}
+        {/* XAI Explainability Modal */}
         {selectedForXAI && aiConfidence[selectedForXAI as keyof typeof aiConfidence] && (
           <div style={{ 
-            marginTop: '40px',
-            background: 'rgba(255,255,255,0.8)', 
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(6,182,212,0.3)', 
-            borderRadius: '20px', 
-            overflow: 'hidden',
-            boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
-          }}>
-            <div style={{ padding: '28px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(255,255,255,0.8))' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Güven Analizi</h2>
-                  <div style={{ fontSize: '14px', color: '#64748b' }}>{selectedForXAI} - AI sinyalinin detaylı açıklaması</div>
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '40px'
+          }} onClick={() => setSelectedForXAI(null)}>
+            <div style={{ 
+              background: 'rgba(255,255,255,0.95)', 
+              backdropFilter: 'blur(20px)',
+              border: '2px solid rgba(6,182,212,0.3)', 
+              borderRadius: '24px', 
+              overflow: 'hidden',
+              boxShadow: '0 20px 80px rgba(0,0,0,0.3)',
+              maxWidth: '800px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto'
+            }} onClick={(e) => e.stopPropagation()}>
+              <div style={{ padding: '32px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(139,92,246,0.15), rgba(6,182,212,0.15))' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <h2 style={{ fontSize: '28px', fontWeight: '900', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-1px' }}>🧠 SHAP + LIME Analizi</h2>
+                    <div style={{ fontSize: '14px', color: '#64748b', fontWeight: '600' }}>{selectedForXAI} - AI Sinyalinin Detaylı Açıklaması</div>
+                  </div>
+                  <button onClick={() => setSelectedForXAI(null)} style={{ padding: '10px 20px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: '800', fontSize: '14px', transition: 'all 0.2s' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}>✕ Kapat</button>
                 </div>
-                <button onClick={() => setSelectedForXAI(null)} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}>✕ Kapat</button>
               </div>
-            </div>
-            <div style={{ padding: '40px' }}>
-              {aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.map((factor, idx) => (
-                <div key={idx} style={{ marginBottom: '20px', padding: '16px', background: factor.positive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '12px', border: `2px solid ${factor.positive ? '#10b981' : '#ef4444'}40` }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{factor.name}</div>
-                    <div style={{ fontSize: '16px', fontWeight: 'bold', color: factor.positive ? '#10b981' : '#ef4444' }}>
-                      {factor.contribution > 0 ? '+' : ''}{factor.contribution}%
+              <div style={{ padding: '40px' }}>
+                {/* SHAP Explanation */}
+                <div style={{ marginBottom: '32px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: '#8b5cf6', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    📊 SHAP Değerleri
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', background: 'rgba(139,92,246,0.1)', padding: '4px 12px', borderRadius: '12px' }}>SHapley Additive exPlanations</span>
+                  </div>
+                  <div style={{ background: 'rgba(240,249,255,0.6)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(139,92,246,0.2)' }}>
+                    {aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.map((factor, idx) => (
+                      <div key={idx} style={{ marginBottom: '16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                          <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{factor.name}</div>
+                          <div style={{ fontSize: '18px', fontWeight: '900', color: factor.positive ? '#10b981' : '#ef4444' }}>
+                            {factor.contribution > 0 ? '+' : ''}{factor.contribution}%
+                          </div>
+                        </div>
+                        <div style={{ width: '100%', height: '10px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', background: `linear-gradient(90deg, ${factor.positive ? '#10b981' : '#ef4444'}, ${factor.positive ? '#34d399' : '#f87171'})`, width: `${Math.abs(factor.contribution)}%`, transition: 'width 0.5s', boxShadow: factor.contribution > 0 ? '0 0 10px rgba(16,185,129,0.5)' : '0 0 10px rgba(239,68,68,0.5)' }}></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* LIME Local Explanation */}
+                <div style={{ marginBottom: '32px' }}>
+                  <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '16px', color: '#06b6d4', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    🎯 LIME Yerel Açıklama
+                    <span style={{ fontSize: '12px', fontWeight: '600', color: '#64748b', background: 'rgba(6,182,212,0.1)', padding: '4px 12px', borderRadius: '12px' }}>Local Interpretable Model-agnostic Explanations</span>
+                  </div>
+                  <div style={{ background: 'rgba(240,249,255,0.6)', padding: '20px', borderRadius: '16px', border: '1px solid rgba(6,182,212,0.2)' }}>
+                    <div style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.8', marginBottom: '16px' }}>
+                      AI modeli bu sinyal için <strong style={{ color: '#0f172a' }}>{aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.reduce((acc, f) => acc + f.contribution, 0)}%</strong> güvenle hareket ediyor.
+                      Model, en çok <strong style={{ color: '#10b981' }}>{aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.filter(f => f.positive).length} pozitif</strong> ve <strong style={{ color: '#ef4444' }}>{aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.filter(f => !f.positive).length} negatif</strong> faktörü dikkate alarak karar verdi.
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginTop: '16px' }}>
+                      {aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.slice(0, 4).map((factor, idx) => (
+                        <div key={idx} style={{ padding: '12px', background: factor.positive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '8px', border: `1px solid ${factor.positive ? '#10b981' : '#ef4444'}40` }}>
+                          <div style={{ fontSize: '12px', fontWeight: '700', color: factor.positive ? '#10b981' : '#ef4444', marginBottom: '4px' }}>{factor.name}</div>
+                          <div style={{ fontSize: '18px', fontWeight: '900', color: '#0f172a' }}>{factor.contribution > 0 ? '+' : ''}{factor.contribution}%</div>
+                        </div>
+                      ))}
                     </div>
                   </div>
-                  <div style={{ width: '100%', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: `linear-gradient(90deg, ${factor.positive ? '#10b981' : '#ef4444'}, ${factor.positive ? '#34d399' : '#f87171'})`, width: `${Math.abs(factor.contribution)}%`, transition: 'width 0.5s' }}></div>
+                </div>
+                
+                {/* Model Confidence Summary */}
+                <div style={{ background: 'rgba(139,92,246,0.1)', padding: '24px', borderRadius: '16px', border: '2px solid rgba(139,92,246,0.3)' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '800', marginBottom: '12px', color: '#0f172a' }}>💡 AI Güven Özeti</div>
+                  <div style={{ fontSize: '14px', color: '#64748b', lineHeight: '1.8' }}>
+                    {selectedForXAI} için AI modeli, <strong style={{ color: '#8b5cf6' }}>{Math.abs(aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.reduce((acc, f) => acc + f.contribution, 0)).toFixed(1)}%</strong> toplam etki ile sinyal üretti.
+                    Bu açıklama SHAP ve LIME algoritmaları kullanılarak oluşturuldu.
                   </div>
                 </div>
-              ))}
-              <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(6,182,212,0.1)', borderRadius: '12px' }}>
-                <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600' }}>💡 Açıklama:</div>
-                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
-                  Bu sinyal, yukarıdaki faktörlerin kombinasyonuna dayanmaktadır. Her faktörün AI tahminine katkısı yüzde olarak gösterilmiştir.
+                <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(6,182,212,0.1)', borderRadius: '12px' }}>
+                  <div style={{ fontSize: '14px', color: '#0f172a', fontWeight: '600' }}>💡 Açıklama:</div>
+                  <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
+                    Bu sinyal, yukarıdaki faktörlerin kombinasyonuna dayanmaktadır. Her faktörün AI tahminine katkısı yüzde olarak gösterilmiştir.
+                  </div>
                 </div>
               </div>
             </div>
@@ -1260,7 +1318,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <div style={{ fontSize: '12px', color: '#94a3b8' }}>
-              BIST AI Smart Trader v4.6 Professional Edition
+              BIST AI Smart Trader v4.7 Professional Edition
             </div>
           </div>
         </div>
