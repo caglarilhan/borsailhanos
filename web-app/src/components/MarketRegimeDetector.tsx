@@ -64,7 +64,7 @@ interface MarketRegimeDetectorProps {
   isLoading: boolean;
 }
 
-import { API_BASE_URL } from '@/lib/config';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 const MarketRegimeDetector: React.FC<MarketRegimeDetectorProps> = ({ isLoading }) => {
   const [regimeAnalysis, setRegimeAnalysis] = useState<RegimeAnalysis | null>(null);

@@ -71,7 +71,7 @@ interface DeepLearningModelsProps {
   isLoading: boolean;
 }
 
-import { API_BASE_URL } from '@/lib/config';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 const DeepLearningModels: React.FC<DeepLearningModelsProps> = ({ isLoading }) => {
   const [modelStatus, setModelStatus] = useState<Record<string, ModelConfig> | null>(null);

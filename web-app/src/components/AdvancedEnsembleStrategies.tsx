@@ -45,7 +45,7 @@ interface AdvancedEnsembleStrategiesProps {
   isLoading: boolean;
 }
 
-import { API_BASE_URL } from '@/lib/config';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 const AdvancedEnsembleStrategies: React.FC<AdvancedEnsembleStrategiesProps> = ({ isLoading }) => {
   const [ensembleResults, setEnsembleResults] = useState<Record<string, EnsembleResult> | null>(null);
