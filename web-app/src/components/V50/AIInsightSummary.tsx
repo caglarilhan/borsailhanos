@@ -12,6 +12,14 @@ export default function AIInsightSummary() {
     topSignals: ['THYAO', 'SISE'],
     lastUpdate: new Date()
   });
+  
+  const [mounted, setMounted] = useState(false);
+  const [timeString, setTimeString] = useState('');
+  
+  useEffect(() => {
+    setMounted(true);
+    setTimeString(summary.lastUpdate.toLocaleTimeString('tr-TR'));
+  }, [summary.lastUpdate]);
 
   return (
     <motion.div
@@ -34,7 +42,7 @@ export default function AIInsightSummary() {
         </p>
         <p className="text-gray-400 text-xs flex items-center gap-2">
           <Activity className="w-4 h-4" />
-          Son güncelleme: {summary.lastUpdate.toLocaleTimeString('tr-TR')}
+          Son güncelleme: {mounted ? timeString : 'Yükleniyor...'}
         </p>
       </div>
     </motion.div>

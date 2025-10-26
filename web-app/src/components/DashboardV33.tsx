@@ -2203,7 +2203,7 @@ export default function DashboardV33() {
                 <span style={{ fontWeight: '700', color: '#ef4444' }}>Ortalama Risk:</span> Düşük
               </div>
               <div>
-                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {mounted && new Date().toLocaleTimeString('tr-TR')}
+                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
