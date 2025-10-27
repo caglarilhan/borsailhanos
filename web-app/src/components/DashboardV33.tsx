@@ -289,6 +289,26 @@ export default function DashboardV33() {
     ]);
   }, []);
   
+  // ✅ WINDOW-LEVEL WS MESSAGE LISTENER: window.dispatchEvent ile yayılan mesajları yakala
+  useEffect(() => {
+    const handleWsMessage = (event: CustomEvent) => {
+      const data = event.detail;
+      if (data && typeof data === 'object' && data.type === 'market_update') {
+        console.log('📊 Window-level market update received:', data);
+        // Chart data update
+        if (typeof data.ai_confidence === 'number') {
+          setChartData(prev => [...prev.slice(-29), {
+            day: `Gün ${prev.length + 1}`,
+            value: data.ai_confidence
+          }]);
+        }
+      }
+    };
+    
+    window.addEventListener('ws_message', handleWsMessage as EventListener);
+    return () => window.removeEventListener('ws_message', handleWsMessage as EventListener);
+  }, []);
+  
   // Realtime Data Fetch Simulation (15s interval)
   useEffect(() => {
     const realtimeInterval = setInterval(() => {
