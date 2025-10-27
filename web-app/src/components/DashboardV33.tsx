@@ -1139,7 +1139,7 @@ export default function DashboardV33() {
               </thead>
               <tbody>
                 {signals.slice(0, visibleSignals).map((s, idx) => (
-                  <tr key={idx} id={`signal-row-${s.symbol}`} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={`${s.symbol} - ${s.signal} sinyali, Fiyat: ₺${s.price.toFixed(2)}, Beklenen: ₺${s.target.toFixed(2)}`}>
+                  <tr key={idx} id={`signal-row-${s.symbol}`} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={`${s.symbol} - ${s.signal} sinyali, Fiyat: ${s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'N/A'}, Beklenen: ${s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'N/A'}`}>
                     <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
                     <td style={{ padding: '12px' }}>
                       <span style={{
@@ -1158,14 +1158,14 @@ export default function DashboardV33() {
                         {s.signal}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}`}>
-                      {selectedMarket === 'BIST' ? '₺' : '$'}{s.price.toFixed(2)}
+                    <td style={{ padding: '12px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'N/A'}`}>
+                      {s.price ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}` : 'N/A'}
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}`}>
-                      {selectedMarket === 'BIST' ? '₺' : '$'}{s.target.toFixed(2)}
+                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'N/A'}`}>
+                      {s.target ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}` : 'N/A'}
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: s.change > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${s.change > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change)}`}>
-                      {s.change > 0 ? '↑' : '↓'} {Math.abs(s.change)}%
+                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: (s.change || 0) > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${(s.change || 0) > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change || 0)}`}>
+                      {(s.change || 0) > 0 ? '↑' : '↓'} {Math.abs(s.change || 0)}%
                     </td>
                     <td style={{ padding: '12px', fontSize: '15px', color: '#64748b', fontStyle: 'italic', maxWidth: '300px' }}>{s.comment}</td>
                     <td style={{ padding: '12px' }}>
