@@ -303,10 +303,15 @@ export default function DashboardV33() {
   // ✅ Check localStorage for saved user
   useEffect(() => {
     const savedUser = localStorage.getItem('bistai_user');
+    console.log('🔍 LocalStorage kontrol:', savedUser);
     if (savedUser) {
+      console.log('✅ Kayıtlı kullanıcı bulundu:', savedUser);
       setIsLoggedIn(true);
       setShowLogin(false);
       setCurrentUser(savedUser);
+    } else {
+      console.log('❌ Kayıtlı kullanıcı yok, login göster');
+      setShowLogin(true);
     }
   }, []);
 
@@ -583,24 +588,32 @@ export default function DashboardV33() {
               onClick={async () => {
                 const username = (document.getElementById('login-username') as HTMLInputElement)?.value;
                 const password = (document.getElementById('login-password') as HTMLInputElement)?.value;
+                console.log('🔐 Login attempt:', username);
                 if (username && password) {
                   try {
+                    console.log('📡 Backend'e istek gönderiliyor...');
                     const res = await fetch('http://localhost:8080/api/auth/login', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
                       body: JSON.stringify({username, password})
                     });
+                    console.log('📥 Backend response status:', res.status);
                     const data = await res.json();
+                    console.log('📥 Backend response data:', data);
                     if (data.status === 'success') {
+                      console.log('✅ Login başarılı!');
                       setIsLoggedIn(true);
                       setShowLogin(false);
                       setCurrentUser(username);
                       localStorage.setItem('bistai_user', username);
+                      alert('Giriş başarılı!');
                     } else {
+                      console.error('❌ Login failed:', data.message);
                       alert(data.message || 'Giriş başarısız');
                     }
                   } catch (e) {
-                    alert('Bağlantı hatası');
+                    console.error('❌ Network error:', e);
+                    alert('Bağlantı hatası: ' + e);
                   }
                 } else {
                   alert('Lütfen kullanıcı adı ve şifre girin');
