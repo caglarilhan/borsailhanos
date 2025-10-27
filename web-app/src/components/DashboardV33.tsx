@@ -2826,9 +2826,8 @@ export default function DashboardV33() {
         {/* TraderGPT Sidebar */}
         <TraderGPTSidebar />
       </main>
-        </div>
-      )}
     </div>
+      )}
     </>
   );
 }
