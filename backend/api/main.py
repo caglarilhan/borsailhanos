@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException, Query, Depends, Request
+from fastapi import FastAPI, HTTPException, Query, Depends, Request, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -50,6 +51,15 @@ except ImportError as e:
     ask_service = None
 
 app = FastAPI(title="BIST AI Smart Trader API", version="3.2.0")
+
+# CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # V3.2: Sentry Integration
 if V32_MODULES_AVAILABLE:
@@ -423,6 +433,48 @@ if V32_MODULES_AVAILABLE:
             return result
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
+
+# WebSocket Endpoint for Realtime Data
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for realtime market data and signals"""
+    await websocket.accept()
+    print("✅ WebSocket connected")
+    
+    try:
+        while True:
+            # Send heartbeat ping
+            await asyncio.sleep(30)
+            await websocket.send_json({
+                "type": "pong",
+                "timestamp": datetime.now().isoformat()
+            })
+            
+            # Send mock market update every 60 seconds
+            await asyncio.sleep(60)
+            await websocket.send_json({
+                "type": "market_update",
+                "market": "BIST",
+                "timestamp": datetime.now().isoformat(),
+                "signals": [
+                    {
+                        "symbol": "THYAO",
+                        "signal": "BUY",
+                        "confidence": 0.85,
+                        "strength": 75
+                    },
+                    {
+                        "symbol": "AKBNK",
+                        "signal": "HOLD",
+                        "confidence": 0.72,
+                        "strength": 65
+                    }
+                ]
+            })
+    except WebSocketDisconnect:
+        print("🔌 WebSocket disconnected")
+    except Exception as e:
+        print(f"❌ WebSocket error: {e}")
 
 if __name__ == "__main__":
     import uvicorn
