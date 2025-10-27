@@ -2619,6 +2619,74 @@ export default function DashboardV33() {
                   <p style={{ fontSize: '12px', color: '#64748b' }}>Aktif Hisse: 25</p>
                 </div>
               </div>
+
+              <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.1)' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>👥 Kullanıcı Yönetimi</h3>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                  <input 
+                    type="text" 
+                    placeholder="Kullanıcı Adı" 
+                    id="new-username"
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                  />
+                  <input 
+                    type="password" 
+                    placeholder="Şifre" 
+                    id="new-password"
+                    style={{
+                      padding: '10px',
+                      border: '1px solid #ddd',
+                      borderRadius: '8px',
+                      fontSize: '14px'
+                    }}
+                  />
+                </div>
+
+                <button 
+                  onClick={async () => {
+                    const username = (document.getElementById('new-username') as HTMLInputElement)?.value;
+                    const password = (document.getElementById('new-password') as HTMLInputElement)?.value;
+                    if (username && password) {
+                      try {
+                        const res = await fetch('http://localhost:8080/api/users/register', {
+                          method: 'POST',
+                          headers: {'Content-Type': 'application/json'},
+                          body: JSON.stringify({username, password, email: `${username}@bistai.com`})
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                          alert(`Kullanıcı eklendi: ${username}`);
+                          (document.getElementById('new-username') as HTMLInputElement).value = '';
+                          (document.getElementById('new-password') as HTMLInputElement).value = '';
+                        } else {
+                          alert(data.message);
+                        }
+                      } catch (e) {
+                        alert('Kullanıcı eklenemedi');
+                      }
+                    }
+                  }}
+                  style={{
+                    padding: '10px 20px',
+                    background: '#10b981',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    width: '100%'
+                  }}
+                >
+                  ➕ Kullanıcı Ekle
+                </button>
+              </div>
             </div>
           </div>
         )}
