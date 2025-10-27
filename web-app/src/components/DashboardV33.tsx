@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
+
+// Force dynamic rendering - disables SSR to prevent hydration mismatches
+export const dynamic = 'force-dynamic';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useWebSocket } from '@/hooks/useWebSocket';
 
