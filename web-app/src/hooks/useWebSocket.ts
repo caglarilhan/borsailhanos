@@ -154,6 +154,11 @@ export function useWebSocket({
           }));
 
           onMessageRef.current?.(data);
+          
+          // ✅ BROADCAST: Dispatch custom event for window-level listeners
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('ws_message', { detail: data }));
+          }
         } catch (error) {
           console.error('❌ Failed to parse WebSocket message:', error);
           console.error('❌ Message data:', event.data);
