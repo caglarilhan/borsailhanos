@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 // Force dynamic rendering - disables SSR to prevent hydration mismatches
 export const dynamic = 'force-dynamic';
@@ -42,21 +42,30 @@ export default function DashboardV33() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [portfolioData, setPortfolioData] = useState<any[]>([]);
   
-  useEffect(() => {
-    setMounted(true);
-    // Initialize chart data after mount (prevents hydration error)
-    setChartData(Array.from({ length: 30 }, (_, i) => ({
+  // Memoize initial chart data to prevent unnecessary re-renders
+  const initialChartData = useMemo(() => 
+    Array.from({ length: 30 }, (_, i) => ({
       day: `Gün ${i + 1}`,
       actual: 240 + Math.random() * 20 - 10,
       predicted: 242 + i * 0.8 + Math.random() * 15 - 7,
       confidence: 85 + Math.random() * 10
-    })));
-    setPortfolioData(Array.from({ length: 30 }, (_, i) => ({
+    }))
+  , []);
+
+  const initialPortfolioData = useMemo(() => 
+    Array.from({ length: 30 }, (_, i) => ({
       day: `Gün ${i + 1}`,
       value: 100000 + i * 350 + Math.random() * 200 - 100,
       profit: i * 350
-    })));
-  }, []);
+    }))
+  , []);
+
+  useEffect(() => {
+    setMounted(true);
+    // Initialize chart data after mount (prevents hydration error)
+    setChartData(initialChartData);
+    setPortfolioData(initialPortfolioData);
+  }, [initialChartData, initialPortfolioData]);
   const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
   const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k

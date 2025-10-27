@@ -98,20 +98,21 @@ export function useWebSocket({
 
         onDisconnectRef.current?.();
 
-        // Attempt to reconnect
+        // Attempt to reconnect with exponential backoff
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
           reconnectAttemptsRef.current++;
-          console.log(`🔄 Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts})...`);
+          const backoffDelay = reconnectInterval * Math.pow(2, reconnectAttemptsRef.current - 1); // Exponential backoff
+          console.log(`🔄 Attempting to reconnect (${reconnectAttemptsRef.current}/${maxReconnectAttempts}) in ${backoffDelay}ms...`);
 
           reconnectTimeoutRef.current = setTimeout(() => {
             connect();
-          }, reconnectInterval);
+          }, backoffDelay);
         } else {
-          console.error('❌ Max reconnection attempts reached');
+          console.error('❌ Max reconnection attempts reached - giving up gracefully');
           setState(prev => ({
             ...prev,
             reconnecting: false,
-            error: 'Connection failed - max attempts reached'
+            error: 'Connection failed - max attempts reached. Please refresh the page.'
           }));
         }
       };
