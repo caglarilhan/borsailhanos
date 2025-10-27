@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from 'react';
 
 interface WebSocketState {
   connected: boolean;
@@ -25,6 +25,17 @@ export function useWebSocket({
   onConnect,
   onDisconnect
 }: UseWebSocketOptions) {
+  // Store callbacks in refs to prevent infinite loops
+  const onMessageRef = useRef(onMessage);
+  const onConnectRef = useRef(onConnect);
+  const onDisconnectRef = useRef(onDisconnect);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+    onConnectRef.current = onConnect;
+    onDisconnectRef.current = onDisconnect;
+  }, [onMessage, onConnect, onDisconnect]);
   const [state, setState] = useState<WebSocketState>({
     connected: false,
     reconnecting: false,
@@ -60,7 +71,7 @@ export function useWebSocket({
           error: null
         }));
         reconnectAttemptsRef.current = 0;
-        onConnect?.();
+        onConnectRef.current?.();
 
         // Start ping interval
         pingIntervalRef.current = setInterval(() => {
@@ -85,7 +96,7 @@ export function useWebSocket({
           pingIntervalRef.current = null;
         }
 
-        onDisconnect?.();
+        onDisconnectRef.current?.();
 
         // Attempt to reconnect
         if (reconnectAttemptsRef.current < maxReconnectAttempts) {
@@ -141,7 +152,7 @@ export function useWebSocket({
             lastMessage: data
           }));
 
-          onMessage?.(data);
+          onMessageRef.current?.(data);
         } catch (error) {
           console.error('❌ Failed to parse WebSocket message:', error);
           console.error('❌ Message data:', event.data);
@@ -157,7 +168,8 @@ export function useWebSocket({
         error: 'Failed to establish WebSocket connection'
       }));
     }
-  }, [url, reconnectInterval, maxReconnectAttempts, onMessage, onConnect, onDisconnect]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url, reconnectInterval, maxReconnectAttempts]); // Removed onMessage, onConnect, onDisconnect to prevent infinite loop
 
   const disconnect = useCallback(() => {
     if (reconnectTimeoutRef.current) {
@@ -193,7 +205,8 @@ export function useWebSocket({
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [url]); // Only re-connect if URL changes
 
   return {
     ...state,
