@@ -263,6 +263,18 @@ export default function DashboardV33() {
           setSectorStats(data.sectorStats);
           console.log('📊 Sector stats update:', data.sectorStats);
         }
+        
+        // 4. ✅ Portfolio chart live update
+        if (data.type === 'portfolio_update' && typeof data.value === 'number') {
+          const newData = [...portfolioData, {
+            day: `Gün ${portfolioData.length + 1}`,
+            value: data.value,
+            profit: (data.value - 100000)
+          }];
+          setPortfolioData(newData.slice(-30)); // Keep last 30 points
+          setPortfolioValue(data.value);
+          console.log('📈 Portfolio chart updated:', data.value);
+        }
       }
     }
   });
@@ -302,21 +314,8 @@ export default function DashboardV33() {
   }, []);
   
   // ✅ Portfolio Chart Dynamic Update: Yeni sinyaller geldiğinde grafiği güncelle
-  useEffect(() => {
-    if (dynamicSignals.length > 0 && signals.length > 0) {
-      // Gelen sinyallerden portfolio değerini hesapla
-      const newValue = portfolioValue + Math.random() * 1000 - 500;
-      const newData = [...portfolioData, {
-        day: `Gün ${portfolioData.length + 1}`,
-        value: newValue,
-        profit: (newValue - 100000)
-      }];
-      
-      // Son 30 noktayı tut
-      setPortfolioData(newData.slice(-30));
-      setPortfolioValue(newValue);
-    }
-  }, [dynamicSignals]);
+  // Portfolio updates are now handled in the onMessage callback above (line 267-277)
+  // This useEffect is disabled to prevent infinite render loop
   
   // Event-Driven AI - Bilanço takvimi
   useEffect(() => {
@@ -1764,7 +1763,6 @@ export default function DashboardV33() {
           }}>
             {alerts.slice(-3).map((alert) => (
               <div key={alert.id} 
-                onClick={() => handleNotificationClick(alert)}
                 style={{ 
                 background: alert.type === 'success' ? 'rgba(16,185,129,0.95)' : 'rgba(59,130,246,0.95)',
                 backdropFilter: 'blur(20px)',
@@ -1779,6 +1777,14 @@ export default function DashboardV33() {
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              onClick={() => {
+                // Parse symbol from alert message (e.g., "🔔 THYAO: BUY sinyali...")
+                const symbolMatch = alert.message.match(/[A-Z]{2,8}/);
+                if (symbolMatch && symbolMatch[0]) {
+                  setSelectedSymbol(symbolMatch[0]);
+                  openPanel('aiconf'); // Open AI Confidence modal
+                }
+              }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ fontSize: '18px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
