@@ -61,11 +61,13 @@ export default function DashboardV33() {
   , []);
 
   useEffect(() => {
+    console.log('🎯 Component mounting...');
     setMounted(true);
     // Initialize chart data after mount (prevents hydration error)
     setChartData(initialChartData);
     setPortfolioData(initialPortfolioData);
-  }, [initialChartData, initialPortfolioData]);
+    console.log('✅ Component mounted successfully');
+  }, []); // Only run once on mount
   const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
   const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
