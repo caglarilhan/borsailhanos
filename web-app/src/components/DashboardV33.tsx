@@ -628,10 +628,10 @@ export default function DashboardV33() {
               💬 AI Yorum
             </button>
             <button 
-              onClick={() => setShowVolatilityModel(!showVolatilityModel)}
+              onClick={() => openPanel('risk')}
               style={{ 
                 padding: '8px 14px', 
-                background: showVolatilityModel ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'linear-gradient(135deg, #f97316, #f59e0b)', 
+                background: activePanel === 'risk' ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'linear-gradient(135deg, #f97316, #f59e0b)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -652,10 +652,10 @@ export default function DashboardV33() {
               📈 Risk Model
             </button>
             <button 
-              onClick={() => setShowMetaModel(!showMetaModel)}
+              onClick={() => openPanel('meta')}
               style={{ 
                 padding: '8px 14px', 
-                background: showMetaModel ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
+                background: activePanel === 'meta' ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -2092,7 +2092,7 @@ export default function DashboardV33() {
         )}
 
         {/* Adaptive Volatility Model */}
-        {showVolatilityModel && (
+        {activePanel === 'risk' && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -2140,7 +2140,7 @@ export default function DashboardV33() {
         )}
 
         {/* Meta-Model Engine */}
-        {showMetaModel && (
+        {activePanel === 'meta' && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
