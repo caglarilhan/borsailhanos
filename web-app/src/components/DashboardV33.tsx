@@ -107,6 +107,19 @@ export default function DashboardV33() {
   const [showFilter, setShowFilter] = useState(false);
   const [filterAccuracy, setFilterAccuracy] = useState<number | null>(null);
   
+  // ✅ UNIFIED PANEL CONTROL: Tek state ile tüm panel kontrolü
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+  
+  const openPanel = (panel: string) => {
+    console.log(`📂 Panel açılıyor: ${panel}`);
+    setActivePanel(panel);
+  };
+  
+  const closePanel = () => {
+    console.log('📂 Panel kapatılıyor');
+    setActivePanel(null);
+  };
+  
   // ✅ DYNAMIC WATCHLIST: Gelen sinyallere göre dinamik güncelleme
   useEffect(() => {
     if (dynamicSignals.length > 0) {
@@ -519,10 +532,10 @@ export default function DashboardV33() {
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
-              onClick={() => setShowTraderGPT(!showTraderGPT)}
+              onClick={() => openPanel('tradergpt')}
               style={{ 
                 padding: '8px 16px', 
-                background: showTraderGPT ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
+                background: activePanel === 'tradergpt' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '8px',
@@ -543,10 +556,10 @@ export default function DashboardV33() {
               <span aria-hidden="true">🤖</span> GPT
             </button>
             <button 
-              onClick={() => setShowAdvancedViz(!showAdvancedViz)}
+              onClick={() => openPanel('viz')}
               style={{ 
                 padding: '8px 16px', 
-                background: showAdvancedViz ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
+                background: activePanel === 'viz' ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '8px',
@@ -1790,7 +1803,7 @@ export default function DashboardV33() {
         )}
 
         {/* TraderGPT Chat Assistant */}
-        {showTraderGPT && (
+        {activePanel === 'tradergpt' && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -1809,7 +1822,7 @@ export default function DashboardV33() {
             </p>
           </div>
               <button 
-                onClick={() => setShowTraderGPT(false)}
+                onClick={() => closePanel()}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -1887,7 +1900,7 @@ export default function DashboardV33() {
         )}
 
         {/* Advanced Visualization Hub */}
-        {showAdvancedViz && (
+        {activePanel === 'viz' && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
