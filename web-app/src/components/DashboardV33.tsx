@@ -78,6 +78,8 @@ export default function DashboardV33() {
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
   const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
   const [timeString, setTimeString] = useState<string>('');
+  const [dynamicSignals, setDynamicSignals] = useState<any[]>([]); // WebSocket'ten gelen dinamik sinyaller
+  const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null); // Bildirim tıklama için
   
   // Time update effect - hydration-safe
   useEffect(() => {
@@ -153,6 +155,22 @@ export default function DashboardV33() {
     alert('💬 Geri bildirim formu açılacak...');
   };
   
+  // ✅ NOTIFICATION CLICK HANDLER: Bildirim tıklandığında sembol seç, detay göster
+  const handleNotificationClick = (alert: any) => {
+    // Bildirim mesajından sembolü çıkar (örn: "🔔 THYAO: BUY sinyali...")
+    const symbolMatch = alert.message.match(/([A-Z]{2,6}):/);
+    if (symbolMatch && symbolMatch[1]) {
+      const symbol = symbolMatch[1];
+      setSelectedSymbol(symbol);
+      // İlgili satırı bul ve highlight yap
+      const signal = signals.find((s: any) => s.symbol === symbol);
+      if (signal) {
+        console.log(`📊 ${symbol} detay analizi açılıyor...`, signal);
+        // Gelecekte modal veya sağ panel açılabilir burada
+      }
+    }
+  };
+  
   // WebSocket connection for realtime data - SAFE
   const [wsUrl, setWsUrl] = useState<string>('');
   const [shouldConnectWS, setShouldConnectWS] = useState(false);
@@ -176,6 +194,9 @@ export default function DashboardV33() {
       
       // SAFETY: Only process data if it has signals as an array
       if (data && typeof data === 'object' && data.signals && Array.isArray(data.signals) && data.signals.length > 0) {
+        // ✅ DYNAMIC UPDATE: WebSocket'ten gelen sinyalleri state'e kaydet
+        setDynamicSignals(data.signals);
+        
         setRealtimeUpdates(prev => ({
           signals: prev.signals + 1,
           risk: prev.risk
@@ -370,7 +391,8 @@ export default function DashboardV33() {
     ],
   };
   
-  const signals = marketSignals[selectedMarket];
+  // ✅ DYNAMIC SIGNALS: WebSocket'ten gelirse kullan, yoksa fallback
+  const signals = dynamicSignals.length > 0 ? dynamicSignals : marketSignals[selectedMarket];
 
   const metrics = [
     { label: 'Toplam Kâr', value: '₺125.000', change: '+12.5%', color: '#10b981', icon: '💰', pulse: true },
@@ -1670,7 +1692,9 @@ export default function DashboardV33() {
             maxWidth: '400px'
           }}>
             {alerts.slice(-3).map((alert) => (
-              <div key={alert.id} style={{ 
+              <div key={alert.id} 
+                onClick={() => handleNotificationClick(alert)}
+                style={{ 
                 background: alert.type === 'success' ? 'rgba(16,185,129,0.95)' : 'rgba(59,130,246,0.95)',
                 backdropFilter: 'blur(20px)',
                 padding: '16px 20px',
@@ -1678,8 +1702,13 @@ export default function DashboardV33() {
                 boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
                 color: '#fff',
                 animation: 'slideInRight 0.4s ease-out',
-                border: '1px solid rgba(255,255,255,0.2)'
-              }}>
+                border: '1px solid rgba(255,255,255,0.2)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ fontSize: '18px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
                   <div style={{ flex: 1 }}>
@@ -1687,7 +1716,10 @@ export default function DashboardV33() {
                     <div style={{ fontSize: '11px', opacity: 0.9 }}>{mounted ? alert.timestamp.toLocaleTimeString('tr-TR') : '--:--:--'}</div>
                   </div>
                   <button 
-                    onClick={() => setAlerts(alerts.filter(a => a.id !== alert.id))}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Bubble'ı durdur
+                      setAlerts(alerts.filter(a => a.id !== alert.id));
+                    }}
                     style={{ fontSize: '16px', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', padding: '4px', lineHeight: '1' }}
                     aria-label="Bildirimi kapat"
                   >
