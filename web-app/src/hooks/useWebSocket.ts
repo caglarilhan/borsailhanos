@@ -117,7 +117,19 @@ export function useWebSocket({
 
       wsRef.current.onmessage = (event) => {
         try {
+          // SAFETY: Check if event.data exists and is a string
+          if (!event.data || typeof event.data !== 'string') {
+            console.warn('⚠️ WebSocket: Invalid message data type:', typeof event.data);
+            return;
+          }
+
           const data = JSON.parse(event.data);
+          
+          // SAFETY: Validate parsed data is an object
+          if (!data || typeof data !== 'object') {
+            console.warn('⚠️ WebSocket: Parsed data is not an object:', typeof data);
+            return;
+          }
           
           // Handle pong response
           if (data.type === 'pong') {
@@ -132,6 +144,7 @@ export function useWebSocket({
           onMessage?.(data);
         } catch (error) {
           console.error('❌ Failed to parse WebSocket message:', error);
+          console.error('❌ Message data:', event.data);
         }
       };
 

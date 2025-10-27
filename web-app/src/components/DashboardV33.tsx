@@ -162,16 +162,20 @@ export default function DashboardV33() {
     onMessage: (data) => {
       if (!data) return;
       console.log('📊 Realtime data received:', data);
-      if (data.signals && Array.isArray(data.signals) && data.signals.length > 0) {
+      
+      // SAFETY: Only process data if it has signals as an array
+      if (data && typeof data === 'object' && data.signals && Array.isArray(data.signals) && data.signals.length > 0) {
         setRealtimeUpdates(prev => ({
           signals: prev.signals + 1,
           risk: prev.risk
         }));
+        
+        // SAFETY: Only add alerts if signal is valid object with symbol
         data.signals.forEach((signal: any) => {
-          if (signal && signal.symbol) {
+          if (signal && typeof signal === 'object' && signal.symbol && typeof signal.symbol === 'string') {
             setAlerts(prev => [...prev, {
               id: `signal-${Date.now()}-${signal.symbol}`,
-              message: `🔔 ${signal.symbol}: ${signal.signal} sinyali (Güven: ${(signal.confidence * 100).toFixed(0)}%)`,
+              message: `🔔 ${signal.symbol}: ${signal.signal || 'UPDATE'} sinyali (Güven: ${signal.confidence ? (signal.confidence * 100).toFixed(0) : '--'}%)`,
               type: 'success',
               timestamp: new Date()
             }]);
