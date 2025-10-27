@@ -215,7 +215,7 @@ export default function DashboardV33() {
   useEffect(() => {
     // Set WebSocket URL after mount to prevent SSR issues
     if (typeof window !== 'undefined') {
-      const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+      const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081/ws';
       console.log('🔗 WebSocket URL:', url);
       setWsUrl(url);
       setShouldConnectWS(true);
@@ -225,7 +225,7 @@ export default function DashboardV33() {
   const { connected, error, lastMessage } = useWebSocket({
     url: shouldConnectWS ? wsUrl : '', // Empty URL prevents connection
     maxReconnectAttempts: 5, // Limit retry attempts to 5
-    onMessage: (data) => {
+    onMessage: (data: any) => {
       if (!data) return;
       console.log('📊 Realtime data received:', data);
       
@@ -276,6 +276,12 @@ export default function DashboardV33() {
           console.log('📈 Portfolio chart updated:', data.value);
         }
       }
+    },
+    onConnect: () => {
+      console.log('✅ WebSocket connected successfully');
+    },
+    onDisconnect: () => {
+      console.warn('⚠️ WebSocket disconnected');
     }
   });
   

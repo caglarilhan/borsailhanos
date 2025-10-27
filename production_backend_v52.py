@@ -414,7 +414,7 @@ class ProductionAPI(BaseHTTPRequestHandler):
         return sectors.get(symbol, 'Diğer')
 
 def run_server():
-    port = 8000
+    port = 8080
     httpd = HTTPServer(('', port), ProductionAPI)
     
     print('=' * 80)
