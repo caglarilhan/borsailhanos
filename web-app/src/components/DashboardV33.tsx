@@ -591,7 +591,7 @@ export default function DashboardV33() {
                 console.log('🔐 Login attempt:', username);
                 if (username && password) {
                   try {
-                    console.log('📡 Backend'e istek gönderiliyor...');
+                    console.log('📡 Backend istegi gonderiliyor...');
                     const res = await fetch('http://localhost:8080/api/auth/login', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
@@ -601,22 +601,22 @@ export default function DashboardV33() {
                     const data = await res.json();
                     console.log('📥 Backend response data:', data);
                     if (data.status === 'success') {
-                      console.log('✅ Login başarılı!');
+                      console.log('✅ Login basarili!');
                       setIsLoggedIn(true);
                       setShowLogin(false);
                       setCurrentUser(username);
                       localStorage.setItem('bistai_user', username);
-                      alert('Giriş başarılı!');
+                      alert('Giris basarili!');
                     } else {
                       console.error('❌ Login failed:', data.message);
-                      alert(data.message || 'Giriş başarısız');
+                      alert(data.message || 'Giris basarisiz');
                     }
                   } catch (e) {
                     console.error('❌ Network error:', e);
-                    alert('Bağlantı hatası: ' + e);
+                    alert('Baglanti hatasi: ' + e);
                   }
                 } else {
-                  alert('Lütfen kullanıcı adı ve şifre girin');
+                  alert('Lutfen kullanici adi ve sifre girin');
                 }
               }}
               style={{
