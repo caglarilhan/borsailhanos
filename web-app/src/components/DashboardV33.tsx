@@ -169,6 +169,7 @@ export default function DashboardV33() {
   
   const { connected, error, lastMessage } = useWebSocket({
     url: shouldConnectWS ? wsUrl : '', // Empty URL prevents connection
+    maxReconnectAttempts: 5, // Limit retry attempts to 5
     onMessage: (data) => {
       if (!data) return;
       console.log('📊 Realtime data received:', data);
@@ -1213,16 +1214,16 @@ export default function DashboardV33() {
                 <XAxis 
                   dataKey="day" 
                   stroke="#64748b" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis 
                   stroke="#64748b" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   domain={['auto', 'auto']}
-                  label={{ value: 'Fiyat (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '13px', fontWeight: '600' } }}
+                  label={{ value: 'Fiyat (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '11px', fontWeight: '600' } }}
                 />
                 <Tooltip 
                   contentStyle={{ 
@@ -1391,16 +1392,16 @@ export default function DashboardV33() {
                 <XAxis 
                   dataKey="day" 
                   stroke="#64748b" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   angle={-45}
                   textAnchor="end"
                   height={80}
                 />
                 <YAxis 
                   stroke="#64748b" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 10 }}
                   domain={['auto', 'auto']}
-                  label={{ value: 'Portföy Değeri (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '13px', fontWeight: '600' } }}
+                  label={{ value: 'Portföy Değeri (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '11px', fontWeight: '600' } }}
                 />
                 <Tooltip 
                   contentStyle={{ 
