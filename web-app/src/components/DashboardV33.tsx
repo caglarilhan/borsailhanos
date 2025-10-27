@@ -1158,11 +1158,11 @@ export default function DashboardV33() {
                         {s.signal}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'N/A'}`}>
-                      {s.price ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}` : 'N/A'}
+                    <td style={{ padding: '12px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'Veri bekleniyor'}`}>
+                      {s.price ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}` : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>⏳ Veri bekleniyor</span>}
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'N/A'}`}>
-                      {s.target ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}` : 'N/A'}
+                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'Veri bekleniyor'}`}>
+                      {s.target ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}` : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>⏳ Veri bekleniyor</span>}
                     </td>
                     <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: (s.change || 0) > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${(s.change || 0) > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change || 0)}`}>
                       {(s.change || 0) > 0 ? '↑' : '↓'} {Math.abs(s.change || 0)}%
