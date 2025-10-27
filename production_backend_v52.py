@@ -52,6 +52,20 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_health()
         elif path == '/api/performance':
             self._handle_performance()
+        elif path == '/api/auth/users':
+            self._handle_get_users()
+        else:
+            self._set_headers(404)
+            response = {'error': 'Endpoint bulunamadı', 'path': path}
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+    
+    def do_POST(self):
+        path = self.path.split('?')[0]
+        
+        if path == '/api/auth/login':
+            self._handle_auth_login()
+        elif path == '/api/auth/register':
+            self._handle_auth_register()
         else:
             self._set_headers(404)
             response = {'error': 'Endpoint bulunamadı', 'path': path}
@@ -412,6 +426,82 @@ class ProductionAPI(BaseHTTPRequestHandler):
             'AKBNK': 'Bankacılık'
         }
         return sectors.get(symbol, 'Diğer')
+    
+    def _handle_auth_login(self):
+        """Login endpoint"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            username = data.get('username', '')
+            password = data.get('password', '')
+            
+            # Demo users
+            users = {
+                'admin': 'admin123',
+                'trader': 'trader123',
+                'viewer': 'viewer123',
+                'test': 'test123'
+            }
+            
+            if username in users and users[username] == password:
+                self._set_headers(200)
+                response = {
+                    'status': 'success',
+                    'message': 'Giriş başarılı',
+                    'username': username,
+                    'role': 'admin' if username == 'admin' else 'trader'
+                }
+            else:
+                self._set_headers(401)
+                response = {
+                    'status': 'error',
+                    'message': 'Kullanıcı adı veya şifre hatalı'
+                }
+            
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+        except Exception as e:
+            self._set_headers(500)
+            response = {'status': 'error', 'message': str(e)}
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+    
+    def _handle_auth_register(self):
+        """Register endpoint"""
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            post_data = self.rfile.read(content_length)
+            data = json.loads(post_data.decode('utf-8'))
+            
+            username = data.get('username', '')
+            password = data.get('password', '')
+            
+            if username and password:
+                self._set_headers(200)
+                response = {
+                    'status': 'success',
+                    'message': 'Kullanıcı başarıyla kaydedildi',
+                    'username': username
+                }
+            else:
+                self._set_headers(400)
+                response = {
+                    'status': 'error',
+                    'message': 'Kullanıcı adı ve şifre gerekli'
+                }
+            
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+        except Exception as e:
+            self._set_headers(500)
+            response = {'status': 'error', 'message': str(e)}
+            self.wfile.write(json.dumps(response).encode('utf-8'))
+    
+    def _handle_get_users(self):
+        """Get users endpoint (demo)"""
+        self._set_headers(200)
+        users = ['admin', 'trader', 'viewer', 'test']
+        response = {'users': users}
+        self.wfile.write(json.dumps(response).encode('utf-8'))
 
 def run_server():
     port = 8080
