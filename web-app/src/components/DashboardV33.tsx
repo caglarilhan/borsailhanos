@@ -107,6 +107,16 @@ export default function DashboardV33() {
   const [showFilter, setShowFilter] = useState(false);
   const [filterAccuracy, setFilterAccuracy] = useState<number | null>(null);
   
+  // ✅ DYNAMIC WATCHLIST: Gelen sinyallere göre dinamik güncelleme
+  useEffect(() => {
+    if (dynamicSignals.length > 0) {
+      const topSymbols = dynamicSignals.slice(0, 5).map((s: any) => s.symbol).filter(Boolean);
+      if (topSymbols.length > 0) {
+        setWatchlist(topSymbols);
+      }
+    }
+  }, [dynamicSignals]);
+  
   // Button Handlers
   const handleWatchlistClick = () => {
     setShowWatchlist(!showWatchlist);
