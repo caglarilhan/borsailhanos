@@ -2479,6 +2479,78 @@ export default function DashboardV33() {
           </div>
         )}
 
+        {/* Watchlist Panel */}
+        {showWatchlist && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '24px',
+            background: 'linear-gradient(135deg, rgba(59,130,246,0.1), rgba(147,51,234,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(59,130,246,0.3)',
+            boxShadow: '0 20px 60px rgba(59,130,246,0.2)'
+          }}>
+            <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  📋 İzleme Listesi
+                </h2>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                  {watchlist.length} hisse izleniyor
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowWatchlist(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: '700',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+            </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '20px',
+              border: '1px solid rgba(0,0,0,0.1)'
+            }}>
+              {watchlist.length > 0 ? (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
+                  {watchlist.map((symbol) => (
+                    <div 
+                      key={symbol}
+                      style={{
+                        padding: '12px',
+                        background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onClick={() => {
+                        setSelectedSymbol(symbol);
+                        const element = document.getElementById('signals-table');
+                        if (element) element.scrollIntoView({ behavior: 'smooth' });
+                      }}
+                    >
+                      <p style={{ margin: 0, fontWeight: 'bold', fontSize: '14px' }}>{symbol}</p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ textAlign: 'center', color: '#64748b' }}>İzleme listesi boş</p>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Admin Panel */}
         {showAdmin && (
           <div style={{ 
