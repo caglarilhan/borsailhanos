@@ -580,10 +580,10 @@ export default function DashboardV33() {
               <span aria-hidden="true">📊</span> Viz
             </button>
             <button 
-              onClick={() => setShowAIConfidence(!showAIConfidence)}
+              onClick={() => openPanel('aiconf')}
               style={{ 
                 padding: '8px 14px', 
-                background: showAIConfidence ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
+                background: activePanel === 'aiconf' ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '8px',
@@ -604,10 +604,10 @@ export default function DashboardV33() {
               <span aria-hidden="true">🧠</span> AI
             </button>
             <button 
-              onClick={() => setShowCognitiveAI(!showCognitiveAI)}
+              onClick={() => openPanel('cognitive')}
               style={{ 
                 padding: '8px 14px', 
-                background: showCognitiveAI ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
+                background: activePanel === 'cognitive' ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1948,7 +1948,7 @@ export default function DashboardV33() {
         )}
 
         {/* AI Confidence Breakdown */}
-        {showAIConfidence && (
+        {activePanel === 'aiconf' && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -1996,7 +1996,7 @@ export default function DashboardV33() {
         )}
 
         {/* Cognitive AI Comments */}
-        {showCognitiveAI && (
+        {activePanel === 'cognitive' && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
