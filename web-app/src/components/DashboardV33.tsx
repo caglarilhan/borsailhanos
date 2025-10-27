@@ -115,7 +115,9 @@ export default function DashboardV33() {
   
   const openPanel = (panel: string) => {
     console.log(`📂 Panel açılıyor: ${panel}`);
+    console.log(`🔍 Önceki activePanel: ${activePanel}`);
     setActivePanel(panel);
+    console.log(`🔍 Yeni activePanel: ${panel}`);
   };
   
   const closePanel = () => {
