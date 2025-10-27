@@ -65,6 +65,14 @@ export default function DashboardV33() {
   const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
   const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
+  const [timeString, setTimeString] = useState<string>('');
+  
+  // Time update effect - hydration-safe
+  useEffect(() => {
+    if (mounted) {
+      setTimeString(lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+    }
+  }, [mounted, lastUpdate]);
   const [showV50Module, setShowV50Module] = useState(false);
   const [v50ActiveTab, setV50ActiveTab] = useState<'risk' | 'portfolio' | 'backtest'>('risk');
   const [showTraderGPT, setShowTraderGPT] = useState(false);
@@ -417,7 +425,7 @@ export default function DashboardV33() {
                 ) : (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }} suppressHydrationWarning>
                     <div style={{ width: '6px', height: '6px', background: connected ? '#10b981' : '#ef4444', borderRadius: '50%', animation: connected ? 'pulse 2s infinite' : 'none' }}></div>
-                    {connected ? 'Canlı' : 'Offline'} • {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} • İzleme: {watchlist.join(', ')}
+                    {connected ? 'Canlı' : 'Offline'} • {mounted ? timeString : '--:--'} • İzleme: {watchlist.join(', ')}
                     {realtimeUpdates.signals > 0 && (
                       <span style={{ fontSize: '10px', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '600', color: '#10b981' }}>
                         +{realtimeUpdates.signals}
@@ -1671,7 +1679,7 @@ export default function DashboardV33() {
                   <div style={{ fontSize: '18px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '11px', fontWeight: '700', marginBottom: '4px' }}>{alert.message}</div>
-                    <div style={{ fontSize: '11px', opacity: 0.9 }}>{alert.timestamp.toLocaleTimeString('tr-TR')}</div>
+                    <div style={{ fontSize: '11px', opacity: 0.9 }}>{mounted ? alert.timestamp.toLocaleTimeString('tr-TR') : '--:--:--'}</div>
                   </div>
                   <button 
                     onClick={() => setAlerts(alerts.filter(a => a.id !== alert.id))}
@@ -2203,7 +2211,7 @@ export default function DashboardV33() {
                 <span style={{ fontWeight: '700', color: '#ef4444' }}>Ortalama Risk:</span> Düşük
               </div>
               <div>
-                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {mounted && lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {mounted ? timeString : '--:--'}
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
