@@ -2479,6 +2479,78 @@ export default function DashboardV33() {
           </div>
         )}
 
+        {/* Admin Panel */}
+        {showAdmin && (
+          <div style={{ 
+            margin: '48px 0',
+            padding: '24px',
+            background: 'linear-gradient(135deg, rgba(0,0,0,0.1), rgba(255,255,255,0.1))',
+            borderRadius: '24px',
+            border: '2px solid rgba(139,92,246,0.3)',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+          }}>
+            <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0f172a', margin: '0 0 8px 0' }}>
+                  ⚙️ Admin Paneli
+                </h2>
+                <p style={{ fontSize: '12px', color: '#64748b', margin: 0 }}>
+                  Sistem yönetimi ve ayarlar
+                </p>
+              </div>
+              <button 
+                onClick={() => setShowAdmin(false)}
+                style={{
+                  padding: '8px 16px',
+                  background: '#ef4444',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontWeight: '700',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                ✕ Kapat
+              </button>
+            </div>
+
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '20px',
+              padding: '20px',
+              border: '1px solid rgba(0,0,0,0.1)'
+            }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                <div style={{ padding: '16px', background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)', borderRadius: '12px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>📊 Sistem Durumu</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>Backend: Aktif</p>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>WebSocket: Aktif</p>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>Database: Connected</p>
+                </div>
+
+                <div style={{ padding: '16px', background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)', borderRadius: '12px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>🔧 Ayarlar</h3>
+                  <button style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', marginRight: '8px' }}>
+                    Veri Yenile
+                  </button>
+                  <button style={{ padding: '8px 16px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
+                    Log İzle
+                  </button>
+                </div>
+
+                <div style={{ padding: '16px', background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)', borderRadius: '12px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>📈 İstatistikler</h3>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>Toplam Sinyal: 500+</p>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>AI Accuracy: 85%</p>
+                  <p style={{ fontSize: '12px', color: '#64748b' }}>Aktif Hisse: 25</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* TraderGPT Sidebar */}
         <TraderGPTSidebar />
       </main>
