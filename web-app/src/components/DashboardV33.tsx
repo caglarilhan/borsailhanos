@@ -524,14 +524,111 @@ export default function DashboardV33() {
           }
         }
       `}</style>
-      <div style={{ 
-        minHeight: '100vh', 
-        background: 'linear-gradient(to bottom, #ffffff, #f0f9ff, #e0f2fe)', 
-        color: '#0f172a',
-        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
-      }}>
-      {/* Header - Compact */}
-      <header style={{ 
+      
+      {/* Login Check - Giriş yapılmadıysa sadece login göster */}
+      {(!isLoggedIn || showLogin) ? (
+        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.95)',
+            padding: '40px',
+            borderRadius: '24px',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            maxWidth: '400px',
+            width: '90%'
+          }}>
+            <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>
+              💹 BIST AI Smart Trader
+            </h1>
+            <p style={{ fontSize: '14px', color: '#64748b', textAlign: 'center', marginBottom: '32px' }}>
+              Giriş Yap
+            </p>
+            
+            <input 
+              type="text" 
+              placeholder="Kullanıcı Adı" 
+              id="login-username"
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '12px',
+                fontSize: '14px',
+                marginBottom: '16px'
+              }}
+            />
+            <input 
+              type="password" 
+              placeholder="Şifre" 
+              id="login-password"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const btn = document.getElementById('login-btn') as HTMLButtonElement;
+                  btn?.click();
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                border: '1px solid #ddd',
+                borderRadius: '12px',
+                fontSize: '14px',
+                marginBottom: '24px'
+              }}
+            />
+            
+            <button 
+              id="login-btn"
+              onClick={async () => {
+                const username = (document.getElementById('login-username') as HTMLInputElement)?.value;
+                const password = (document.getElementById('login-password') as HTMLInputElement)?.value;
+                if (username && password) {
+                  try {
+                    const res = await fetch('http://localhost:8080/api/auth/login', {
+                      method: 'POST',
+                      headers: {'Content-Type': 'application/json'},
+                      body: JSON.stringify({username, password})
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                      setIsLoggedIn(true);
+                      setShowLogin(false);
+                      setCurrentUser(username);
+                      localStorage.setItem('bistai_user', username);
+                    } else {
+                      alert(data.message || 'Giriş başarısız');
+                    }
+                  } catch (e) {
+                    alert('Bağlantı hatası');
+                  }
+                } else {
+                  alert('Lütfen kullanıcı adı ve şifre girin');
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '12px',
+                fontSize: '16px',
+                fontWeight: 'bold',
+                cursor: 'pointer'
+              }}
+            >
+              Giriş Yap
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ 
+          minHeight: '100vh', 
+          background: 'linear-gradient(to bottom, #ffffff, #f0f9ff, #e0f2fe)', 
+          color: '#0f172a',
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif'
+        }}>
+          {/* Header - Compact */}
+          <header style={{ 
         background: 'rgba(255,255,255,0.95)', 
         backdropFilter: 'blur(20px)',
         borderBottom: '1px solid rgba(6,182,212,0.2)', 
@@ -2729,106 +2826,6 @@ export default function DashboardV33() {
         {/* TraderGPT Sidebar */}
         <TraderGPTSidebar />
       </main>
-
-      {/* Login Modal */}
-      {showLogin && !isLoggedIn && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 10000
-        }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.95)',
-            padding: '40px',
-            borderRadius: '24px',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            maxWidth: '400px',
-            width: '90%'
-          }}>
-            <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>
-              💹 BIST AI Smart Trader
-            </h1>
-            <p style={{ fontSize: '14px', color: '#64748b', textAlign: 'center', marginBottom: '32px' }}>
-              Giriş Yap
-            </p>
-            
-            <input 
-              type="text" 
-              placeholder="Kullanıcı Adı" 
-              id="login-username"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '12px',
-                fontSize: '14px',
-                marginBottom: '16px'
-              }}
-            />
-            <input 
-              type="password" 
-              placeholder="Şifre" 
-              id="login-password"
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '1px solid #ddd',
-                borderRadius: '12px',
-                fontSize: '14px',
-                marginBottom: '24px'
-              }}
-            />
-            
-            <button 
-              onClick={async () => {
-                const username = (document.getElementById('login-username') as HTMLInputElement)?.value;
-                const password = (document.getElementById('login-password') as HTMLInputElement)?.value;
-                if (username && password) {
-                  try {
-                    const res = await fetch('http://localhost:8080/api/auth/login', {
-                      method: 'POST',
-                      headers: {'Content-Type': 'application/json'},
-                      body: JSON.stringify({username, password})
-                    });
-                    const data = await res.json();
-                    if (data.status === 'success') {
-                      setIsLoggedIn(true);
-                      setShowLogin(false);
-                      setCurrentUser(username);
-                      localStorage.setItem('bistai_user', username);
-                    } else {
-                      alert(data.message || 'Giriş başarısız');
-                    }
-                  } catch (e) {
-                    alert('Bağlantı hatası');
-                  }
-                } else {
-                  alert('Lütfen kullanıcı adı ve şifre girin');
-                }
-              }}
-              style={{
-                width: '100%',
-                padding: '14px',
-                background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '12px',
-                fontSize: '16px',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                transition: 'all 0.2s'
-              }}
-            >
-              Giriş Yap
-            </button>
-          </div>
         </div>
       )}
     </div>
