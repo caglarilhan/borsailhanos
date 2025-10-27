@@ -118,8 +118,8 @@ export function useWebSocket({
     };
 
     ws.onerror = (err) => {
-      console.error("❌ [WS] Error:", err);
-      updateState({ error: "WebSocket error", connected: false });
+      console.error("❌ [WS] Error:", err instanceof Error ? err.message : JSON.stringify(err));
+      updateState({ error: "WebSocket connection error", connected: false });
     };
 
     ws.onclose = (event) => {

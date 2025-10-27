@@ -208,7 +208,7 @@ async def main():
     import websockets
     init_db()
     logger.info(f"🚀 BIST AI Smart Trader v11.0 running on ws://localhost:{PORT}")
-    async with websockets.serve(handle_client,"localhost",PORT):
+    async with websockets.serve(handle_client,"0.0.0.0",PORT):
         await realtime_loop()
 
 if __name__=="__main__":
