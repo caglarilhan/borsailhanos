@@ -263,24 +263,11 @@ export default function DashboardV33() {
   // Risk Engine Update Cron (10 min)
   // Risk engine update simulation removed - not used
   
-  // FinBERT Sentiment Update Cron (10 min)
+  // FinBERT Sentiment Update Cron (10 min) - DISABLED to prevent infinite loop
+  // Sentiment data is now static to avoid re-render loops
   useEffect(() => {
-    const sentimentInterval = setInterval(() => {
-      // @ts-ignore
-      setSentimentData(prev => {
-        if (!prev) return null;
-        // @ts-ignore
-        return prev.map((s: any) => ({
-          ...s,
-          sentiment: Math.max(40, Math.min(95, s.sentiment + (Math.random() * 10 - 5))),
-          positive: Math.max(20, Math.min(80, s.positive + (Math.random() * 10 - 5))),
-          negative: Math.max(10, Math.min(50, s.negative + (Math.random() * 10 - 5))),
-        }));
-      });
-      console.log('📊 FinBERT Sentiment updated');
-    }, 600000); // 10 minutes
-    
-    return () => clearInterval(sentimentInterval);
+    // Disabled: setSentimentData updates were causing infinite render loop
+    // Sentiment data is initialized once and remains static
   }, []);
   
   // Sector Heatmap Data with sub-sectors
