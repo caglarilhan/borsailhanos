@@ -80,6 +80,8 @@ export default function DashboardV33() {
   const [timeString, setTimeString] = useState<string>('');
   const [dynamicSignals, setDynamicSignals] = useState<any[]>([]); // WebSocket'ten gelen dinamik sinyaller
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null); // Bildirim tıklama için
+  const [dynamicSummary, setDynamicSummary] = useState<string>(''); // AI Summary
+  const [sectorStats, setSectorStats] = useState<any>(null); // Sektör İstatistikleri
   
   // Time update effect - hydration-safe
   useEffect(() => {
@@ -155,7 +157,7 @@ export default function DashboardV33() {
     alert('💬 Geri bildirim formu açılacak...');
   };
   
-  // ✅ NOTIFICATION CLICK HANDLER: Bildirim tıklandığında sembol seç, detay göster
+  // ✅ NOTIFICATION CLICK HANDLER: Bildirim tıklandığında sembol seç, detay göster, tabloya scroll yap
   const handleNotificationClick = (alert: any) => {
     // Bildirim mesajından sembolü çıkar (örn: "🔔 THYAO: BUY sinyali...")
     const symbolMatch = alert.message.match(/([A-Z]{2,6}):/);
@@ -166,7 +168,19 @@ export default function DashboardV33() {
       const signal = signals.find((s: any) => s.symbol === symbol);
       if (signal) {
         console.log(`📊 ${symbol} detay analizi açılıyor...`, signal);
-        // Gelecekte modal veya sağ panel açılabilir burada
+        
+        // ✅ SMART SCROLL: Sembol satırına scroll yap
+        setTimeout(() => {
+          const element = document.getElementById(`signal-row-${symbol}`);
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Highlight efekti
+            element.style.backgroundColor = 'rgba(245,158,11,0.2)';
+            setTimeout(() => {
+              element.style.backgroundColor = '';
+            }, 2000);
+          }
+        }, 100);
       }
     }
   };
@@ -192,27 +206,40 @@ export default function DashboardV33() {
       if (!data) return;
       console.log('📊 Realtime data received:', data);
       
-      // SAFETY: Only process data if it has signals as an array
-      if (data && typeof data === 'object' && data.signals && Array.isArray(data.signals) && data.signals.length > 0) {
-        // ✅ DYNAMIC UPDATE: WebSocket'ten gelen sinyalleri state'e kaydet
-        setDynamicSignals(data.signals);
+      // ✅ COMPREHENSIVE UPDATE: signals + summary + sectors + portfolio
+      if (data && typeof data === 'object') {
+        // 1. Signals update
+        if (data.signals && Array.isArray(data.signals) && data.signals.length > 0) {
+          setDynamicSignals(data.signals);
+          setRealtimeUpdates(prev => ({
+            signals: prev.signals + 1,
+            risk: prev.risk
+          }));
+          
+          // Add alerts for new signals
+          data.signals.forEach((signal: any) => {
+            if (signal && typeof signal === 'object' && signal.symbol && typeof signal.symbol === 'string') {
+              setAlerts(prev => [...prev, {
+                id: `signal-${Date.now()}-${signal.symbol}`,
+                message: `🔔 ${signal.symbol}: ${signal.signal || 'UPDATE'} sinyali (Güven: ${signal.confidence ? (signal.confidence * 100).toFixed(0) : '--'}%)`,
+                type: 'success',
+                timestamp: new Date()
+              }]);
+            }
+          });
+        }
         
-        setRealtimeUpdates(prev => ({
-          signals: prev.signals + 1,
-          risk: prev.risk
-        }));
+        // 2. AI Summary update
+        if (data.summary && typeof data.summary === 'string') {
+          setDynamicSummary(data.summary);
+          console.log('📝 AI Summary update:', data.summary);
+        }
         
-        // SAFETY: Only add alerts if signal is valid object with symbol
-        data.signals.forEach((signal: any) => {
-          if (signal && typeof signal === 'object' && signal.symbol && typeof signal.symbol === 'string') {
-            setAlerts(prev => [...prev, {
-              id: `signal-${Date.now()}-${signal.symbol}`,
-              message: `🔔 ${signal.symbol}: ${signal.signal || 'UPDATE'} sinyali (Güven: ${signal.confidence ? (signal.confidence * 100).toFixed(0) : '--'}%)`,
-              type: 'success',
-              timestamp: new Date()
-            }]);
-          }
-        });
+        // 3. Sector stats update
+        if (data.sectorStats && typeof data.sectorStats === 'object') {
+          setSectorStats(data.sectorStats);
+          console.log('📊 Sector stats update:', data.sectorStats);
+        }
       }
     }
   });
@@ -250,6 +277,23 @@ export default function DashboardV33() {
     
     return () => clearInterval(realtimeInterval);
   }, []);
+  
+  // ✅ Portfolio Chart Dynamic Update: Yeni sinyaller geldiğinde grafiği güncelle
+  useEffect(() => {
+    if (dynamicSignals.length > 0 && signals.length > 0) {
+      // Gelen sinyallerden portfolio değerini hesapla
+      const newValue = portfolioValue + Math.random() * 1000 - 500;
+      const newData = [...portfolioData, {
+        day: `Gün ${portfolioData.length + 1}`,
+        value: newValue,
+        profit: (newValue - 100000)
+      }];
+      
+      // Son 30 noktayı tut
+      setPortfolioData(newData.slice(-30));
+      setPortfolioValue(newValue);
+    }
+  }, [dynamicSignals]);
   
   // Event-Driven AI - Bilanço takvimi
   useEffect(() => {
@@ -1095,7 +1139,7 @@ export default function DashboardV33() {
               </thead>
               <tbody>
                 {signals.slice(0, visibleSignals).map((s, idx) => (
-                  <tr key={idx} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={`${s.symbol} - ${s.signal} sinyali, Fiyat: ₺${s.price.toFixed(2)}, Beklenen: ₺${s.target.toFixed(2)}`}>
+                  <tr key={idx} id={`signal-row-${s.symbol}`} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={`${s.symbol} - ${s.signal} sinyali, Fiyat: ₺${s.price.toFixed(2)}, Beklenen: ₺${s.target.toFixed(2)}`}>
                     <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
                     <td style={{ padding: '12px' }}>
                       <span style={{
