@@ -151,7 +151,8 @@ export default function DashboardV33() {
   useEffect(() => {
     // Set WebSocket URL after mount to prevent SSR issues
     if (typeof window !== 'undefined') {
-      const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081/ws';
+      const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws';
+      console.log('🔗 WebSocket URL:', url);
       setWsUrl(url);
       setShouldConnectWS(true);
     }
