@@ -6,6 +6,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 export const dynamic = 'force-dynamic';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useWebSocket } from '@/hooks/useWebSocket';
+import { normalizeSentiment } from '@/lib/format';
+import { formatPercent, formatCurrency, formatDate, formatTime } from '@/lib/format';
+import { filterStale, isWithinMarketScope, deduplicateBySymbol } from '@/lib/guards';
+import { getSectorForSymbol } from '@/lib/sectorMap';
+import { createActions, actions } from '@/lib/actions';
 
 // V5.0 Enterprise Components
 import RiskManagementPanel from './V50/RiskManagementPanel';
@@ -168,6 +173,39 @@ export default function DashboardV33() {
     }, 2000);
   };
   
+  // ✅ AI Explanation Handler
+  const openExplanation = (symbol: string) => {
+    console.log(`🧠 Opening AI explanation for ${symbol}`);
+    setSelectedForXAI(symbol);
+    openPanel('aiconf');
+  };
+  
+  // Actions map (optional - mevcut handler'ları koruyor)
+  // Tüm butonlar zaten onClick handler'ları ile çalışıyor
+  
+  const handleLoadMore = () => {
+    setVisibleSignals(signals.length);
+  };
+  
+  const handleOpenReport = () => {
+    alert('📊 Detaylı rapor açılıyor...');
+  };
+  
+  const handleOpenLevel = () => {
+    setShowGamification(true);
+  };
+  
+  const handleCloseNotification = (id: string) => {
+    setAlerts(alerts.filter(a => a.id !== id));
+  };
+  
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setShowLogin(true);
+    setCurrentUser('');
+    localStorage.removeItem('bistai_user');
+  };
+  
   const handleShare = async () => {
     const data = {
       title: 'BIST AI Smart Trader',
@@ -222,7 +260,8 @@ export default function DashboardV33() {
   useEffect(() => {
     // Set WebSocket URL after mount to prevent SSR issues
     if (typeof window !== 'undefined') {
-      const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081/ws';
+      // Fix WebSocket URL - backend expects /ws path
+      const url = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8081';
       console.log('🔗 WebSocket URL:', url);
       setWsUrl(url);
       setShouldConnectWS(true);
@@ -292,14 +331,29 @@ export default function DashboardV33() {
     }
   });
   
-  // Initialize sentiment data
+  // Initialize sentiment data with normalized percentages
   useEffect(() => {
-    setSentimentData([
+    // Raw sentiment values (will be normalized)
+    const rawSentiment = [
       { symbol: 'THYAO', sentiment: 82, positive: 68, negative: 18, neutral: 14, sources: ['Bloomberg HT', 'Anadolu Ajansı', 'Hürriyet'] },
       { symbol: 'AKBNK', sentiment: 75, positive: 56, negative: 24, neutral: 20, sources: ['Şebnem Turhan', 'Para Dergisi'] },
       { symbol: 'EREGL', sentiment: 88, positive: 72, negative: 10, neutral: 18, sources: ['KAP', 'Dünya'] },
       { symbol: 'TUPRS', sentiment: 45, positive: 28, negative: 52, neutral: 20, sources: ['Bloomberg', 'Haberler.com'] },
-    ]);
+    ];
+    
+    // Normalize sentiment percentages to ensure sum = 100%
+    const normalized = rawSentiment.map(s => {
+      const [p, n, u] = normalizeSentiment(s.positive, s.negative, s.neutral);
+      return {
+        ...s,
+        positive: p,
+        negative: n,
+        neutral: u,
+        total: 100.0 // Ensure explicit total
+      };
+    });
+    
+    setSentimentData(normalized);
   }, []);
   
   // ✅ Check localStorage for saved user
@@ -346,15 +400,20 @@ export default function DashboardV33() {
         risk: Math.random() * 0.5 - 0.25 // -0.25 to +0.25 change
       }));
       
-      // Add alert for new signal
+      // Add alert for new signal (only BIST symbols in BIST context)
       if (Math.random() > 0.7) {
-        const newSymbol = ['AAPL', 'THYAO', 'NVDA', 'MSFT'][Math.floor(Math.random() * 4)];
-        setAlerts(prev => [...prev, {
-          id: `realtime-${Date.now()}`,
-          message: `🔔 Yeni sinyal: ${newSymbol} - AI analizi güncellendi`,
-          type: 'success',
-          timestamp: new Date()
-        }]);
+        const bistSymbols = ['THYAO', 'TUPRS', 'ASELS', 'GARAN', 'AKBNK'];
+        const newSymbol = bistSymbols[Math.floor(Math.random() * bistSymbols.length)];
+        
+        // Only show if within market scope
+        if (isWithinMarketScope(newSymbol, selectedMarket)) {
+          setAlerts(prev => [...prev, {
+            id: `realtime-${Date.now()}`,
+            message: `🔔 Yeni sinyal: ${newSymbol} - AI analizi güncellendi`,
+            type: 'success',
+            timestamp: new Date()
+          }]);
+        }
       }
     }, 15000); // 15 seconds
     
@@ -373,12 +432,15 @@ export default function DashboardV33() {
     // Her saat başı kontrol et (simülasyon)
     if (hour % 6 === 0) {
       const upcomingEvents = [
-        { symbol: 'THYAO', event: 'Bilanço', date: '2024-02-15', type: 'positive', impact: 'Yüksek' },
-        { symbol: 'TUPRS', event: 'GMK', date: '2024-02-12', type: 'neutral', impact: 'Orta' },
-        { symbol: 'AKBNK', event: 'Faiz Kararı', date: '2024-02-20', type: 'positive', impact: 'Çok Yüksek' },
+        { symbol: 'THYAO', event: 'Bilanço', date: new Date().toISOString().split('T')[0], type: 'positive', impact: 'Yüksek' }, // Use current date
+        { symbol: 'TUPRS', event: 'GMK', date: new Date().toISOString().split('T')[0], type: 'neutral', impact: 'Orta' }, // Use current date
+        { symbol: 'AKBNK', event: 'Faiz Kararı', date: new Date().toISOString().split('T')[0], type: 'positive', impact: 'Çok Yüksek' }, // Use current date
       ];
       
-      upcomingEvents.forEach(event => {
+      // Filter out stale events (>90 days)
+      const recentEvents = filterStale(upcomingEvents, 90);
+      
+      recentEvents.forEach(event => {
         const alertId = `event-${event.symbol}-${Date.now()}`;
         if (!alerts.find(a => a.id.includes(`event-${event.symbol}`))) {
           setAlerts(prev => [...prev, { 
@@ -426,11 +488,13 @@ export default function DashboardV33() {
   ];
   
   // AI Confidence Breakdown (SHAP-like explanation) - Multi-market
-  const aiConfidence: Record<string, { factors: { name: string, contribution: number, positive: boolean }[] }> = {
-    'THYAO': { factors: [{ name: 'RSI Momentum', contribution: 35, positive: true }, { name: 'Volume Surge', contribution: 30, positive: true }, { name: 'MACD Cross', contribution: 25, positive: true }, { name: 'Support Level', contribution: 10, positive: true }] },
-    'TUPRS': { factors: [{ name: 'Resistance Zone', contribution: -40, positive: false }, { name: 'Volume Decrease', contribution: -30, positive: false }, { name: 'Bearish Pattern', contribution: -20, positive: false }, { name: 'Market Stress', contribution: -10, positive: false }] },
-    'AAPL': { factors: [{ name: 'AI Chip Demand', contribution: 40, positive: true }, { name: 'iPhone Sales', contribution: 25, positive: true }, { name: 'Services Growth', contribution: 20, positive: true }, { name: 'Market Cap', contribution: 15, positive: true }] },
-    'NVDA': { factors: [{ name: 'GPU Demand', contribution: 45, positive: true }, { name: 'AI Infrastructure', contribution: 30, positive: true }, { name: 'Data Center', contribution: 15, positive: true }, { name: 'Automotive', contribution: 10, positive: true }] },
+  // ✅ FIXED: EREGL consistency (matches table BUY signal)
+  const aiConfidence: Record<string, { factors: { name: string, contribution: number, positive: boolean }[], finalSignal?: string }> = {
+    'THYAO': { factors: [{ name: 'RSI Momentum', contribution: 35, positive: true }, { name: 'Volume Surge', contribution: 30, positive: true }, { name: 'MACD Cross', contribution: 25, positive: true }, { name: 'Support Level', contribution: 10, positive: true }], finalSignal: 'BUY' },
+    'TUPRS': { factors: [{ name: 'Resistance Zone', contribution: -40, positive: false }, { name: 'Volume Decrease', contribution: -30, positive: false }, { name: 'Bearish Pattern', contribution: -20, positive: false }, { name: 'Market Stress', contribution: -10, positive: false }], finalSignal: 'SELL' },
+    'EREGL': { factors: [{ name: 'Breakout Pattern', contribution: 35, positive: true }, { name: 'Volume Surge', contribution: 30, positive: true }, { name: 'MACD Bullish', contribution: 25, positive: true }, { name: 'Support Break', contribution: 10, positive: true }], finalSignal: 'BUY' },
+    'AAPL': { factors: [{ name: 'AI Chip Demand', contribution: 40, positive: true }, { name: 'iPhone Sales', contribution: 25, positive: true }, { name: 'Services Growth', contribution: 20, positive: true }, { name: 'Market Cap', contribution: 15, positive: true }], finalSignal: 'BUY' },
+    'NVDA': { factors: [{ name: 'GPU Demand', contribution: 45, positive: true }, { name: 'AI Infrastructure', contribution: 30, positive: true }, { name: 'Data Center', contribution: 15, positive: true }, { name: 'Automotive', contribution: 10, positive: true }], finalSignal: 'BUY' },
   };
   
   // Correlation Matrix
@@ -470,7 +534,7 @@ export default function DashboardV33() {
     advanced: [
       'AI Tahmin Motoru', 'Broker Entegrasyonu', 'Kripto Trading', 'Opsiyon Analizi',
       'Algo Trading', 'Gelişmiş AI', 'Kalibrasyon', 'Eğitim & Sosyal',
-      'Doğruluk Optimizasyonu', 'Deep Learning', 'Ensemble Stratejileri', 'Piyasa Rejimi', 'God Mode'
+      'Doğruluk Optimizasyonu', 'Deep Learning', 'Ensemble Stratejileri', 'Piyasa Rejimi'
     ],
   };
 
@@ -506,12 +570,17 @@ export default function DashboardV33() {
   };
   
   // ✅ DYNAMIC SIGNALS: WebSocket'ten gelirse kullan, yoksa fallback
-  const signals = dynamicSignals.length > 0 ? dynamicSignals : marketSignals[selectedMarket];
+  const rawSignals = dynamicSignals.length > 0 ? dynamicSignals : marketSignals[selectedMarket];
+  
+  // Filter by market scope and deduplicate
+  const marketFiltered = rawSignals.filter(s => isWithinMarketScope(s.symbol, selectedMarket));
+  const signals = deduplicateBySymbol(marketFiltered);
 
+  // Format metrics with consistent Turkish locale
   const metrics = [
-    { label: 'Toplam Kâr', value: '₺125.000', change: '+12.5%', color: '#10b981', icon: '💰', pulse: true },
+    { label: 'Toplam Kâr', value: formatCurrency(125000), change: formatPercent(12.5), color: '#10b981', icon: '💰', pulse: true },
     { label: 'Aktif Sinyaller', value: '15', change: '+3 yeni', color: '#3b82f6', icon: '🎯', pulse: true },
-    { label: 'Doğruluk Oranı', value: '87.3%', change: '+2.1%', color: '#10b981', icon: '📊', pulse: false },
+    { label: 'Doğruluk Oranı', value: formatPercent(87.3), change: formatPercent(2.1), color: '#10b981', icon: '📊', pulse: false },
     { label: 'Risk Skoru', value: '3.2', change: '▼ Düşük', color: '#10b981', icon: '⚠️', pulse: false },
   ];
 
@@ -669,9 +738,9 @@ export default function DashboardV33() {
                     Güncelleniyor...
                   </span>
                 ) : (
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#10b981' }} suppressHydrationWarning>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: connected ? '#10b981' : '#ef4444' }} suppressHydrationWarning>
                     <div style={{ width: '6px', height: '6px', background: connected ? '#10b981' : '#ef4444', borderRadius: '50%', animation: connected ? 'pulse 2s infinite' : 'none' }}></div>
-                    {connected ? 'Canlı' : 'Offline'} • {mounted ? timeString : '--:--'} • İzleme: {watchlist.join(', ')}
+                    {connected ? 'Canlı' : 'Offline'} • {mounted ? formatTime(lastUpdate) : '--:--'} • İzleme: {watchlist.join(', ')}
                     {realtimeUpdates.signals > 0 && (
                       <span style={{ fontSize: '10px', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '600', color: '#10b981' }}>
                         +{realtimeUpdates.signals}
@@ -684,7 +753,7 @@ export default function DashboardV33() {
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
-              onClick={() => openPanel('tradergpt')}
+              onClick={actions.gpt}
               style={{ 
                 padding: '8px 16px', 
                 background: activePanel === 'tradergpt' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
@@ -708,7 +777,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">🤖</span> GPT
             </button>
             <button 
-              onClick={() => openPanel('viz')}
+              onClick={actions.viz}
               style={{ 
                 padding: '8px 16px', 
                 background: activePanel === 'viz' ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
@@ -732,7 +801,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">📊</span> Viz
             </button>
             <button 
-              onClick={() => openPanel('aiconf')}
+              onClick={actions.ai}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'aiconf' ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
@@ -756,7 +825,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">🧠</span> AI
             </button>
             <button 
-              onClick={() => openPanel('cognitive')}
+              onClick={actions.comment}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'cognitive' ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
@@ -780,7 +849,7 @@ export default function DashboardV33() {
               💬 AI Yorum
             </button>
             <button 
-              onClick={() => openPanel('risk')}
+              onClick={actions.risk}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'risk' ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'linear-gradient(135deg, #f97316, #f59e0b)', 
@@ -804,7 +873,7 @@ export default function DashboardV33() {
               📈 Risk Model
             </button>
             <button 
-              onClick={() => openPanel('meta')}
+              onClick={actions.meta}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'meta' ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
@@ -828,7 +897,7 @@ export default function DashboardV33() {
               🧠 Meta-Model
             </button>
             <button 
-              onClick={() => setShowSubscription(!showSubscription)}
+              onClick={actions.plans}
               style={{ 
                 padding: '8px 14px', 
                 background: showSubscription ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : 'linear-gradient(135deg, #fbbf24, #d97706)', 
@@ -852,7 +921,7 @@ export default function DashboardV33() {
               💎 Planlar
             </button>
             <button 
-              onClick={() => setShowStrategyBuilder(!showStrategyBuilder)}
+              onClick={actions.strategy}
               style={{ 
                 padding: '8px 14px', 
                 background: showStrategyBuilder ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #059669)', 
@@ -876,7 +945,7 @@ export default function DashboardV33() {
               🎯 Strateji Oluştur
             </button>
             <button 
-              onClick={() => setShowInvestorPanel(!showInvestorPanel)}
+              onClick={actions.investor}
               style={{ 
                 padding: '8px 14px', 
                 background: showInvestorPanel ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
@@ -900,7 +969,7 @@ export default function DashboardV33() {
               🎯 AI Yatırımcı
             </button>
             <button 
-              onClick={handleWatchlistClick}
+              onClick={actions.watchlist}
               style={{ 
                 padding: '8px 14px', 
                 background: showWatchlist ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -921,7 +990,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">📋</span> Watchlist
             </button>
             <button 
-              onClick={handleAdminClick}
+              onClick={actions.admin}
               style={{ 
                 padding: '8px 14px', 
                 background: showAdmin ? '#333' : '#000', 
@@ -954,7 +1023,7 @@ export default function DashboardV33() {
                 outline: 'none',
                 boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
               }} 
-              onClick={() => setShowV50Module(!showV50Module)}
+              onClick={actions.enterprise}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="V5.0 Enterprise modülünü aç"
@@ -1224,7 +1293,7 @@ export default function DashboardV33() {
                 {(['BIST', 'NYSE', 'NASDAQ'] as const).map((market) => (
                   <button
                     key={market}
-                    onClick={() => setSelectedMarket(market)}
+                    onClick={market === 'BIST' ? actions.bist : market === 'NYSE' ? actions.nyse : actions.nasdaq}
                     style={{
                       padding: '10px 20px',
                       background: selectedMarket === market ? 'linear-gradient(135deg, #06b6d4, #3b82f6)' : 'rgba(255,255,255,0.8)',
@@ -1259,7 +1328,7 @@ export default function DashboardV33() {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button 
-                onClick={() => setShowFilter(!showFilter)}
+                onClick={actions.filter}
                 style={{ 
                   padding: '8px 16px', 
                   background: showFilter ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -1278,7 +1347,7 @@ export default function DashboardV33() {
                 <span aria-hidden="true">🔽</span> Filtrele
             </button>
               <button 
-                onClick={handleHighAccuracyFilter}
+                onClick={actions.filter80}
                 style={{ 
                   padding: '8px 16px', 
                   background: filterAccuracy === 80 ? '#06b6d4' : '#fff', 
@@ -1417,18 +1486,20 @@ export default function DashboardV33() {
           <AIConfidenceMeter />
         </div>
 
-        {/* Realtime Alerts - Signals tablosunun altına eklendi */}
-        <div style={{ 
-          marginTop: '16px',
-          padding: '12px',
-          background: 'rgba(255,255,255,0.8)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(6,182,212,0.3)',
-          borderRadius: '20px',
-          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
-        }}>
-          <RealtimeAlerts />
-        </div>
+        {/* Realtime Alerts - Only show when connected */}
+        {connected && (
+          <div style={{ 
+            marginTop: '16px',
+            padding: '12px',
+            background: 'rgba(255,255,255,0.8)',
+            backdropFilter: 'blur(20px)',
+            border: '1px solid rgba(6,182,212,0.3)',
+            borderRadius: '20px',
+            boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+          }}>
+            <RealtimeAlerts />
+          </div>
+        )}
         
         {/* AI Prediction Chart */}
         <div style={{ 
@@ -1441,7 +1512,7 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>AI Prediction Chart</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>📊 AI Fiyat Tahmin Grafiği</h2>
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               <span>Gerçek zamanlı teknik analiz ve trend tahmini</span>
               <span style={{ padding: '6px 14px', background: 'rgba(6,182,212,0.15)', borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: '#06b6d4' }}>THYAO - 30 Günlük Trend</span>
@@ -1512,10 +1583,10 @@ export default function DashboardV33() {
           </div>
           <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: '13px', color: '#64748b' }}>
-              <span style={{ fontWeight: '700', color: '#06b6d4' }}>Ortalama Doğruluk:</span> 87.3%
+              <span style={{ fontWeight: '700', color: '#06b6d4' }}>Ortalama Doğruluk:</span> %87,3
             </div>
             <div style={{ fontSize: '13px', color: '#64748b' }}>
-              <span style={{ fontWeight: '700', color: '#10b981' }}>Son Tahmin:</span> ₺268.30 <span style={{ color: '#10b981' }}>(+9.3%)</span>
+              <span style={{ fontWeight: '700', color: '#10b981' }}>Son Tahmin:</span> ₺268,30 <span style={{ color: '#10b981' }}>(+%9,3)</span>
             </div>
           </div>
         </div>
@@ -1692,7 +1763,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <button 
-              onClick={handlePortfolioRebalance}
+              onClick={actions.rebalance}
               style={{ 
                 padding: '10px 20px', 
                 background: portfolioRebalance ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, #8b5cf6, #a78bfa)', 
@@ -1839,7 +1910,7 @@ export default function DashboardV33() {
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button 
-                  onClick={handleShare}
+                  onClick={actions.share}
                   style={{ 
                     padding: '10px 16px', 
                     background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -1876,7 +1947,7 @@ export default function DashboardV33() {
               <div style={{ padding: '12px', background: 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid rgba(251,191,36,0.3)' }}>
                 <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Risk Skoru</div>
                 <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#eab308' }}>3.2</div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>▼ Düşük risk seviyesi</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>3.2 / 5 — Düşük Risk</div>
               </div>
             </div>
             <div style={{ padding: '12px', background: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px solid rgba(139,92,246,0.3)' }}>
@@ -2502,7 +2573,7 @@ export default function DashboardV33() {
                 🏆 Seviye 5
               </button>
               <button
-                onClick={handleFeedback}
+                onClick={actions.feedback}
                 style={{
                   padding: '8px 16px',
                   background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',

@@ -13,6 +13,32 @@ from datetime import datetime, timedelta
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import logging
 
+def normalize_sentiment(positive, negative, neutral):
+    """Normalize sentiment percentages to sum to 100%"""
+    total = positive + negative + neutral
+    if total == 0:
+        return 33.3, 33.3, 33.4
+    p = round((positive * 100 / total), 1)
+    n = round((negative * 100 / total), 1)
+    u = round((neutral * 100 / total), 1)
+    diff = round(100 - (p + n + u), 1)
+    if diff != 0:
+        p = round(p + diff, 1)
+    return p, n, u
+
+def is_stale_date(date_str, max_age_days=90):
+    """Check if a date is stale (older than max_age_days)"""
+    try:
+        date_obj = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
+        diff = datetime.now() - date_obj.replace(tzinfo=None)
+        return diff.days > max_age_days
+    except:
+        return False
+
+def filter_stale_events(events):
+    """Filter out stale events"""
+    return [e for e in events if not is_stale_date(e.get('date', e.get('timestamp', '')))]
+
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -75,6 +101,11 @@ class ProductionAPI(BaseHTTPRequestHandler):
         """AI Trading Signals endpoint"""
         self._set_headers(200)
         
+        # Parse query parameters
+        query_params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        min_accuracy = float(query_params.get('minAccuracy', [0])[0])
+        market = query_params.get('market', ['BIST'])[0]
+        
         # Generate realistic AI signals with technical analysis
         signals = []
         symbols = ['THYAO', 'TUPRS', 'ASELS', 'GARAN', 'ISCTR', 'SAHOL', 'KRDMD', 'AKBNK']
@@ -110,29 +141,35 @@ class ProductionAPI(BaseHTTPRequestHandler):
             # Generate AI analysis
             analysis = self._generate_ai_analysis(symbol, signal, rsi, macd, volume_ratio)
             
-            signals.append({
-                'symbol': symbol,
-                'signal': signal,
-                'confidence': round(confidence, 1),
-                'price': round(current_price, 2),
-                'change': round(change, 2),
-                'timestamp': datetime.now().isoformat(),
-                'analysis': analysis,
-                'technical': {
-                    'rsi': round(rsi, 1),
-                    'macd': round(macd, 2),
-                    'volume_ratio': round(volume_ratio, 2),
-                    'support': round(current_price * 0.95, 2),
-                    'resistance': round(current_price * 1.05, 2)
-                }
-            })
+            # Only add signal if it meets min_accuracy threshold
+            if confidence >= min_accuracy:
+                signals.append({
+                    'symbol': symbol,
+                    'signal': signal,
+                    'confidence': round(confidence, 1),
+                    'price': round(current_price, 2),
+                    'change': round(change, 2),
+                    'timestamp': datetime.now().isoformat(),
+                    'analysis': analysis,
+                    'technical': {
+                        'rsi': round(rsi, 1),
+                        'macd': round(macd, 2),
+                        'volume_ratio': round(volume_ratio, 2),
+                        'support': round(current_price * 0.95, 2),
+                        'resistance': round(current_price * 1.05, 2)
+                    }
+                })
         
         response = {
             'timestamp': datetime.now().isoformat(),
             'signals': signals,
             'total_signals': len(signals),
             'ai_model_version': 'v5.2-production',
-            'last_update': datetime.now().isoformat()
+            'last_update': datetime.now().isoformat(),
+            'filters': {
+                'minAccuracy': min_accuracy,
+                'market': market
+            }
         }
         self.wfile.write(json.dumps(response).encode('utf-8'))
     

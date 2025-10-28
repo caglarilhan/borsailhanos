@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Button Test Page</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #0a0a0a;
+            color: #fff;
+        }
+        button {
+            padding: 12px 24px;
+            margin: 10px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+        .log {
+            margin: 10px 0;
+            padding: 10px;
+            background: #0a0a0a;
+            border-left: 3px solid #667eea;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 BIST AI - Button Test Page</h1>
+    
+    <div class="status">
+        <h2>📍 Test Status</h2>
+        <div id="status">Initializing...</div>
+    </div>
+    
+    <h2>🔘 Click These Buttons:</h2>
+    
+    <button onclick="testButton1()">Test Button 1</button>
+    <button onclick="testButton2()">Test Button 2</button>
+    <button onclick="testWebSocket()">Test WebSocket</button>
+    <button onclick="testBackend()">Test Backend API</button>
+    
+    <div class="status">
+        <h2>📝 Event Logs:</h2>
+        <div id="logs"></div>
+    </div>
+    
+    <script>
+        let logCount = 0;
+        
+        function log(message, type = 'info') {
+            logCount++;
+            const logsDiv = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log';
+            logEntry.textContent = `[${timestamp}] ${message}`;
+            
+            if (type === 'success') {
+                logEntry.style.borderLeftColor = '#10b981';
+            } else if (type === 'error') {
+                logEntry.style.borderLeftColor = '#ef4444';
+            }
+            
+            logsDiv.prepend(logEntry);
+            
+            if (logsDiv.children.length > 10) {
+                logsDiv.removeChild(logsDiv.lastChild);
+            }
+        }
+        
+        function testButton1() {
+            log('✅ Button 1 clicked!', 'success');
+            document.getElementById('status').textContent = 'Button 1 clicked at ' + new Date().toLocaleTimeString();
+        }
+        
+        function testButton2() {
+            log('✅ Button 2 clicked!', 'success');
+            document.getElementById('status').textContent = 'Button 2 clicked at ' + new Date().toLocaleTimeString();
+        }
+        
+        function testWebSocket() {
+            log('🔄 Testing WebSocket connection...', 'info');
+            const ws = new WebSocket('ws://localhost:8081/ws');
+            
+            ws.onopen = () => {
+                log('✅ WebSocket connected!', 'success');
+            };
+            
+            ws.onmessage = (event) => {
+                const data = JSON.parse(event.data);
+                log(`📊 WebSocket message: ${data.type}`, 'success');
+                document.getElementById('status').textContent = 'WebSocket: ' + data.type;
+                ws.close();
+            };
+            
+            ws.onerror = (error) => {
+                log('❌ WebSocket error: ' + error, 'error');
+            };
+            
+            ws.onclose = () => {
+                log('🔌 WebSocket closed', 'info');
+            };
+        }
+        
+        function testBackend() {
+            log('🔄 Testing Backend API...', 'info');
+            fetch('http://localhost:8080/api/health')
+                .then(res => res.json())
+                .then(data => {
+                    log(`✅ Backend API: ${data.status}`, 'success');
+                    document.getElementById('status').textContent = 'Backend: ' + data.status;
+                })
+                .catch(err => {
+                    log('❌ Backend API error: ' + err.message, 'error');
+                });
+        }
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            log('✅ Page loaded successfully', 'success');
+            log('🔗 JavaScript is working!', 'success');
+            document.getElementById('status').textContent = 'Ready! Click buttons to test.';
+        });
+    </script>
+</body>
+</html>
+
+

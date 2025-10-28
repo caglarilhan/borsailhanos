@@ -278,7 +278,7 @@ class ProductionRealtimeManager:
 # Global production data manager instance
 production_manager = ProductionRealtimeManager()
 
-async def handle_production_websocket(websocket: WebSocketServerProtocol, path: str):
+async def handle_production_websocket(websocket, path=None):
     """Handle production WebSocket connections"""
     await production_manager.register(websocket)
     

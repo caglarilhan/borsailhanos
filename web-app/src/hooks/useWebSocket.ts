@@ -60,10 +60,22 @@ export function useWebSocket({
   };
 
   const connect = useCallback(() => {
-    if (!url || url.trim() === "") return;
-    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return;
+    if (!url || url.trim() === "") {
+      console.warn("⚠️ [WS] URL empty, skipping connection");
+      return;
+    }
+    
+    // Prevent connection during SSR
+    if (typeof window === 'undefined') return;
+    
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      console.log("✅ [WS] Already connected");
+      return;
+    }
 
     cleanup();
+    
+    console.log("🔄 [WS] Connecting to:", url);
 
     const ws = new WebSocket(url);
     wsRef.current = ws;
@@ -117,9 +129,9 @@ export function useWebSocket({
       }
     };
 
-    ws.onerror = (event) => {
-      console.warn("⚠️ [WS] Connection issue:", event);
-      updateState({ error: "Connection error", connected: false });
+    ws.onerror = (err) => {
+      console.error("❌ [WS] Error:", err);
+      updateState({ error: "WebSocket error", connected: false });
     };
 
     ws.onclose = (event) => {
