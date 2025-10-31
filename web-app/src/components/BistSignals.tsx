@@ -19,6 +19,7 @@ import { IntelligenceHub } from '@/components/AI/IntelligenceHub';
 import { MetaHeatmap } from '@/components/AI/MetaHeatmap';
 import { AIConfidenceGauge } from '@/components/AI/AIConfidenceGauge';
 import { Toast } from '@/components/UI/Toast';
+import { AICorePanel } from '@/components/AI/AICorePanel';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -506,32 +507,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 <div className="text-xs opacity-80">Toplam Sinyal</div>
                 <div className="text-xl font-bold">{Math.max(rows.length, 100)}</div>
               </div>
-              {/* AI Confidence Gauge (ortalama güven) */}
-              {(() => {
-                const avgConf = Math.round((rows.reduce((a,b)=> a + Math.round((b.confidence||0)*100), 0) / Math.max(1, rows.length)));
-                return (
-                  <div className="bg-white/10 rounded-lg p-3 flex items-center">
-                    <AIConfidenceGauge valuePct={avgConf} />
-                  </div>
-                );
-              })()}
-              {(() => {
-                // AI Core status badge
-                try {
-                  const { useAICore } = require('@/store/aiCore');
-                  const core = useAICore();
-                  const ts = core.lastUpdate ? new Date(core.lastUpdate).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }) : '—';
-                  return (
-                    <div className="bg-white/10 rounded-lg p-3">
-                      <div className="text-xs opacity-80">AI Core</div>
-                      <div className="text-sm font-semibold flex items-center gap-2">
-                        <span className="inline-flex h-2 w-2 rounded-full bg-emerald-300 animate-pulse" />
-                        <span>Aktif • {ts}</span>
-                      </div>
-                    </div>
-                  );
-                } catch(e) { return null; }
-              })()}
+              {/* AI Core Panel (compact) */}
+              <div className="col-span-2 md:col-span-4">
+                <AICorePanel />
+              </div>
               {(() => { const { useRegime } = require('@/hooks/queries'); const r = useRegime(); const regime = String(r.data?.regime || '—'); const weights = (()=>{ if (/risk\s*-?on/i.test(regime)) return { equity: 0.8, cash: 0.2 }; if (/neutral|side/i.test(regime)) return { equity: 0.6, cash: 0.4 }; if (/risk\s*-?off/i.test(regime)) return { equity: 0.4, cash: 0.6 }; return { equity: 0.6, cash: 0.4 }; })(); return (
                 <div className="col-span-2 md:col-span-4 bg-white/10 rounded-lg p-3">
       <div className="flex items-center justify-between">
@@ -894,11 +873,21 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           <div className="bg-white rounded-lg p-3 border">
             <div className="text-sm font-semibold text-gray-900 mb-2">FinBERT Duygu Özeti</div>
             <div className="text-xs text-slate-700">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">Pozitif {sentimentSummary?.overall?.positive ?? '—'}%</span>
-                <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Negatif {sentimentSummary?.overall?.negative ?? '—'}%</span>
-                <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200">Nötr {sentimentSummary?.overall?.neutral ?? '—'}%</span>
-              </div>
+              {(() => {
+                const ov = sentimentSummary?.overall || {};
+                const a = Number(ov.positive||0), b = Number(ov.negative||0), c = Number(ov.neutral||0);
+                const s = Math.max(1, a+b+c);
+                const posN = Math.round(a/s*100);
+                const negN = Math.round(b/s*100);
+                const neuN = Math.max(0, 100 - posN - negN);
+                return (
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">Pozitif {posN}%</span>
+                    <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Negatif {negN}%</span>
+                    <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200">Nötr {neuN}%</span>
+                  </div>
+                );
+              })()}
               <div className="mt-1">
                 <div className="text-[11px] text-slate-500 mb-1">7g Pozitif Trend</div>
                 {(() => {
@@ -1140,6 +1129,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               const inWatch = watchlist.includes(sym);
               const currentPrice = seedPrice(sym);
               const bestH = bestHorizonBySymbol.get(sym);
+              const consistency = (() => {
+                const dirs = list.map(x=> (x.prediction||0) >= 0 ? 1 : -1);
+                const maj = dirs.reduce((a,b)=> a + b, 0) >= 0 ? 1 : -1;
+                const ok = dirs.filter(d=> d===maj).length;
+                return `${ok}/${dirs.length}`;
+              })();
               const diffPct = Math.round((best.prediction||0) * 1000) / 10; // % (fallback)
               const fQ = useForecast(sym, '1d', true);
               const targetPrice = fQ.data?.targetPrice ?? Math.round(currentPrice * (1 + (best.prediction||0)) * 100) / 100;
@@ -1154,11 +1149,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <span className={up? 'text-green-600 font-semibold':'text-red-600 font-semibold'}>
                         {up ? '▲' : '▼'} {diffPct}%
                       </span>
-                      <span className="text-slate-600">Güven: <span className="font-semibold text-slate-900">{confPct}%</span></span>
+                      <span className="text-slate-600">Güven: <span className="font-semibold text-[#111827]">{confPct}%</span></span>
                       <span className="text-slate-600">Ufuk: <span className="font-semibold text-slate-900">{best.horizon}</span></span>
                       {bestH && (
                         <span title="En güvenilir ufuk" className="px-2 py-0.5 text-[10px] rounded bg-blue-50 text-blue-800 border border-blue-200">En iyi: {bestH}</span>
                       )}
+                      <span title="Multi-timeframe tutarlılık" className="px-2 py-0.5 text-[10px] rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Tutarlılık {consistency}</span>
                     </div>
                     {/* Mini sparkline */}
                     <div className="hidden sm:block">
@@ -1195,20 +1191,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       );
                     })}
                   </div>
-                  {/* AI tek satır yorum (forecast explain) */}
-                  {Array.isArray(fQ.data?.explain) && fQ.data?.explain.length>0 && (
-                    <div className="mt-2 text-xs text-slate-600 flex items-center gap-2">
-                      <span title={Array.isArray(fQ.data?.explain) ? (fQ.data?.explain as any[]).join(' • ') : ''}>ℹ️</span>
-                      <span>{String(fQ.data.explain[0])}</span>
-                      <button
-                        type="button"
-                        className="ml-auto underline text-slate-700 hover:text-slate-900"
-                        onClick={(e)=>{e.stopPropagation(); setSelectedSymbol(sym); const el=document.getElementById('analysis-panel'); el?.scrollIntoView({ behavior:'smooth', block:'start'});}}
-                        aria-label="Daha fazla açıklama"
-                        title="Analiz panelinde tüm açıklamaları gör"
-                      >daha fazla</button>
-                    </div>
-                  )}
+                  {/* AI tek satır yorum (forecast explain + TraderGPT mini balon) */}
+                  <div className="mt-2 text-xs text-slate-700 flex items-center gap-2">
+                    {Array.isArray(fQ.data?.explain) && fQ.data?.explain.length>0 && (
+                      <>
+                        <span title={(fQ.data.explain as any[]).join(' • ')}>ℹ️</span>
+                        <span className="truncate max-w-[60%]">{String(fQ.data.explain[0])}</span>
+                      </>
+                    )}
+                    <span className="ml-auto px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200" title="AI öneri balonu">🤖 Hedef ₺{Number(targetPrice).toFixed(2)}, stop ₺{(currentPrice*0.9).toFixed(2)}</span>
+                  </div>
                   {/* Teknik mikro rozetler */}
                   <div className="mt-2 flex flex-wrap gap-1">
                     {technicalBadges(best.prediction||0, best.confidence||0).map((tag)=> (
@@ -1410,6 +1402,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                   )}
                   <XaiAnalyst symbol={selectedSymbol} />
+                  {(() => { const { useReasoning } = require('@/hooks/queries'); const rz = useReasoning(selectedSymbol||undefined as any); return (
+                    <div className="bg-white rounded border p-3">
+                      <div className="text-sm font-semibold text-gray-900 mb-1">AI Nedenleri (Kısa İz)</div>
+                      {!rz.data ? <Skeleton className="h-10 w-full rounded" /> : (
+                        <ul className="text-xs text-slate-700 list-disc pl-4 space-y-1">
+                          {(rz.data.reasons||[]).map((t:string, i:number)=> (<li key={i}>{t}</li>))}
+                        </ul>
+                      )}
+                    </div>
+                  ); })()}
                   {(() => { const { useMetaEnsemble } = require('@/hooks/queries'); const me = useMetaEnsemble(selectedSymbol||undefined as any, analysisHorizon, !!selectedSymbol); return (
                     <div className="bg-white rounded border p-3">
                       <div className="text-sm font-semibold text-gray-900 mb-1">Meta-Ensemble (LSTM • Prophet • FinBERT)</div>

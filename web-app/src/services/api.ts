@@ -209,6 +209,11 @@ export async function getCrossCorr() {
       return await fetchSmart(`${API_BASE_URL}/api/ai/finbert_en?symbol=${encodeURIComponent(symbol)}`);
     }
 
+    // AI reasoning trace
+    export async function getReasoning(symbol: string) {
+      return await fetchSmart(`${API_BASE_URL}/api/ai/reasoning?symbol=${encodeURIComponent(symbol)}`);
+    }
+
 export const Api = {
   getBistPredictions,
   getPredictiveTwin,
@@ -245,6 +250,7 @@ export const Api = {
       getIntelligenceHub,
       triggerRetrain,
       getFinBERTEN,
+      getReasoning,
 };
 
 

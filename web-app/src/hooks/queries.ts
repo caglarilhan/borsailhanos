@@ -249,6 +249,15 @@ export function useTriggerRetrainMutation() {
     });
   }
 
+  export function useReasoning(symbol?: string | null) {
+    return useQuery({
+      queryKey: ['reasoning', symbol || ''],
+      queryFn: async () => Api.getReasoning(String(symbol)),
+      enabled: !!symbol,
+      staleTime: 30000,
+    });
+  }
+
   export function useStrategyLab(strategy: string, param: string, enabled: boolean) {
     return useQuery({
       queryKey: ['strategyLab', strategy, param],

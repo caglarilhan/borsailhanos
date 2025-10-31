@@ -124,6 +124,8 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_meta_ensemble()
         elif path == '/api/ai/bo_calibrate':
             self._handle_bo_calibrate()
+        elif path == '/api/ai/reasoning':
+            self._handle_ai_reasoning()
         elif path == '/api/data/macro':
             self._handle_data_macro()
         elif path == '/api/data/cross_corr':
@@ -372,6 +374,46 @@ class ProductionAPI(BaseHTTPRequestHandler):
             'meta_confidence': round(meta*100,1)
         }
         self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_ai_reasoning(self):
+        """Return short reasoning trace for a symbol (indicators + sentiment + macro)."""
+        self._set_headers(200)
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        symbol = (q.get('symbol', ['SISE'])[0] or 'SISE').upper()
+        random.seed(sum(ord(c) for c in symbol) + 555)
+        rsi = 45 + random.randint(-10, 25)
+        macd = round(random.uniform(-0.8, 1.2), 2)
+        vol = round(0.8 + random.random()*0.8, 2)
+        sent = round(0.55 + (random.random()-0.5)*0.3, 2)
+        regime = ['risk_on','neutral','risk_off'][random.randint(0,2)]
+        reasons = []
+        if rsi >= 70:
+            reasons.append('RSI > 70 — aşırı alım')
+        elif rsi >= 55:
+            reasons.append('RSI 55+ — momentum güçleniyor')
+        elif rsi <= 30:
+            reasons.append('RSI < 30 — aşırı satım')
+        if macd >= 0.2:
+            reasons.append('MACD↑ — pozitif kesişim')
+        elif macd <= -0.2:
+            reasons.append('MACD↓ — negatif baskı')
+        if vol >= 1.3:
+            reasons.append('VOL↑ — hacim artışı')
+        if sent >= 0.6:
+            reasons.append('FinBERT pozitif')
+        elif sent <= 0.45:
+            reasons.append('FinBERT negatif')
+        reasons.append(f'Rejim: {regime}')
+        resp = {
+            'symbol': symbol,
+            'rsi': rsi,
+            'macd': macd,
+            'volume_ratio': vol,
+            'sentiment': sent,
+            'regime': regime,
+            'reasons': reasons[:4]
+        }
+        self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
 
     def _handle_bo_calibrate(self):
         """Bayesian optimization mock: return best hyperparams and expected AUC."""
@@ -1434,17 +1476,33 @@ class ProductionAPI(BaseHTTPRequestHandler):
         syms = query_params.get('symbols', ['THYAO,AKBNK,EREGL,SISE,TUPRS'])[0].upper().split(',')
         syms = [s.strip() for s in syms if s.strip()]
         random.seed(len(syms) * 1337)
-        matrix = {}
+        # Generate lower triangular matrix (with diagonal 1.0)
+        raw_matrix = {}
         for i, a in enumerate(syms):
-            row = {}
+            raw_matrix[a] = {}
             for j, b in enumerate(syms):
                 if i == j:
-                    row[b] = 1.0
+                    raw_matrix[a][b] = 1.0  # self-correlation = 1.0
+                elif i > j:
+                    # Use existing value from symmetric position
+                    raw_matrix[a][b] = raw_matrix[b][a]
                 else:
-                    # simetrik korelasyon değerleri -0.3..0.95
-                    val = round(random.uniform(-0.3, 0.95), 2)
-                    row[b] = val
-            matrix[a] = row
+                    # Generate new value
+                    raw_matrix[a][b] = round(random.uniform(-0.3, 0.95), 2)
+        
+        # Symmetrize: C = (C + C^T) / 2
+        matrix = {}
+        for a in syms:
+            matrix[a] = {}
+            for b in syms:
+                if a == b:
+                    matrix[a][b] = 1.0  # Diagonal stays 1.0
+                else:
+                    # Average with transpose
+                    val_ab = raw_matrix[a].get(b, 0.0)
+                    val_ba = raw_matrix[b].get(a, 0.0)
+                    matrix[a][b] = round((val_ab + val_ba) / 2.0, 2)
+        
         self.wfile.write(json.dumps({'symbols': syms, 'correlation': matrix}).encode('utf-8'))
 
     # --- New: BIST30 overview (sector distribution + index comparison) ---
