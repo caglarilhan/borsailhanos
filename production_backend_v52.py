@@ -117,6 +117,14 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_foreign_predictions('NYSE')
         elif path == '/api/ai/forecast':
             self._handle_forecast()
+        elif path == '/api/ai/meta_ensemble':
+            self._handle_meta_ensemble()
+        elif path == '/api/ai/bo_calibrate':
+            self._handle_bo_calibrate()
+        elif path == '/api/data/macro':
+            self._handle_data_macro()
+        elif path == '/api/data/cross_corr':
+            self._handle_data_cross_corr()
         elif path == '/api/backtest/report':
             self._handle_backtest_report()
         elif path == '/api/backtest/quick':
@@ -133,6 +141,14 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_alerts_telegram_send()
         elif path == '/api/strategy/lab':
             self._handle_strategy_lab()
+        elif path == '/api/admin/scheduler/trigger':
+            self._handle_scheduler_trigger()
+        elif path == '/api/admin/scheduler/status':
+            self._handle_scheduler_status()
+        elif path == '/api/ai/memory_bank':
+            self._handle_memory_bank()
+        elif path == '/api/ai/intelligence_hub':
+            self._handle_intelligence_hub()
         elif path == '/api/health':
             self._handle_health()
         elif path == '/api/performance':
@@ -155,6 +171,8 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_watchlist_update()
         elif path == '/api/feedback/submit':
             self._handle_feedback_submit()
+        elif path == '/api/ai/retrain':
+            self._handle_ai_retrain()
         else:
             self._set_headers(404)
             response = {'error': 'Endpoint bulunamadı', 'path': path}
@@ -315,9 +333,83 @@ class ProductionAPI(BaseHTTPRequestHandler):
         resp = {
             'brier_score': round(0.09 + random.random()*0.04, 3),
             'ece': round(0.03 + random.random()*0.03, 3),
-            'reliability': bins
+            'reliability': bins,
+            'curve': [{'p': b['expected'], 'o': b['observed']} for b in bins]
         }
         self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_meta_ensemble(self):
+        """Meta-ensemble mock: LSTM-X, Prophet++, FinBERT fusion → meta confidence & weights."""
+        self._set_headers(200)
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        symbol = (q.get('symbol', ['SISE'])[0] or 'SISE').upper()
+        horizon = (q.get('horizon', ['1d'])[0] or '1d').lower()
+        seed = sum(ord(c) for c in (symbol + horizon)) + 2025
+        random.seed(seed)
+        # base model confidences (0..1)
+        lstm = 0.6 + random.random()*0.35
+        prophet = 0.55 + random.random()*0.35
+        finbert = 0.50 + random.random()*0.35
+        # regime-aware weights hint (momentum-heavy on risk_on)
+        reg = ['risk_on','neutral','risk_off'][seed % 3]
+        w_lstm, w_prophet, w_finbert = (0.5, 0.3, 0.2) if reg=='risk_on' else ((0.4,0.35,0.25) if reg=='neutral' else (0.35,0.4,0.25))
+        meta = w_lstm*lstm + w_prophet*prophet + w_finbert*finbert
+        result = {
+            'symbol': symbol,
+            'horizon': horizon,
+            'regime': reg,
+            'components': {
+                'lstm_x_v2_1': round(lstm*100,1),
+                'prophet_pp': round(prophet*100,1),
+                'finbert_price_fusion': round(finbert*100,1)
+            },
+            'weights': {'lstm': w_lstm, 'prophet': w_prophet, 'finbert': w_finbert},
+            'meta_confidence': round(meta*100,1)
+        }
+        self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_bo_calibrate(self):
+        """Bayesian optimization mock: return best hyperparams and expected AUC."""
+        self._set_headers(200)
+        random.seed(int(time.time())//3600)
+        best = {
+            'lstm': {'layers': random.choice([1,2,3]), 'hidden': random.choice([64,128,256]), 'lr': round(random.uniform(1e-4,5e-3),4)},
+            'prophet': {'seasonality': random.choice(['auto','additive','multiplicative']), 'changepoint_prior': round(random.uniform(0.01,0.3),2)},
+            'fusion': {'alpha_lstm': round(random.uniform(0.35,0.55),2), 'alpha_prophet': round(random.uniform(0.25,0.4),2), 'alpha_finbert': None}
+        }
+        best['fusion']['alpha_finbert'] = round(1.0 - best['fusion']['alpha_lstm'] - best['fusion']['alpha_prophet'], 2)
+        resp = {'status':'ok','updated_at': int(time.time()), 'expected_auc': round(0.7+random.random()*0.2,3), 'best_params': best}
+        self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_data_macro(self):
+        """Macro snapshot mock (CDS, USDTRY, policy rate, VIX)."""
+        self._set_headers(200)
+        now = datetime.now().isoformat()
+        random.seed(int(time.time())//3600)
+        data = {
+            'generated_at': now,
+            'usdtry': round(28 + random.uniform(-0.3,0.6), 3),
+            'cds_5y': round(300 + random.uniform(-40, 60), 1),
+            'policy_rate': round(30 + random.uniform(-1, 1), 2),
+            'vix': round(15 + random.uniform(-3, 6), 2)
+        }
+        self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_data_cross_corr(self):
+        """Cross-market correlation mock (BIST↔NASDAQ↔XU030)."""
+        self._set_headers(200)
+        series = ['BIST30','XU030','NASDAQ100']
+        random.seed(20251031)
+        corr = {
+            'BIST30': {'BIST30':1.0, 'XU030': round(0.86 + random.uniform(-0.05,0.05),2), 'NASDAQ100': round(0.28 + random.uniform(-0.12,0.18),2)},
+            'XU030': {'BIST30': None, 'XU030':1.0, 'NASDAQ100': round(0.25 + random.uniform(-0.12,0.18),2)},
+            'NASDAQ100': {'BIST30': None, 'XU030': None, 'NASDAQ100':1.0}
+        }
+        # make symmetric
+        corr['XU030']['BIST30'] = corr['BIST30']['XU030']
+        corr['NASDAQ100']['BIST30'] = corr['BIST30']['NASDAQ100']
+        corr['NASDAQ100']['XU030'] = corr['XU030']['NASDAQ100']
+        self.wfile.write(json.dumps({'correlation': corr, 'series': series}).encode('utf-8'))
 
     def _handle_ai_pred_interval(self):
         """Mock prediction intervals for symbol+horizon."""
@@ -466,6 +558,83 @@ class ProductionAPI(BaseHTTPRequestHandler):
             'notes': 'Mock StrategyLab sonucu. Parametreleri artırarak kıyaslayın.'
         }
         self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_scheduler_trigger(self):
+        """Nightly calibration trigger (mock)."""
+        self._set_headers(200)
+        now = datetime.now()
+        resp = {
+            'status': 'queued',
+            'job': 'nightly_calibration',
+            'queued_at': now.isoformat(),
+            'notes': 'Bayesian optimization + calibration refresh scheduled for 03:30.'
+        }
+        self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_scheduler_status(self):
+        """Scheduler status (mock)."""
+        self._set_headers(200)
+        now = datetime.now()
+        resp = {
+            'scheduler': 'active',
+            'next_run': (now.replace(hour=3, minute=30, second=0, microsecond=0)).isoformat(),
+            'last_run': (now.replace(hour=max(0, now.hour-20))).isoformat(),
+            'jobs': [
+                {'name': 'nightly_calibration', 'cron': '30 3 * * *', 'enabled': True},
+                {'name': 'data_refresh', 'cron': '*/30 * * * *', 'enabled': True}
+            ]
+        }
+        self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
+    
+    def _handle_memory_bank(self):
+        """AI Memory Bank - Sync with Cursor's memory system."""
+        self._set_headers(200)
+        random.seed(int(time.time())//3600)
+        now = datetime.now().isoformat()
+        
+        # Mock memory bank data (syncs with ai_trader_bank.json)
+        memory = {
+            'lastPrediction': f'THYAO ₺{round(245.5 + random.uniform(-5, 10), 2)}',
+            'confidence': round(0.85 + random.uniform(-0.1, 0.15), 2),
+            'riskLevel': round(3.2 + random.uniform(-0.5, 0.5), 1),
+            'finbertSentiment': round(72.5 + random.uniform(-10, 15), 1),
+            'metaModels': ['LSTM-X', 'Prophet++', 'FinBERT-X', 'RL-Optimizer', 'Meta-Ensemble'],
+            'feedbackScore': round(0.91 + random.uniform(-0.05, 0.05), 2),
+            'lastUpdate': now,
+            'trends': {
+                'accuracy': [round(0.85 + random.uniform(-0.1, 0.1), 2) for _ in range(10)],
+                'confidence': [round(0.8 + random.uniform(-0.15, 0.15), 2) for _ in range(10)],
+                'volatility': [round(0.02 + random.uniform(-0.01, 0.01), 3) for _ in range(10)]
+            }
+        }
+        self.wfile.write(json.dumps(memory, ensure_ascii=False).encode('utf-8'))
+    
+    def _handle_intelligence_hub(self):
+        """AI Intelligence Hub - Performance metrics and conversation history."""
+        self._set_headers(200)
+        random.seed(int(time.time())//3600)
+        now = datetime.now().isoformat()
+        
+        # Mock intelligence hub data
+        hub = {
+            'performance': {
+                'last10Accuracy': round(0.87 + random.uniform(-0.05, 0.05), 2),
+                'confidenceGraph': [round(0.8 + random.uniform(-0.15, 0.15), 2) for _ in range(20)],
+                'aiPerformanceScore': round(0.91 + random.uniform(-0.05, 0.05), 2),
+                'userInteractions': {
+                    'signalsApproved': random.randint(120, 180),
+                    'feedbackSubmitted': random.randint(85, 120),
+                    'accuracy': round(0.89 + random.uniform(-0.05, 0.05), 2)
+                }
+            },
+            'conversationHistory': [
+                {'id': '1', 'timestamp': (datetime.now() - timedelta(minutes=15)).isoformat(), 'query': 'BIST30 top-3?', 'response': 'THYAO, TUPRS, ASELS', 'confidence': 0.87},
+                {'id': '2', 'timestamp': (datetime.now() - timedelta(minutes=30)).isoformat(), 'query': 'THYAO analizi?', 'response': 'Yükseliş trendi, RSI 71, güven %85', 'confidence': 0.85},
+                {'id': '3', 'timestamp': (datetime.now() - timedelta(hours=1)).isoformat(), 'query': 'Risk seviyesi?', 'response': 'Orta seviye (3.2), volatilite düşük', 'confidence': 0.82}
+            ],
+            'lastUpdate': now
+        }
+        self.wfile.write(json.dumps(hub, ensure_ascii=False).encode('utf-8'))
     
     def _handle_chart(self):
         """Dynamic chart data endpoint"""
@@ -1418,6 +1587,34 @@ class ProductionAPI(BaseHTTPRequestHandler):
         # echo back
         resp = {'status': 'ok', 'received': data, 'stored': True, 'ts': datetime.now().isoformat()}
         self.wfile.write(json.dumps(resp).encode('utf-8'))
+    
+    def _handle_ai_retrain(self):
+        """AI Retrain endpoint - triggers model retraining pipeline."""
+        self._set_headers(200)
+        length = int(self.headers.get('Content-Length', 0))
+        body = self.rfile.read(length) if length > 0 else b'{}'
+        try:
+            data = json.loads(body.decode('utf-8'))
+        except Exception:
+            data = {}
+        
+        # Mock retrain response
+        now = datetime.now()
+        next_run = now.replace(hour=3, minute=30, second=0, microsecond=0)
+        if next_run < now:
+            next_run += timedelta(days=1)
+        
+        resp = {
+            'status': 'scheduled',
+            'retrainId': f'retrain_{int(time.time())}',
+            'scheduledAt': next_run.isoformat(),
+            'models': ['LSTM-X', 'Prophet++', 'FinBERT-X', 'RL-Optimizer'],
+            'trainingDataPath': 'training_data/*.json',
+            'outputPath': 'model/weights_v5.json',
+            'estimatedDuration': '2-4 hours',
+            'message': 'Retrain pipeline scheduled for next nightly run'
+        }
+        self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
 
     # --- New: Sentiment summary (normalized + 7d trend) ---
     def _handle_sentiment_summary(self):
@@ -1718,6 +1915,9 @@ def run_server():
     print(f'📊 BIST30 Overview: http://127.0.0.1:{port}/api/ai/bist30_overview')
     print(f'📰 BIST30 News: http://127.0.0.1:{port}/api/news/bist30')
     print(f'⭐ Watchlist Get: http://127.0.0.1:{port}/api/watchlist/get')
+    print(f'💾 Memory Bank: http://127.0.0.1:{port}/api/ai/memory_bank')
+    print(f'🔮 Intelligence Hub: http://127.0.0.1:{port}/api/ai/intelligence_hub')
+    print(f'🔄 AI Retrain: http://127.0.0.1:{port}/api/ai/retrain (POST)')
     print('=' * 80)
     print('✅ Kurumsal seviye AI Trading Terminali aktif!')
     print('=' * 80)

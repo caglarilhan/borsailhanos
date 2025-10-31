@@ -123,6 +123,22 @@ export async function getTop30Analysis() {
 export async function getForecast(symbol: string, horizon: '1d'|'7d'|'30d'='1d') {
   return await fetchSmart(`${API_BASE_URL}/api/ai/forecast?symbol=${encodeURIComponent(symbol)}&horizon=${horizon}`);
 }
+// Meta-ensemble
+export async function getMetaEnsemble(symbol: string, horizon: '1d'|'7d'|'30d'='1d') {
+  return await fetchSmart(`${API_BASE_URL}/api/ai/meta_ensemble?symbol=${encodeURIComponent(symbol)}&horizon=${horizon}`);
+}
+// Bayesian optimization calibration snapshot
+export async function getBOCalibrate() {
+  return await fetchSmart(`${API_BASE_URL}/api/ai/bo_calibrate`);
+}
+// Macro data snapshot
+export async function getMacro() {
+  return await fetchSmart(`${API_BASE_URL}/api/data/macro`);
+}
+// Cross-market correlation
+export async function getCrossCorr() {
+  return await fetchSmart(`${API_BASE_URL}/api/data/cross_corr`);
+}
     // AI core extras
     export async function getCalibration() {
       return await fetchSmart(`${API_BASE_URL}/api/ai/calibration`);
@@ -165,6 +181,25 @@ export async function getForecast(symbol: string, horizon: '1d'|'7d'|'30d'='1d')
       return await fetchSmart(`${API_BASE_URL}/api/strategy/lab?strategy=${encodeURIComponent(strategy)}&param=${encodeURIComponent(param)}`);
     }
 
+    // Memory Bank - Sync with Cursor's memory system
+    export async function getMemoryBank() {
+      return await fetchSmart(`${API_BASE_URL}/api/ai/memory_bank`);
+    }
+
+    // AI Intelligence Hub - Performance metrics and conversation history
+    export async function getIntelligenceHub() {
+      return await fetchSmart(`${API_BASE_URL}/api/ai/intelligence_hub`);
+    }
+
+    // AI Retrain - Trigger model retraining pipeline
+    export async function triggerRetrain(payload?: any) {
+      return await fetchSmart(`${API_BASE_URL}/api/ai/retrain`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload || {})
+      });
+    }
+
 export const Api = {
   getBistPredictions,
   getPredictiveTwin,
@@ -182,6 +217,10 @@ export const Api = {
   getNysePredictions,
   getTop30Analysis,
   getForecast,
+  getMetaEnsemble,
+  getBOCalibrate,
+  getMacro,
+  getCrossCorr,
       getBacktestQuick,
       getXaiWaterfall,
       getSentimentAnalyst,
@@ -192,6 +231,9 @@ export const Api = {
       getRegime,
       getFactors,
       getRanker,
+      getMemoryBank,
+      getIntelligenceHub,
+      triggerRetrain,
 };
 
 

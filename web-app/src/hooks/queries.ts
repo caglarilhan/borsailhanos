@@ -118,6 +118,68 @@ export function useForecast(symbol?: string, horizon: '1d'|'7d'|'30d'='1d', enab
   });
 }
 
+export function useMetaEnsemble(symbol?: string, horizon: '1d'|'7d'|'30d'='1d', enabled: boolean=false) {
+  return useQuery({
+    queryKey: ['metaEnsemble', symbol||'', horizon],
+    queryFn: async () => Api.getMetaEnsemble(String(symbol), horizon),
+    enabled: enabled && !!symbol,
+    staleTime: 30000,
+  });
+}
+
+export function useBOCalibrate() {
+  return useQuery({
+    queryKey: ['boCalibrate'],
+    queryFn: async () => Api.getBOCalibrate(),
+    staleTime: 60000,
+  });
+}
+
+export function useMacro() {
+  return useQuery({
+    queryKey: ['macro'],
+    queryFn: async () => Api.getMacro(),
+    refetchInterval: 300000,
+  });
+}
+
+export function useCrossCorr() {
+  return useQuery({
+    queryKey: ['crossCorr'],
+    queryFn: async () => Api.getCrossCorr(),
+    staleTime: 300000,
+  });
+}
+
+export function useMemoryBank() {
+  return useQuery({
+    queryKey: ['memoryBank'],
+    queryFn: async () => Api.getMemoryBank(),
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 30000,
+  });
+}
+
+export function useIntelligenceHub() {
+  return useQuery({
+    queryKey: ['intelligenceHub'],
+    queryFn: async () => Api.getIntelligenceHub(),
+    refetchInterval: 60000, // Refresh every minute
+    staleTime: 30000,
+  });
+}
+
+export function useTriggerRetrainMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload?: any) => Api.triggerRetrain(payload),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['memoryBank'] });
+      await qc.invalidateQueries({ queryKey: ['intelligenceHub'] });
+    },
+  });
+}
+
   export function useBacktestQuick(universe: string, tcost_bps: number, rebalance_days: number, enabled: boolean) {
     return useQuery({
       queryKey: ['backtestQuick', universe, tcost_bps, rebalance_days],
