@@ -200,3 +200,34 @@ section {
   background: rgba(14, 165, 233, 0.2);
   color: rgba(14, 165, 233, 1);
 }
+
+/* --- HIGH-CONTRAST CLEAN MODE (soft dark on white) --- */
+body {
+  background-color: #ffffff;
+  color: #111827; /* soft dark instead of pure black */
+}
+
+/* Table text on white */
+th, td {
+  color: #111827 !important;
+  background-color: #ffffff !important;
+}
+
+/* Keep general elements readable without forcing pure black */
+span, p, div, label {
+  color: #111827 !important;
+}
+
+/* Signals: keep bold, reduce glare slightly */
+.text-green-700, .text-blue-700, .text-red-700, .text-yellow-600 {
+  font-weight: 700 !important;
+  filter: brightness(0.9);
+}
+
+/* Zebra rows and hover (pastel) */
+tr:nth-child(even) {
+  background-color: #f8fafc !important; /* slate-50 */
+}
+tr:hover {
+  background-color: #e0f2fe !important; /* sky-100 */
+}

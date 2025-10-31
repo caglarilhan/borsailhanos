@@ -1,18 +1,8 @@
-"""
-🚀 BIST AI Smart Trader - AI Lab Dashboard
-=========================================
-
-RL, Bayesian, ve Strategy metriklerini tek panelde gösteren dashboard.
-AI'nin öğrenme sürecini canlı izleme.
-
-Özellikler:
-- Real-time RL metrics
-- Bayesian optimization progress
-- Strategy performance comparison
-- Learning curve visualization
-- Performance alerts
-- Interactive charts
-"""
+/*
+  🚀 BIST AI Smart Trader - AI Lab Dashboard
+  RL, Bayesian, ve Strategy metriklerini tek panelde gösteren dashboard.
+  AI'nin öğrenme sürecini canlı izleme.
+*/
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 

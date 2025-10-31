@@ -51,6 +51,25 @@ export const actions = {
     alert('🚪 Çıkış yapılıyor...');
     window.location.href = '/login';
   },
+  // Utility defaults (may be overridden by createActions counterparts)
+  openV50Tab: (tab: string) => { console.log('openV50Tab:', tab); },
+  scrollToSignals: (symbol?: string) => {
+    if (symbol) console.log('Focus symbol:', symbol);
+    const el = document.getElementById('signals-table');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  },
+  refreshData: () => alert('🔄 Veri yenileniyor...'),
+  openLogs: () => alert('📋 Log ekranı açılıyor...'),
+  featureCardOpen: (label: string) => {
+    alert(`🚀 ${label} özelliği açılıyor...`);
+  },
+  // === GENEL ===
+  closeModal: () => {
+    try {
+      const active = document.activeElement as HTMLElement | null;
+      if (active) active.blur();
+    } catch {}
+  },
 };
 
 /**
@@ -81,6 +100,8 @@ export function createActions({
   setSelectedMarket,
   setVisibleSignals,
   openExplanation,
+  // new for generic explain and alert handling
+  
   loadMore,
   rebalance,
   openReport,
@@ -116,6 +137,7 @@ export function createActions({
   setSelectedMarket?: (market: 'BIST' | 'NYSE' | 'NASDAQ') => void;
   setVisibleSignals?: (count: number) => void;
   openExplanation: (symbol: string) => void;
+  
   loadMore: () => void;
   rebalance: () => void;
   openReport: () => void;
@@ -295,5 +317,30 @@ export function createActions({
       if (closePanel) closePanel();
     },
     report: () => openReport(),
+    
+    // NEW: Generic explain handler for any symbol
+    explainSymbol: (symbol: string) => {
+      openExplanation(symbol);
+      if (setSelectedForXAI) setSelectedForXAI(symbol);
+      if (openPanel) openPanel('aiconf');
+    },
+    
+    // NEW: Alert click handler - parse symbol and focus signals
+    openAlert: (alert: any) => {
+      try {
+        const message: string = alert?.message || '';
+        const match = message.match(/[A-Z]{2,8}/);
+        const symbol = match ? match[0] : undefined;
+        if (symbol) {
+          if (setSelectedForXAI) setSelectedForXAI(symbol);
+          openExplanation(symbol);
+          if (openPanel) openPanel('aiconf');
+        }
+        const el = document.getElementById('signals-table');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (e) {
+        console.error('openAlert error', e);
+      }
+    },
   };
 }

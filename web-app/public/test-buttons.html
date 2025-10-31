@@ -124,7 +124,7 @@
         
         function testBackend() {
             log('🔄 Testing Backend API...', 'info');
-            fetch('http://localhost:8080/api/health')
+            fetch((window?.env?.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085') + '/api/health')
                 .then(res => res.json())
                 .then(data => {
                     log(`✅ Backend API: ${data.status}`, 'success');

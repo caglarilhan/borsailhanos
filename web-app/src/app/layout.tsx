@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
+import Providers from "./providers";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -31,7 +32,9 @@ export default function RootLayout({
         className="antialiased font-inter"
         suppressHydrationWarning
       >
-        {children}
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

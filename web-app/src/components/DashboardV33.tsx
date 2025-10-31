@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 // Force dynamic rendering - disables SSR to prevent hydration mismatches
 export const dynamic = 'force-dynamic';
@@ -38,7 +39,20 @@ import SubscriptionTiers from './V60/SubscriptionTiers';
 import StrategyBuilder from './V60/StrategyBuilder';
 import InvestorPanel from './V60/InvestorPanel';
 
-export default function DashboardV33() {
+function DashboardV33() {
+  // URL sync for tab navigation
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  
+  // Get initial tab from URL or default to 'signals'
+  const [activeFeaturesTab, setActiveFeaturesTab] = useState<'signals' | 'analysis' | 'operations' | 'advanced'>(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['signals', 'analysis', 'operations', 'advanced'].includes(tab)) {
+      return tab as 'signals' | 'analysis' | 'operations' | 'advanced';
+    }
+    return 'signals';
+  });
+
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [visibleSignals, setVisibleSignals] = useState(5);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -47,10 +61,37 @@ export default function DashboardV33() {
   const [chartData, setChartData] = useState<any[]>([]);
   const [portfolioData, setPortfolioData] = useState<any[]>([]);
   
+  // Sync tab with URL
+  const handleTabChange = (tab: 'signals' | 'analysis' | 'operations' | 'advanced') => {
+    console.log('📑 Tab changing to:', tab);
+    setActiveFeaturesTab(tab);
+    // URL güncellemesini devre dışı bırak: bazı ortamlarda gereksiz fetch tetikliyor
+    // router.push('?tab=' + tab, { scroll: false });
+  };
+
+  // Actions for opening tabs via centralized actions.ts
+  const { openSignals, openAnalysis, openOperations, openAdvanced } = (function(){
+    try {
+      // dynamic import types already handled via static import at top
+      const actionsObj = require('@/lib/actions');
+      if (actionsObj && actionsObj.createTabActions) {
+        return actionsObj.createTabActions({ setActiveFeaturesTab, router });
+      }
+    } catch (e) {
+      // fallback to local handler
+    }
+    return {
+      openSignals: () => handleTabChange('signals' as const),
+      openAnalysis: () => handleTabChange('analysis' as const),
+      openOperations: () => handleTabChange('operations' as const),
+      openAdvanced: () => handleTabChange('advanced' as const),
+    };
+  })();
+  
   // Memoize initial chart data to prevent unnecessary re-renders
   const initialChartData = useMemo(() => 
     Array.from({ length: 30 }, (_, i) => ({
-      day: `Gün ${i + 1}`,
+      day: 'Gün ' + (i + 1),
       actual: 240 + Math.random() * 20 - 10,
       predicted: 242 + i * 0.8 + Math.random() * 15 - 7,
       confidence: 85 + Math.random() * 10
@@ -59,7 +100,7 @@ export default function DashboardV33() {
 
   const initialPortfolioData = useMemo(() => 
     Array.from({ length: 30 }, (_, i) => ({
-      day: `Gün ${i + 1}`,
+      day: 'Gün ' + (i + 1),
       value: 100000 + i * 350 + Math.random() * 200 - 100,
       profit: i * 350
     }))
@@ -113,18 +154,62 @@ export default function DashboardV33() {
   const [showAdmin, setShowAdmin] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterAccuracy, setFilterAccuracy] = useState<number | null>(null);
+  const [riskProfileLevel, setRiskProfileLevel] = useState<'low' | 'medium' | 'high' | 'aggressive'>('medium');
+  // Portföy kişiselleştirme state'leri
+  const [portfolioRiskLevel, setPortfolioRiskLevel] = useState<'low' | 'medium' | 'high' | 'aggressive'>('medium');
+  const [portfolioHorizon, setPortfolioHorizon] = useState<'1m' | '6m' | '1y' | '5y'>('6m');
+  const [portfolioSectorPreference, setPortfolioSectorPreference] = useState<'all' | 'technology' | 'banking' | 'energy' | 'industry'>('all');
+  // Removed: showFeatureDetail and selectedFeatureDetail states
+  // Artık direkt route yönlendirmesi yapıyoruz (/feature/[slug])
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showLogin, setShowLogin] = useState(!isLoggedIn);
   const [currentUser, setCurrentUser] = useState<string>('');
+  // RBAC / Plan basit guard
+  const userRole = isLoggedIn && currentUser === 'admin' ? 'admin' : 'user';
+  const userPlan: 'basic' | 'pro' | 'enterprise' = 'basic';
   
   // ✅ UNIFIED PANEL CONTROL: Tek state ile tüm panel kontrolü
   const [activePanel, setActivePanel] = useState<string | null>(null);
   
   const openPanel = (panel: string) => {
-    console.log(`📂 Panel açılıyor: ${panel}`);
-    console.log(`🔍 Önceki activePanel: ${activePanel}`);
+    console.log('📂 Panel açılıyor: ' + panel);
+    console.log('🔍 Önceki activePanel: ' + activePanel);
     setActivePanel(panel);
-    console.log(`🔍 Yeni activePanel: ${panel}`);
+    // Panel açıldığında ilgili showXXX state'lerini de set et
+    switch (panel) {
+      case 'tradergpt':
+        setShowTraderGPT(true);
+        break;
+      case 'viz':
+        setShowAdvancedViz(true);
+        break;
+      case 'aiconf':
+        setShowAIConfidence(true);
+        break;
+      case 'cognitive':
+        setShowCognitiveAI(true);
+        break;
+      case 'risk':
+        setShowVolatilityModel(true);
+        break;
+      case 'meta':
+        setShowMetaModel(true);
+        break;
+      default:
+        break;
+    }
+    console.log('🔍 Yeni activePanel: ' + panel);
+    
+    // Scroll to panel after state update
+    setTimeout(() => {
+      const panelEl = document.getElementById('panel-' + panel);
+      if (panelEl) {
+        console.log('📍 Scrolling to panel:', panel);
+        panelEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        console.warn('⚠️ Panel element not found: panel-' + panel);
+      }
+    }, 100);
   };
   
   const closePanel = () => {
@@ -132,6 +217,60 @@ export default function DashboardV33() {
     setActivePanel(null);
   };
   
+  // Modal içinde seçilen karta göre canlı içerik render'ı
+  const renderFeatureDetail = (detail: { section: string; name: string }) => {
+    const lower = detail.name.toLowerCase();
+    // V60 / V50 bileşenlerinden eşleştirme
+    if (lower.includes('gelişmiş analiz') || lower.includes('gelişmiş grafik')) {
+      return (
+        <div style={{ height: '420px', background: '#fff', borderRadius: '12px', padding: '12px', border: '1px solid #e5e7eb' }}>
+          <AdvancedVisualizationHub />
+        </div>
+      );
+    }
+    if (lower.includes('xai') || lower.includes('explain') || lower.includes('ai tahmin')) {
+      return (
+        <div style={{ height: '420px', background: '#fff', borderRadius: '12px', padding: '12px', border: '1px solid #e5e7eb' }}>
+          <AIConfidenceBreakdown />
+        </div>
+      );
+    }
+    if (lower.includes('risk')) {
+      return (
+        <div style={{ height: '420px', background: '#fff', borderRadius: '12px', padding: '12px', border: '1px solid #e5e7eb' }}>
+          <VolatilityModel />
+        </div>
+      );
+    }
+    if (lower.includes('portföy') || lower.includes('optimizer')) {
+      return (
+        <div style={{ height: '420px', background: '#fff', borderRadius: '12px', padding: '12px', border: '1px solid #e5e7eb' }}>
+          <PortfolioOptimizer />
+        </div>
+      );
+    }
+    if (lower.includes('gpt')) {
+      return (
+        <div style={{ height: '420px', background: '#fff', borderRadius: '12px', padding: '12px', border: '1px solid #e5e7eb' }}>
+          <TraderGPT />
+        </div>
+      );
+    }
+    if (lower.includes('izleme')) {
+      return (
+        <div style={{ height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+          <div style={{ color: '#475569' }}>İzleme listesi bileşeni yakında burada canlı gösterilecek.</div>
+        </div>
+      );
+    }
+    // Varsayılan placeholder
+    return (
+      <div style={{ height: '420px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fff', borderRadius: '12px', border: '1px solid #e5e7eb' }}>
+        <div style={{ color: '#475569' }}>Bu özellik için canlı önizleme henüz tanımlanmadı.</div>
+      </div>
+    );
+  };
+
   // ✅ DYNAMIC WATCHLIST: Gelen sinyallere göre dinamik güncelleme
   useEffect(() => {
     if (dynamicSignals.length > 0) {
@@ -175,7 +314,7 @@ export default function DashboardV33() {
   
   // ✅ AI Explanation Handler
   const openExplanation = (symbol: string) => {
-    console.log(`🧠 Opening AI explanation for ${symbol}`);
+    console.log('🧠 Opening AI explanation for ' + symbol);
     setSelectedForXAI(symbol);
     openPanel('aiconf');
   };
@@ -209,7 +348,7 @@ export default function DashboardV33() {
   const handleShare = async () => {
     const data = {
       title: 'BIST AI Smart Trader',
-      text: `AI doğruluk: ${metrics[0].value}`,
+      text: 'AI doğruluk: ' + metrics[0].value,
       url: window.location.href
     };
     
@@ -224,6 +363,60 @@ export default function DashboardV33() {
   const handleFeedback = () => {
     alert('💬 Geri bildirim formu açılacak...');
   };
+
+  // Global close handler for all panels/modals
+  const handleCloseAll = () => {
+    setActivePanel(null);
+    setShowTraderGPT(false);
+    setShowGamification(false);
+    setShowAdvancedViz(false);
+    setShowAIConfidence(false);
+    setShowCognitiveAI(false);
+    setShowFeedbackLoop(false);
+    setShowVolatilityModel(false);
+    setShowMetaModel(false);
+    setShowSubscription(false);
+    setShowStrategyBuilder(false);
+    setShowInvestorPanel(false);
+    setShowWatchlist(false);
+    setShowAdmin(false);
+    setShowFilter(false);
+    setSelectedForXAI(null);
+  };
+
+  // Feature cards click handler for "Tüm Özellikler"
+  const handleFeatureCardClick = (section: 'signals' | 'analysis' | 'operations' | 'advanced', name: string) => {
+    try {
+      console.log('🎯 Feature card clicked:', section, name);
+      // Tam sayfa route'a yönlendir (slug)
+      const lower = name.toLowerCase();
+      const toSlug = () => {
+        if (lower.includes('sinyal takip')) return 'signals';
+        if (lower.includes('ai sinyalleri') || lower.includes('ai sinyali')) return 'signals';
+        if (lower.includes('bist 30')) return 'bist30';
+        if (lower.includes('bist 100')) return 'bist100';
+        if (lower.includes('bist 300')) return 'bist300';
+        if (lower.includes('gelişmiş analiz')) return 'advanced';
+        if (lower.includes('gelişmiş grafik')) return 'viz';
+        if (lower.includes('bist veri paneli') || lower.includes('veri paneli') || lower.includes('panel')) return 'data';
+        if (lower.includes('anomali') || lower.includes('momentum')) return 'anomaly';
+        if (lower.includes('arbitraj')) return 'arbitrage';
+        if (lower.includes('xai') || lower.includes('explain') || lower.includes('tahmin')) return 'xai';
+        if (lower.includes('risk')) return 'risk';
+        if (lower.includes('portföy') || lower.includes('optimizer')) return 'portfolio';
+        if (lower.includes('gpt')) return 'gpt';
+        if (lower.includes('opsiyon')) return 'options';
+        if (lower.includes('formasyon')) return 'patterns';
+        if (lower.includes('yatırım')) return 'investor';
+        if (lower.includes('sinyal')) return 'bist30';
+        return 'advanced';
+      };
+      router.push('/feature/' + toSlug());
+    } catch (error) {
+      console.error('❌ Error in handleFeatureCardClick:', error);
+      alert('Özellik açılırken bir hata oluştu: ' + name);
+    }
+  };
   
   // ✅ NOTIFICATION CLICK HANDLER: Bildirim tıklandığında sembol seç, detay göster, tabloya scroll yap
   const handleNotificationClick = (alert: any) => {
@@ -235,11 +428,11 @@ export default function DashboardV33() {
       // İlgili satırı bul ve highlight yap
       const signal = signals.find((s: any) => s.symbol === symbol);
       if (signal) {
-        console.log(`📊 ${symbol} detay analizi açılıyor...`, signal);
+        console.log('📊 ' + symbol + ' detay analizi açılıyor...', signal);
         
         // ✅ SMART SCROLL: Sembol satırına scroll yap
         setTimeout(() => {
-          const element = document.getElementById(`signal-row-${symbol}`);
+          const element = document.getElementById('signal-row-' + symbol);
           if (element) {
             element.scrollIntoView({ behavior: 'smooth', block: 'center' });
             // Highlight efekti
@@ -289,8 +482,8 @@ export default function DashboardV33() {
           data.signals.forEach((signal: any) => {
             if (signal && typeof signal === 'object' && signal.symbol && typeof signal.symbol === 'string') {
               setAlerts(prev => [...prev, {
-                id: `signal-${Date.now()}-${signal.symbol}`,
-                message: `🔔 ${signal.symbol}: ${signal.signal || 'UPDATE'} sinyali (Güven: ${signal.confidence ? (signal.confidence * 100).toFixed(0) : '--'}%)`,
+                id: 'signal-' + Date.now() + '-' + signal.symbol,
+                message: '🔔 ' + signal.symbol + ': ' + (signal.signal || 'UPDATE') + ' sinyali (Güven: ' + (signal.confidence ? (signal.confidence * 100).toFixed(0) : '--') + '%)',
                 type: 'success',
                 timestamp: new Date()
               }]);
@@ -313,7 +506,7 @@ export default function DashboardV33() {
         // 4. ✅ Portfolio chart live update
         if (data.type === 'portfolio_update' && typeof data.value === 'number') {
           const newData = [...portfolioData, {
-            day: `Gün ${portfolioData.length + 1}`,
+            day: 'Gün ' + (portfolioData.length + 1),
             value: data.value,
             profit: (data.value - 100000)
           }];
@@ -380,7 +573,7 @@ export default function DashboardV33() {
         // Chart data update
         if (typeof data.ai_confidence === 'number') {
           setChartData(prev => [...prev.slice(-29), {
-            day: `Gün ${prev.length + 1}`,
+            day: 'Gün ' + (prev.length + 1),
             value: data.ai_confidence
           }]);
         }
@@ -389,6 +582,41 @@ export default function DashboardV33() {
     
     window.addEventListener('ws_message', handleWsMessage as EventListener);
     return () => window.removeEventListener('ws_message', handleWsMessage as EventListener);
+  }, []);
+  
+  // 🔄 Fetch Top30 Analysis periodically to populate dynamic signals (prevents static fallback)
+  useEffect(() => {
+    let isMounted = true;
+    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085';
+
+    const fetchTop30 = async () => {
+      try {
+        const res = await fetch(API_BASE_URL + '/api/ai/top30_analysis', { cache: 'no-store' });
+        if (!res.ok) return;
+        const json = await res.json();
+        if (!json || !Array.isArray(json.top30)) return;
+        // Map to dashboard signal shape
+        const mapped = json.top30.slice(0, 15).map((x: any) => ({
+          symbol: x.symbol,
+          signal: x.signal,
+          price: x.currentPrice,
+          target: x.currentPrice * (1 + (x.predictedChange || 0) / 100),
+          change: x.predictedChange,
+          comment: x.aiSummaryText || 'AI güncel analiz',
+          accuracy: x.accuracy,
+          confidence: (x.confidence || 80) / 100
+        }));
+        if (isMounted && mapped.length > 0) {
+          setDynamicSignals(mapped);
+        }
+      } catch (e) {
+        // silent
+      }
+    };
+
+    fetchTop30();
+    const interval = setInterval(fetchTop30, 30000); // 30s
+    return () => { isMounted = false; clearInterval(interval); };
   }, []);
   
   // Realtime Data Fetch Simulation (15s interval)
@@ -400,25 +628,27 @@ export default function DashboardV33() {
         risk: Math.random() * 0.5 - 0.25 // -0.25 to +0.25 change
       }));
       
-      // Add alert for new signal (only BIST symbols in BIST context)
+      // Add alert for new signal using dynamic pool instead of fixed symbols
       if (Math.random() > 0.7) {
-        const bistSymbols = ['THYAO', 'TUPRS', 'ASELS', 'GARAN', 'AKBNK'];
-        const newSymbol = bistSymbols[Math.floor(Math.random() * bistSymbols.length)];
-        
-        // Only show if within market scope
-        if (isWithinMarketScope(newSymbol, selectedMarket)) {
-          setAlerts(prev => [...prev, {
-            id: `realtime-${Date.now()}`,
-            message: `🔔 Yeni sinyal: ${newSymbol} - AI analizi güncellendi`,
-            type: 'success',
-            timestamp: new Date()
-          }]);
+        const pool = (dynamicSignals && dynamicSignals.length > 0)
+          ? dynamicSignals.map((s: any) => s.symbol).filter(Boolean)
+          : ['ASELS','ENKAI','LOGO','KAREL','NETAS','TKNSA','BIMAS','MIGRS','TOASO','KOZAL','PGSUS','TRKCM','AEFES','GUBRF','KORDS','FROTO','GESAN','GLYHO','VRGYO','ZOREN'];
+        if (pool.length > 0) {
+          const randSymbol = pool[Math.floor(Math.random() * pool.length)];
+          if (isWithinMarketScope(randSymbol, selectedMarket)) {
+            setAlerts(prev => [...prev, {
+              id: 'realtime-' + Date.now() + '-' + randSymbol,
+              message: '🔔 Yeni sinyal: ' + randSymbol + ' - AI analizi güncellendi',
+              type: 'success',
+              timestamp: new Date()
+            }]);
+          }
         }
       }
     }, 15000); // 15 seconds
     
     return () => clearInterval(realtimeInterval);
-  }, []);
+  }, [dynamicSignals, selectedMarket]);
   
   // ✅ Portfolio Chart Dynamic Update: Yeni sinyaller geldiğinde grafiği güncelle
   // Portfolio updates are now handled in the onMessage callback above (line 267-277)
@@ -441,11 +671,11 @@ export default function DashboardV33() {
       const recentEvents = filterStale(upcomingEvents, 90);
       
       recentEvents.forEach(event => {
-        const alertId = `event-${event.symbol}-${Date.now()}`;
-        if (!alerts.find(a => a.id.includes(`event-${event.symbol}`))) {
+        const alertId = 'event-' + event.symbol + '-' + Date.now();
+        if (!alerts.find(a => a.id.includes('event-' + event.symbol))) {
           setAlerts(prev => [...prev, { 
             id: alertId,
-            message: `📅 ${event.symbol}: ${event.event} (${event.date}) - ${event.impact} etkisi`,
+            message: '📅 ' + event.symbol + ': ' + event.event + ' (' + event.date + ') - ' + event.impact + ' etkisi',
             type: 'info',
             timestamp: new Date()
           }]);
@@ -578,30 +808,24 @@ export default function DashboardV33() {
 
   // Format metrics with consistent Turkish locale
   const metrics = [
-    { label: 'Toplam Kâr', value: formatCurrency(125000), change: formatPercent(12.5), color: '#10b981', icon: '💰', pulse: true },
-    { label: 'Aktif Sinyaller', value: '15', change: '+3 yeni', color: '#3b82f6', icon: '🎯', pulse: true },
-    { label: 'Doğruluk Oranı', value: formatPercent(87.3), change: formatPercent(2.1), color: '#10b981', icon: '📊', pulse: false },
-    { label: 'Risk Skoru', value: '3.2', change: '▼ Düşük', color: '#10b981', icon: '⚠️', pulse: false },
+    { label: 'Toplam Kâr', value: formatCurrency(125000), change: formatPercent(12.5), color: '#10b981', icon: '💰', pulse: true, percent: 72 },
+    { label: 'Aktif Sinyaller', value: '15', change: '+3 yeni', color: '#3b82f6', icon: '🎯', pulse: true, percent: 60 },
+    { label: 'Doğruluk Oranı', value: formatPercent(87.3), change: formatPercent(2.1), color: '#10b981', icon: '📊', pulse: false, percent: 87 },
+    { label: 'Risk Skoru', value: '3.2', change: '▼ Düşük', color: '#10b981', icon: '⚠️', pulse: false, percent: 32 },
   ];
 
   return (
-    <>
-      <style>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-        @keyframes slideInRight {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-      `}</style>
+    <div>
+      <style>{[
+        '@keyframes pulse {',
+        '  0%, 100% { opacity: 1; }',
+        '  50% { opacity: 0.6; }',
+        '}',
+        '@keyframes slideInRight {',
+        '  from { transform: translateX(100%); opacity: 0; }',
+        '  to { transform: translateX(0); opacity: 1; }',
+        '}',
+      ].join('\n')}</style>
       
       {/* Login Check - Giriş yapılmadıysa sadece login göster */}
       {(!isLoggedIn || showLogin) ? (
@@ -663,7 +887,7 @@ export default function DashboardV33() {
                 if (username && password) {
                   try {
                     console.log('📡 Backend istegi gonderiliyor...');
-                    const res = await fetch('http://localhost:8080/api/auth/login', {
+                    const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085') + '/api/auth/login', {
                       method: 'POST',
                       headers: {'Content-Type': 'application/json'},
                       body: JSON.stringify({username, password})
@@ -753,7 +977,7 @@ export default function DashboardV33() {
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
-              onClick={actions.gpt}
+              onClick={() => openPanel('tradergpt')}
               style={{ 
                 padding: '8px 16px', 
                 background: activePanel === 'tradergpt' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
@@ -777,7 +1001,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">🤖</span> GPT
             </button>
             <button 
-              onClick={actions.viz}
+              onClick={() => openPanel('viz')}
               style={{ 
                 padding: '8px 16px', 
                 background: activePanel === 'viz' ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
@@ -801,7 +1025,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">📊</span> Viz
             </button>
             <button 
-              onClick={actions.ai}
+              onClick={() => openPanel('aiconf')}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'aiconf' ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
@@ -825,7 +1049,7 @@ export default function DashboardV33() {
               <span aria-hidden="true">🧠</span> AI
             </button>
             <button 
-              onClick={actions.comment}
+              onClick={() => openPanel('cognitive')}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'cognitive' ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
@@ -849,7 +1073,7 @@ export default function DashboardV33() {
               💬 AI Yorum
             </button>
             <button 
-              onClick={actions.risk}
+              onClick={() => openPanel('risk')}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'risk' ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'linear-gradient(135deg, #f97316, #f59e0b)', 
@@ -873,7 +1097,7 @@ export default function DashboardV33() {
               📈 Risk Model
             </button>
             <button 
-              onClick={actions.meta}
+              onClick={() => openPanel('meta')}
               style={{ 
                 padding: '8px 14px', 
                 background: activePanel === 'meta' ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
@@ -897,7 +1121,7 @@ export default function DashboardV33() {
               🧠 Meta-Model
             </button>
             <button 
-              onClick={actions.plans}
+              onClick={() => setShowSubscription(true)}
               style={{ 
                 padding: '8px 14px', 
                 background: showSubscription ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : 'linear-gradient(135deg, #fbbf24, #d97706)', 
@@ -921,7 +1145,7 @@ export default function DashboardV33() {
               💎 Planlar
             </button>
             <button 
-              onClick={actions.strategy}
+              onClick={() => setShowStrategyBuilder(true)}
               style={{ 
                 padding: '8px 14px', 
                 background: showStrategyBuilder ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #059669)', 
@@ -945,7 +1169,7 @@ export default function DashboardV33() {
               🎯 Strateji Oluştur
             </button>
             <button 
-              onClick={actions.investor}
+              onClick={() => setShowInvestorPanel(true)}
               style={{ 
                 padding: '8px 14px', 
                 background: showInvestorPanel ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
@@ -969,7 +1193,7 @@ export default function DashboardV33() {
               🎯 AI Yatırımcı
             </button>
             <button 
-              onClick={actions.watchlist}
+              onClick={() => setShowWatchlist(true)}
               style={{ 
                 padding: '8px 14px', 
                 background: showWatchlist ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -989,47 +1213,51 @@ export default function DashboardV33() {
             >
               <span aria-hidden="true">📋</span> Watchlist
             </button>
-            <button 
-              onClick={actions.admin}
-              style={{ 
-                padding: '8px 14px', 
-                background: showAdmin ? '#333' : '#000', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: '8px',
-                fontWeight: '700',
-                fontSize: '11px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                outline: 'none'
-              }} 
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              aria-label="Admin paneline git"
-            >
-              <span aria-hidden="true">⚙️</span> Admin
-            </button>
-            <button 
-              style={{ 
-                padding: '8px 14px', 
-                background: showV50Module ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
-                color: '#fff', 
-                border: 'none', 
-                borderRadius: '10px',
-                fontWeight: '700',
-                fontSize: '11px',
-                cursor: 'pointer',
-                transition: 'all 0.2s',
-                outline: 'none',
-                boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
-              }} 
-              onClick={actions.enterprise}
-              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
-              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              aria-label="V5.0 Enterprise modülünü aç"
-            >
-              {showV50Module ? 'V5.0 ✨' : 'V5.0 Enterprise'}
-            </button>
+            {userRole === 'admin' && (
+              <button 
+                onClick={() => setShowAdmin(true)}
+                style={{ 
+                  padding: '8px 14px', 
+                  background: showAdmin ? '#333' : '#000', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '8px',
+                  fontWeight: '700',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none'
+                }} 
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                aria-label="Admin paneline git"
+              >
+                <span aria-hidden="true">⚙️</span> Admin
+              </button>
+            )}
+            {String(userPlan) === 'enterprise' && (
+              <button 
+                style={{ 
+                  padding: '8px 14px', 
+                  background: showV50Module ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
+                  color: '#fff', 
+                  border: 'none', 
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s',
+                  outline: 'none',
+                  boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
+                }} 
+                onClick={() => setShowV50Module(true)}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                aria-label="V5.0 Enterprise modülünü aç"
+              >
+                {showV50Module ? 'V5.0 ✨' : 'V5.0 Enterprise'}
+              </button>
+            )}
         </div>
         </div>
       </header>
@@ -1077,69 +1305,333 @@ export default function DashboardV33() {
           <AIInsightSummary />
         </div>
         
-        {/* Sector Heatmap */}
-        <div style={{ 
-          marginBottom: '16px',
-          background: 'rgba(255,255,255,0.8)', 
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(6,182,212,0.3)', 
-          borderRadius: '20px', 
-          overflow: 'hidden',
-          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        {/* Sektör Isı Haritası (Basit Heatmap) */}
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '16px',
+          marginBottom: '16px'
         }}>
-          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>📊 Sektör Isı Haritası</h2>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Piyasa geneli sektörel performans analizi</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>🏭 Sektör Isı Haritası</div>
+            <div style={{ fontSize: '11px', color: '#64748b' }}>Yeşil: Pozitif · Kırmızı: Negatif</div>
           </div>
-          <div style={{ padding: '16px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px' }}>
-            {sectors.map((sector, idx) => (
-              <div key={idx} style={{ 
-                background: sector.change > 0 ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
-                border: `2px solid ${sector.color}40`,
-                borderRadius: '16px', 
-                padding: '12px',
-                transition: 'all 0.3s',
-                cursor: 'pointer'
-              }} onMouseEnter={(e) => {
-                setHoveredSector(sector.name);
-                e.currentTarget.style.transform = 'scale(1.05)';
-                e.currentTarget.style.boxShadow = `0 12px 40px ${sector.color}40`;
-              }} onMouseLeave={(e) => {
-                setHoveredSector(null);
-                e.currentTarget.style.transform = 'scale(1)';
-                e.currentTarget.style.boxShadow = 'none';
-              }}>
-                <div style={{ fontSize: '18px', fontWeight: '800', marginBottom: '14px', color: '#0f172a', letterSpacing: '-0.3px' }}>{sector.name}</div>
-                <div style={{ fontSize: '20px', fontWeight: '900', color: sector.color, lineHeight: '1', textShadow: `0 2px 8px ${sector.color}30` }}>
-                  {sector.change > 0 ? '↑' : '↓'} {Math.abs(sector.change)}%
-                </div>
-                <div style={{ fontSize: '13px', color: '#64748b', marginTop: '10px', fontWeight: '600' }}>
-                  {sector.change > 0 ? 'Yükseliş trendi ↗' : 'Düşüş trendi ↘'}
-                </div>
-                {hoveredSector === sector.name && sector.subSectors && (
-                  <div style={{ marginTop: '16px', padding: '12px', background: 'rgba(255,255,255,0.8)', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b', marginBottom: '8px' }}>Alt Sektörler:</div>
-                    {sector.subSectors.map((sub, subIdx) => (
-                      <div key={subIdx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginTop: '6px' }}>
-                        <span style={{ color: '#0f172a' }}>{sub.name}</span>
-                        <span style={{ fontWeight: 'bold', color: sub.change > 0 ? '#10b981' : '#ef4444' }}>
-                          {sub.change > 0 ? '+' : ''}{sub.change}%
-        </span>
-      </div>
-                    ))}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+            {sectors.map((sec: any, idx: number) => {
+              const isUp = sec.change >= 0;
+              const bg = isUp ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
+              const border = isUp ? '1px solid #10b98155' : '1px solid #ef444455';
+              const text = isUp ? '#065f46' : '#7f1d1d';
+              return (
+                <div key={idx} style={{
+                  background: bg,
+                  border,
+                  borderRadius: '10px',
+                  padding: '12px',
+                  display: 'grid',
+                  gap: '6px'
+                }}>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a' }}>{sec.name}</div>
+                  <div style={{ fontSize: '12px', color: text, fontWeight: 800 }}>{isUp ? '↑ ' : '↓ '}{sec.change}%</div>
+                  {/* Mini bar to visualize magnitude */}
+                  <div style={{ height: '6px', width: '100%', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                    <div style={{
+                      width: Math.min(100, Math.abs(sec.change) * 10) + '%',
+                      height: '100%',
+                      background: isUp ? '#10b981' : '#ef4444'
+                    }} />
                   </div>
-                )}
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
         </div>
+
+        {/* Korelasyon Heatmap */}
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>🔗 Korelasyon Heatmap</div>
+            <div style={{ fontSize: '11px', color: '#64748b' }}>Yeşil: + korelasyon · Kırmızı: - korelasyon</div>
+          </div>
+          {(() => {
+            // Derive symbol list from signals or fallback
+            const symbols = (signals && signals.length > 0 ? signals.map((s:any)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
+            const n = symbols.length;
+            const corr: number[][] = [];
+            for (let i=0;i<n;i++){ corr[i]=[]; for(let j=0;j<n;j++){ if(i===j){corr[i][j]=1;} else {
+              const key = symbols[i] + '-' + symbols[j];
+              let h=0; for (let k=0;k<key.length;k++) h=(h*31+key.charCodeAt(k))>>>0;
+              const v = ((h % 161) - 80) / 100; // -0.8..+0.8
+              corr[i][j]=parseFloat(v.toFixed(2));
+            } } }
+            return (
+              <div style={{ overflowX: 'auto' }}>
+                <div style={{ display: 'inline-grid', gridTemplateColumns: '80px repeat(' + n + ', 40px)' }}>
+                  <div />
+                  {symbols.map((s:string)=>(<div key={'col-'+s} style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: '10px', color: '#475569', textAlign: 'center' }}>{s}</div>))}
+                  {symbols.map((row:string, i:number)=> (
+                    <React.Fragment key={'row-'+row}>
+                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a', padding: '6px 8px' }}>{row}</div>
+                      {symbols.map((col:string, j:number)=>{
+                        const val = corr[i][j];
+                        const isPos = val >= 0;
+                        const alpha = Math.min(1, Math.abs(val));
+                        const bg = isPos ? 'rgba(16,185,129,' + (0.1 + alpha*0.6) + ')' : 'rgba(239,68,68,' + (0.1 + alpha*0.6) + ')';
+                        return (
+                          <div key={'cell-'+i+'-'+j} style={{ width: 40, height: 28, background: bg, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#0f172a' }}>
+                            {i===j ? '—' : Math.round(val*100)}
+                          </div>
+                        );
+                      })}
+                    </React.Fragment>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Backtest Horizons */}
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>📈 Backtest (3/6/12 Ay)</div>
+          </div>
+          {(() => {
+            const makeSeries = (len:number, drift:number)=> Array.from({length: len}, (_,i)=> ({ day: 'Gün ' + (i+1), value: Math.round(100 + i*drift + Math.sin(i/3)*3 + Math.random()*2) }));
+            const [s3, s6, s12] = [makeSeries(60, 0.3), makeSeries(120, 0.25), makeSeries(240, 0.2)];
+            const blocks = [
+              { label: '3 Ay', data: s3, color: '#10b981' },
+              { label: '6 Ay', data: s6, color: '#3b82f6' },
+              { label: '12 Ay', data: s12, color: '#8b5cf6' },
+            ];
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                {blocks.map((blk, idx)=> (
+                  <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>{blk.label}</div>
+                    <div style={{ width: '100%', height: 140 }}>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart data={blk.data}>
+                          <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                          <XAxis dataKey="day" hide={true} />
+                          <YAxis hide={true} />
+                          <Line type="monotone" dataKey="value" stroke={blk.color} strokeWidth={2} dot={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+
+      {/* Detaylı Backtest - Günlük P&L, Drawdown, Sharpe */}
+      <div style={{
+        background: 'rgba(255,255,255,0.95)',
+        borderRadius: '12px',
+        border: '1px solid #e2e8f0',
+        padding: '16px',
+        marginBottom: '16px'
+      }}>
+        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginBottom: '12px' }}>📉 Detaylı Backtest Analizi</div>
+        {(() => {
+          const makePnL = (len: number) => Array.from({length: len}, (_,i)=> ({ day: (i+1), pnl: Math.round(100 + i*0.3 + Math.sin(i/5)*10 + (Math.random()*5-2.5)), drawdown: Math.max(0, 5 - Math.sin(i/7)*3) }));
+          const daily = makePnL(60);
+          const sharpe = Array.from({length: 10}, (_,i)=> ({ period: (i+1) + 'H', value: 1.2 + (i*0.05) + (Math.random()*0.2-0.1) }));
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Günlük P&L (60 Gün)</div>
+                <div style={{ width: '100%', height: 200 }}>
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={daily}>
+                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                      <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="pnl" stroke="#10b981" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="drawdown" stroke="#ef4444" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gap: '10px' }}>
+                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Sharpe Dağılımı</div>
+                  <div style={{ width: '100%', height: 140 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sharpe}>
+                        <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                        <XAxis dataKey="period" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} />
+                        <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Ortalama Getiri</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#10b981' }}>%8.6</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: '4px' }}>Kazanma Oranı</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#3b82f6' }}>%72.5</div>
+                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: '4px' }}>Sharpe Ratio</div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>1.85</div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Risk Dağılımı (Kullanıcı Profili Bazlı) */}
+      <div style={{
+        background: 'rgba(255,255,255,0.95)',
+        borderRadius: '12px',
+        border: '1px solid #e2e8f0',
+        padding: '16px',
+        marginBottom: '16px'
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>⚖️ Risk Dağılımı</div>
+          <select
+            style={{ padding: '6px 12px', fontSize: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#ffffff' }}
+            value={riskProfileLevel}
+            onChange={(e) => {
+              const lvl = e.target.value as 'low' | 'medium' | 'high' | 'aggressive';
+              setRiskProfileLevel(lvl);
+              console.log('Risk seviyesi:', lvl);
+            }}
+          >
+            <option value="low">Düşük Risk</option>
+            <option value="medium">Orta Risk</option>
+            <option value="high">Yüksek Risk</option>
+            <option value="aggressive">Agresif</option>
+          </select>
+        </div>
+        {(() => {
+          const riskProfile = (() => {
+            const base = signals && signals.length > 0 ? signals.map((s:any)=>s.symbol).slice(0,3) : ['THYAO','AKBNK','EREGL'];
+            return {
+              low: base.map((s,i) => ({ symbol: s, pct: [35,33,32][i] || 33 })),
+              medium: base.map((s,i) => ({ symbol: s, pct: [42,31,27][i] || 33 })),
+              high: base.map((s,i) => ({ symbol: s, pct: [30,35,35][i] || 33 })),
+              aggressive: base.map((s,i) => ({ symbol: s, pct: [25,25,25][i] || 33 }))
+            };
+          })();
+          const current = riskProfileLevel;
+          const alloc = riskProfile[current];
+          return (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
+              {alloc.map((a, idx) => (
+                <div key={idx} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>{a.symbol}</div>
+                  <div style={{ height: '8px', width: '100%', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden', marginBottom: '6px' }}>
+                    <div style={{ width: a.pct + '%', height: '100%', background: '#10b981', transition: 'width 300ms ease' }} />
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>{a.pct}%</div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+      </div>
 
         {/* ALL FEATURES BY CATEGORY */}
         <div style={{ marginBottom: '16px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>Tüm Özellikler</h2>
           
+          {/* TAB MENÜSÜ */}
+          <div role="tablist" style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <button 
+              role="tab"
+              aria-selected={activeFeaturesTab === 'signals'}
+              onClick={openSignals} 
+              style={{ 
+                padding: '8px 16px', 
+                background: activeFeaturesTab === 'signals' ? 'linear-gradient(135deg, #06b6d4, #3b82f6)' : 'rgba(255,255,255,0.8)', 
+                color: activeFeaturesTab === 'signals' ? '#fff' : '#0f172a',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '12px',
+                cursor: 'pointer',
+                boxShadow: activeFeaturesTab === 'signals' ? '0 4px 12px rgba(6,182,212,0.3)' : 'none',
+                transition: 'all 0.2s'
+              }}>
+              📊 SINYALLER
+            </button>
+            <button 
+              role="tab"
+              aria-selected={activeFeaturesTab === 'analysis'}
+              onClick={openAnalysis} 
+              style={{ 
+                padding: '8px 16px', 
+                background: activeFeaturesTab === 'analysis' ? 'linear-gradient(135deg, #3b82f6, #6366f1)' : 'rgba(255,255,255,0.8)', 
+                color: activeFeaturesTab === 'analysis' ? '#fff' : '#0f172a',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '12px',
+                cursor: 'pointer',
+                boxShadow: activeFeaturesTab === 'analysis' ? '0 4px 12px rgba(59,130,246,0.3)' : 'none',
+                transition: 'all 0.2s'
+              }}>
+              📈 ANALİZ
+            </button>
+            <button 
+              role="tab"
+              aria-selected={activeFeaturesTab === 'operations'}
+              onClick={openOperations} 
+              style={{ 
+                padding: '8px 16px', 
+                background: activeFeaturesTab === 'operations' ? 'linear-gradient(135deg, #10b981, #059669)' : 'rgba(255,255,255,0.8)', 
+                color: activeFeaturesTab === 'operations' ? '#fff' : '#0f172a',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '12px',
+                cursor: 'pointer',
+                boxShadow: activeFeaturesTab === 'operations' ? '0 4px 12px rgba(16,185,129,0.3)' : 'none',
+                transition: 'all 0.2s'
+              }}>
+              🔧 OPERASYON
+            </button>
+            <button 
+              role="tab"
+              aria-selected={activeFeaturesTab === 'advanced'}
+              onClick={openAdvanced} 
+              style={{ 
+                padding: '8px 16px', 
+                background: activeFeaturesTab === 'advanced' ? 'linear-gradient(135deg, #8b5cf6, #a855f7)' : 'rgba(255,255,255,0.8)', 
+                color: activeFeaturesTab === 'advanced' ? '#fff' : '#0f172a',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '12px',
+                cursor: 'pointer',
+                boxShadow: activeFeaturesTab === 'advanced' ? '0 4px 12px rgba(139,92,246,0.3)' : 'none',
+                transition: 'all 0.2s'
+              }}>
+              ⚡ GELİŞMİŞ
+            </button>
+          </div>
+          
           {/* SINYALLER */}
-          <div style={{ marginBottom: '16px' }}>
+          {activeFeaturesTab === 'signals' && <div role="tabpanel" style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #06b6d4', color: '#0f172a', letterSpacing: '-0.3px' }}>
               📊 SINYALLER <span style={{ fontSize: '11px', color: '#06b6d4', fontWeight: '600' }}>(9 özellik)</span>
             </div>
@@ -1154,12 +1646,11 @@ export default function DashboardV33() {
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(6,182,212,0.08)'
-                }} onClick={() => {
-                  alert(`🚀 ${f} özelliği açılıyor...`);
-                  // İlgili panel state'ini aç
-                  if (f.includes('AI Sinyaller')) setShowTraderGPT(true);
-                  else if (f.includes('Portföy')) setShowV50Module(true);
-                  else if (f.includes('Görselleştirme')) setShowAdvancedViz(true);
+                }} onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🖱️ Card clicked:', f);
+                  handleFeatureCardClick('signals', f);
                 }} onMouseEnter={(e) => { 
                   setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#06b6d4'; 
@@ -1173,12 +1664,12 @@ export default function DashboardV33() {
                 }}>
                   <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#0f172a', letterSpacing: '-0.2px' }}>{f}</div>
                 </div>
-        ))}
-      </div>
-          </div>
+              ))}
+            </div>
+          </div>}
 
           {/* ANALIZ */}
-          <div style={{ marginBottom: '16px' }}>
+          {activeFeaturesTab === 'analysis' && <div role="tabpanel" style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #3b82f6', color: '#0f172a', letterSpacing: '-0.3px' }}>
               📈 ANALIZ <span style={{ fontSize: '11px', color: '#3b82f6', fontWeight: '600' }}>(10 özellik)</span>
             </div>
@@ -1193,6 +1684,11 @@ export default function DashboardV33() {
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(59,130,246,0.08)'
+                }} onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🖱️ Card clicked:', f);
+                  handleFeatureCardClick('analysis', f);
                 }} onMouseEnter={(e) => { 
                   setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#3b82f6'; 
@@ -1208,10 +1704,10 @@ export default function DashboardV33() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* OPERASYON */}
-          <div style={{ marginBottom: '16px' }}>
+          {activeFeaturesTab === 'operations' && <div role="tabpanel" style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #10b981', color: '#0f172a', letterSpacing: '-0.3px' }}>
               🔧 OPERASYON <span style={{ fontSize: '11px', color: '#10b981', fontWeight: '600' }}>(8 özellik)</span>
             </div>
@@ -1226,6 +1722,11 @@ export default function DashboardV33() {
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(16,185,129,0.08)'
+                }} onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🖱️ Card clicked:', f);
+                  handleFeatureCardClick('operations', f);
                 }} onMouseEnter={(e) => { 
                   setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#10b981'; 
@@ -1241,10 +1742,10 @@ export default function DashboardV33() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* GELIŞMİŞ */}
-          <div style={{ marginBottom: '16px' }}>
+          {activeFeaturesTab === 'advanced' && <div role="tabpanel" style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '12px', paddingBottom: '8px', borderBottom: '2px solid #8b5cf6', color: '#0f172a', letterSpacing: '-0.3px' }}>
               ⚡ GELIŞMİŞ <span style={{ fontSize: '11px', color: '#8b5cf6', fontWeight: '600' }}>(13 özellik)</span>
             </div>
@@ -1259,6 +1760,11 @@ export default function DashboardV33() {
                   cursor: 'pointer', 
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   boxShadow: '0 2px 8px rgba(139,92,246,0.08)'
+                }} onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  console.log('🖱️ Card clicked:', f);
+                  handleFeatureCardClick('advanced', f);
                 }} onMouseEnter={(e) => { 
                   setHoveredFeature(f);
                   e.currentTarget.style.borderColor = '#8b5cf6'; 
@@ -1274,7 +1780,7 @@ export default function DashboardV33() {
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
           </div>
 
         {/* AI Signals Table */}
@@ -1293,7 +1799,7 @@ export default function DashboardV33() {
                 {(['BIST', 'NYSE', 'NASDAQ'] as const).map((market) => (
                   <button
                     key={market}
-                    onClick={market === 'BIST' ? actions.bist : market === 'NYSE' ? actions.nyse : actions.nasdaq}
+                    onClick={() => setSelectedMarket(market)}
                     style={{
                       padding: '10px 20px',
                       background: selectedMarket === market ? 'linear-gradient(135deg, #06b6d4, #3b82f6)' : 'rgba(255,255,255,0.8)',
@@ -1319,7 +1825,7 @@ export default function DashboardV33() {
                         e.currentTarget.style.background = 'rgba(255,255,255,0.8)';
                       }
                     }}
-                    aria-label={`${market} borsası sinyalleri`}
+                    aria-label={market + ' borsası sinyalleri'}
                   >
                     {market === 'BIST' ? '🇹🇷' : market === 'NYSE' ? '🇺🇸' : '🇺🇸'} {market}
             </button>
@@ -1328,7 +1834,7 @@ export default function DashboardV33() {
             </div>
             <div style={{ display: 'flex', gap: '10px' }}>
               <button 
-                onClick={actions.filter}
+                onClick={() => setShowFilter(true)}
                 style={{ 
                   padding: '8px 16px', 
                   background: showFilter ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -1347,7 +1853,7 @@ export default function DashboardV33() {
                 <span aria-hidden="true">🔽</span> Filtrele
             </button>
               <button 
-                onClick={actions.filter80}
+                onClick={() => setFilterAccuracy(80)}
                 style={{ 
                   padding: '8px 16px', 
                   background: filterAccuracy === 80 ? '#06b6d4' : '#fff', 
@@ -1383,7 +1889,7 @@ export default function DashboardV33() {
               </thead>
               <tbody>
                 {signals.slice(0, visibleSignals).map((s, idx) => (
-                  <tr key={idx} id={`signal-row-${s.symbol}`} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={`${s.symbol} - ${s.signal} sinyali, Fiyat: ${s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'N/A'}, Beklenen: ${s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'N/A'}`}>
+                  <tr key={idx} id={'signal-row-' + s.symbol} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={s.symbol + ' - ' + s.signal + ' sinyali, Fiyat: ' + (s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'N/A') + ', Beklenen: ' + (s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'N/A')}>
                     <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
                     <td style={{ padding: '12px' }}>
                       <span style={{
@@ -1397,30 +1903,30 @@ export default function DashboardV33() {
                         display: 'inline-flex',
                         alignItems: 'center',
                         gap: '6px'
-                      }} aria-label={`Sinyal tipi: ${s.signal}`}>
+                      }} aria-label={'Sinyal tipi: ' + s.signal}>
                         <span>{s.signal === 'BUY' ? '🟢' : s.signal === 'SELL' ? '🔴' : '🟡'}</span>
                         {s.signal}
                       </span>
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={`Mevcut fiyat: ${s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'Veri bekleniyor'}`}>
-                      {s.price ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.price.toFixed(2)}` : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>⏳ Veri bekleniyor</span>}
+                    <td style={{ padding: '12px', fontSize: '16px', color: '#0f172a', fontWeight: '600' }} aria-label={'Mevcut fiyat: ' + (s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'Veri bekleniyor')}>
+                      {s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>⏳ Veri bekleniyor</span>}
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={`Beklenen fiyat: ${s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'Veri bekleniyor'}`}>
-                      {s.target ? `${selectedMarket === 'BIST' ? '₺' : '$'}${s.target.toFixed(2)}` : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>⏳ Veri bekleniyor</span>}
+                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }} aria-label={'Beklenen fiyat: ' + (s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'Veri bekleniyor')}>
+                      {s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: '14px' }}>⏳ Veri bekleniyor</span>}
                     </td>
-                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: (s.change || 0) > 0 ? '#10b981' : '#ef4444' }} aria-label={`Fiyat değişimi: ${(s.change || 0) > 0 ? 'artış' : 'düşüş'} %${Math.abs(s.change || 0)}`}>
+                    <td style={{ padding: '12px', fontSize: '16px', fontWeight: 'bold', color: (s.change || 0) > 0 ? '#10b981' : '#ef4444' }} aria-label={'Fiyat değişimi: ' + ((s.change || 0) > 0 ? 'artış' : 'düşüş') + ' %' + Math.abs(s.change || 0)}>
                       {(s.change || 0) > 0 ? '↑' : '↓'} {Math.abs(s.change || 0)}%
                     </td>
                     <td style={{ padding: '12px', fontSize: '15px', color: '#64748b', fontStyle: 'italic', maxWidth: '300px' }}>{s.comment}</td>
                     <td style={{ padding: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                         <div style={{ width: '100px', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }} role="progressbar" aria-valuenow={s.accuracy} aria-valuemin={0} aria-valuemax={100}>
-                          <div style={{ height: '100%', background: `linear-gradient(90deg, #06b6d4, #3b82f6)`, width: `${s.accuracy}%`, transition: 'width 0.5s' }}></div>
+                          <div style={{ height: '100%', background: 'linear-gradient(90deg, #06b6d4, #3b82f6)', width: s.accuracy + '%', transition: 'width 0.5s' }}></div>
                         </div>
-                        <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }} aria-label={`Doğruluk oranı: ${s.accuracy} yüzde`}>{s.accuracy}%</span>
+                        <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }} aria-label={'Doğruluk oranı: ' + s.accuracy + ' yüzde'}>{s.accuracy}%</span>
                         {((selectedMarket === 'BIST' && (s.symbol === 'THYAO' || s.symbol === 'TUPRS')) || (selectedMarket === 'NYSE' && s.symbol === 'AAPL') || (selectedMarket === 'NASDAQ' && s.symbol === 'NVDA')) && (
                           <button 
-                            onClick={() => setSelectedForXAI(s.symbol)}
+                            onClick={() => (actions as any).explainSymbol ? (actions as any).explainSymbol(s.symbol) : openExplanation(s.symbol)}
                             style={{ 
                               padding: '8px 12px', 
                               background: 'rgba(139,92,246,0.1)', 
@@ -1434,7 +1940,7 @@ export default function DashboardV33() {
                             }}
                             onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.2)'; e.currentTarget.style.borderColor = '#8b5cf6'; }}
                             onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(139,92,246,0.1)'; e.currentTarget.style.borderColor = 'rgba(139,92,246,0.3)'; }}
-                            aria-label={`AI açıklamasını göster: ${s.symbol}`}
+                            aria-label={'AI açıklamasını göster: ' + s.symbol}
                           >
                             🧠
                           </button>
@@ -1449,7 +1955,7 @@ export default function DashboardV33() {
           {signals.length > visibleSignals && (
             <div style={{ padding: '12px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'center' }}>
               <button 
-                onClick={() => setVisibleSignals(signals.length)}
+                onClick={handleLoadMore}
                 style={{ 
                   padding: '12px 32px', 
                   background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -1465,7 +1971,7 @@ export default function DashboardV33() {
                 }} 
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(6,182,212,0.5)'; }} 
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(6,182,212,0.4)'; }}
-                aria-label={`${signals.length - visibleSignals} sinyal daha göster`}
+                aria-label={(signals.length - visibleSignals) + ' sinyal daha göster'}
               >
                 {signals.length - visibleSignals} Daha Fazla Sinyal Göster
               </button>
@@ -1621,20 +2127,20 @@ export default function DashboardV33() {
                   <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>🧠 AI Güven Analizi</h2>
                   <div style={{ fontSize: '11px', color: '#64748b' }}>{selectedForXAI} - AI sinyalinin detaylı açıklaması</div>
                 </div>
-                <button onClick={() => setSelectedForXAI(null)} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}>✕ Kapat</button>
+                <button onClick={handleCloseAll} style={{ padding: '8px 16px', background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' }}>✕ Kapat</button>
               </div>
             </div>
             <div style={{ padding: '16px' }}>
               {aiConfidence[selectedForXAI as keyof typeof aiConfidence].factors.map((factor, idx) => (
-                <div key={idx} style={{ marginBottom: '20px', padding: '16px', background: factor.positive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '12px', border: `2px solid ${factor.positive ? '#10b981' : '#ef4444'}40` }}>
+                <div key={idx} style={{ marginBottom: '20px', padding: '16px', background: factor.positive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '12px', border: '2px solid ' + (factor.positive ? '#10b981' : '#ef4444') + '40' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                     <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a' }}>{factor.name}</div>
                     <div style={{ fontSize: '16px', fontWeight: 'bold', color: factor.positive ? '#10b981' : '#ef4444' }}>
                       {factor.contribution > 0 ? '+' : ''}{factor.contribution}%
                     </div>
                   </div>
-                  <div style={{ width: '100%', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
-                    <div style={{ height: '100%', background: `linear-gradient(90deg, ${factor.positive ? '#10b981' : '#ef4444'}, ${factor.positive ? '#34d399' : '#f87171'})`, width: `${Math.abs(factor.contribution)}%`, transition: 'width 0.5s' }}></div>
+                    <div style={{ width: '100%', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', background: (factor.positive ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #ef4444, #f87171)'), width: Math.abs(factor.contribution) + '%', transition: 'width 0.5s' }}></div>
                   </div>
                 </div>
               ))}
@@ -1675,7 +2181,7 @@ export default function DashboardV33() {
               }}>
                 <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a', minWidth: '80px' }}>{corr.stock1}</div>
                 <div style={{ flex: 1, height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden', position: 'relative' }}>
-                  <div style={{ width: `${Math.abs(corr.correlation) * 100}%`, height: '100%', background: corr.correlation > 0.7 ? 'linear-gradient(90deg, #10b981, #34d399)' : corr.correlation > 0.5 ? 'linear-gradient(90deg, #3b82f6, #60a5fa)' : 'linear-gradient(90deg, #eab308, #fbbf24)', transition: 'width 0.5s' }}></div>
+                  <div style={{ width: (Math.abs(corr.correlation) * 100) + '%', height: '100%', background: corr.correlation > 0.7 ? 'linear-gradient(90deg, #10b981, #34d399)' : corr.correlation > 0.5 ? 'linear-gradient(90deg, #3b82f6, #60a5fa)' : 'linear-gradient(90deg, #eab308, #fbbf24)', transition: 'width 0.5s' }}></div>
                 </div>
                 <div style={{ fontWeight: 'bold', fontSize: '16px', color: '#0f172a', minWidth: '80px' }}>{corr.stock2}</div>
                 <div style={{ fontSize: '11px', fontWeight: 'bold', color: corr.correlation > 0.7 ? '#10b981' : corr.correlation > 0.5 ? '#3b82f6' : '#eab308', minWidth: '50px', textAlign: 'right' }}>
@@ -1697,8 +2203,86 @@ export default function DashboardV33() {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>AI sinyalleriyle 30 günlük portföy performansı simülasyonu</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+              <div>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>AI sinyalleriyle 30 günlük portföy performansı simülasyonu</div>
+              </div>
+              <button
+                onClick={() => {
+                  setShowV50Module(true);
+                  setV50ActiveTab('portfolio');
+                }}
+                style={{
+                  padding: '10px 20px',
+                  background: 'linear-gradient(135deg, #10b981, #059669)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(16,185,129,0.3)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.05)';
+                  e.currentTarget.style.boxShadow = '0 6px 16px rgba(16,185,129,0.4)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(16,185,129,0.3)';
+                }}
+              >
+                🎯 Kişisel Portföy Optimizer
+              </button>
+            </div>
+            {/* Kişiselleştirme Hızlı Kontroller */}
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginTop: '12px' }}>
+              <select
+                style={{ padding: '8px 12px', fontSize: '12px', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '8px', background: '#fff', cursor: 'pointer' }}
+                value={portfolioRiskLevel}
+                onChange={(e) => {
+                  const lvl = e.target.value as 'low' | 'medium' | 'high' | 'aggressive';
+                  setPortfolioRiskLevel(lvl);
+                  localStorage.setItem('portfolioRiskLevel', lvl);
+                }}
+              >
+                <option value="low">⚖️ Düşük Risk</option>
+                <option value="medium">⚖️ Orta Risk</option>
+                <option value="high">⚖️ Yüksek Risk</option>
+                <option value="aggressive">⚖️ Agresif</option>
+              </select>
+              <select
+                style={{ padding: '8px 12px', fontSize: '12px', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '8px', background: '#fff', cursor: 'pointer' }}
+                value={portfolioHorizon}
+                onChange={(e) => {
+                  const hz = e.target.value as '1m' | '6m' | '1y' | '5y';
+                  setPortfolioHorizon(hz);
+                  localStorage.setItem('portfolioHorizon', hz);
+                }}
+              >
+                <option value="1m">📅 1 Ay</option>
+                <option value="6m">📅 6 Ay</option>
+                <option value="1y">📅 1 Yıl</option>
+                <option value="5y">📅 5 Yıl</option>
+              </select>
+              <select
+                style={{ padding: '8px 12px', fontSize: '12px', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '8px', background: '#fff', cursor: 'pointer' }}
+                value={portfolioSectorPreference}
+                onChange={(e) => {
+                  const sec = e.target.value as 'all' | 'technology' | 'banking' | 'energy' | 'industry';
+                  setPortfolioSectorPreference(sec);
+                  localStorage.setItem('portfolioSectorPreference', sec);
+                }}
+              >
+                <option value="all">🏭 Tüm Sektörler</option>
+                <option value="technology">💻 Teknoloji</option>
+                <option value="banking">🏦 Bankacılık</option>
+                <option value="energy">⚡ Enerji</option>
+                <option value="industry">🏭 Sanayi</option>
+              </select>
+            </div>
           </div>
           <div style={{ padding: '16px', aspectRatio: '16/9' }}>
             {portfolioData && portfolioData.length > 0 ? (
@@ -1728,7 +2312,7 @@ export default function DashboardV33() {
                     boxShadow: '0 10px 40px rgba(6,182,212,0.2)'
                   }}
                   labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}
-                  formatter={(value: any) => [`₺${value.toLocaleString('tr-TR')}`, 'Portföy Değeri']}
+                  formatter={(value: any) => ['₺' + value.toLocaleString('tr-TR'), 'Portföy Değeri']}
                 />
                 <Legend 
                   wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }}
@@ -1763,7 +2347,7 @@ export default function DashboardV33() {
               </div>
             </div>
             <button 
-              onClick={actions.rebalance}
+              onClick={handlePortfolioRebalance}
               style={{ 
                 padding: '10px 20px', 
                 background: portfolioRebalance ? 'rgba(139,92,246,0.2)' : 'linear-gradient(135deg, #8b5cf6, #a78bfa)', 
@@ -1836,7 +2420,7 @@ export default function DashboardV33() {
           <div style={{ padding: '16px' }}>
             {/* @ts-ignore */}
             {sentimentAnalysis.map((s: any, idx: number) => (
-              <div key={idx} style={{ marginBottom: '16px', padding: '12px', background: s.sentiment > 70 ? 'rgba(16,185,129,0.1)' : s.sentiment < 50 ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)', borderRadius: '16px', border: `2px solid ${s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308'}40` }}>
+              <div key={idx} style={{ marginBottom: '16px', padding: '12px', background: s.sentiment > 70 ? 'rgba(16,185,129,0.1)' : s.sentiment < 50 ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid ' + (s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308') + '40' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <div>
                     <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}>{s.symbol}</div>
@@ -1862,7 +2446,7 @@ export default function DashboardV33() {
                   <div style={{ 
                     height: '100%', 
                     background: s.sentiment > 70 ? 'linear-gradient(90deg, #10b981, #34d399)' : s.sentiment < 50 ? 'linear-gradient(90deg, #ef4444, #f87171)' : 'linear-gradient(90deg, #eab308, #fbbf24)', 
-                    width: `${s.sentiment}%`, 
+                    width: s.sentiment + '%', 
                     transition: 'width 0.5s' 
                   }}></div>
                 </div>
@@ -1910,7 +2494,7 @@ export default function DashboardV33() {
               </div>
               <div style={{ display: 'flex', gap: '12px' }}>
                 <button 
-                  onClick={actions.share}
+                  onClick={handleShare}
                   style={{ 
                     padding: '10px 16px', 
                     background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', 
@@ -2001,14 +2585,7 @@ export default function DashboardV33() {
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              onClick={() => {
-                // Parse symbol from alert message (e.g., "🔔 THYAO: BUY sinyali...")
-                const symbolMatch = alert.message.match(/[A-Z]{2,8}/);
-                if (symbolMatch && symbolMatch[0]) {
-                  setSelectedSymbol(symbolMatch[0]);
-                  openPanel('aiconf'); // Open AI Confidence modal
-                }
-              }}
+              onClick={() => (actions as any).openAlert ? (actions as any).openAlert(alert) : void 0}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ fontSize: '18px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
@@ -2034,7 +2611,7 @@ export default function DashboardV33() {
 
         {/* TraderGPT Chat Assistant */}
         {activePanel === 'tradergpt' && (
-          <div style={{ 
+          <div id="panel-tradergpt" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(249,115,22,0.1))',
@@ -2052,7 +2629,7 @@ export default function DashboardV33() {
             </p>
           </div>
               <button 
-                onClick={() => closePanel()}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2101,7 +2678,7 @@ export default function DashboardV33() {
             </p>
           </div>
               <button 
-                onClick={() => setShowGamification(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2131,7 +2708,7 @@ export default function DashboardV33() {
 
         {/* Advanced Visualization Hub */}
         {activePanel === 'viz' && (
-          <div style={{ 
+          <div id="panel-viz" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(6,182,212,0.1))',
@@ -2149,7 +2726,7 @@ export default function DashboardV33() {
                 </p>
               </div>
               <button 
-                onClick={() => setShowAdvancedViz(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2179,7 +2756,7 @@ export default function DashboardV33() {
 
         {/* AI Confidence Breakdown */}
         {activePanel === 'aiconf' && (
-          <div style={{ 
+          <div id="panel-aiconf" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(139,92,246,0.1))',
@@ -2197,7 +2774,7 @@ export default function DashboardV33() {
                 </p>
               </div>
               <button 
-                onClick={() => setShowAIConfidence(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2227,7 +2804,7 @@ export default function DashboardV33() {
 
         {/* Cognitive AI Comments */}
         {activePanel === 'cognitive' && (
-          <div style={{ 
+          <div id="panel-cognitive" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.1))',
@@ -2245,7 +2822,7 @@ export default function DashboardV33() {
                 </p>
               </div>
               <button 
-                onClick={() => setShowCognitiveAI(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2290,10 +2867,10 @@ export default function DashboardV33() {
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
                   AI'ya feedback ver • Doğruluk skorunu artır • Ödüller kazan
-            </p>
-          </div>
+                </p>
+              </div>
               <button 
-                onClick={() => setShowFeedbackLoop(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2308,7 +2885,7 @@ export default function DashboardV33() {
               >
                 ✕ Kapat
               </button>
-          </div>
+            </div>
 
             <div style={{
               background: 'rgba(255,255,255,0.95)',
@@ -2317,13 +2894,13 @@ export default function DashboardV33() {
               border: '1px solid rgba(139,92,246,0.2)'
             }}>
               <FeedbackLoop />
-          </div>
+            </div>
           </div>
         )}
 
         {/* Adaptive Volatility Model */}
         {activePanel === 'risk' && (
-          <div style={{ 
+          <div id="panel-risk" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(249,115,22,0.1), rgba(239,68,68,0.1))',
@@ -2341,7 +2918,7 @@ export default function DashboardV33() {
                 </p>
               </div>
               <button 
-                onClick={() => setShowVolatilityModel(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2371,7 +2948,7 @@ export default function DashboardV33() {
 
         {/* Meta-Model Engine */}
         {activePanel === 'meta' && (
-          <div style={{ 
+          <div id="panel-meta" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(236,72,153,0.1), rgba(139,92,246,0.1))',
@@ -2386,10 +2963,10 @@ export default function DashboardV33() {
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
                   FinBERT + Llama3 + Mistral Ensemble • Ağırlıklı ortalama • %91.5 doğruluk
-            </p>
-          </div>
+                </p>
+              </div>
               <button 
-                onClick={() => setShowMetaModel(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2404,7 +2981,7 @@ export default function DashboardV33() {
               >
                 ✕ Kapat
               </button>
-          </div>
+            </div>
 
             <div style={{
               background: 'rgba(255,255,255,0.95)',
@@ -2413,7 +2990,7 @@ export default function DashboardV33() {
               border: '1px solid rgba(236,72,153,0.2)'
             }}>
               <MetaModelEngine />
-          </div>
+            </div>
           </div>
         )}
 
@@ -2437,7 +3014,7 @@ export default function DashboardV33() {
                 </p>
               </div>
               <button 
-                onClick={() => setShowSubscription(false)}
+                onClick={actions.closeModal}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2498,7 +3075,7 @@ export default function DashboardV33() {
                 </p>
               </div>
               <button 
-                onClick={() => setShowStrategyBuilder(false)}
+                onClick={actions.closeModal}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2553,8 +3130,8 @@ export default function DashboardV33() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              <button
-                onClick={() => setShowGamification(true)}
+              <button 
+                onClick={handleOpenLevel}
                 style={{
                   padding: '8px 16px',
                   background: 'linear-gradient(135deg, #fbbf24, #f59e0b)',
@@ -2573,7 +3150,7 @@ export default function DashboardV33() {
                 🏆 Seviye 5
               </button>
               <button
-                onClick={actions.feedback}
+                onClick={() => setShowFeedbackLoop(true)}
                 style={{
                   padding: '8px 16px',
                   background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
@@ -2592,16 +3169,11 @@ export default function DashboardV33() {
                 🔄 Feedback
               </button>
               <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                BIST AI Smart Trader v4.6 Professional Edition {isLoggedIn && `| ${currentUser}`}
+                BIST AI Smart Trader v4.6 Professional Edition {isLoggedIn && ('| ' + currentUser)}
               </div>
               {isLoggedIn && (
                 <button
-                  onClick={() => {
-                    setIsLoggedIn(false);
-                    setShowLogin(true);
-                    setCurrentUser('');
-                    localStorage.removeItem('bistai_user');
-                  }}
+                  onClick={handleLogout}
                   style={{
                     padding: '8px 16px',
                     background: '#ef4444',
@@ -2640,7 +3212,7 @@ export default function DashboardV33() {
             </p>
           </div>
               <button 
-                onClick={() => setShowV50Module(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 14px',
                   background: '#ef4444',
@@ -2662,7 +3234,7 @@ export default function DashboardV33() {
               {(['risk', 'portfolio', 'backtest'] as const).map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setV50ActiveTab(tab)}
+                  onClick={() => (actions as any).openV50Tab ? (actions as any).openV50Tab(tab) : (openPanel && openPanel(tab))}
                   style={{
                     padding: '8px 14px',
                     background: v50ActiveTab === tab 
@@ -2719,7 +3291,7 @@ export default function DashboardV33() {
                 </p>
               </div>
               <button 
-                onClick={() => setShowWatchlist(false)}
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 16px',
                   background: '#ef4444',
@@ -2754,11 +3326,7 @@ export default function DashboardV33() {
                         cursor: 'pointer',
                         transition: 'all 0.2s'
                       }}
-                      onClick={() => {
-                        setSelectedSymbol(symbol);
-                        const element = document.getElementById('signals-table');
-                        if (element) element.scrollIntoView({ behavior: 'smooth' });
-                      }}
+                      onClick={() => (actions as any).scrollToSignals ? (actions as any).scrollToSignals(symbol) : (document.getElementById('signals-table')?.scrollIntoView({ behavior: 'smooth' }))}
                     >
                       <p style={{ margin: 0, fontWeight: 'bold', fontSize: '14px' }}>{symbol}</p>
                     </div>
@@ -2790,8 +3358,8 @@ export default function DashboardV33() {
                   Sistem yönetimi ve ayarlar
                 </p>
               </div>
-              <button 
-                onClick={() => setShowAdmin(false)}
+              <button
+                onClick={handleCloseAll}
                 style={{
                   padding: '8px 16px',
                   background: '#ef4444',
@@ -2824,10 +3392,10 @@ export default function DashboardV33() {
 
                 <div style={{ padding: '16px', background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)', borderRadius: '12px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>🔧 Ayarlar</h3>
-                  <button style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', marginRight: '8px' }}>
+                  <button onClick={(actions as any).refreshData} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', marginRight: '8px' }}>
                     Veri Yenile
                   </button>
-                  <button style={{ padding: '8px 16px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
+                  <button onClick={(actions as any).openLogs} style={{ padding: '8px 16px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
                     Log İzle
                   </button>
                 </div>
@@ -2842,7 +3410,7 @@ export default function DashboardV33() {
 
               <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.1)' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>👥 Kullanıcı Yönetimi</h3>
-                
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                   <input 
                     type="text" 
@@ -2874,14 +3442,14 @@ export default function DashboardV33() {
                     const password = (document.getElementById('new-password') as HTMLInputElement)?.value;
                     if (username && password) {
                       try {
-                        const res = await fetch('http://localhost:8080/api/auth/register', {
+                        const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085') + '/api/auth/register', {
                           method: 'POST',
                           headers: {'Content-Type': 'application/json'},
                           body: JSON.stringify({username, password})
                         });
                         const data = await res.json();
                         if (data.status === 'success') {
-                          alert(`Kullanıcı eklendi: ${username}`);
+                          alert('Kullanıcı eklendi: ' + username);
                           (document.getElementById('new-username') as HTMLInputElement).value = '';
                           (document.getElementById('new-password') as HTMLInputElement).value = '';
                         } else {
@@ -2911,11 +3479,177 @@ export default function DashboardV33() {
           </div>
         )}
 
-        {/* TraderGPT Sidebar */}
-        <TraderGPTSidebar />
+        {/* Modal kaldırıldı - Artık direkt /feature/[slug] route'una yönlendirme yapıyoruz */}
+
+        {/* AI Güven Göstergesi (Gauge/Bullet) */}
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          {(() => {
+            // Ortalama güveni signals/dynamicSignals üzerinden tahmin et
+            const pool = signals && signals.length > 0 ? signals : [];
+            const avg = pool.length > 0 ? Math.round(pool.map((s:any)=> (typeof s.confidence==='number' ? s.confidence*100 : (s.accuracy||80))).reduce((a:number,b:number)=>a+b,0)/pool.length) : 78;
+            const level = avg >= 85 ? 'Yüksek' : avg >= 70 ? 'Orta' : 'Düşük';
+            const color = avg >= 85 ? '#10b981' : avg >= 70 ? '#f59e0b' : '#ef4444';
+            return (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>🧭 AI Güven Göstergesi</div>
+                  <div style={{ fontSize: '12px', fontWeight: 800, color }}>{level} ({avg}%)</div>
+                </div>
+                <div style={{ height: '12px', width: '100%', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden', border: '1px solid #e5e7eb' }}>
+                  <div style={{ width: avg + '%', height: '100%', background: color, transition: 'width 300ms ease' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>Düşük</span>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>Orta</span>
+                  <span style={{ fontSize: '11px', color: '#64748b' }}>Yüksek</span>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Sektörel Sentiment Agregasyonu */}
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          {(() => {
+            // sentimentAnalysis'i sektör bazında grupla
+            const rows:any[] = Array.isArray(sentimentAnalysis) ? sentimentAnalysis : [];
+            const bySector: Record<string, { pos:number; neg:number; neu:number; n:number }> = {};
+            rows.forEach((r:any)=>{
+              const sector = (getSectorForSymbol && typeof getSectorForSymbol==='function') ? (getSectorForSymbol(r.symbol) || 'Genel') : 'Genel';
+              const g = bySector[sector] || { pos:0, neg:0, neu:0, n:0 };
+              g.pos += r.positive || 0; g.neg += r.negative || 0; g.neu += r.neutral || 0; g.n += 1; bySector[sector]=g;
+            });
+            const items = Object.entries(bySector).map(([k,v])=>{
+              const total = Math.max(1, v.pos+v.neg+v.neu);
+              return { sector:k, pos: Math.round((v.pos/total)*100), neg: Math.round((v.neg/total)*100), neu: Math.round((v.neu/total)*100) };
+            }).sort((a,b)=> b.pos-a.pos);
+            if (items.length === 0) return (
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>📰 Sektörel Sentiment: Veri yok</div>
+            );
+            return (
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginBottom: '10px' }}>📰 Sektörel Sentiment Özeti</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
+                  {items.map((it)=> (
+                    <div key={it.sector} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>{it.sector}</div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', fontSize: '12px' }}>
+                        <div style={{ color: '#065f46', fontWeight: 700 }}>+{it.pos}%</div>
+                        <div style={{ color: '#1f2937', fontWeight: 700 }}>{it.neu}%</div>
+                        <div style={{ color: '#7f1d1d', fontWeight: 700 }}>-{it.neg}%</div>
+                      </div>
+                      <div style={{ height: '6px', width: '100%', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden', marginTop: '6px' }}>
+                        <div style={{ width: it.pos + '%', height: '100%', background: '#10b981', float: 'left' }} />
+                        <div style={{ width: it.neu + '%', height: '100%', background: '#94a3b8', float: 'left' }} />
+                        <div style={{ width: it.neg + '%', height: '100%', background: '#ef4444', float: 'left' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* AI Haber Uyarıları (Kaynak Linkli) */}
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          {(() => {
+            const news = [
+              { title: 'TCMB faiz kararı sonrası bankacılıkta dalgalanma', source: 'BloombergHT', url: 'https://www.bloomberght.com/' },
+              { title: 'Teknoloji hisselerinde pozitif momentum', source: 'Dünya', url: 'https://www.dunya.com/' },
+              { title: 'Petrokimya sektöründe talep artışı', source: 'AA', url: 'https://www.aa.com.tr/' },
+            ];
+            return (
+              <div>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginBottom: '10px' }}>🗞️ AI Haber Uyarıları</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                  {news.map((n, idx)=> (
+                    <a key={idx} href={n.url} target="_blank" rel="noopener noreferrer" style={{
+                      background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px', textDecoration: 'none'
+                    }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>{n.title}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{n.source}</div>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Multi-Timeframe (Çoklu Sembol) */}
+        <div style={{
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '16px',
+          marginBottom: '16px'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>🕒 Multi-Timeframe (Çoklu Sembol)</div>
+            <div style={{ fontSize: '11px', color: '#64748b' }}>1H • 4H • 1D</div>
+          </div>
+          {(() => {
+            // Derive top symbols from signals
+            const syms = (signals && signals.length > 0 ? Array.from(new Set(signals.map((s:any)=>s.symbol))) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN']).slice(0, 6);
+            const horizons = ['1h','4h','1d'];
+            function mtfScore(symbol: string, horizon: string) {
+              // hashed pseudo score -1..+1
+              const key = symbol + '-' + horizon;
+              let h = 0; for (let i=0;i<key.length;i++) h = (h*31 + key.charCodeAt(i)) >>> 0;
+              const val = ((h % 201) - 100) / 100; // -1..+1
+              return val;
+            }
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '10px' }}>
+                {syms.map((sym) => (
+                  <div key={sym} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a' }}>{sym}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>MTF</div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                      {horizons.map((hz) => {
+                        const v = mtfScore(sym, hz);
+                        const up = v >= 0.05; const down = v <= -0.05; const neutral = !up && !down;
+                        const bg = up ? '#10b98120' : down ? '#ef444420' : '#64748b20';
+                        const fg = up ? '#10b981' : down ? '#ef4444' : '#64748b';
+                        const label = hz.toUpperCase();
+                        return (
+                          <span key={hz} style={{ padding: '6px 10px', fontSize: '11px', fontWeight: 700, background: bg, color: fg, border: '1px solid ' + fg + '40', borderRadius: '999px' }}>{label}</span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+        </div>
+
       </main>
     </div>
       )}
-    </>
+  </div>
   );
 }
+
+export default DashboardV33;

@@ -34,7 +34,8 @@ export default function InvestorPanel() {
     setLoading(true);
     setSelectedMode(mode);
     try {
-      const res = await fetch(`http://localhost:8080/api/v60/analyze?mode=${mode}&symbol=THYAO`);
+      const base = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085';
+      const res = await fetch(`${base}/api/v60/analyze?mode=${mode}&symbol=THYAO`);
       const data = await res.json();
       setReport(data);
     } catch (error) {

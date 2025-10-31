@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useBist30Overview } from '@/hooks/queries';
 import { 
   FireIcon,
   ArrowTrendingUpIcon,
@@ -8,6 +9,7 @@ import {
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 import { GlassCard } from '@/components/UI/GlassCard';
+import { Skeleton } from '@/components/UI/Skeleton';
 
 interface SectorData {
   name: string;
@@ -26,7 +28,25 @@ const SectorHeatmap: React.FC<SectorHeatmapProps> = ({ isLoading = false }) => {
   const [sectorData, setSectorData] = useState<SectorData[]>([]);
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
 
-  // Mock sector data
+  // Backend'li veri: BIST30 overview varsa onu kullan, yoksa mock'a düş
+  const ovQ = useBist30Overview(true);
+
+  useEffect(() => {
+    if (ovQ.data && Array.isArray((ovQ.data as any).sector_distribution)) {
+      const arr = ((ovQ.data as any).sector_distribution as any[]).map((s:any) => ({
+        name: s.sector,
+        strength: Math.round(((s.change ?? 0) * 20) + 50),
+        change: Number(s.change ?? 0),
+        topStocks: Array.isArray(s.top) ? s.top : [],
+        volume: Math.max(1, Math.round((s.weight ?? 0) * 10000000)),
+        marketCap: Math.max(1, Math.round((s.weight ?? 0) * 1000000000))
+      })) as SectorData[];
+      setSectorData(arr);
+      return;
+    }
+  }, [ovQ.data]);
+
+  // Mock sector data (fallback)
   useEffect(() => {
     const mockSectors: SectorData[] = [
       {
@@ -95,7 +115,7 @@ const SectorHeatmap: React.FC<SectorHeatmapProps> = ({ isLoading = false }) => {
       }
     ];
 
-    setSectorData(mockSectors);
+    if (sectorData.length === 0) setSectorData(mockSectors);
     
     const interval = setInterval(() => {
       setSectorData(prev => prev.map(sector => ({
@@ -132,14 +152,14 @@ const SectorHeatmap: React.FC<SectorHeatmapProps> = ({ isLoading = false }) => {
     return change >= 0 ? 'text-green-400' : 'text-red-400';
   };
 
-  if (isLoading) {
+  if (isLoading || (ovQ.isLoading && sectorData.length===0)) {
     return (
       <GlassCard className="p-6">
-        <div className="animate-pulse space-y-4">
-          <div className="h-6 bg-gray-700 rounded w-1/3"></div>
+        <div className="space-y-4">
+          <Skeleton className="h-6 w-40 rounded" />
           <div className="grid grid-cols-4 gap-4">
             {[...Array(8)].map((_, i) => (
-              <div key={i} className="h-24 bg-gray-700 rounded"></div>
+              <Skeleton key={i} className="h-24 rounded" />
             ))}
           </div>
         </div>
@@ -207,7 +227,7 @@ const SectorHeatmap: React.FC<SectorHeatmapProps> = ({ isLoading = false }) => {
           </div>
           <div className="flex items-center space-x-2">
             <div className="w-4 h-4 bg-red-500 rounded"></div>
-            <span className="text-gray-400">Poor (<10)</span>
+            <span className="text-gray-400">Poor (&lt;10)</span>
           </div>
         </div>
       </GlassCard>

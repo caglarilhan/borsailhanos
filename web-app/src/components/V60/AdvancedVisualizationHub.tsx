@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
   BarChart3,
@@ -10,34 +10,86 @@ import {
   Target,
   Zap
 } from 'lucide-react';
+import { useTop30Analysis, useBist30Overview } from '@/hooks/queries';
+import { Skeleton } from '@/components/UI/Skeleton';
 
 export default function AdvancedVisualizationHub() {
   const [selectedMetric, setSelectedMetric] = useState('signals');
 
-  // Sector Heatmap Data
-  const sectors = [
-    { name: 'Bankacılık', weight: 35, trend: 0.75, color: '#10b981' },
-    { name: 'Sanayi', weight: 28, trend: 0.65, color: '#3b82f6' },
-    { name: 'Teknoloji', weight: 22, trend: 0.85, color: '#8b5cf6' },
-    { name: 'İnşaat', weight: 15, trend: 0.45, color: '#f59e0b' }
-  ];
+  // Queries
+  const top30Q = useTop30Analysis();
+  const ovQ = useBist30Overview(true);
 
-  // AI Predictions Data
-  const predictionData = [
-    { symbol: 'THYAO', prediction: 0.87, actual: 0.82, diff: 0.05, direction: 'up' },
-    { symbol: 'AKBNK', prediction: 0.65, actual: 0.68, diff: -0.03, direction: 'up' },
-    { symbol: 'EREGL', prediction: 0.72, actual: 0.71, diff: 0.01, direction: 'up' },
-    { symbol: 'TUPRS', prediction: 0.58, actual: 0.55, diff: 0.03, direction: 'up' },
-    { symbol: 'SISE', prediction: 0.45, actual: 0.48, diff: -0.03, direction: 'down' }
-  ];
+  // Sector Heatmap Data (backend varsa kullan)
+  const sectors = useMemo(() => {
+    const ov: any = ovQ.data;
+    if (ov && Array.isArray(ov.sector_distribution)) {
+      return ov.sector_distribution.map((s: any) => ({
+        name: s.sector,
+        weight: Number(s.weight || 0),
+        trend: Math.max(0, Math.min(1, (Number(s.change || 0) + 5) / 10)),
+        color: (Number(s.change || 0) >= 0 ? '#10b981' : '#ef4444')
+      }));
+    }
+    return [
+      { name: 'Bankacılık', weight: 35, trend: 0.75, color: '#10b981' },
+      { name: 'Sanayi', weight: 28, trend: 0.65, color: '#3b82f6' },
+      { name: 'Teknoloji', weight: 22, trend: 0.85, color: '#8b5cf6' },
+      { name: 'İnşaat', weight: 15, trend: 0.45, color: '#f59e0b' }
+    ];
+  }, [ovQ.data]);
 
-  // Signal Accuracy Data
-  const signalAccuracy = [
-    { symbol: 'THYAO', accuracy: 92, type: 'BUY', confidence: 87 },
-    { symbol: 'AKBNK', accuracy: 78, type: 'BUY', confidence: 75 },
-    { symbol: 'EREGL', accuracy: 85, type: 'HOLD', confidence: 68 },
-    { symbol: 'TUPRS', accuracy: 88, type: 'SELL', confidence: 82 }
-  ];
+  // AI Predictions Data (Top30'dan türet)
+  const predictionData = useMemo(() => {
+    const d: any = top30Q.data;
+    if (d && Array.isArray(d.top30)) {
+      return d.top30.slice(0, 5).map((s: any) => ({
+        symbol: s.symbol,
+        prediction: Math.max(0, Math.min(1, (Number(s.potential || s.predictedChange || 0) / 100))),
+        actual: Math.max(0, Math.min(1, (Number(s.aiSummary?.price_change_7d || 0) / 100))),
+        diff: Math.max(-1, Math.min(1, ((Number(s.potential || s.predictedChange || 0) - Number(s.aiSummary?.price_change_7d || 0)) / 100))),
+        direction: Number(s.predictedChange || 0) >= 0 ? 'up' : 'down'
+      }));
+    }
+    return [
+      { symbol: 'THYAO', prediction: 0.87, actual: 0.82, diff: 0.05, direction: 'up' },
+      { symbol: 'AKBNK', prediction: 0.65, actual: 0.68, diff: -0.03, direction: 'up' },
+      { symbol: 'EREGL', prediction: 0.72, actual: 0.71, diff: 0.01, direction: 'up' },
+      { symbol: 'TUPRS', prediction: 0.58, actual: 0.55, diff: 0.03, direction: 'up' },
+      { symbol: 'SISE', prediction: 0.45, actual: 0.48, diff: -0.03, direction: 'down' }
+    ];
+  }, [top30Q.data]);
+
+  // Signal Accuracy Data (Top30 metadata'dan türet)
+  const signalAccuracy = useMemo(() => {
+    const d: any = top30Q.data;
+    if (d && Array.isArray(d.top30)) {
+      return d.top30.slice(0, 4).map((s: any) => ({
+        symbol: s.symbol,
+        accuracy: Math.round(Number(s.accuracy || 0)),
+        type: s.signal,
+        confidence: Math.round(Number(s.confidence || 0))
+      }));
+    }
+    return [
+      { symbol: 'THYAO', accuracy: 92, type: 'BUY', confidence: 87 },
+      { symbol: 'AKBNK', accuracy: 78, type: 'BUY', confidence: 75 },
+      { symbol: 'EREGL', accuracy: 85, type: 'HOLD', confidence: 68 },
+      { symbol: 'TUPRS', accuracy: 88, type: 'SELL', confidence: 82 }
+    ];
+  }, [top30Q.data]);
+
+  if (top30Q.isLoading || ovQ.isLoading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-8 w-64 rounded" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-36 rounded" />
+          <Skeleton className="h-36 rounded" />
+        </div>
+      </div>
+    );
+  }
 
   const getHeatmapColor = (trend: number) => {
     if (trend > 0.75) return 'bg-green-400';

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTop30Analysis } from '@/hooks/queries';
 import { 
   ChartBarIcon, 
   ArrowTrendingUpIcon,
@@ -35,6 +36,7 @@ interface TradingSignalsProps {
 
 const TradingSignals: React.FC<TradingSignalsProps> = (props) => {
   const { signals = [], isLoading = false } = props;
+  const [isLoadingState, setIsLoading] = useState<boolean>(isLoading);
   const [allSignals, setAllSignals] = useState<TradingSignal[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState({
@@ -45,15 +47,16 @@ const TradingSignals: React.FC<TradingSignalsProps> = (props) => {
 
   // WebSocket bağlantısı
   useEffect(() => {
+    let attempts = 0;
+    let ws: WebSocket | null = null;
     const connectWebSocket = () => {
-      const ws = new WebSocket(process.env.NEXT_PUBLIC_REALTIME_URL || 'ws://localhost:8081');
-      
+      const url = process.env.NEXT_PUBLIC_REALTIME_URL || 'ws://localhost:8081';
+      ws = new WebSocket(url);
       ws.onopen = () => {
+        attempts = 0;
         setIsConnected(true);
         setConnectionStatus({ connected: true, reconnecting: false, error: null });
-        console.log('🔗 WebSocket connected');
       };
-      
       ws.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
@@ -65,103 +68,47 @@ const TradingSignals: React.FC<TradingSignalsProps> = (props) => {
           console.error('❌ WebSocket message error:', error);
         }
       };
-      
       ws.onclose = () => {
         setIsConnected(false);
         setConnectionStatus({ connected: false, reconnecting: true, error: null });
-        console.log('🔌 WebSocket disconnected');
-        // Reconnect after 5 seconds
-        setTimeout(connectWebSocket, 5000);
+        attempts += 1;
+        const delay = Math.min(30000, 1000 * Math.pow(2, attempts));
+        setTimeout(connectWebSocket, delay);
       };
-      
       ws.onerror = (error) => {
         console.error('❌ WebSocket error:', error);
-        setConnectionStatus({ connected: false, reconnecting: false, error: 'Connection failed' });
+        setConnectionStatus({ connected: false, reconnecting: true, error: 'Connection failed' });
+        try { ws?.close(); } catch {}
       };
     };
-    
     connectWebSocket();
+    return () => { try { ws?.close(); } catch {} };
   }, []);
 
-  // Backend'den sinyalleri çek
-  const fetchRealSignals = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8000'}/api/signals`);
-      if (response.ok) {
-        const backendSignals = await response.json();
-        setAllSignals(backendSignals);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching signals:', error);
-      // Fallback: mock data kullan
-      const mockSignals: TradingSignal[] = [
-        {
-          symbol: "THYAO",
-          signal: "BUY",
-          confidence: 0.87,
-          price: 245.50,
-          change: 2.3,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: "EMA Cross + RSI Oversold",
-          shapValues: {'Technical': 0.4, 'Fundamental': 0.3, 'Sentiment': 0.2, 'Macro': 0.1},
-          confluenceScore: 0.87,
-          marketRegime: 'Bullish',
-          sentimentScore: 0.7,
-          expectedReturn: 14.5,
-          stopLoss: 235.0,
-          takeProfit: 260.0
-        },
-        {
-          symbol: "ASELS",
-          signal: "SELL",
-          confidence: 0.74,
-          price: 48.20,
-          change: -1.8,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: "Resistance Break + Volume Spike",
-          shapValues: {'Technical': 0.5, 'Fundamental': 0.2, 'Sentiment': 0.2, 'Macro': 0.1},
-          confluenceScore: 0.74,
-          marketRegime: 'Bearish',
-          sentimentScore: 0.4,
-          expectedReturn: -6.2,
-          stopLoss: 52.0,
-          takeProfit: 42.0
-        },
-        {
-          symbol: "TUPRS",
-          signal: "BUY",
-          confidence: 0.91,
-          price: 180.30,
-          change: 3.1,
-          timestamp: new Date().toISOString(),
-          xaiExplanation: "Bullish Engulfing + MACD Cross",
-          shapValues: {'Technical': 0.6, 'Fundamental': 0.2, 'Sentiment': 0.1, 'Macro': 0.1},
-          confluenceScore: 0.91,
-          marketRegime: 'Bullish',
-          sentimentScore: 0.8,
-          expectedReturn: 14.7,
-          stopLoss: 170.0,
-          takeProfit: 195.0
-        }
-      ];
-      setAllSignals(mockSignals);
-    } finally {
-      setIsLoading(false);
+  // react-query: Top30Analysis'tan fallback sinyaller türet
+  const top30Q = useTop30Analysis();
+  useEffect(() => {
+    setIsLoading(Boolean(top30Q.isLoading || top30Q.isFetching));
+    const d: any = top30Q.data;
+    if (!isConnected && d && Array.isArray(d.top30)) {
+      const mapped: TradingSignal[] = d.top30.slice(0, 20).map((s: any) => ({
+        symbol: s.symbol,
+        signal: s.signal,
+        confidence: (s.confidence || 0) / 100,
+        price: Number(s.currentPrice || 0),
+        change: Number(s.predictedChange || 0),
+        timestamp: new Date().toISOString(),
+        xaiExplanation: s.aiSummaryText || 'AI özet verisi',
+        confluenceScore: (s.accuracy || 0) / 100,
+        sentimentScore: (s.aiSummary?.sentiment_score || 0) / 100,
+        expectedReturn: Number(s.potential || s.predictedChange || 0),
+      }));
+      setAllSignals(mapped);
     }
-  };
+  }, [top30Q.data, top30Q.isLoading, top30Q.isFetching, isConnected]);
 
   useEffect(() => {
-    fetchRealSignals();
-    
-    // 30 saniyede bir güncelle (sadece WebSocket bağlı değilse)
-    const interval = setInterval(() => {
-      if (!isConnected) {
-        fetchRealSignals();
-      }
-    }, 30000);
-    
-    return () => clearInterval(interval);
+    // WebSocket yoksa query auto-refetch devrede; ekstra interval gerekmez
   }, [isConnected]);
 
   const getSignalIcon = (signal: string) => {
@@ -280,7 +227,7 @@ const TradingSignals: React.FC<TradingSignalsProps> = (props) => {
         {/* Action Buttons */}
         <div className="flex gap-2">
           <button
-            onClick={fetchRealSignals}
+            onClick={() => top30Q.refetch()}
             disabled={isLoading}
             className="btn-primary flex items-center gap-2 disabled:opacity-50"
             title="Sinyalleri Yenile"
@@ -302,7 +249,7 @@ const TradingSignals: React.FC<TradingSignalsProps> = (props) => {
           <h3 className="text-lg font-medium text-gray-900 mb-2">Sinyal Bulunamadı</h3>
           <p className="text-gray-600 mb-4">Şu anda aktif AI sinyali bulunmuyor.</p>
           <button
-            onClick={fetchRealSignals}
+            onClick={() => top30Q.refetch()}
             className="btn-primary"
           >
             Tekrar Dene

@@ -1,17 +1,8 @@
-"""
-🚀 BIST AI Smart Trader - XAI Explain Panel
-==========================================
-
-Her hisse için "AI neden böyle dedi?" açıklamasını gösteren React komponenti.
-SHAP ve LIME açıklamalarını görselleştirir.
-
-Özellikler:
-- Feature importance visualization
-- SHAP değerleri
-- LIME açıklamaları
-- Karar faktörleri
-- Interactive explanations
-"""
+/*
+  🚀 BIST AI Smart Trader - XAI Explain Panel
+  Her hisse için "AI neden böyle dedi?" açıklamasını gösteren React komponenti.
+  SHAP ve LIME açıklamalarını görselleştirir.
+*/
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { 

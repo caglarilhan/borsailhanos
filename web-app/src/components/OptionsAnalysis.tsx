@@ -82,7 +82,8 @@ export default function OptionsAnalysis({ isLoading }: OptionsAnalysisProps) {
   const loadOptionChain = async () => {
     try {
       const expiration = selectedExpiration || '';
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8080'}/api/options/chain/${selectedSymbol}${expiration ? `?expiration=${expiration}` : ''}`);
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085';
+      const response = await fetch(`${base}/api/options/chain/${selectedSymbol}${expiration ? ('?expiration=' + expiration) : ''}`);
       const data = await response.json();
       setOptionChain(data);
     } catch (error) {
@@ -92,7 +93,8 @@ export default function OptionsAnalysis({ isLoading }: OptionsAnalysisProps) {
 
   const analyzeStrategy = async () => {
     try {
-      const response = await fetch('http://localhost:8081/api/options/strategy', {
+      const sbase = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085';
+      const response = await fetch(`${sbase}/api/options/strategy`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -456,29 +458,14 @@ export default function OptionsAnalysis({ isLoading }: OptionsAnalysisProps) {
                         tickFormatter={(value) => `₺${value.toFixed(0)}`}
                       />
                       <Tooltip 
-                        formatter={(value: number) => [`₺${value.toFixed(2)}`, 'P&L']}
-                        labelFormatter={(label) => `Fiyat: ₺${label}`}
+                        formatter={(value: number) => [('₺' + (value as number).toFixed(2)) as unknown as React.ReactNode, 'P&L']}
+                        labelFormatter={(label) => 'Fiyat: ₺' + String(label)}
                       />
-                      <Line 
-                        type="monotone" 
-                        dataKey="pnl" 
-                        stroke="#8B5CF6" 
-                        strokeWidth={2}
-                        dot={false}
-                      />
+                      <Line type="monotone" dataKey="pnl" stroke="#3b82f6" strokeWidth={2} dot={false} />
                     </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>
-            </div>
-            
-            <div className="mt-6 text-right">
-              <button
-                onClick={() => setShowStrategyModal(false)}
-                className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 transition-colors"
-              >
-                Kapat
-              </button>
             </div>
           </div>
         </div>

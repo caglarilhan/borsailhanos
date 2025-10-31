@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { Config } from 'tailwindcss'
 
 const config: Config = {
@@ -491,7 +492,6 @@ const config: Config = {
       })
     },
   ],
-  darkMode: 'class',
   safelist: [
     // Ensure these classes are never purged
     'text-green-500',
