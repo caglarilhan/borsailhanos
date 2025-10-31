@@ -174,21 +174,22 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     if (!q) return;
     setGptMessages(prev => [...prev, { role: 'user', text: q }]);
     setGptInput('');
-    // Basit kural tabanlı cevap (stub): en güçlü 3 sembol + kısa yorum
+    setGptSpeaking(true);
     try {
-      const top = rows.slice().sort((a,b)=> (b.confidence||0)-(a.confidence||0)).map(r=>r.symbol);
-      const uniq: string[] = [];
-      top.forEach(s=> { if (!uniq.includes(s)) uniq.push(s); });
-      const top3 = uniq.slice(0,3);
-      const msg = top3.length>0
-        ? (`Bugün öne çıkanlar: ${top3.join(', ')}. Meta-ensemble güveni yüksek; kısa vadede momentum pozitif.`)
-        : 'Şu an veriyi değerlendiriyorum; sinyal listesi kısa süre içinde güncellenecek.';
+      const context = {
+        selectedSymbol,
+        topSignals: rows.slice().sort((a,b)=> (b.confidence||0)-(a.confidence||0)).slice(0,5).map(r=>({symbol:r.symbol, confidence:Math.round(r.confidence*100), prediction:r.prediction}))
+      };
+      const resp = await Api.askTraderGPT(q, context);
+      const msg = resp.response || 'Yanıt hazırlanıyor...';
       setGptMessages(prev => [...prev, { role: 'ai', text: msg }]);
       speakText(msg);
-    } catch {
+    } catch (e) {
       const fallback = 'Analiz sırasında küçük bir gecikme oldu; lütfen tekrar dener misin?';
       setGptMessages(prev => [...prev, { role: 'ai', text: fallback }]);
       speakText(fallback);
+    } finally {
+      setGptSpeaking(false);
     }
   };
 
@@ -1045,13 +1046,25 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <td className="py-2 pr-4 whitespace-nowrap font-bold">
                         {(() => {
                           const pct = r.prediction*100;
-                          const cls = pct > 1 ? 'text-green-600' : (pct < -1 ? 'text-red-600' : 'text-slate-500');
+                          const cls = pct > 1 ? 'text-green-600 font-bold' : (pct < -1 ? 'text-red-600 font-bold' : 'text-[#111827] font-bold');
                           const arrow = pct > 1 ? '↑' : (pct < -1 ? '↓' : '→');
-                          return (
-                            <span title="24 saat tahmini değişim" className={cls}>
-                              {arrow} ₺{tgt.toFixed(2)} ({Math.abs(pct).toFixed(1)}%)
-                    </span>
-                          );
+                          try {
+                            const { useReasoning } = require('@/hooks/queries');
+                            const reasonQ = useReasoning(r.symbol);
+                            const reasons = reasonQ.data?.reasons || [];
+                            const reasonText = reasons.length > 0 ? reasons.join(' • ') : 'AI analiz hazırlanıyor...';
+                            return (
+                              <span title={`24 saat tahmini değişim • AI nedeni: ${reasonText}`} className={cls}>
+                                {arrow} ₺{tgt.toFixed(2)} ({Math.abs(pct).toFixed(1)}%)
+                              </span>
+                            );
+                          } catch {
+                            return (
+                              <span title="24 saat tahmini değişim" className={cls}>
+                                {arrow} ₺{tgt.toFixed(2)} ({Math.abs(pct).toFixed(1)}%)
+                              </span>
+                            );
+                          }
                         })()}
                   </td>
                       <td className="py-2 pr-4 whitespace-nowrap">
@@ -1059,8 +1072,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           <div className="flex-1 h-2 rounded bg-gray-100 overflow-hidden">
                             <div className="h-2" style={{ width: confPct + '%', background: confPct>=85 ? '#10b981' : confPct>=70 ? '#fbbf24' : '#ef4444' }}></div>
                           </div>
-                          <span className="text-[12px] font-semibold text-black">{confPct}%</span>
-                          <span className="px-2 py-0.5 rounded bg-gray-100">S10 {success10}%</span>
+                          <span className="text-[12px] font-semibold text-[#111827]">{confPct}%</span>
+                          <span className="px-2 py-0.5 rounded bg-gray-100 text-[10px]">S10 {success10}%</span>
+                          {(() => {
+                            const sameSymbolRows = list.filter(x => x.symbol === r.symbol);
+                            const dirs = sameSymbolRows.map(x => (x.prediction||0) >= 0 ? 1 : -1);
+                            const maj = dirs.reduce((a,b)=> a + b, 0) >= 0 ? 1 : -1;
+                            const ok = dirs.filter(d=> d===maj).length;
+                            const consistency = `${ok}/${dirs.length}`;
+                            const isStrong = ok === dirs.length && dirs.length >= 3;
+                            return isStrong ? (
+                              <span title={`Multi-timeframe tutarlılık: ${consistency} (Güçlü Sinyal)`} className="px-1.5 py-0.5 text-[9px] rounded bg-emerald-100 text-emerald-700 border border-emerald-200">✓ {consistency}</span>
+                            ) : null;
+                          })()}
                         </div>
                       </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-gray-800 hidden md:table-cell whitespace-nowrap">

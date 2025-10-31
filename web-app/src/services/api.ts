@@ -214,6 +214,15 @@ export async function getCrossCorr() {
       return await fetchSmart(`${API_BASE_URL}/api/ai/reasoning?symbol=${encodeURIComponent(symbol)}`);
     }
 
+    // TraderGPT chat
+    export async function askTraderGPT(query: string, context?: any) {
+      return await fetchSmart(`${API_BASE_URL}/api/ai/tradergpt`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, context })
+      });
+    }
+
 export const Api = {
   getBistPredictions,
   getPredictiveTwin,
@@ -251,6 +260,7 @@ export const Api = {
       triggerRetrain,
       getFinBERTEN,
       getReasoning,
+      askTraderGPT,
 };
 
 
