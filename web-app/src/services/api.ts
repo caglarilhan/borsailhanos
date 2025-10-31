@@ -223,6 +223,11 @@ export async function getCrossCorr() {
       });
     }
 
+    // AI Health Panel
+    export async function getAIHealth() {
+      return await fetchSmart(`${API_BASE_URL}/api/ai/health`);
+    }
+
 export const Api = {
   getBistPredictions,
   getPredictiveTwin,
@@ -261,6 +266,7 @@ export const Api = {
       getFinBERTEN,
       getReasoning,
       askTraderGPT,
+      getAIHealth,
 };
 
 

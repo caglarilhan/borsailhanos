@@ -20,6 +20,7 @@ import { MetaHeatmap } from '@/components/AI/MetaHeatmap';
 import { AIConfidenceGauge } from '@/components/AI/AIConfidenceGauge';
 import { Toast } from '@/components/UI/Toast';
 import { AICorePanel } from '@/components/AI/AICorePanel';
+import { AIHealthPanel } from '@/components/AI/AIHealthPanel';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -1265,6 +1266,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       {/* Sağ Panel - Analiz */}
       <div className="w-80 bg-white rounded-lg shadow-sm p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Analiz Paneli</h3>
+        {/* AI Health Panel */}
+        <div className="mb-4">
+          <AIHealthPanel />
+        </div>
         {/* TraderGPT Conversational Panel */}
         {gptOpen && (
           <div className="mb-4 border rounded-lg p-3 bg-white">

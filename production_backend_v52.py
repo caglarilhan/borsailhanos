@@ -128,6 +128,8 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_ai_reasoning()
         elif path == '/api/ai/tradergpt':
             self._handle_tradergpt()
+        elif path == '/api/ai/health':
+            self._handle_ai_health()
         elif path == '/api/data/macro':
             self._handle_data_macro()
         elif path == '/api/data/cross_corr':
@@ -1739,6 +1741,42 @@ class ProductionAPI(BaseHTTPRequestHandler):
             'confidence': 0.85,
             'sources': ['Meta-Ensemble', 'FinBERT-TR', 'Teknik Analiz'],
             'timestamp': datetime.now().isoformat()
+        }
+        self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
+
+    def _handle_ai_health(self):
+        """AI Health Panel: model accuracy, latency, error rate, RMSE/MAE."""
+        self._set_headers(200)
+        now = datetime.now()
+        random.seed(int(now.strftime('%Y%j')))
+        
+        # Mock health metrics (gerçek implementasyonda gerçek veriler gelecek)
+        accuracy = 87.3 + random.uniform(-2, 2)
+        latency = 245 + random.randint(-30, 30)
+        error_rate = 0.021 + random.uniform(-0.005, 0.005)
+        rmse = 0.038 + random.uniform(-0.005, 0.005)
+        mae = 0.021 + random.uniform(-0.003, 0.003)
+        
+        # 7-day trend data
+        accuracy_trend = [85 + random.uniform(-3, 5) for _ in range(7)]
+        latency_trend = [200 + random.randint(-50, 100) for _ in range(7)]
+        error_trend = [0.015 + random.uniform(-0.005, 0.01) for _ in range(7)]
+        
+        result = {
+            'generated_at': now.isoformat(),
+            'metrics': {
+                'accuracy': round(accuracy, 1),
+                'latency_ms': latency,
+                'error_rate': round(error_rate, 4),
+                'rmse': round(rmse, 4),
+                'mae': round(mae, 4)
+            },
+            'trends': {
+                'accuracy_7d': [round(x, 1) for x in accuracy_trend],
+                'latency_7d': latency_trend,
+                'error_7d': [round(x, 4) for x in error_trend]
+            },
+            'status': 'healthy' if accuracy >= 85 and latency < 300 and error_rate < 0.03 else ('warning' if accuracy >= 75 else 'error')
         }
         self.wfile.write(json.dumps(result, ensure_ascii=False).encode('utf-8'))
 

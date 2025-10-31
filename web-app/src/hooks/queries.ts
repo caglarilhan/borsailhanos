@@ -258,6 +258,15 @@ export function useTriggerRetrainMutation() {
     });
   }
 
+  export function useAIHealth() {
+    return useQuery({
+      queryKey: ['aiHealth'],
+      queryFn: async () => Api.getAIHealth(),
+      refetchInterval: 60000, // 1 dakikada bir güncelle
+      staleTime: 30000,
+    });
+  }
+
   export function useStrategyLab(strategy: string, param: string, enabled: boolean) {
     return useQuery({
       queryKey: ['strategyLab', strategy, param],
