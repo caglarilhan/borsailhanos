@@ -127,6 +127,10 @@ export async function getForecast(symbol: string, horizon: '1d'|'7d'|'30d'='1d')
 export async function getMetaEnsemble(symbol: string, horizon: '1d'|'7d'|'30d'='1d') {
   return await fetchSmart(`${API_BASE_URL}/api/ai/meta_ensemble?symbol=${encodeURIComponent(symbol)}&horizon=${horizon}`);
 }
+// Meta-Model (alias)
+export async function getMetaModel(symbol: string, horizon: '1d'|'7d'|'30d'='1d') {
+  return await fetchSmart(`${API_BASE_URL}/api/metaModel?symbol=${encodeURIComponent(symbol)}&horizon=${horizon}`);
+}
 // Bayesian optimization calibration snapshot
 export async function getBOCalibrate() {
   return await fetchSmart(`${API_BASE_URL}/api/ai/bo_calibrate`);
@@ -200,6 +204,11 @@ export async function getCrossCorr() {
       });
     }
 
+    // FinBERT-EN - English sentiment analysis for NASDAQ/NYSE
+    export async function getFinBERTEN(symbol: string) {
+      return await fetchSmart(`${API_BASE_URL}/api/ai/finbert_en?symbol=${encodeURIComponent(symbol)}`);
+    }
+
 export const Api = {
   getBistPredictions,
   getPredictiveTwin,
@@ -218,6 +227,7 @@ export const Api = {
   getTop30Analysis,
   getForecast,
   getMetaEnsemble,
+  getMetaModel,
   getBOCalibrate,
   getMacro,
   getCrossCorr,
@@ -234,6 +244,7 @@ export const Api = {
       getMemoryBank,
       getIntelligenceHub,
       triggerRetrain,
+      getFinBERTEN,
 };
 
 

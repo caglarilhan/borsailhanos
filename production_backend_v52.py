@@ -119,6 +119,9 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_forecast()
         elif path == '/api/ai/meta_ensemble':
             self._handle_meta_ensemble()
+        elif path == '/api/metaModel':
+            # Alias for compatibility with UI spec
+            self._handle_meta_ensemble()
         elif path == '/api/ai/bo_calibrate':
             self._handle_bo_calibrate()
         elif path == '/api/data/macro':
@@ -137,6 +140,8 @@ class ProductionAPI(BaseHTTPRequestHandler):
             self._handle_xai_waterfall()
         elif path == '/api/sentiment/analyst':
             self._handle_sentiment_analyst()
+        elif path == '/api/ai/finbert_en':
+            self._handle_finbert_en()
         elif path == '/api/alerts/telegram/send':
             self._handle_alerts_telegram_send()
         elif path == '/api/strategy/lab':
@@ -530,6 +535,31 @@ class ProductionAPI(BaseHTTPRequestHandler):
             'sector_sentiment': round(0.45 + random.random()*0.3, 2),
             'coverage_count': random.randint(3, 18),
             'last_update': int(time.time())
+        }
+        self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
+    
+    def _handle_finbert_en(self):
+        """FinBERT-EN sentiment analysis for NASDAQ/NYSE stocks."""
+        self._set_headers(200)
+        q = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        symbol = (q.get('symbol', ['AAPL'])[0] or 'AAPL').upper()
+        random.seed(sum(ord(c) for c in symbol) + 99)
+        
+        # Mock FinBERT-EN sentiment (English news analysis)
+        positive = round(0.5 + random.random() * 0.3, 2)
+        negative = round(0.2 + random.random() * 0.2, 2)
+        neutral = 1.0 - positive - negative
+        
+        resp = {
+            'symbol': symbol,
+            'sentiment': {
+                'positive': round(positive * 100, 1),
+                'negative': round(negative * 100, 1),
+                'neutral': round(neutral * 100, 1)
+            },
+            'model': 'FinBERT-EN v3.2',
+            'news_sources': ['Bloomberg', 'Reuters', 'CNBC', 'WSJ'],
+            'last_update': datetime.now().isoformat()
         }
         self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
 
@@ -1918,6 +1948,7 @@ def run_server():
     print(f'💾 Memory Bank: http://127.0.0.1:{port}/api/ai/memory_bank')
     print(f'🔮 Intelligence Hub: http://127.0.0.1:{port}/api/ai/intelligence_hub')
     print(f'🔄 AI Retrain: http://127.0.0.1:{port}/api/ai/retrain (POST)')
+    print(f'🌍 FinBERT-EN: http://127.0.0.1:{port}/api/ai/finbert_en?symbol=AAPL')
     print('=' * 80)
     print('✅ Kurumsal seviye AI Trading Terminali aktif!')
     print('=' * 80)

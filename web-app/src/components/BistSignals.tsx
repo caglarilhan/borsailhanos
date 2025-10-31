@@ -17,6 +17,8 @@ import { Skeleton } from '@/components/UI/Skeleton';
 import { AIOrchestrator } from '@/components/AI/AIOrchestrator';
 import { IntelligenceHub } from '@/components/AI/IntelligenceHub';
 import { MetaHeatmap } from '@/components/AI/MetaHeatmap';
+import { AIConfidenceGauge } from '@/components/AI/AIConfidenceGauge';
+import { Toast } from '@/components/UI/Toast';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -123,6 +125,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [maxRows, setMaxRows] = useState<number>(30);
   const [filterAcc80, setFilterAcc80] = useState<boolean>(false);
   const [filterMomentum, setFilterMomentum] = useState<boolean>(false);
+
+  // Tutarlılık Endeksi: 1H/4H/1D aynı yönde mi?
+  const consistencyIndex = useMemo(() => {
+    if (!selectedSymbol) return null;
+    const horizons: Horizon[] = ['1h','4h','1d'];
+    const rel = rows.filter(r => r.symbol === selectedSymbol && horizons.includes(r.horizon));
+    if (rel.length === 0) return null;
+    const dir = (p: number): number => (p >= 0.02 ? 1 : p <= -0.02 ? -1 : 0);
+    const votes: number[] = rel.map(r => dir(r.prediction || 0));
+    const score: number = votes.reduce((a: number, b: number) => a + b, 0);
+    const aligned = Math.abs(score) === votes.length && votes.length >= 2;
+    return { aligned, votes: votes.length, score };
+  }, [rows, selectedSymbol]);
   const [alertDelta, setAlertDelta] = useState<number>(5);
   const [alertMinConf, setAlertMinConf] = useState<number>(70);
   const [strategyPreset, setStrategyPreset] = useState<'custom'|'momentum'|'meanrev'|'news'|'mixed'>('custom');
@@ -435,13 +450,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       setAnalysisData(data);
       if (typeof data.best_horizon === 'string' && (['1d','7d','30d'] as any).includes(data.best_horizon)) {
         setAnalysisHorizon(data.best_horizon as '1d'|'7d'|'30d');
-      }
+    }
     }
   }, [analysisQ.data]);
 
   // BIST100 için Top30 analiz göster
   if (universe === 'BIST100') {
-    return (
+  return (
       <div style={{ width: '100%' }}>
         <Top30Analysis />
       </div>
@@ -491,6 +506,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 <div className="text-xs opacity-80">Toplam Sinyal</div>
                 <div className="text-xl font-bold">{Math.max(rows.length, 100)}</div>
               </div>
+              {/* AI Confidence Gauge (ortalama güven) */}
+              {(() => {
+                const avgConf = Math.round((rows.reduce((a,b)=> a + Math.round((b.confidence||0)*100), 0) / Math.max(1, rows.length)));
+                return (
+                  <div className="bg-white/10 rounded-lg p-3 flex items-center">
+                    <AIConfidenceGauge valuePct={avgConf} />
+                  </div>
+                );
+              })()}
               {(() => {
                 // AI Core status badge
                 try {
@@ -510,7 +534,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               })()}
               {(() => { const { useRegime } = require('@/hooks/queries'); const r = useRegime(); const regime = String(r.data?.regime || '—'); const weights = (()=>{ if (/risk\s*-?on/i.test(regime)) return { equity: 0.8, cash: 0.2 }; if (/neutral|side/i.test(regime)) return { equity: 0.6, cash: 0.4 }; if (/risk\s*-?off/i.test(regime)) return { equity: 0.4, cash: 0.6 }; return { equity: 0.6, cash: 0.4 }; })(); return (
                 <div className="col-span-2 md:col-span-4 bg-white/10 rounded-lg p-3">
-                  <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
                     <div className="text-xs opacity-80">Rejim • Ağırlıklar</div>
                     <div className="text-xs opacity-80">{regime}</div>
                   </div>
@@ -655,12 +679,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               <option value="telegram">Telegram</option>
             </select>
           </div>
-                  <input
+          <input
                     name="searchSymbol"
                     id="searchSymbol"
-                    value={search}
-                    onChange={(e)=>setSearch(e.target.value.toUpperCase())}
-                    placeholder="Sembol ara"
+            value={search}
+            onChange={(e)=>setSearch(e.target.value.toUpperCase())}
+            placeholder="Sembol ara"
                     className="ml-2 px-2 py-1 text-xs border rounded w-28 text-gray-900 caret-blue-500 bg-white placeholder-gray-400 dark:text-gray-100 dark:bg-gray-900"
                   />
                   <button
@@ -712,8 +736,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     onChange={(e)=>setMaxRows(Math.max(5, Math.min(30, parseInt(e.target.value) || 15)))}
                     className="ml-2 px-2 py-1 text-xs border rounded w-16 text-gray-900 caret-blue-500 bg-white placeholder-gray-400 dark:text-gray-100 dark:bg-gray-900"
                     placeholder="15"
-                  />
-                  <div className="ml-2 flex items-center gap-1 text-xs">
+          />
+          <div className="ml-2 flex items-center gap-1 text-xs">
             <button
               onClick={() => {
                 console.log('👁️ Görünüm değiştiriliyor: table');
@@ -974,17 +998,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               }
 
               return list.map((r, i) => {
-                const up = r.prediction >= 0;
-                const confPct = Math.round(r.confidence * 100);
-                const inWatch = watchlist.includes(r.symbol);
+              const up = r.prediction >= 0;
+              const confPct = Math.round(r.confidence * 100);
+              const inWatch = watchlist.includes(r.symbol);
                 const trend = trendLabel(r.prediction || 0);
                 const techs = technicalBadges(r.prediction || 0, r.confidence || 0);
                 const success10 = successRateOf(r.symbol, r.confidence || 0);
                 const curr = seedPrice(r.symbol);
                 const tgt = Math.round(curr * (1 + (r.prediction||0)) * 100) / 100;
-                let signal = 'Bekle';
-                let signalColor = 'bg-gray-100 text-gray-700';
-                if (confPct >= 80) {
+              let signal = 'Bekle';
+              let signalColor = 'bg-gray-100 text-gray-700';
+              if (confPct >= 80) {
                   if (r.prediction >= 0.1) { signal = 'Güçlü Al'; signalColor = 'bg-green-100 text-green-700'; }
                   else if (r.prediction >= 0.05) { signal = 'Al'; signalColor = 'bg-blue-100 text-blue-700'; }
                   else if (r.prediction <= -0.1) { signal = 'Güçlü Sat'; signalColor = 'bg-red-100 text-red-700'; }
@@ -1001,7 +1025,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   signalColor = 'text-yellow-600 dark:text-yellow-400';
                 }
                 const rowClass = `cursor-pointer transition-colors ${isSelected ? 'bg-blue-100 dark:bg-blue-900/40' : 'even:bg-gray-50 dark:even:bg-gray-900/40'} hover:bg-blue-50 dark:hover:bg-blue-900/40`;
-                return (
+              return (
                   <React.Fragment key={`${r.symbol}-${r.horizon}-${i}`}>
                     <tr 
                       className={rowClass}
@@ -1014,11 +1038,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         {bestHorizonBySymbol.get(r.symbol)===r.horizon && (
                           <span title="En güvenilir ufuk" className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">★</span>
                         )}
-                      </td>
+                  </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis font-semibold">
                         {trend==='Yükseliş' ? <ArrowTrendingUpIcon className="h-4 w-4 text-blue-600" /> : (trend==='Düşüş' ? <ArrowTrendingDownIcon className="h-4 w-4 text-red-600" /> : <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400" />)}
                         <span className="text-black font-bold">{trend}</span>
-                      </td>
+                  </td>
                       <td className="py-2 pr-4 hidden md:table-cell">
                         <div className="flex items-center gap-2 flex-wrap overflow-hidden">
                           {techs.map((c) => (
@@ -1037,10 +1061,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           return (
                             <span title="24 saat tahmini değişim" className={cls}>
                               {arrow} ₺{tgt.toFixed(2)} ({Math.abs(pct).toFixed(1)}%)
-                            </span>
+                    </span>
                           );
                         })()}
-                      </td>
+                  </td>
                       <td className="py-2 pr-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 w-full max-w-[220px]">
                           <div className="flex-1 h-2 rounded bg-gray-100 overflow-hidden">
@@ -1051,24 +1075,24 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         </div>
                       </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-gray-800 hidden md:table-cell whitespace-nowrap">
-                        <ClockIcon className="h-4 w-4" />
-                        {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
-                      </td>
+                    <ClockIcon className="h-4 w-4" />
+                    {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
+                  </td>
                       <td className="py-2 pr-4 flex items-center gap-2 whitespace-nowrap">
-                        <button
+                    <button
                           onClick={async ()=>{ try { const mode = inWatch ? 'remove':'add'; await wlMut.mutateAsync({ symbols: r.symbol, mode }); } catch {} }}
-                          className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-700'}`}
+                      className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-700'}`}
                         >{inWatch?'⭐ Takipte':'☆ Takibe Al'}</button>
                         {confPct>=alertMinConf && (
                           <button onClick={async ()=>{ try { 
                             if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertDelta, minConf: alertMinConf, source: 'AI v4.6 model BIST30 dataset' }); }
                             else { await Api.sendTelegramAlert(r.symbol, `AI uyarı: ${r.symbol} Δ>${alertDelta}%, Conf≥${alertMinConf}%`, 'demo'); }
                           } catch {} }} className="px-2 py-1 text-xs rounded bg-blue-600 text-white">Bildirim</button>
-                        )}
-                      </td>
-                    </tr>
+                    )}
+                  </td>
+                </tr>
                   </React.Fragment>
-                );
+              );
               });
             })()}
           </tbody>
@@ -1151,7 +1175,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">
-                      {sorted.map((p)=>{
+                    {sorted.map((p)=>{
                       const upx = p.prediction >= 0; const pct = Math.round(p.prediction*1000)/10;
                       const confc = Math.round(p.confidence*100);
                       const isBest = bestH && p.horizon===bestH;
@@ -1369,10 +1393,22 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       </svg>
                     </div>
                   ); })()}
-                </div>
+                    </div>
 
                 {/* XAI Waterfall & Analyst Sentiment & Faktörler */}
                 <div className="grid grid-cols-1 gap-3">
+                  {/* Tutarlılık Endeksi */}
+                  {consistencyIndex && (
+                    <div className="bg-white rounded border p-3">
+                      <div className="text-sm font-semibold text-gray-900 mb-1">Tutarlılık Endeksi (1H • 4H • 1D)</div>
+                      <div className="text-xs text-slate-700 flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${consistencyIndex.aligned ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {consistencyIndex.aligned ? 'Güçlü Uyum' : 'Kısmi/Weak'}
+                        </span>
+                        <span>Oylama: {consistencyIndex.score} / {consistencyIndex.votes}</span>
+                  </div>
+                    </div>
+                  )}
                   <XaiAnalyst symbol={selectedSymbol} />
                   {(() => { const { useMetaEnsemble } = require('@/hooks/queries'); const me = useMetaEnsemble(selectedSymbol||undefined as any, analysisHorizon, !!selectedSymbol); return (
                     <div className="bg-white rounded border p-3">
@@ -1389,6 +1425,30 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       )}
                     </div>
                   ); })()}
+                  {/* TraderGPT Önerisi (balon) */}
+                  <div className="bg-white rounded border p-3">
+                    <div className="text-sm font-semibold text-gray-900 mb-1">🤖 TraderGPT Önerisi</div>
+                    <div className="text-xs text-slate-700">
+                      {(() => {
+                        const best = rows.filter(r=> r.symbol===selectedSymbol).sort((a,b)=> (b.confidence||0)-(a.confidence||0))[0];
+                        if (!best) return 'Veri bekleniyor...';
+                        const trend = best.prediction >= 0.02 ? 'yükseliş' : best.prediction <= -0.02 ? 'düşüş' : 'yanal';
+                        const conf = Math.round((best.confidence||0)*100);
+                        const msg = trend === 'yükseliş'
+                          ? `${selectedSymbol} için kısa vadede ${trend} eğilimi; güven %${conf}. Pozisyonu küçük adımlarla artır, SL %3.`
+                          : trend === 'düşüş'
+                          ? `${selectedSymbol} için ${trend} uyarısı; güven %${conf}. Ağırlığı azalt veya hedge düşün.`
+                          : `${selectedSymbol} için net yön yok; güven %${conf}. Bekle/izle, teyit sinyali bekle.`;
+                        return (
+                          <div className="relative">
+                            <div className="inline-block bg-slate-100 text-slate-800 px-3 py-2 rounded-lg">
+                              {msg}
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
                   {(() => { const { useBOCalibrate } = require('@/hooks/queries'); const bo = useBOCalibrate(); return (
                     <div className="bg-white rounded border p-3">
                       <div className="text-sm font-semibold text-gray-900 mb-1">BO Kalibrasyon (son 24s)</div>
@@ -1432,7 +1492,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <div className="flex items-center gap-2">
                         <Sparkline series={seededSeries(selectedSymbol + '-1h', 24)} width={100} height={22} color="#0ea5e9" />
                         <Sparkline series={seededSeries(selectedSymbol + '-1d', 24)} width={100} height={22} color="#22c55e" />
-                      </div>
+                  </div>
                     </div>
                     {/* AI öneri cümlesi */}
                     <div className="mt-2 text-xs text-slate-700 bg-white rounded p-2 border">
