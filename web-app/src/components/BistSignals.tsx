@@ -1306,7 +1306,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <span className="text-slate-500">Gerçek:</span> <span className="font-bold text-slate-900">₺{currentPrice.toFixed(2)}</span>
                     </div>
                     <div>
-                      <span className="text-slate-500">AI Tahmini:</span> <span title="24s tahmini değişim" className={`font-bold ${up?'text-green-600':'text-red-600'}`}>₺{Number(targetPrice).toFixed(2)} ({(fQ.data?.deltaPct!==undefined ? (fQ.data.deltaPct>=0?'+':'')+String(fQ.data.deltaPct.toFixed(1)) : (up?'+':''+String(diffPct)))}%)</span>
+                      <span className="text-slate-500">AI Tahmini:</span> <span title="24s tahmini değişim" className={`font-bold ${up?'text-green-600':'text-red-600'}`}>₺{Number(targetPrice).toFixed(2)} ({(up?'+':'')+String(diffPct)}%)</span>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">
@@ -1332,24 +1332,23 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </div>
                   {/* AI tek satır yorum (forecast explain + TraderGPT mini balon + XAI) */}
                   <div className="mt-2 text-xs text-slate-700 flex items-center gap-2 flex-wrap">
-                    {false && ( // Removed useForecast hook from map - Rules of Hooks violation
-                      <details className="flex-1 min-w-[200px]">
-                        <summary className="cursor-pointer select-none flex items-center gap-1">
-                          <span className="font-semibold text-[#111827]">AI Yorum:</span>
-                          <span className="truncate">{String(fQ.data.explain[0])}</span>
-                        </summary>
-                        <div className="mt-1 pl-4 text-[10px] text-slate-600">
-                          <div className="font-semibold mb-1">XAI Ağırlıkları:</div>
-                          <ul className="list-disc pl-4 space-y-0.5">
-                            <li>RSI: 0.25 (momentum)</li>
-                            <li>MACD: 0.25 (trend)</li>
-                            <li>Sentiment: 0.30 (FinBERT)</li>
-                            <li>Volume: 0.20 (hacim)</li>
-                            <li>Kalibrasyon: Platt scaling</li>
-                          </ul>
-                        </div>
-                      </details>
-                    )}
+                    {/* Note: useForecast hook removed from .map() to fix Rules of Hooks violation */}
+                    <details className="flex-1 min-w-[200px]">
+                      <summary className="cursor-pointer select-none flex items-center gap-1">
+                        <span className="font-semibold text-[#111827]">AI Yorum:</span>
+                        <span className="truncate">{miniAnalysis(best.prediction||0, best.confidence||0)}</span>
+                      </summary>
+                      <div className="mt-1 pl-4 text-[10px] text-slate-600">
+                        <div className="font-semibold mb-1">XAI Ağırlıkları:</div>
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          <li>RSI: 0.25 (momentum)</li>
+                          <li>MACD: 0.25 (trend)</li>
+                          <li>Sentiment: 0.30 (FinBERT)</li>
+                          <li>Volume: 0.20 (hacim)</li>
+                          <li>Kalibrasyon: Platt scaling</li>
+                        </ul>
+                      </div>
+                    </details>
                     <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`BUY çünkü: RSI ${Math.round(50+Math.random()*30)}, MACD kesişti, Sentiment %${Math.round(65+Math.random()*20)}+, Hacim +%${Math.round(10+Math.random()*15)}. Formül: RSI*0.25 + MACD*0.25 + Sent*0.3 + Vol*0.2`}>
                       🤖 Hedef ₺{Number(targetPrice).toFixed(2)} • Stop ₺{(currentPrice*0.9).toFixed(2)}
                     </span>
