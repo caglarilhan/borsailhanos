@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { Api } from '@/services/api';
 import { useBistPredictions, useBistAllPredictions, useBist30News as useBist30NewsQ, useBist30Overview as useBist30OverviewQ, useSentimentSummary as useSentimentSummaryQ, useWatchlist as useWatchlistQ, usePredictiveTwin, useUpdateWatchlistMutation, useAlertsGenerateMutation, useForecast } from '@/hooks/queries';
 import { useWebSocket } from '@/hooks/useWebSocket';
