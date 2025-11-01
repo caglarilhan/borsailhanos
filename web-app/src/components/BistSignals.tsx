@@ -849,14 +849,18 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </div>
                 )}
               </div>
-              {/* P0-02: Risk Skoru KPI - Normalize edilmiş (1-10 ölçeği) + AI Güven ayrımı */}
+              {/* P0-02: Risk Skoru KPI - Normalize edilmiş (1-10 ölçeği) + AI Güven bağlantısı */}
               {(() => {
-                const riskOld = Math.max(1, 5 - Math.round((rows.length%5)));
-                const riskNormalized = normalizeRisk(riskOld);
+                // Risk skorunu doğruluk oranına bağla: yüksek güven → düşük risk, düşük güven → yüksek risk
+                const accuracy = calibrationQ.data?.accuracy || 0.873;
+                // Inverse relationship: %100 güven = 1 risk, %70 güven = 7 risk (linear mapping)
+                const riskFromAccuracy = Math.max(1, Math.min(10, 10 - (accuracy - 0.7) * 33.33)); // Map 0.7-1.0 → 10-1
+                const riskNormalized = normalizeRisk(riskFromAccuracy);
                 const riskLevel = getRiskLevel(riskNormalized);
                 const riskColor = getRiskColor(riskNormalized);
-                // AI Güven oranı (ayrı metrik)
-                const accuracy = calibrationQ.data?.accuracy || 0.873;
+                // 24s drift hesaplama (risk değişimi)
+                const previousRisk = riskNormalized; // Mock: gerçek implementasyonda önceki değerden hesaplanacak
+                const riskChange24s = previousRisk - riskNormalized; // Pozitif = risk azaldı, Negatif = risk arttı
                 return (
                   <div className={`${getRiskBgColor(riskNormalized)} backdrop-blur-sm rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
                     <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2 flex items-center justify-between">
@@ -867,16 +871,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         }
                         content={
                           <div className="space-y-2 max-w-xs">
-                            <div className="font-semibold text-slate-900 mb-2">Risk Skoru vs AI Güven</div>
+                            <div className="font-semibold text-slate-900 mb-2">Risk Skoru (AI Güven Bağlantılı)</div>
                             <div className="text-xs text-slate-700 space-y-2">
                               <div>
-                                <strong>Risk Skoru (1-10 ölçeği):</strong> Portföyün genel volatilite ve drawdown riskini ölçer. Düşük risk = daha az dalgalanma.
+                                <strong>Risk Skoru (1-10 ölçeği):</strong> AI güven oranına göre dinamik hesaplanır. Yüksek güven → düşük risk, düşük güven → yüksek risk.
                               </div>
                               <div>
-                                <strong>AI Güven (%0-100):</strong> Model tahminlerinin doğruluk olasılığı. Yüksek güven = daha güvenilir sinyal.
+                                <strong>AI Güven: {(accuracy * 100).toFixed(1)}%</strong> → Risk: {riskNormalized.toFixed(1)}/10 ({riskLevel})
                               </div>
                               <div className="mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-600">
-                                <strong>Not:</strong> Risk ve güven farklı metriklerdir. Risk düşük, güven yüksek olabilir (ideal durum).
+                                <strong>Formül:</strong> Risk = 10 - (Güven - 0.7) × 33.33 (0.7-1.0 güven → 10-1 risk)
                               </div>
                             </div>
                           </div>
@@ -885,10 +889,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       />
                     </div>
                     <div className={`text-2xl font-bold ${riskColor.replace('text-', 'text-').replace('-600', '-100')}`}>{riskNormalized.toFixed(1)}</div>
-                    <div className="text-[10px] text-white/70 mt-1">{riskLevel} risk • 1-10 ölçeği</div>
-                    <div className="text-[9px] text-white/60 mt-1 border-t border-white/20 pt-1">
-                      AI Güven: {(accuracy * 100).toFixed(1)}% (ayrı metrik)
-                    </div>
+                    <div className="text-[10px] text-white/70 mt-1">{riskLevel} risk • AI Güven: {(accuracy * 100).toFixed(1)}%</div>
+                    {/* 24s drift ikonu */}
+                    {Math.abs(riskChange24s) > 0.1 && (
+                      <div className={`text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block ${riskChange24s >= 0 ? 'bg-green-500/30 text-green-100' : 'bg-red-500/30 text-red-100'}`}>
+                        24s: {riskChange24s >= 0 ? '↓' : '↑'} {Math.abs(riskChange24s).toFixed(1)} (risk {riskChange24s >= 0 ? 'azaldı' : 'arttı'})
+                      </div>
+                    )}
                     {/* Son Güncelleme Timestamp + Trend Oku */}
                     {lastUpdated && (
                       <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">

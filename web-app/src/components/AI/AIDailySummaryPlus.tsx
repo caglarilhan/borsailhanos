@@ -220,7 +220,7 @@ export function AIDailySummaryPlus({
 
       {/* AI Günlük Özeti 2.0: Yeni Metrikler - Genişletilmiş */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
-        {/* Top 3 Kazanan - Öne çıkarılmış */}
+        {/* Top 3 Kazanan - Öne çıkarılmış + Sparkline çizgileri */}
         <div className="bg-white/90 backdrop-blur rounded-lg p-4 border-2 border-emerald-300 bg-emerald-50/70 shadow-md">
           <div className="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-2">
             <span>📈 Top 3 Kazanan</span>
@@ -231,22 +231,59 @@ export function AIDailySummaryPlus({
               { symbol: 'THYAO', alpha: 2.1, return: 5.4 },
               { symbol: 'SISE', alpha: 1.5, return: 3.1 },
               { symbol: 'TUPRS', alpha: 0.8, return: 2.7 }
-            ]).map((stock, idx) => (
-              <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white/80 rounded border border-emerald-200">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100 rounded-full w-6 h-6 flex items-center justify-center border border-emerald-300">#{idx + 1}</span>
-                  <span className="font-bold text-slate-900">{stock.symbol}</span>
+            ]).map((stock, idx) => {
+              // Mock 24s return trend (gerçek implementasyonda backend'den gelecek)
+              const seed = stock.symbol.charCodeAt(0);
+              let rnd = seed;
+              const seededRandom = () => {
+                rnd = (rnd * 1103515245 + 12345) >>> 0;
+                return (rnd / 0xFFFFFFFF);
+              };
+              const trend24h = Array.from({ length: 24 }, (_, i) => {
+                const base = stock.return;
+                const hour = i / 24;
+                const cycle = Math.sin(hour * Math.PI * 2) * (stock.return * 0.2);
+                const noise = (seededRandom() - 0.5) * (stock.return * 0.1);
+                return Math.max(0, base + cycle + noise);
+              });
+              return (
+                <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white/80 rounded border border-emerald-200">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-xs font-bold text-emerald-800 bg-emerald-100 rounded-full w-6 h-6 flex items-center justify-center border border-emerald-300">#{idx + 1}</span>
+                    <span className="font-bold text-slate-900">{stock.symbol}</span>
+                  </div>
+                  {/* Mini sparkline grafiği */}
+                  <div className="h-8 w-16 mr-2">
+                    <svg width="64" height="32" viewBox="0 0 64 32" className="overflow-visible">
+                      {(() => {
+                        const minY = Math.min(...trend24h);
+                        const maxY = Math.max(...trend24h);
+                        const range = maxY - minY || 0.1;
+                        const scaleX = (i: number) => (i / (trend24h.length - 1)) * 64;
+                        const scaleY = (v: number) => 32 - ((v - minY) / range) * 32;
+                        let path = '';
+                        trend24h.forEach((v, i) => {
+                          const x = scaleX(i);
+                          const y = scaleY(v);
+                          path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                        });
+                        return (
+                          <path d={path} fill="none" stroke="#22c55e" strokeWidth="1.5" strokeLinecap="round" />
+                        );
+                      })()}
+                    </svg>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-emerald-700 font-bold text-base">+{stock.return.toFixed(1)}%</span>
+                    <span className="text-[10px] text-emerald-600 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-emerald-700 font-bold text-base">+{stock.return.toFixed(1)}%</span>
-                  <span className="text-[10px] text-emerald-600 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
-        {/* Top 3 Kaybeden - Öne çıkarılmış */}
+        {/* Top 3 Kaybeden - Öne çıkarılmış + Sparkline çizgileri */}
         <div className="bg-white/90 backdrop-blur rounded-lg p-4 border-2 border-red-300 bg-red-50/70 shadow-md">
           <div className="text-sm font-bold text-red-800 mb-3 flex items-center gap-2">
             <span>📉 Top 3 Kaybeden</span>
@@ -257,18 +294,55 @@ export function AIDailySummaryPlus({
               { symbol: 'GARAN', alpha: -1.2, return: -2.3 },
               { symbol: 'VESTL', alpha: -0.9, return: -1.8 },
               { symbol: 'PETKM', alpha: -0.6, return: -1.6 }
-            ]).map((stock, idx) => (
-              <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white/80 rounded border border-red-200">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-red-800 bg-red-100 rounded-full w-6 h-6 flex items-center justify-center border border-red-300">#{idx + 1}</span>
-                  <span className="font-bold text-slate-900">{stock.symbol}</span>
+            ]).map((stock, idx) => {
+              // Mock 24s return trend (gerçek implementasyonda backend'den gelecek)
+              const seed = stock.symbol.charCodeAt(0);
+              let rnd = seed;
+              const seededRandom = () => {
+                rnd = (rnd * 1103515245 + 12345) >>> 0;
+                return (rnd / 0xFFFFFFFF);
+              };
+              const trend24h = Array.from({ length: 24 }, (_, i) => {
+                const base = Math.abs(stock.return);
+                const hour = i / 24;
+                const cycle = Math.sin(hour * Math.PI * 2) * (Math.abs(stock.return) * 0.2);
+                const noise = (seededRandom() - 0.5) * (Math.abs(stock.return) * 0.1);
+                return Math.max(0, base + cycle + noise);
+              });
+              return (
+                <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white/80 rounded border border-red-200">
+                  <div className="flex items-center gap-2 flex-1">
+                    <span className="text-xs font-bold text-red-800 bg-red-100 rounded-full w-6 h-6 flex items-center justify-center border border-red-300">#{idx + 1}</span>
+                    <span className="font-bold text-slate-900">{stock.symbol}</span>
+                  </div>
+                  {/* Mini sparkline grafiği */}
+                  <div className="h-8 w-16 mr-2">
+                    <svg width="64" height="32" viewBox="0 0 64 32" className="overflow-visible">
+                      {(() => {
+                        const minY = Math.min(...trend24h);
+                        const maxY = Math.max(...trend24h);
+                        const range = maxY - minY || 0.1;
+                        const scaleX = (i: number) => (i / (trend24h.length - 1)) * 64;
+                        const scaleY = (v: number) => 32 - ((v - minY) / range) * 32;
+                        let path = '';
+                        trend24h.forEach((v, i) => {
+                          const x = scaleX(i);
+                          const y = scaleY(v);
+                          path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                        });
+                        return (
+                          <path d={path} fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" />
+                        );
+                      })()}
+                    </svg>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-red-700 font-bold text-base">{stock.return.toFixed(1)}%</span>
+                    <span className="text-[10px] text-red-600 px-1.5 py-0.5 rounded bg-red-50 border border-red-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-red-700 font-bold text-base">{stock.return.toFixed(1)}%</span>
-                  <span className="text-[10px] text-red-600 px-1.5 py-0.5 rounded bg-red-50 border border-red-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
