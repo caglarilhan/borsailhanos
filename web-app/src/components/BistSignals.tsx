@@ -245,7 +245,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     const hs: Horizon[] = ['1d','4h','1h'] as any;
     const nowIso = new Date().toISOString();
     const out: any[] = [];
-    syms.forEach(sym => hs.forEach(h => out.push({ symbol: sym, horizon: h as any, prediction: (Math.random()-0.5)*0.2, confidence: 0.78 + Math.random()*0.15, valid_until: nowIso, generated_at: nowIso })));
+    // Seeded random for SSR-safe generation
+    let seed = Math.floor(Date.now() / (1000 * 60 * 10)); // Her 10 dakikada bir değişir
+    const seededRandom = () => {
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      return (seed / 0xFFFFFFFF);
+    };
+    syms.forEach(sym => hs.forEach(h => {
+      const pred = (seededRandom() - 0.5) * 0.2;
+      const conf = 0.78 + seededRandom() * 0.15;
+      out.push({ symbol: sym, horizon: h as any, prediction: pred, confidence: conf, valid_until: nowIso, generated_at: nowIso });
+    }));
     return out as Prediction[];
   };
 
