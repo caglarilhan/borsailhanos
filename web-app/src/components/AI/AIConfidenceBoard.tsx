@@ -131,6 +131,72 @@ export function AIConfidenceBoard({
         </div>
       </div>
       
+      {/* 24-Hour Confidence Trend Graph */}
+      {trend24.length > 0 && (
+        <div className="mb-3">
+          <div className="text-xs text-slate-700 mb-2">24-Hour Confidence Trend (Hourly)</div>
+          <div className="h-20 w-full bg-slate-50 rounded p-2 border border-slate-200">
+            <svg width="100%" height="80" viewBox="0 0 300 80" className="overflow-visible">
+              <defs>
+                <linearGradient id="trend24Gradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.4" />
+                  <stop offset="50%" stopColor="#2563eb" stopOpacity="0.2" />
+                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {/* Grid lines */}
+              {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
+                const value = 0.65 + (0.95 - 0.65) * percent;
+                const y = 80 - ((value - 0.65) / 0.3) * 80;
+                return (
+                  <line
+                    key={percent}
+                    x1="0"
+                    y1={y}
+                    x2="300"
+                    y2={y}
+                    stroke="#e5e7eb"
+                    strokeWidth="1"
+                    strokeDasharray="2 2"
+                    opacity="0.5"
+                  />
+                );
+              })}
+              {/* Trend line */}
+              {(() => {
+                let path = '';
+                trend24.forEach((v, i) => {
+                  const x = (i / (trend24.length - 1)) * 300;
+                  const y = 80 - ((v - 0.65) / 0.3) * 80;
+                  path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                });
+                // Fill area
+                const fillPath = path + ` L 300 80 L 0 80 Z`;
+                return (
+                  <>
+                    <path d={fillPath} fill="url(#trend24Gradient)" />
+                    <path d={path} fill="none" stroke="#2563eb" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    {/* Data points */}
+                    {trend24.map((v, i) => {
+                      const x = (i / (trend24.length - 1)) * 300;
+                      const y = 80 - ((v - 0.65) / 0.3) * 80;
+                      return (
+                        <circle key={i} cx={x} cy={y} r="2.5" fill="#2563eb" stroke="white" strokeWidth="1" />
+                      );
+                    })}
+                  </>
+                );
+              })()}
+            </svg>
+          </div>
+          <div className="flex items-center justify-between mt-2 text-[10px] text-slate-600">
+            <span>Min: {(Math.min(...trend24) * 100).toFixed(1)}%</span>
+            <span>Max: {(Math.max(...trend24) * 100).toFixed(1)}%</span>
+            <span>Avg: {((trend24.reduce((a, b) => a + b, 0) / trend24.length) * 100).toFixed(1)}%</span>
+          </div>
+        </div>
+      )}
+      
       {/* 7g Confidence Trend Graph */}
       <div className="mb-3">
         <div className="text-xs text-slate-700 mb-2">7g Confidence Trend</div>
