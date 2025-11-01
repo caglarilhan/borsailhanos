@@ -1477,14 +1477,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <span className="font-medium">{(analysisData.predictions?.[analysisHorizon]?.expected_return * 100 || 0).toFixed(2)}%</span>
                     </div>
                     {/* Rejim rozeti */}
-                    {(() => { const { useRegime, usePI } = require('@/hooks/queries'); const r = useRegime(); const pi = usePI(selectedSymbol, analysisHorizon, !!selectedSymbol); return (
-                      <div className="flex items-center justify-between text-xs">
-                        <span title="Piyasa rejimi">Rejim:</span>
-                        <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">{r.data?.regime || '—'}</span>
-                        <span title="90% Tahmin Aralığı">PI90:</span>
-                        <span className="font-medium">{pi.data ? `${pi.data.pi90_low_pct}% → ${pi.data.pi90_high_pct}%` : '—'}</span>
-                      </div>
-                    ); })()}
+                    {/* Using regimeQ and piQ from top-level hook calls (Rules of Hooks compliance) */}
+                    <div className="flex items-center justify-between text-xs">
+                      <span title="Piyasa rejimi">Rejim:</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">{regimeQ.data?.regime || '—'}</span>
+                      <span title="90% Tahmin Aralığı">PI90:</span>
+                      <span className="font-medium">{piQ.data ? `${piQ.data.pi90_low_pct}% → ${piQ.data.pi90_high_pct}%` : '—'}</span>
+                    </div>
                     {/* Hedef fiyat */}
                     <div className="flex justify-between">
                       <span title="AI hedef fiyat — seçilen ufuk">Hedef Fiyat ({analysisHorizon}):</span>
