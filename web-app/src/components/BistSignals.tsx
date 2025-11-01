@@ -1723,8 +1723,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     const netReturn = aiReturn - totalCost - slippage;
                     return (
                       <div className="text-xs text-slate-700 space-y-1">
-                        <div className="flex justify-between"><span>Başlangıç</span><span className="font-medium text-[#111827]">₺{(bt.data.start_equity||0).toLocaleString('tr-TR')}</span></div>
-                        <div className="flex justify-between"><span>Bitiş</span><span className="font-medium text-[#111827]">₺{(bt.data.end_equity||0).toLocaleString('tr-TR')}</span></div>
+                        <div className="flex justify-between"><span>Başlangıç</span><span className="font-medium text-[#111827]">₺{(backtestQ.data.start_equity||0).toLocaleString('tr-TR')}</span></div>
+                        <div className="flex justify-between"><span>Bitiş</span><span className="font-medium text-[#111827]">₺{(backtestQ.data.end_equity||0).toLocaleString('tr-TR')}</span></div>
                         <div className="flex justify-between"><span>Brüt Getiri</span><span className={`font-semibold ${aiReturn>=0?'text-green-600':'text-red-600'}`}>{aiReturn >= 0 ? '+' : ''}{aiReturn.toFixed(2)}%</span></div>
                         <div className="flex justify-between"><span>Toplam Maliyet</span><span className="font-medium text-amber-600">{(totalCost + slippage).toFixed(2)}%</span></div>
                         <div className="flex justify-between border-t pt-1 mt-1"><span>Net Getiri</span><span className={`font-bold ${netReturn>=0?'text-green-600':'text-red-600'}`}>{netReturn >= 0 ? '+' : ''}{netReturn.toFixed(2)}%</span></div>
