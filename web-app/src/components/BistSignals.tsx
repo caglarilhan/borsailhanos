@@ -303,20 +303,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     }
   }, [forcedUniverse]);
 
-  // API latency tracking
-  useEffect(() => {
-    if (!predQ.dataUpdatedAt) return;
-    const startTime = predQ.dataUpdatedAt;
-    const checkLatency = () => {
-      const latency = Date.now() - startTime;
-      setApiLatency(latency);
-      if (latency < 500) setApiStatus('good');
-      else if (latency < 1500) setApiStatus('warning');
-      else setApiStatus('error');
-    };
-    const timer = setTimeout(checkLatency, 100);
-    return () => clearTimeout(timer);
-  }, [predQ.dataUpdatedAt]);
+  // Note: predQ hook will be called later - API latency tracking moved after predQ definition
 
   const endpoint = useMemo(() => {
     // Eğer hiçbir ufuk seçili değilse, güvenli varsayılan uygula
@@ -368,6 +355,21 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   // react-query: tahminler (WebSocket-aware)
   const horizonsEff = activeHorizons.length === 0 ? ['1d'] : activeHorizons;
   const predQ = universe === 'ALL' ? useBistAllPredictions(horizonsEff, wsConnected) : useBistPredictions(universe, horizonsEff, true, wsConnected);
+  
+  // API latency tracking (moved after predQ definition)
+  useEffect(() => {
+    if (!predQ.dataUpdatedAt) return;
+    const startTime = predQ.dataUpdatedAt;
+    const checkLatency = () => {
+      const latency = Date.now() - startTime;
+      setApiLatency(latency);
+      if (latency < 500) setApiStatus('good');
+      else if (latency < 1500) setApiStatus('warning');
+      else setApiStatus('error');
+    };
+    const timer = setTimeout(checkLatency, 100);
+    return () => clearTimeout(timer);
+  }, [predQ.dataUpdatedAt]);
   useEffect(() => {
     const data = predQ.data as any;
     const arr = Array.isArray(data?.predictions) ? data.predictions : [];
@@ -656,8 +658,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
 
   return (
     <AIOrchestrator predictions={rows.map(r => ({ ...r, reason: [] }))} signals={aiSignals}>
-    <div className="flex gap-4">
-      {/* Üst Bilgi Paneli (Koyu Şerit) */}
+      <div className="flex gap-4">
+        {/* Üst Bilgi Paneli (Koyu Şerit) */}
       <div className="absolute left-0 right-0 -top-4">
         <div className="mx-auto max-w-7xl">
           <div className={`rounded-xl text-white shadow-sm ${strategyMode==='scalper' ? 'bg-yellow-600' : strategyMode==='swing' ? 'bg-blue-700' : 'bg-slate-900'}`}>
@@ -735,7 +737,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       <div className="flex-1 bg-white rounded-lg shadow-sm p-4 space-y-4" style={{ minHeight: 0 }}>
         {/* Meta-Model Heatmap */}
         <MetaHeatmap limit={10} />
-      {/* Header / Filtre Bar */}
+        {/* Header / Filtre Bar */}
       <div className="flex items-center justify-between" style={{ position: 'sticky', top: 0, zIndex: 2, background: '#fff', paddingBottom: 6 }}>
         <div className="flex gap-2 bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm">
           {universesToRender.map(u => (
@@ -1015,8 +1017,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             >
               {gptOpen ? '✓ ' : ''}🤖 TraderGPT
             </button>
-            {/* Dark Mode Toggle (Foundation) */}
-            <ThemeToggleButton />
+            {/* Dark Mode Toggle (Foundation) - Eklenecek */}
           </div>
         </div>
       </div>
@@ -1656,6 +1657,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       )}
       </div>
 
+      </div>
       {/* Sağ Panel - Analiz */}
       <div className="w-80 bg-white rounded-lg shadow-sm p-4">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Analiz Paneli</h3>
@@ -2025,8 +2027,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <IntelligenceHub />
           </div>
         )}
+        </div>
       </div>
-    </div>
     </AIOrchestrator>
   );
 }
