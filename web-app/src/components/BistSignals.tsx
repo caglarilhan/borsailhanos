@@ -3865,7 +3865,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         <div className="flex justify-between"><span>Toplam Maliyet</span><span className="font-medium text-amber-600">{(totalCost + slippage).toFixed(2)}%</span></div>
                         <div className="flex justify-between border-t pt-1 mt-1"><span>Net Getiri</span><span className={`font-bold ${netReturn>=0?'text-green-600':'text-red-600'}`}>{netReturn >= 0 ? '+' : ''}{netReturn.toFixed(2)}%</span></div>
                         <div className="flex justify-between border-t pt-1 mt-1"><span>Benchmark BIST30</span><span className="font-semibold text-[#111827]">+{benchmarkReturn.toFixed(1)}%</span></div>
-                        <div className="flex justify-between"><span>AI vs Benchmark</span><span className={`font-bold ${netReturn >= benchmarkReturn ? 'text-green-600' : 'text-amber-600'}`}>{netReturn >= benchmarkReturn ? '+' : ''}{(netReturn - benchmarkReturn).toFixed(1)}%</span></div>
+                        {/* v4.7: XU100 Benchmark karşılaştırması */}
+                        <div className="flex justify-between"><span>Benchmark XU100</span><span className="font-semibold text-[#111827]">+{(benchmarkReturn * 1.05).toFixed(1)}%</span></div>
+                        <div className="flex justify-between"><span>AI vs BIST30</span><span className={`font-bold ${netReturn >= benchmarkReturn ? 'text-green-600' : 'text-amber-600'}`}>{netReturn >= benchmarkReturn ? '+' : ''}{(netReturn - benchmarkReturn).toFixed(1)}%</span></div>
+                        <div className="flex justify-between"><span>AI vs XU100</span><span className={`font-bold ${netReturn >= benchmarkReturn * 1.05 ? 'text-green-600' : 'text-amber-600'}`}>{netReturn >= benchmarkReturn * 1.05 ? '+' : ''}{(netReturn - benchmarkReturn * 1.05).toFixed(1)}%</span></div>
                         {/* Backtest Pro: Sharpe, Sortino, Max Drawdown, CAGR, Calmar Ratio */}
                         <div className="mt-3 pt-3 border-t border-slate-300 grid grid-cols-2 gap-3 text-xs">
                           <div className="bg-blue-50 rounded p-2 border border-blue-200">

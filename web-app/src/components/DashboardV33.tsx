@@ -2043,10 +2043,18 @@ function DashboardV33Inner() {
               <span>Gerçek zamanlı teknik analiz ve trend tahmini</span>
               <span style={{ padding: '6px 14px', background: 'rgba(6,182,212,0.15)', borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: '#06b6d4' }}>THYAO - 30 Günlük Trend</span>
             </div>
-            <div style={{ fontSize: '10px', color: '#f59e0b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>⚠️</span>
-              <span>Bu grafik gerçek zamanlı verilerle oluşturulmuştur</span>
-            </div>
+            {/* v4.7: Dinamik veri kaynağı göstergesi - WebSocket durumuna göre */}
+            {connected ? (
+              <div style={{ fontSize: '10px', color: '#10b981', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>🟢</span>
+                <span>Canlı • Gerçek zamanlı veri akışı aktif</span>
+              </div>
+            ) : (
+              <div style={{ fontSize: '10px', color: '#f59e0b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>⚠️</span>
+                <span>Son senkron: {new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})} (UTC+3) • Mock veri</span>
+              </div>
+            )}
           </div>
           <div style={{ padding: '16px', aspectRatio: '16/9' }}>
             {chartData && chartData.length > 0 ? (
