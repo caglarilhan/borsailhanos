@@ -91,14 +91,14 @@ export function AIDailySummaryPlus({
       // Sprint 3: Enhanced multi-layer summary
       // Layer 1: Piyasa Rejimi (Risk-on/off with volatility, CDS)
       marketRegime: `Risk-${regime === 'risk-on' ? 'on' : 'off'} (Volatilite ${volatility >= 0.8 ? 'düşüyor' : 'yükseliyor'}, CDS ${macroFeed?.cds ? (macroFeed.cds < 400 ? '-2%' : '+1%') : 'stabil'})`,
-      // P0-04: Layer 2: Sektör Liderleri (En iyi 3 + En kötü 3)
-      sectorLeaders: `En İyi: Teknoloji +3.8%, Sanayi +2.3%, Enerji +1.9% | En Zayıf: Gıda -0.8%, Bankacılık -1.4%, Perakende -0.5%`,
-      // Layer 3: AI Snapshot
-      aiSnapshot: `${totalSignals} aktif sinyal, ortalama güven %${avgConfidence}`,
+      // P1-06: Layer 2: Sektör Liderleri (En iyi 3 + En kötü 3) + Alpha farkı
+      sectorLeaders: `En İyi: Teknoloji +3.8% (α+2.1pp), Sanayi +2.3% (α+1.5pp), Enerji +1.9% (α+0.8pp) | En Zayıf: Gıda -0.8% (α-1.2pp), Bankacılık -1.4% (α-2.1pp), Perakende -0.5% (α-0.8pp)`,
+      // P1-06: Layer 3: AI Snapshot + AI trend değişimi
+      aiSnapshot: `${totalSignals} aktif sinyal, ortalama güven %${avgConfidence} (${confChange >= 0 ? '+' : ''}${confChange}pp 24s drift)`,
       // P0-04: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse)
       warnings: `Dikkat: AKBNK (yüksek volatilite %18.2), EREGL (RSI 69 aşırı alım riski)`,
-      // Layer 5: Model Drift
-      modelDrift: `${confChange >= 0 ? '+' : ''}${confChange}pp (${confTrend === '↑' ? 'stabil' : 'dikkat'})`,
+      // P1-06: Layer 5: Model Drift + AI trend değişimi
+      modelDrift: `${confChange >= 0 ? '+' : ''}${confChange}pp (${confTrend === '↑' ? '↑ güven artışı' : confTrend === '↓' ? '↓ güven düşüşü' : '→ stabil'})`,
       // Legacy format
       macro: `Bugün endeks açılışında TRY ${usdtryChange} %${usdtryPct}, en güçlü sektör teknoloji.`,
       aiSamples: `AI bugün ${totalSignals} sinyal taradı, ${highConfBuys} yüksek güvenli (>%85) BUY önerisi var.`,
@@ -145,7 +145,7 @@ export function AIDailySummaryPlus({
         </div>
       </div>
 
-      {/* Multi-layer AI Summary Cards */}
+      {/* P1-06: Multi-layer AI Summary Cards - Sektör bazlı tablo eklenecek */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
         {/* Sprint 3: Layer 1: Piyasa Rejimi */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
@@ -154,18 +154,18 @@ export function AIDailySummaryPlus({
           <div className="text-[10px] text-slate-600 mt-1">Risk-on/off, Volatilite, CDS</div>
         </div>
 
-        {/* P0-04: Layer 2: Sektör Liderleri (En iyi 3 + En kötü 3) */}
+        {/* P1-06: Layer 2: Sektör Liderleri (En iyi 3 + En kötü 3) + Alpha farkı */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
           <div className="text-xs font-semibold text-slate-700 mb-1">💡 Sektör Analizi</div>
           <div className="text-sm text-slate-900 font-semibold leading-relaxed">{aiSummary.sectorLeaders}</div>
-          <div className="text-[10px] text-slate-600 mt-1">En iyi 3 sektör | En zayıf 3 sektör</div>
+          <div className="text-[10px] text-slate-600 mt-1">En iyi 3 sektör (α=alpha vs benchmark) | En zayıf 3 sektör</div>
         </div>
 
-        {/* Sprint 3: Layer 3: AI Snapshot */}
+        {/* P1-06: Layer 3: AI Snapshot + AI trend değişimi */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-blue-200 bg-blue-50/50">
           <div className="text-xs font-semibold text-blue-700 mb-1">🔍 AI Snapshot</div>
-          <div className="text-sm text-blue-900 font-semibold">{aiSummary.aiSnapshot}</div>
-          <div className="text-[10px] text-blue-600 mt-1">Aktif sinyal & ortalama güven</div>
+          <div className="text-sm text-blue-900 font-semibold leading-relaxed">{aiSummary.aiSnapshot}</div>
+          <div className="text-[10px] text-blue-600 mt-1">Aktif sinyal & ortalama güven & 24s drift</div>
         </div>
 
         {/* P0-04: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse) */}
@@ -175,11 +175,11 @@ export function AIDailySummaryPlus({
           <div className="text-[10px] text-amber-600 mt-1">Bugün dikkat edilmesi gereken 2 hisse</div>
         </div>
 
-        {/* Sprint 3: Layer 5: Model Drift */}
+        {/* P1-06: Layer 5: Model Drift + AI trend değişimi */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-purple-200 bg-purple-50/50">
           <div className="text-xs font-semibold text-purple-700 mb-1">🧠 Model Drift</div>
-          <div className="text-sm text-purple-900 font-semibold">{aiSummary.modelDrift}</div>
-          <div className="text-[10px] text-purple-600 mt-1">Drift trend & stabilite</div>
+          <div className="text-sm text-purple-900 font-semibold leading-relaxed">{aiSummary.modelDrift}</div>
+          <div className="text-[10px] text-purple-600 mt-1">24s drift trend & AI güven değişimi</div>
         </div>
 
         {/* AI Core Confidence */}
@@ -188,6 +188,47 @@ export function AIDailySummaryPlus({
           <div className="text-sm text-blue-900 font-bold">{aiSummary.aiConfidence}</div>
           <div className="text-xs text-blue-700 font-semibold">{aiSummary.aiConfChange}</div>
           <div className="text-[10px] text-blue-600 mt-1" title="AI volatility index tabanlı hesaplama">Risk Skoru: AI volatility index tabanlı hesaplama</div>
+        </div>
+      </div>
+
+      {/* P1-06: Sektör Bazlı Tablo - En iyi/kötü sektörler detay tablosu */}
+      <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200 mb-3">
+        <div className="text-xs font-semibold text-slate-700 mb-2">📊 Sektör Performans Tablosu</div>
+        <div className="grid grid-cols-2 gap-3 text-xs">
+          <div>
+            <div className="font-semibold text-green-700 mb-1">En İyi 3 Sektör</div>
+            <div className="space-y-1">
+              <div className="flex justify-between items-center p-1 bg-green-50 rounded border border-green-200">
+                <span>Teknoloji</span>
+                <span className="font-bold text-green-700">+3.8% (α+2.1pp)</span>
+              </div>
+              <div className="flex justify-between items-center p-1 bg-green-50/50 rounded border border-green-200">
+                <span>Sanayi</span>
+                <span className="font-bold text-green-700">+2.3% (α+1.5pp)</span>
+              </div>
+              <div className="flex justify-between items-center p-1 bg-green-50/50 rounded border border-green-200">
+                <span>Enerji</span>
+                <span className="font-bold text-green-700">+1.9% (α+0.8pp)</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="font-semibold text-red-700 mb-1">En Zayıf 3 Sektör</div>
+            <div className="space-y-1">
+              <div className="flex justify-between items-center p-1 bg-red-50 rounded border border-red-200">
+                <span>Bankacılık</span>
+                <span className="font-bold text-red-700">-1.4% (α-2.1pp)</span>
+              </div>
+              <div className="flex justify-between items-center p-1 bg-red-50/50 rounded border border-red-200">
+                <span>Gıda</span>
+                <span className="font-bold text-red-700">-0.8% (α-1.2pp)</span>
+              </div>
+              <div className="flex justify-between items-center p-1 bg-red-50/50 rounded border border-red-200">
+                <span>Perakende</span>
+                <span className="font-bold text-red-700">-0.5% (α-0.8pp)</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 

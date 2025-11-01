@@ -833,11 +833,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             </button>
           ))}
         </div>
-        {/* Sprint 1: ÜST NAVBAR Restructure - Menü grupları */}
+        {/* P2-11: ÜST NAVBAR Restructure - Menü grupları (Analiz / AI Merkezi / Kullanıcı) */}
         <div className="flex flex-col sm:flex-row gap-2">
           {/* AI Merkezi Grubu */}
           <div className="flex gap-2 overflow-x-auto items-center bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-blue-200">
-            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide mr-1 hidden md:inline">AI Merkezi</span>
+            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide mr-1 hidden md:inline" title="AI Merkezi: AI analiz araçları ve yorum paneli">AI Merkezi</span>
             <HoverCard
               trigger={
                 <button
@@ -1998,13 +1998,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       );
                     })}
                   </div>
-                  {/* AI tek satır yorum (forecast explain + TraderGPT mini balon + XAI) */}
+                  {/* P2-12: AI tek satır yorum (forecast explain + TraderGPT mini balon + XAI) - Kısa metin + hover detay */}
                   <div className="mt-2 text-xs text-slate-700 flex items-center gap-2 flex-wrap">
                     {/* Note: useForecast hook removed from .map() to fix Rules of Hooks violation */}
-                    <details className="flex-1 min-w-[200px]">
+                    <details className="flex-1 min-w-[200px] max-w-full">
                       <summary className="cursor-pointer select-none flex items-center gap-1">
                         <span className="font-semibold text-[#111827]">AI Yorum:</span>
-                        <span className="truncate">{miniAnalysis(best.prediction||0, best.confidence||0, sym)}</span>
+                        <span className="truncate max-w-[300px] overflow-hidden text-ellipsis" title={miniAnalysis(best.prediction||0, best.confidence||0, sym)}>
+                          {miniAnalysis(best.prediction||0, best.confidence||0, sym).length > 80 
+                            ? miniAnalysis(best.prediction||0, best.confidence||0, sym).substring(0, 80) + '...' 
+                            : miniAnalysis(best.prediction||0, best.confidence||0, sym)}
+                        </span>
                       </summary>
                       {/* P1-03: Sinyal açıklamaları kullanıcı dostu - Teknik metrikler tooltip içinde */}
                       <div className="mt-1 pl-4 text-[10px] text-slate-600">
@@ -2509,7 +2513,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                     <div>
                       <label htmlFor="btReb" className="block text-[10px] font-semibold mb-1">Rebalance (gün)</label>
-                      <input id="btReb" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestRebDays} onChange={(e)=> setBacktestRebDays(Math.max(1, Math.min(30, parseInt(e.target.value)||5)))} />
+                      <input id="btReb" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestRebDays} onChange={(e)=> setBacktestRebDays(Math.max(1, Math.min(365, parseInt(e.target.value)||5)))} />
                     </div>
                     <div>
                       <label htmlFor="btSlippage" className="block text-[10px] font-semibold mb-1">Slippage (%)</label>

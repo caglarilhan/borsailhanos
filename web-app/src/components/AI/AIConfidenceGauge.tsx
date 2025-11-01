@@ -15,8 +15,28 @@ export function AIConfidenceGauge({ valuePct, size = 72 }: GaugeProps) {
   const circumference = 2 * Math.PI * r;
   const offset = useMemo(() => circumference * (1 - clamped / 100), [circumference, clamped]);
 
-  // color: red -> yellow -> green
-  const color = clamped < 60 ? '#ef4444' : clamped < 80 ? '#f59e0b' : '#10b981';
+  // P1-07: Dinamik renk geçişleri (yeşil/sarı/kırmızı) - Smooth transition
+  const getColorWithTransition = (value: number): string => {
+    if (value < 60) {
+      // Red zone: 0-60 (full red at 0, transitioning to yellow at 60)
+      const ratio = value / 60;
+      const r = Math.round(239 - (239 - 245) * ratio); // #ef4444 -> #f59e0b
+      const g = Math.round(68 - (68 - 158) * ratio);
+      const b = Math.round(68 - (68 - 11) * ratio);
+      return `rgb(${r}, ${g}, ${b})`;
+    } else if (value < 80) {
+      // Yellow zone: 60-80 (yellow at 60, transitioning to green at 80)
+      const ratio = (value - 60) / 20;
+      const r = Math.round(245 - (245 - 16) * ratio); // #f59e0b -> #10b981
+      const g = Math.round(158 + (163 - 158) * ratio);
+      const b = Math.round(11 + (185 - 11) * ratio);
+      return `rgb(${r}, ${g}, ${b})`;
+    } else {
+      // Green zone: 80-100
+      return '#10b981';
+    }
+  };
+  const color = getColorWithTransition(clamped);
 
   return (
     <div className="flex items-center gap-2">
