@@ -1146,16 +1146,22 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               {(() => {
                 const ov = sentimentSummary?.overall || {};
                 const a = Number(ov.positive||0), b = Number(ov.negative||0), c = Number(ov.neutral||0);
-                const s = Math.max(1, a+b+c);
-                const posN = Math.round(a/s*100);
-                const negN = Math.round(b/s*100);
-                const neuN = Math.max(0, 100 - posN - negN);
+                // Normalize to 100% (±1 rounding tolerance)
+                const sum = a + b + c;
+                const normalize = (v: number): number => Math.round((v / Math.max(1, sum)) * 100);
+                const posN = normalize(a);
+                const negN = normalize(b);
+                const neuN = Math.max(0, 100 - posN - negN); // Ensure total = 100%
+                const timeWindow = sentimentSummary?.time_window || '7g';
                 return (
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">Pozitif {posN}%</span>
-                    <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Negatif {negN}%</span>
-                    <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200">Nötr {neuN}%</span>
-                  </div>
+                  <>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">Pozitif {posN}%</span>
+                      <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Negatif {negN}%</span>
+                      <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200">Nötr {neuN}%</span>
+                    </div>
+                    <div className="text-[10px] text-slate-500 mb-1">Zaman penceresi: {timeWindow}</div>
+                  </>
                 );
               })()}
               <div className="mt-1">
@@ -1363,16 +1369,41 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           }
                         })()}
                   </td>
-                      {/* Sinyal kolonu - horizon etiketi ile */}
+                      {/* Sinyal kolonu - horizon etiketi ve consensus badge ile */}
                       <td className="py-2 pr-4 whitespace-nowrap">
-                        <div className="flex items-center gap-1 flex-wrap">
-                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${signalColor}`}>
-                            {signal}
-                          </span>
-                          <span className="text-[10px] text-slate-500" title={`Model: Meta-Model v5.4 • Ufuk: ${r.horizon}`}>
-                            ({r.horizon})
-                          </span>
-                        </div>
+                        {(() => {
+                          // Derive consensus from all signals for this symbol
+                          const sameSymbolRows = list.filter(x => x.symbol === r.symbol);
+                          const votes = sameSymbolRows.map(x => ({
+                            src: 'Meta-Model',
+                            h: x.horizon,
+                            sig: (x.prediction||0) >= 0.02 ? 'BUY' : (x.prediction||0) <= -0.02 ? 'SELL' : 'HOLD'
+                          }));
+                          const buyVotes = votes.filter(v => v.sig === 'BUY').length;
+                          const sellVotes = votes.filter(v => v.sig === 'SELL').length;
+                          const holdVotes = votes.filter(v => v.sig === 'HOLD').length;
+                          const consensus = buyVotes > sellVotes && buyVotes > holdVotes ? 'BUY' :
+                                           sellVotes > buyVotes && sellVotes > holdVotes ? 'SELL' : 'HOLD';
+                          const consensusDetail = votes.length > 1 ? votes.map(v => `${v.h} ${v.sig}`).join(', ') : '';
+                          const showConsensus = votes.length > 1 && (buyVotes !== sellVotes);
+                          return (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className={`px-2 py-0.5 rounded text-xs font-medium ${signalColor}`}>
+                                  {signal}
+                                </span>
+                                <span className="text-[10px] text-slate-500" title={`Model: Meta-Model v5.4 • Ufuk: ${r.horizon}`}>
+                                  ({r.horizon})
+                                </span>
+                              </div>
+                              {showConsensus && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-blue-50 text-blue-800 border border-blue-200" title={`Konsensüs: ${consensus} (${consensusDetail})`}>
+                                  Consensus: {consensus} ({consensusDetail})
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td className="py-2 pr-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 w-full max-w-[220px]">
