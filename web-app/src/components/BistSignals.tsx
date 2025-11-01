@@ -540,7 +540,24 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
             try {
               // Mock Firebase push - Gerçek implementasyonda FCM token ile backend'e gönderilecek
-              const mockFirebasePush = {
+              const mockFirebasePush: {
+                to: string;
+                notification: {
+                  title: string;
+                  body: string;
+                  icon: string;
+                  badge: string;
+                  sound: string;
+                  data: {
+                    symbol: string;
+                    signal: string;
+                    confidence: string;
+                    priceChange: string;
+                    timestamp: number;
+                    source: string;
+                  };
+                };
+              } = {
                 to: 'mock-fcm-token',
                 notification: {
                   title: `BIST AI: ${symbol} ${signal}`,
@@ -556,7 +573,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     timestamp: Date.now(),
                     source: 'AI v4.7 Smart Alerts'
                   }
-                };
+                }
+              };
               console.log('📱 Mock Firebase Push:', mockFirebasePush);
               // Gerçek implementasyonda: await fetch('/api/firebase/push', { method: 'POST', body: JSON.stringify(mockFirebasePush) });
             } catch (e) {
