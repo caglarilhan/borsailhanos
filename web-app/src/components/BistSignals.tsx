@@ -1349,7 +1349,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         </ul>
                       </div>
                     </details>
-                    <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`BUY çünkü: RSI ${Math.round(50+Math.random()*30)}, MACD kesişti, Sentiment %${Math.round(65+Math.random()*20)}+, Hacim +%${Math.round(10+Math.random()*15)}. Formül: RSI*0.25 + MACD*0.25 + Sent*0.3 + Vol*0.2`}>
+                    <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${targetPrice.toFixed(2)} (${diffPct}%), Stop loss: ${(currentPrice*0.9).toFixed(2)}. Formül: RSI*0.25 + MACD*0.25 + Sentiment*0.3 + Volume*0.2`}>
                       🤖 Hedef ₺{Number(targetPrice).toFixed(2)} • Stop ₺{(currentPrice*0.9).toFixed(2)}
                     </span>
                   </div>
