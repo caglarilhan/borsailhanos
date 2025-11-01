@@ -66,9 +66,34 @@ export function CorrelationHeatmap({
         <div className="text-xs text-slate-600">Eşik: |r| ≥ {threshold}</div>
       </div>
 
+      {/* P0-03: Korelasyon Heatmap - Self-correlation filtresi + normalize gösterim */}
       {/* Heatmap Grid */}
       <div className="grid grid-cols-2 gap-2 mb-3 max-h-60 overflow-auto">
         {defaultPairs.map((pair, idx) => {
+          // P0-03: Self-correlation kontrolü - Aynı sembol çiftleri gri ve "1.00" göster
+          const isSelfCorrelation = pair.symbol1 === pair.symbol2;
+          if (isSelfCorrelation) {
+            return (
+              <div
+                key={idx}
+                className="p-2 rounded border-2 border-slate-300 bg-slate-100 opacity-60"
+                title={`${pair.symbol1} ↔ ${pair.symbol2}: Self-korelasyon (her zaman 1.00) — Pair Trade için kullanılamaz`}
+              >
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs font-semibold text-slate-600">
+                    {pair.symbol1} ↔ {pair.symbol2}
+                  </div>
+                  <span className="px-1.5 py-0.5 text-[9px] rounded-full bg-slate-400 text-white font-bold">
+                    Self
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-bold text-slate-500">1.00</div>
+                  <div className="text-[9px] text-slate-500">—</div>
+                </div>
+              </div>
+            );
+          }
           const color = getCorrelationColor(pair.correlation);
           const label = getCorrelationLabel(pair.correlation);
           const isPairTrade = Math.abs(pair.correlation) >= threshold;
@@ -82,7 +107,7 @@ export function CorrelationHeatmap({
                 backgroundColor: isPairTrade ? color.bg + '20' : color.bg + '10',
                 borderColor: color.bg
               }}
-              title={`${pair.symbol1} ↔ ${pair.symbol2}, 7g korelasyon: ${pair.correlation.toFixed(2)} (${pair.correlation >= 0 ? '+' : ''}${(pair.correlation * 100).toFixed(0)}%) — normalize edilmiş: -1.00 ile +1.00 arası`}
+              title={`${pair.symbol1} ↔ ${pair.symbol2}, 7g korelasyon (ρ): ${pair.correlation.toFixed(2)} (${pair.correlation >= 0 ? '+' : ''}${(pair.correlation * 100).toFixed(0)}%) — normalize edilmiş: ρ ∈ [-1.00, +1.00]`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="text-xs font-semibold text-slate-900">
@@ -98,9 +123,9 @@ export function CorrelationHeatmap({
                 <div 
                   className="text-sm font-bold"
                   style={{ color: color.bg }}
-                  title={`Korelasyon değeri: ${pair.correlation.toFixed(2)} (normalize edilmiş: -1.00 ile +1.00 arası)`}
+                  title={`Korelasyon değeri (ρ): ${pair.correlation.toFixed(2)} (normalize edilmiş: ρ ∈ [-1.00, +1.00])`}
                 >
-                  {pair.correlation.toFixed(2)}
+                  ρ {pair.correlation.toFixed(2)}
                 </div>
                 <div className="text-[10px] text-slate-600">{label}</div>
               </div>
@@ -109,17 +134,16 @@ export function CorrelationHeatmap({
         })}
       </div>
 
-      {/* Pair Trading Opportunities */}
+      {/* P0-03: Pair Trade Opportunities - Normalize edilmiş gösterim */}
       {pairTrades.length > 0 && (
         <div className="mt-3 bg-purple-50 rounded p-3 border border-purple-200">
           <div className="text-xs font-semibold text-purple-900 mb-2">
-            🎯 Pair Trade Adayları (|r| ≥ {threshold})
+            🎯 Pair Trade Adayları (|ρ| ≥ {threshold})
           </div>
           <div className="space-y-1">
             {pairTrades.slice(0, 3).map((pair, idx) => (
               <div key={idx} className="text-xs text-purple-800">
-                • {pair.symbol1} ↔ {pair.symbol2}: {pair.correlation.toFixed(2)} ({pair.correlation >= 0 ? '+' : ''}{(pair.correlation * 100).toFixed(0)}%)
-                {pair.correlation >= 0 ? ' (pozitif)' : ' (negatif)'}
+                • {pair.symbol1} ↔ {pair.symbol2}: ρ = {pair.correlation.toFixed(2)} ({pair.correlation >= 0 ? '+' : ''}{(pair.correlation * 100).toFixed(0)}%) — yüksek benzerlik
               </div>
             ))}
           </div>

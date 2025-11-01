@@ -627,10 +627,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         'Momentum ve hacim pozitif yönlü, fırsat değerlendirilebilir.'
       ],
       low: [
-        `RSI ${Math.round(70 + pred*100*5)} — aşırı alım; hacim ${pred <= -0.05 ? 'düşüyor' : 'stabil'}.`,
-        'Teknik gösterge aşırı alım seviyesinde, dikkatli olunmalı.',
+        `RSI ${mockRSI} — ${rsiStateLabel} (${rsiState}); hacim ${pred <= -0.05 ? 'düşüyor' : 'stabil'}.`,
+        'Teknik gösterge durumu, dikkatli olunmalı.',
         'Momentum zayıflıyor, potansiyel düzeltme sinyali var.',
-        `Aşırı alım durumu, kısa vadede konsolidasyon beklenebilir. Volatilite ${pred <= -0.08 ? 'artıyor' : 'azalıyor'}.`,
+        `RSI ${mockRSI} (${rsiStateLabel}), kısa vadede konsolidasyon beklenebilir. Volatilite ${pred <= -0.08 ? 'artıyor' : 'azalıyor'}.`,
         'RSI >70 seviyesinde, kar realizasyonu gündeme gelebilir.'
       ],
       negative: [
@@ -645,7 +645,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         'Belirsiz sinyal, yön tespiti için beklenmeli.',
         'Konsolidasyon devam ediyor, net yön için beklemek gerekiyor.',
         'Yan hareket var, yönlü hareket için teyit sinyali bekleniyor.',
-        `Nötr pozisyon, hacim artışı yönü belirleyecek. RSI ${Math.round(45 + pred*100*5)} seviyesinde.`
+        `Nötr pozisyon, hacim artışı yönü belirleyecek. RSI ${mockRSI} — ${rsiStateLabel} (${rsiState}) seviyesinde.`
       ]
     };
     if (pred >= 0.08 && confPct >= 85) return variations.high[seed];

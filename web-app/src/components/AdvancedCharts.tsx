@@ -280,11 +280,14 @@ export default function AdvancedCharts({ symbol = 'THYAO', data, isLoading }: Ad
                 <div className="text-right">
                   <p className="text-sm text-gray-500">Son Değer</p>
                   <p className="text-xs text-gray-400">
-                    {chartData[chartData.length - 1]?.rsi && chartData[chartData.length - 1].rsi > 70 
-                      ? 'Overbought' 
-                      : chartData[chartData.length - 1]?.rsi && chartData[chartData.length - 1].rsi < 30 
-                      ? 'Oversold' 
-                      : 'Normal'}
+                    {/* P0-01: RSI State Düzeltme - Use mapRSIToState */}
+                    {(() => {
+                      const rsi = chartData[chartData.length - 1]?.rsi;
+                      if (!rsi) return 'N/A';
+                      const { mapRSIToState, getRSIStateLabel } = require('@/lib/rsi');
+                      const state = mapRSIToState(rsi);
+                      return getRSIStateLabel(rsi);
+                    })()}
                   </p>
                 </div>
               </div>
