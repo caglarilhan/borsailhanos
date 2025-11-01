@@ -2706,41 +2706,49 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                                   </linearGradient>
                                 </defs>
                                 {/* Confidence band (fade transition) */}
-                                <path
-                                  d={bandPath}
-                                  fill={`url(#confidenceBand-${selectedSymbol})`}
-                                  className="transition-opacity duration-300 hover:opacity-80"
-                                  title={`Güven aralığı: ${formatCurrency(lowerBound)} - ${formatCurrency(upperBound)}`}
-                                />
+                                <g>
+                                  <title>Güven aralığı: {formatCurrency(lowerBound)} - {formatCurrency(upperBound)}</title>
+                                  <path
+                                    d={bandPath}
+                                    fill={`url(#confidenceBand-${selectedSymbol})`}
+                                    className="transition-opacity duration-300 hover:opacity-80"
+                                  />
+                                </g>
                                 {/* Main prediction line */}
-                                <path
-                                  d={mainPath}
-                                  fill="none"
-                                  stroke="#2563eb"
-                                  strokeWidth="2"
-                                  className="transition-all duration-300"
-                                  title={`AI Tahmin: ${formatCurrency(targetPrice)}`}
-                                />
+                                <g>
+                                  <title>AI Tahmin: {formatCurrency(targetPrice)}</title>
+                                  <path
+                                    d={mainPath}
+                                    fill="none"
+                                    stroke="#2563eb"
+                                    strokeWidth="2"
+                                    className="transition-all duration-300"
+                                  />
+                                </g>
                                 {/* Current price marker */}
-                                <circle
-                                  cx={0}
-                                  cy={scaleY(currentPrice)}
-                                  r="4"
-                                  fill="#111827"
-                                  stroke="white"
-                                  strokeWidth="2"
-                                  title={`Mevcut Fiyat: ${formatCurrency(currentPrice)}`}
-                                />
+                                <g>
+                                  <title>Mevcut Fiyat: {formatCurrency(currentPrice)}</title>
+                                  <circle
+                                    cx={0}
+                                    cy={scaleY(currentPrice)}
+                                    r="4"
+                                    fill="#111827"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                  />
+                                </g>
                                 {/* Target price marker */}
-                                <circle
-                                  cx={width}
-                                  cy={scaleY(targetPrice)}
-                                  r="4"
-                                  fill="#2563eb"
-                                  stroke="white"
-                                  strokeWidth="2"
-                                  title={`Hedef Fiyat: ${formatCurrency(targetPrice)}`}
-                                />
+                                <g>
+                                  <title>Hedef Fiyat: {formatCurrency(targetPrice)}</title>
+                                  <circle
+                                    cx={width}
+                                    cy={scaleY(targetPrice)}
+                                    r="4"
+                                    fill="#2563eb"
+                                    stroke="white"
+                                    strokeWidth="2"
+                                  />
+                                </g>
                               </svg>
                               {/* Tooltip overlay */}
                               <div className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur text-white text-[9px] rounded-b-lg opacity-0 hover:opacity-100 transition-opacity duration-300">
