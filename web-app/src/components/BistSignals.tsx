@@ -128,7 +128,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [alertChannel, setAlertChannel] = useState<'web'|'telegram'>('web');
   const [backtestTcost, setBacktestTcost] = useState<number>(8);
-  const [backtestRebDays, setBacktestRebDays] = useState<number>(5);
+  const [backtestRebDays, setBacktestRebDays] = useState<number>(30); // Default to 30 days
+  const [learningModeDays, setLearningModeDays] = useState<number>(30); // P2-14: AI Learning Mode grafik gün sayısı
+  const [portfolioRiskLevel, setPortfolioRiskLevel] = useState<'low' | 'medium' | 'high'>('medium'); // P1-10: Portföy risk seviyesi
+  const [metrics24s, setMetrics24s] = useState<{ profitChange: number; modelDrift: number; newSignals: number; newSignalsTime: string }>({
+    profitChange: 0,
+    modelDrift: 0,
+    newSignals: 0,
+    newSignalsTime: ''
+  });
   // User-defined alert thresholds (from Settings)
   const [alertThresholds, setAlertThresholds] = useState<{ minConfidence: number; minPriceChange: number; enabled: boolean }>({
     minConfidence: 70,
