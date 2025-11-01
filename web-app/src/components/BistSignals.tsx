@@ -1759,15 +1759,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           </div>
             )}
             {selectedSymbol && (
-          <div className="space-y-4">
-            <div className="bg-blue-50 p-3 rounded-lg">
-              <h4 className="font-medium text-blue-900">{selectedSymbol}</h4>
-              <p className="text-sm text-blue-700">Seçilen sembol için detaylı analiz</p>
-            </div>
-            
-            {analysisData ? (
-              <div className="space-y-3">
-                <div className="bg-gray-50 p-3 rounded-lg">
+              <div className="space-y-4">
+                <div className="bg-blue-50 p-3 rounded-lg">
+                  <h4 className="font-medium text-blue-900">{selectedSymbol}</h4>
+                  <p className="text-sm text-blue-700">Seçilen sembol için detaylı analiz</p>
+                </div>
+                
+                {analysisData ? (
+                  <div className="space-y-3">
+                    <div className="bg-gray-50 p-3 rounded-lg">
                   <h5 className="font-medium text-gray-900 mb-2">Tahmin Özeti</h5>
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-xs text-slate-600">Ufuk:</span>
@@ -2019,14 +2019,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <button onClick={()=>{ /* react-query otomatik refetch ediyor */ }} className="px-2 py-1 text-xs rounded bg-slate-200 text-slate-900 hover:bg-slate-300">Yenile 🔁</button>
                     </div>
                   </div>
+                  </div>
                 </div>
-              ) : (
-                <div className="py-4 space-y-3">
-                  <Skeleton className="h-5 w-40 rounded" />
-                  <Skeleton className="h-4 w-64 rounded" />
-                  <Skeleton className="h-24 w-full rounded" />
-                </div>
-              )}
+                ) : (
+                  <div className="py-4 space-y-3">
+                    <Skeleton className="h-5 w-40 rounded" />
+                    <Skeleton className="h-4 w-64 rounded" />
+                    <Skeleton className="h-24 w-full rounded" />
+                  </div>
+                )}
+              </div>
+            )}
           </>
         )}
         {analysisTab === 'factors' && (
@@ -2144,47 +2147,43 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     );
                   })()}
                 </div>
-              ) : (
-                <div className="mt-4 text-sm text-slate-600">Lütfen bir sembol seçin</div>
-              )}
           </>
         )}
         {!selectedSymbol && (
           <>
             {/* AI Analyst Card */}
-          <div className="mt-4">
-            <AIAnalystCard
-              version="MetaLSTM v5.1"
-              totalSignals={rows.length}
-              accuracy={calibrationQ.data?.accuracy || 0.873}
-              topSymbol={rows.length > 0 ? rows.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0]?.symbol || 'THYAO' : 'THYAO'}
-            />
-          </div>
-        )}
+            <div className="mt-4">
+              <AIAnalystCard
+                version="MetaLSTM v5.1"
+                totalSignals={rows.length}
+                accuracy={calibrationQ.data?.accuracy || 0.873}
+                topSymbol={rows.length > 0 ? rows.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0]?.symbol || 'THYAO' : 'THYAO'}
+              />
+            </div>
 
-        {/* AI Confidence Board */}
-        {!selectedSymbol && (
-          <div className="mt-4">
-            <AIConfidenceBoard
-              aiConfidence={calibrationQ.data?.accuracy || 0.87}
-              riskExposure={0.65}
-              signalStability={metaEnsembleQ.data?.meta_confidence ? metaEnsembleQ.data.meta_confidence / 100 : 0.82}
-              trend7d={(() => {
-                const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-                let r = seed;
-                const seededRandom = () => {
-                  r = (r * 1103515245 + 12345) >>> 0;
-                  return (r / 0xFFFFFFFF);
-                };
-                return Array.from({ length: 7 }, (_, i) => {
-                  const base = 0.75;
-                  const trend = (i / 7) * 0.05;
-                  const noise = (seededRandom() - 0.5) * 0.1;
-                  return Math.max(0.65, Math.min(0.95, base + trend + noise));
-                });
-              })()}
-            />
-          </div>
+            {/* AI Confidence Board */}
+            <div className="mt-4">
+              <AIConfidenceBoard
+                aiConfidence={calibrationQ.data?.accuracy || 0.87}
+                riskExposure={0.65}
+                signalStability={metaEnsembleQ.data?.meta_confidence ? metaEnsembleQ.data.meta_confidence / 100 : 0.82}
+                trend7d={(() => {
+                  const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                  let r = seed;
+                  const seededRandom = () => {
+                    r = (r * 1103515245 + 12345) >>> 0;
+                    return (r / 0xFFFFFFFF);
+                  };
+                  return Array.from({ length: 7 }, (_, i) => {
+                    const base = 0.75;
+                    const trend = (i / 7) * 0.05;
+                    const noise = (seededRandom() - 0.5) * 0.1;
+                    return Math.max(0.65, Math.min(0.95, base + trend + noise));
+                  });
+                })()}
+              />
+            </div>
+          </>
         )}
 
         {/* Sentiment Impact Bar */}
