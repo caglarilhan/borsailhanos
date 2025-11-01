@@ -1846,6 +1846,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         <span className="text-red-600 font-semibold"> ⚠️ Hata! ({(posN + negN + neuN).toFixed(1)}%)</span>
                       )}
                     </div>
+                    {/* Zaman Etiketi */}
+                    <div className="text-[9px] text-slate-500 text-center mt-1 pt-1 border-t border-slate-200">
+                      Güncellenme: {lastUpdated ? lastUpdated.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' UTC+3' : '—'}
+                    </div>
                     {/* P0-01: FinBERT confidence ± tooltip */}
                     <div className="text-[10px] text-slate-500 mb-1 flex items-center justify-between">
                       <span>Zaman penceresi: {timeWindow} {timeWindow.includes('24') || timeWindow.includes('saat') ? '(Son 24 saat)' : timeWindow.includes('7') || timeWindow.includes('gün') ? '(Son 7 gün)' : '(Son 30 gün)'}</span>
