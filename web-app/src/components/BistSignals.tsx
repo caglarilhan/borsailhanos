@@ -14,6 +14,7 @@ const API_CANDIDATES = Array.from(new Set([
   'http://localhost:18085',
 ]));
 import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, ClockIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
+import { ActiveFilters } from './ActiveFilters';
 import Top30Analysis from './Top30Analysis';
 import { Skeleton } from '@/components/UI/Skeleton';
 import { AIOrchestrator } from '@/components/AI/AIOrchestrator';
@@ -722,7 +723,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             </button>
           ))}
         </div>
-        <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm">
+        <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin">
           <Link
             href="/settings"
             className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-white hover:bg-slate-800 flex items-center gap-1.5 transition-colors"
@@ -998,7 +999,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
 
       {/* Zaman damgası / veri kaynağı */}
       <div className="flex items-center justify-end -mt-2 mb-2 text-[11px] text-slate-500">
-        <span>Son güncelleme • {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'} • İstanbul</span>
+        <span>Son güncelleme: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'} (UTC+3)</span>
         <span className="mx-2">•</span>
         <span>Kaynak: {DATA_SOURCE}</span>
       </div>
@@ -1297,7 +1298,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                             const reasonText = 'AI analiz hazırlanıyor...';
                             return (
                               <span title={`24 saat tahmini değişim • AI nedeni: ${reasonText}`} className={cls}>
-                                {arrow} ₺{tgt.toFixed(2)} ({Math.abs(pct).toFixed(1)}%)
+                                {pct !== 0 ? `${arrow} ` : ''}₺{tgt.toFixed(2)} ({pct >= 0 ? '+' : ''}{pct.toFixed(1)}%)
                               </span>
                             );
                           } catch {
@@ -1417,7 +1418,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   {/* Ana Metrikler - Daha büyük ve belirgin */}
                   <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
                     <div className={`text-lg font-black ${up ? 'text-green-700' : 'text-red-700'}`}>
-                      {up ? '▲' : '▼'} {Math.abs(diffPct).toFixed(1)}%
+                      {up ? '▲' : '▼'} {diffPct >= 0 ? '+' : ''}{diffPct.toFixed(1)}%
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-600 font-medium">Güven:</span>
@@ -1445,7 +1446,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-600 font-medium">AI Hedef:</span>
                       <span title="24 saatlik tahmini değişim" className={`text-base font-extrabold ${up?'text-green-700':'text-red-700'}`}>
-                        ₺{Number(targetPrice).toFixed(2)} <span className="text-sm">({(up?'+':'')+String(diffPct)}%)</span>
+                        ₺{Number(targetPrice).toFixed(2)} <span className="text-sm">({diffPct >= 0 ? '+' : ''}{diffPct.toFixed(1)}%)</span>
                       </span>
                     </div>
                   </div>
