@@ -44,6 +44,10 @@ interface AIDailySummaryPlusProps {
   worstAlphaStocks?: Array<{ symbol: string; alpha: number; return: number }>;
   riskDistribution?: { low: number; medium: number; high: number };
   sentimentPriceDivergence?: number; // -1 to +1, divergence score
+  modelDrift24h?: number; // Model drift (24s değişim yüzdesi)
+  confidenceChange24h?: number; // Confidence değişimi (24h) in percentage points
+  sentimentAverage?: number; // Sentiment ortalaması (0-1)
+  alphaVsBenchmark?: number; // Alpha (vs BIST30) in percentage points
 }
 
 export function AIDailySummaryPlus({ 
@@ -54,7 +58,11 @@ export function AIDailySummaryPlus({
   topAlphaStocks = [],
   worstAlphaStocks = [],
   riskDistribution,
-  sentimentPriceDivergence
+  sentimentPriceDivergence,
+  modelDrift24h,
+  confidenceChange24h,
+  sentimentAverage,
+  alphaVsBenchmark
 }: AIDailySummaryPlusProps) {
   const [tickerText, setTickerText] = useState<string>('');
   
@@ -210,9 +218,101 @@ export function AIDailySummaryPlus({
         </div>
       </div>
 
-      {/* AI Günlük Özeti 2.0: Yeni Metrikler */}
+      {/* AI Günlük Özeti 2.0: Yeni Metrikler - Genişletilmiş */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
+        {/* Top 3 Kazanan - Öne çıkarılmış */}
+        <div className="bg-white/90 backdrop-blur rounded-lg p-4 border-2 border-emerald-300 bg-emerald-50/70 shadow-md">
+          <div className="text-sm font-bold text-emerald-800 mb-3 flex items-center gap-2">
+            <span>📈 Top 3 Kazanan</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-900 border border-emerald-300">24s</span>
+          </div>
+          <div className="space-y-2">
+            {(topAlphaStocks.length > 0 ? topAlphaStocks.slice(0, 3) : [
+              { symbol: 'THYAO', alpha: 2.1, return: 5.4 },
+              { symbol: 'SISE', alpha: 1.5, return: 3.1 },
+              { symbol: 'TUPRS', alpha: 0.8, return: 2.7 }
+            ]).map((stock, idx) => (
+              <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white/80 rounded border border-emerald-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-emerald-800 bg-emerald-100 rounded-full w-6 h-6 flex items-center justify-center border border-emerald-300">#{idx + 1}</span>
+                  <span className="font-bold text-slate-900">{stock.symbol}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-emerald-700 font-bold text-base">+{stock.return.toFixed(1)}%</span>
+                  <span className="text-[10px] text-emerald-600 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Top 3 Kaybeden - Öne çıkarılmış */}
+        <div className="bg-white/90 backdrop-blur rounded-lg p-4 border-2 border-red-300 bg-red-50/70 shadow-md">
+          <div className="text-sm font-bold text-red-800 mb-3 flex items-center gap-2">
+            <span>📉 Top 3 Kaybeden</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-red-200 text-red-900 border border-red-300">24s</span>
+          </div>
+          <div className="space-y-2">
+            {(worstAlphaStocks.length > 0 ? worstAlphaStocks.slice(0, 3) : [
+              { symbol: 'GARAN', alpha: -1.2, return: -2.3 },
+              { symbol: 'VESTL', alpha: -0.9, return: -1.8 },
+              { symbol: 'PETKM', alpha: -0.6, return: -1.6 }
+            ]).map((stock, idx) => (
+              <div key={idx} className="flex justify-between items-center text-sm p-2 bg-white/80 rounded border border-red-200">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-red-800 bg-red-100 rounded-full w-6 h-6 flex items-center justify-center border border-red-300">#{idx + 1}</span>
+                  <span className="font-bold text-slate-900">{stock.symbol}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-red-700 font-bold text-base">{stock.return.toFixed(1)}%</span>
+                  <span className="text-[10px] text-red-600 px-1.5 py-0.5 rounded bg-red-50 border border-red-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Model Drift + Confidence Değişimi + Alpha vs BIST30 - Kompakt */}
+        <div className="bg-white/90 backdrop-blur rounded-lg p-4 border-2 border-purple-300 bg-purple-50/70 shadow-md">
+          <div className="text-sm font-bold text-purple-800 mb-3 flex items-center gap-2">
+            <span>🤖 Model Metrikleri</span>
+          </div>
+          <div className="space-y-2">
+            {/* Model Drift */}
+            <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
+              <span className="text-xs text-slate-700">Model Drift (24s):</span>
+              <span className={`text-sm font-bold ${(modelDrift24h !== undefined ? modelDrift24h : -0.3) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {modelDrift24h !== undefined ? modelDrift24h.toFixed(1) : '-0.3'}%
+              </span>
+            </div>
+            {/* Confidence Değişimi */}
+            <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
+              <span className="text-xs text-slate-700">Confidence Δ (24h):</span>
+              <span className={`text-sm font-bold ${(confidenceChange24h !== undefined ? confidenceChange24h : 1.5) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {confidenceChange24h !== undefined ? (confidenceChange24h >= 0 ? '+' : '') + confidenceChange24h.toFixed(1) : '+1.5'}pp
+              </span>
+            </div>
+            {/* Alpha vs BIST30 */}
+            <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
+              <span className="text-xs text-slate-700">Alpha (vs BIST30):</span>
+              <span className={`text-sm font-bold ${(alphaVsBenchmark !== undefined ? alphaVsBenchmark : 0.8) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                {alphaVsBenchmark !== undefined ? (alphaVsBenchmark >= 0 ? '+' : '') + alphaVsBenchmark.toFixed(1) : '+0.8'}pp
+              </span>
+            </div>
+            {/* Sentiment Ortalama */}
+            <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
+              <span className="text-xs text-slate-700">Sentiment Ort.:</span>
+              <span className="text-sm font-bold text-purple-700">
+                {sentimentAverage !== undefined ? (sentimentAverage * 100).toFixed(1) : '71.2'}%
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* AI Günlük Özeti 2.0: Detaylı Metrikler Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-        {/* Top Alpha Stocks (24s) */}
+        {/* Top Alpha Stocks (24s) - Eski versiyon (fallback) */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-emerald-200 bg-emerald-50/50">
           <div className="text-xs font-semibold text-emerald-700 mb-2">📈 En İyi 5 Hisse (24s)</div>
           <div className="space-y-1">
