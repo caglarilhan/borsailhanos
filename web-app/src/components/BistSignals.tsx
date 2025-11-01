@@ -1330,7 +1330,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         </div>
                       </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-gray-800 hidden md:table-cell whitespace-nowrap">
-                    <ClockIcon className="h-4 w-4" />
+                    <ClockIcon className="h-4 w-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
                     {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
                   </td>
                       <td className="py-2 pr-4 flex items-center gap-2 whitespace-nowrap">
@@ -1504,7 +1504,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     {miniAnalysis(best.prediction||0, best.confidence||0, sym)}
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-slate-700">
-                    <ClockIcon className="h-4 w-4" />
+                    <ClockIcon className="h-4 w-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
                     Geçerlilik: {new Date(best.valid_until).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})}
                   </div>
                   <div className="mt-3 flex items-center gap-2">
