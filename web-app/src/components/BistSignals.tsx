@@ -226,7 +226,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [isHydrated, setIsHydrated] = useState(false);
   const [sectorFilter, setSectorFilter] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
-  const DATA_SOURCE = 'Mock API v5.2';
+  // v4.7: Dinamik veri kaynağı - WebSocket durumuna göre güncellenecek
+const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected 
+  ? 'WebSocket (Canlı)' 
+  : 'Mock API v5.2 (Test Modu)';
   const [strategyMode, setStrategyMode] = useState<'scalper'|'swing'|'auto'>('auto');
   // P2-07: Backtest Tab - Tab state for Analysis Panel
   const [analysisTab, setAnalysisTab] = useState<'forecast' | 'factors' | 'performance'>('forecast');
@@ -4265,14 +4268,18 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                                   riskLevel: riskLevel as 'low' | 'medium' | 'high'
                                 });
                                 // Mock: Ağırlıkları göster
-                                alert(`AI Rebalance: Portföy yeniden dengelendi!\n\nRisk Seviyesi: ${riskLevel}\nTop ${newWeights.length} sembol:\n${newWeights.slice(0, 5).map(w => `  • ${w.symbol}: ${(w.weight * 100).toFixed(1)}%`).join('\n')}\n\n⚠️ Frontend mock - Gerçek backend endpoint için optimizer.ts API gerekiyor.`);
+                                const message = `AI Rebalance: Portföy yeniden dengelendi!\n\nRisk Seviyesi: ${riskLevel}\nTop ${newWeights.length} sembol:\n${newWeights.slice(0, 5).map(w => `  • ${w.symbol}: ${(w.weight * 100).toFixed(1)}%`).join('\n')}`;
+                                const warning = wsConnected 
+                                  ? '\n\n✓ Gerçek optimizasyon sonucu (Backend API)'
+                                  : '\n\n⚠️ Test modu - Frontend mock - Gerçek backend endpoint için optimizer.ts API gerekiyor.';
+                                alert(message + warning);
                               } catch (e) {
                                 console.error('Rebalance error:', e);
                                 alert('Rebalance hesaplama hatası. Lütfen tekrar deneyin.');
                               }
                             }}
                             className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-md hover:shadow-lg relative"
-                            title="AI Rebalance: Portföyü optimize et (⚠️ Frontend mock - gerçek backend API gerekiyor)"
+                            title={wsConnected ? "AI Rebalance: Portföyü optimize et (✓ Gerçek Backend API)" : "AI Rebalance: Portföyü optimize et (⚠️ Test modu - Frontend mock - gerçek backend API gerekiyor)"}
                           >
                             🔄 AI Rebalance
                             <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full" title="Frontend mock modu"></span>
