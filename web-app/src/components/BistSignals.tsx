@@ -2424,6 +2424,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           <span className="ml-1 font-semibold text-red-600">{(metrics.maxDrawdown * 100).toFixed(1)}%</span>
                         </div>
                       </div>
+                      {/* Portfolio Weights Normalize Status */}
+                      <div className="mt-2 pt-2 border-t border-slate-200 text-[9px] text-slate-500 text-center">
+                        {(() => {
+                          const totalWeight = normalizedWeights.reduce((sum, w) => sum + (w.weight / 100), 0); // Already in percentage
+                          const isNormalized = Math.abs(totalWeight - 1.0) < 0.001 || Math.abs(totalWeight * 100 - 100) < 0.1;
+                          const totalPct = normalizedWeights.reduce((sum, w) => sum + w.weight, 0);
+                          return isNormalized ? (
+                            <span className="text-green-600 font-semibold">✓ Toplam ağırlık: {totalPct.toFixed(1)}% (Normalize edilmiş)</span>
+                          ) : (
+                            <span className="text-red-600 font-semibold">⚠️ Toplam ağırlık: {totalPct.toFixed(1)}% (Normalize edilmemiş)</span>
+                          );
+                        })()}
+                      </div>
                     </>
                   );
                 } catch (e) {
