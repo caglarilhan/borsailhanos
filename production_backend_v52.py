@@ -1814,7 +1814,7 @@ class ProductionAPI(BaseHTTPRequestHandler):
             sector_summary.append({'sector': s, 'positive': p, 'negative': n, 'neutral': u})
         response = {
             'generated_at': now.isoformat(),
-            'overall': {'positive': pos, 'negative': neg, 'neutral': neu, 'model': 'FinBERT-TR v3.2-2025-10'},
+            'overall': {'positive': pos, 'negative': neg, 'neutral': neu, 'model': 'FinBERT-TR v3.2-2025-10', 'news_count': pos_raw + neg_raw + neu_raw, 'total_news': pos_raw + neg_raw + neu_raw},
             'trend_7d': trend,
             'sectors': sector_summary,
             'timezone': 'UTC+3'
