@@ -4108,9 +4108,29 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                                   {/* Final markers */}
                                   <circle cx={width} cy={scaleY(aiSeries[aiSeries.length - 1])} r="4" fill="#2563eb" stroke="white" strokeWidth="2" />
                                   <circle cx={width} cy={scaleY(benchmarkSeries[benchmarkSeries.length - 1])} r="4" fill="#6b7280" stroke="white" strokeWidth="2" />
+                                  {/* v4.7: Eksen etiketleri (x: gün, y: getiri %) */}
+                                  <text x={width / 2} y={height + 12} textAnchor="middle" fontSize="9" fill="#64748b">Gün</text>
+                                  <text x={-5} y={height / 2} textAnchor="middle" fontSize="9" fill="#64748b" transform={`rotate(-90, -5, ${height / 2})`}>Getiri (%)</text>
+                                  {/* Y ekseni değerleri */}
+                                  <text x={-15} y={height - 5} textAnchor="end" fontSize="8" fill="#94a3b8">{minY >= 0 ? '0%' : minY.toFixed(1) + '%'}</text>
+                                  <text x={-15} y={5} textAnchor="end" fontSize="8" fill="#94a3b8">{maxY.toFixed(1) + '%'}</text>
+                                  {/* X ekseni değerleri */}
+                                  <text x="5" y={height + 12} textAnchor="start" fontSize="8" fill="#94a3b8">0</text>
+                                  <text x={width - 10} y={height + 12} textAnchor="end" fontSize="8" fill="#94a3b8">{numPoints}</text>
                                 </svg>
                               );
                             })()}
+                            {/* v4.7: Grafik açıklaması */}
+                            <div className="flex items-center justify-center gap-4 mt-2 text-[9px] text-slate-600">
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-0.5 bg-blue-600"></div>
+                                <span>AI Strateji</span>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <div className="w-3 h-0.5 bg-slate-500 border-dashed"></div>
+                                <span>BIST30 Benchmark</span>
+                              </div>
+                            </div>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-600">
                             <div className="flex items-center gap-1">
