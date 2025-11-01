@@ -2605,6 +2605,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 const simulatedReturn = avgReturn * (portfolioRiskLevel === 'low' ? 0.8 : portfolioRiskLevel === 'medium' ? 1.0 : 1.2);
                 const endEquity = startEquity * (1 + simulatedReturn);
                 const profit = endEquity - startEquity;
+                
+                // Mock Beta ve Alpha hesaplaması
+                const benchmarkReturn = 0.042; // BIST30 ortalaması %4.2/yıl
+                const portfolioBeta = portfolioRiskLevel === 'low' ? 0.7 : portfolioRiskLevel === 'medium' ? 0.9 : 1.2;
+                const expectedReturn = benchmarkReturn * portfolioBeta; // CAPM: E(R) = Rf + Beta * (Rm - Rf)
+                const alpha = simulatedReturn - expectedReturn;
+                
                 return (
                   <>
                     <div className="flex justify-between">
@@ -2622,6 +2629,74 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {profit >= 0 ? '+' : ''}{profit.toLocaleString('tr-TR', {maximumFractionDigits: 0})} ₺ ({simulatedReturn >= 0 ? '+' : ''}{(simulatedReturn * 100).toFixed(1)}%)
                       </span>
+                    </div>
+                    {/* Beta ve Alpha Katkısı */}
+                    <div className="mt-3 pt-3 border-t border-slate-200 grid grid-cols-2 gap-2">
+                      <div className="bg-blue-50 rounded p-2 border border-blue-200">
+                        <div className="text-[9px] text-slate-600 mb-1">Beta</div>
+                        <div className="text-sm font-bold text-blue-700">{portfolioBeta.toFixed(2)}</div>
+                        <div className="text-[9px] text-slate-600 mt-0.5">
+                          {portfolioBeta < 1 ? 'BIST30\'dan düşük volatilite' : portfolioBeta > 1 ? 'BIST30\'dan yüksek volatilite' : 'BIST30 ile benzer'}
+                        </div>
+                      </div>
+                      <div className="bg-purple-50 rounded p-2 border border-purple-200">
+                        <div className="text-[9px] text-slate-600 mb-1">Alpha</div>
+                        <div className={`text-sm font-bold ${alpha >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                          {alpha >= 0 ? '+' : ''}{(alpha * 100).toFixed(2)}pp
+                        </div>
+                        <div className="text-[9px] text-slate-600 mt-0.5">
+                          {alpha >= 0 ? 'Benchmark\'ı geçti' : 'Benchmark\'ın altında'}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Risk Dengeleyici Grafik (Beta vs Return) */}
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="text-[10px] text-slate-600 mb-2 font-semibold">Risk/Reward Scatter (Beta vs Return)</div>
+                      <div className="h-32 w-full bg-slate-50 rounded p-2 border border-slate-200">
+                        {(() => {
+                          // Mock scatter plot - Beta vs Return
+                          const width = 300;
+                          const height = 100;
+                          const minBeta = 0.5;
+                          const maxBeta = 1.5;
+                          const minReturn = -0.1;
+                          const maxReturn = 0.15;
+                          
+                          const scaleX = (beta: number) => ((beta - minBeta) / (maxBeta - minBeta)) * width;
+                          const scaleY = (ret: number) => height - ((ret - minReturn) / (maxReturn - minReturn)) * height;
+                          
+                          // Benchmark point (BIST30)
+                          const benchX = scaleX(1.0);
+                          const benchY = scaleY(benchmarkReturn);
+                          
+                          // Portfolio point
+                          const portX = scaleX(portfolioBeta);
+                          const portY = scaleY(simulatedReturn);
+                          
+                          // Zero line
+                          const zeroY = scaleY(0);
+                          
+                          return (
+                            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+                              {/* Grid lines */}
+                              <line x1={0} y1={zeroY} x2={width} y2={zeroY} stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                              <line x1={scaleX(1.0)} y1={0} x2={scaleX(1.0)} y2={height} stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                              
+                              {/* Benchmark point (BIST30) */}
+                              <circle cx={benchX} cy={benchY} r="4" fill="#6b7280" stroke="white" strokeWidth="2" />
+                              <text x={benchX + 6} y={benchY - 6} fontSize="9" fill="#6b7280" fontWeight="bold">BIST30</text>
+                              
+                              {/* Portfolio point */}
+                              <circle cx={portX} cy={portY} r="5" fill={alpha >= 0 ? "#22c55e" : "#ef4444"} stroke="white" strokeWidth="2" />
+                              <text x={portX + 6} y={portY - 6} fontSize="9" fill={alpha >= 0 ? "#22c55e" : "#ef4444"} fontWeight="bold">Portföy</text>
+                              
+                              {/* Axis labels */}
+                              <text x={width / 2} y={height + 12} fontSize="8" fill="#64748b" textAnchor="middle">Beta</text>
+                              <text x={-30} y={height / 2} fontSize="8" fill="#64748b" textAnchor="middle" transform="rotate(-90, -30, 60)">Return</text>
+                            </svg>
+                          );
+                        })()}
+                      </div>
                     </div>
                   </>
                 );
