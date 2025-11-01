@@ -1567,7 +1567,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       </div>
                     </div>
                     <div className="text-[10px] text-slate-500 text-center">Toplam: {(posN + negN + neuN).toFixed(1)}% (normalize edilmiş)</div>
-                    <div className="text-[10px] text-slate-500 mb-1">Zaman penceresi: {timeWindow}</div>
+                    {/* P0-01: FinBERT confidence ± tooltip */}
+                    <div className="text-[10px] text-slate-500 mb-1 flex items-center justify-between">
+                      <span>Zaman penceresi: {timeWindow}</span>
+                      <span 
+                        className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 cursor-help"
+                        title={`FinBERT confidence: ${sentimentSummary?.confidence || 0.87} (${sentimentSummary?.confidence_drift ? (sentimentSummary.confidence_drift >= 0 ? '+' : '') + sentimentSummary.confidence_drift.toFixed(1) + 'pp' : '±0.0pp'} 24s değişim)`}
+                      >
+                        FinBERT ±{(sentimentSummary?.confidence_drift || 0) >= 0 ? '+' : ''}{(sentimentSummary?.confidence_drift || 0).toFixed(1)}pp
+                      </span>
+                    </div>
                   </>
                 );
               })()}
@@ -2430,6 +2439,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             )}
           </>
         )}
+        {/* P0-03: Backtest + Detaylı Backtest çakışması - Tek sekme (AI Performans) + 30G/6A/12A toggle */}
         {analysisTab === 'performance' && (
           <>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Performans (Backtest)</h3>
@@ -2442,6 +2452,36 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 </div>
               </div>
             )}
+            {/* P0-03: Backtest Period Toggle - 30G/6A/12A */}
+            <div className="mb-3 flex gap-2 border-b border-slate-200 pb-2">
+              <button
+                onClick={() => { setBacktestTcost(8); setBacktestRebDays(30); }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                  backtestRebDays === 30 
+                    ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md' 
+                    : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-50'
+                }`}
+                title="Son 30 gün backtest sonuçları"
+              >30G</button>
+              <button
+                onClick={() => { setBacktestTcost(8); setBacktestRebDays(180); }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                  backtestRebDays === 180 
+                    ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md' 
+                    : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-50'
+                }`}
+                title="Son 6 ay backtest sonuçları"
+              >6A</button>
+              <button
+                onClick={() => { setBacktestTcost(8); setBacktestRebDays(365); }}
+                className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                  backtestRebDays === 365 
+                    ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md' 
+                    : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-50'
+                }`}
+                title="Son 12 ay backtest sonuçları"
+              >12A</button>
+            </div>
             {/* P2-07: Backtest Tab - Moved to Performance tab */}
             {/* Quick Backtest (tcost/rebalance) */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
@@ -2456,20 +2496,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                     <div className="flex gap-1">
                       <button
-                        onClick={() => { setBacktestTcost(8); setBacktestRebDays(5); }}
+                        onClick={() => { setBacktestTcost(8); setBacktestRebDays(backtestRebDays === 30 ? 30 : backtestRebDays === 180 ? 180 : 365); }}
                         className="px-2 py-1 text-[10px] font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
-                        title="Standart preset: Tcost 8bps, Rebalance 5 gün"
+                        title="Standart preset: Tcost 8bps"
                       >Varsayılan</button>
-                      <button
-                        onClick={() => { setBacktestTcost(8); setBacktestRebDays(7); }}
-                        className="px-2 py-1 text-[10px] font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
-                        title="Son 7 gün preset"
-                      >7g</button>
-                      <button
-                        onClick={() => { setBacktestTcost(8); setBacktestRebDays(30); }}
-                        className="px-2 py-1 text-[10px] font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
-                        title="Son 30 gün preset"
-                      >30g</button>
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs text-slate-700 mb-3">
