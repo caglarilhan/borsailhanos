@@ -110,7 +110,7 @@ export function CorrelationHeatmap({
                 backgroundColor: isPairTrade ? color.bg + '20' : color.bg + '10',
                 borderColor: color.bg
               }}
-              title={`${pair.symbol1} ↔ ${pair.symbol2}, 7g korelasyon (ρ): ${pair.correlation.toFixed(2)} (${pair.correlation >= 0 ? '+' : ''}${(pair.correlation * 100).toFixed(0)}%) — normalize edilmiş: ρ ∈ [-1.00, +1.00]`}
+              title={`${pair.symbol1} ↔ ${pair.symbol2}: 30g korelasyon ρ = ${pair.correlation.toFixed(2)} (${pair.correlation >= 0 ? '+' : ''}${(pair.correlation * 100).toFixed(0)}%) — normalize edilmiş: ρ ∈ [-1.00, +1.00]`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="text-xs font-semibold text-slate-900">
