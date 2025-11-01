@@ -31,6 +31,7 @@ export default function RiskAttribution() {
             transition={{ delay: idx * 0.1 }}
             className="space-y-2"
           >
+            {/* P0-03: Risk Dağılımı Tekrarı - Tek kaynaklı gösterim */}
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-lg flex items-center justify-center font-bold text-white"
@@ -39,11 +40,10 @@ export default function RiskAttribution() {
                 </div>
                 <div>
                   <div className="font-bold text-white">Risk payı</div>
-                  <div className="text-xs text-gray-400">{item.riskShare}%</div>
                 </div>
               </div>
               <div className="text-right">
-                <div className="font-bold text-orange-400">{item.riskShare}%</div>
+                <div className="font-bold text-orange-400">{item.symbol} {item.riskShare}%</div>
               </div>
             </div>
             <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
