@@ -3,11 +3,10 @@
 import React from 'react';
 
 interface ActiveFiltersProps {
-  filters: Array<{ label: string; value: string | boolean | string[] }>;
-  onRemove?: (index: number) => void;
+  filters: Array<{ label: string; value: string | boolean | string[]; onRemove?: () => void }>;
 }
 
-export function ActiveFilters({ filters, onRemove }: ActiveFiltersProps) {
+export function ActiveFilters({ filters }: ActiveFiltersProps) {
   if (filters.length === 0) return null;
 
   return (
@@ -25,11 +24,11 @@ export function ActiveFilters({ filters, onRemove }: ActiveFiltersProps) {
           ) : (
             `${filter.label}: ${filter.value}`
           )}
-          {onRemove && (
+          {filter.onRemove && (
             <button
-              onClick={() => onRemove(idx)}
-              className="ml-1 text-blue-600 hover:text-blue-800"
-              aria-label="Filtreyi kaldır"
+              onClick={(e) => { e.stopPropagation(); filter.onRemove?.(); }}
+              className="ml-1 text-blue-600 hover:text-blue-800 font-bold"
+              aria-label={`${filter.label} filtresini kaldır`}
             >
               ×
             </button>
