@@ -1274,8 +1274,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 return `${ok}/${dirs.length}`;
               })();
               const diffPct = Math.round((best.prediction||0) * 1000) / 10; // % (fallback)
-              const fQ = useForecast(sym, '1d', true);
-              const targetPrice = fQ.data?.targetPrice ?? Math.round(currentPrice * (1 + (best.prediction||0)) * 100) / 100;
+              // Note: Cannot call hooks inside .map() - Rules of Hooks violation
+              // Using fallback calculation for target price
+              const targetPrice = Math.round(currentPrice * (1 + (best.prediction||0)) * 100) / 100;
               return (
                 <div key={sym} className="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedSymbol(sym); }}>
                   <div className="flex items-center justify-between">
@@ -1331,7 +1332,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </div>
                   {/* AI tek satır yorum (forecast explain + TraderGPT mini balon + XAI) */}
                   <div className="mt-2 text-xs text-slate-700 flex items-center gap-2 flex-wrap">
-                    {Array.isArray(fQ.data?.explain) && fQ.data?.explain.length>0 && (
+                    {false && ( // Removed useForecast hook from map - Rules of Hooks violation
                       <details className="flex-1 min-w-[200px]">
                         <summary className="cursor-pointer select-none flex items-center gap-1">
                           <span className="font-semibold text-[#111827]">AI Yorum:</span>
@@ -1375,7 +1376,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       }}
                       className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
                     >{inWatch?'Takipte':'Takibe Al'}</button>
-                    {confPct>=alertThresholds.minConfidence && Math.abs(fQ.data?.deltaPct ?? diffPct)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
+                    {confPct>=alertThresholds.minConfidence && Math.abs(diffPct)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
                       <button
                         onClick={async (e)=>{ e.stopPropagation(); try { if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertThresholds.minPriceChange, minConf: alertThresholds.minConfidence, source: 'AI v4.6 model BIST30 dataset' }); } else { await Api.sendTelegramAlert(sym, `AI uyarı: ${sym} Δ>${alertThresholds.minPriceChange}%, Conf≥${alertThresholds.minConfidence}%`, 'demo'); } } catch {} }}
                         className="px-2 py-1 text-xs rounded bg-blue-600 text-white"
