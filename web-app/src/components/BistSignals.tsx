@@ -535,10 +535,19 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
         const meetsRsiThreshold = rsi !== undefined && rsi > alertThresholds.rsiThreshold;
         const meetsLowAiConfidenceThreshold = aiConfidence !== undefined && aiConfidence < alertThresholds.minAiConfidence;
         
-        // Alert if any threshold condition is met
+        // v4.7: Alert if any threshold condition is met - Enhanced message
         if (meetsConfidenceThreshold && meetsPriceChangeThreshold || meetsRsiThreshold || meetsLowAiConfidenceThreshold) {
-          const toastMessage = alertMessage || `${symbol}: ${signal} sinyali (Güven: ${confidence?.toFixed(1)}%, Değişim: ${priceChange >= 0 ? '+' : ''}${priceChange?.toFixed(2)}%)`;
-          const toastType = signal === 'BUY' ? 'success' : signal === 'SELL' ? 'error' : 'warning';
+          let alertReason = '';
+          if (meetsRsiThreshold && rsi !== undefined) {
+            alertReason = `RSI ${rsi.toFixed(1)} > ${alertThresholds.rsiThreshold} (Aşırı Alım)`;
+          } else if (meetsLowAiConfidenceThreshold && aiConfidence !== undefined) {
+            alertReason = `AI Güven ${aiConfidence.toFixed(1)}% < ${alertThresholds.minAiConfidence}% (Düşük Güven)`;
+          } else {
+            alertReason = `Güven: ${confidence?.toFixed(1)}%, Değişim: ${priceChange >= 0 ? '+' : ''}${priceChange?.toFixed(2)}%`;
+          }
+          
+          const toastMessage = alertMessage || `${symbol}: ${signal} sinyali (${alertReason})`;
+          const toastType = signal === 'BUY' ? 'success' : signal === 'SELL' ? 'error' : meetsLowAiConfidenceThreshold ? 'warning' : 'info';
           addToast(toastMessage, toastType, 6000);
           
           // Optional: Browser notification (if permitted)
