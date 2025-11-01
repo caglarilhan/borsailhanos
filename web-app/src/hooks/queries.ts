@@ -3,16 +3,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Api } from '@/services/api';
 
-export function useBistPredictions(universe: string, horizons: string[], all: boolean = true) {
+export function useBistPredictions(universe: string, horizons: string[], all: boolean = true, useWebSocket: boolean = false) {
   return useQuery({
     queryKey: ['bistPredictions', universe, horizons.join(','), all],
     queryFn: async () => Api.getBistPredictions(universe, horizons, all),
-    refetchInterval: 30000,
+    refetchInterval: useWebSocket ? false : 60000, // WebSocket varsa polling kapalı, yoksa 60s (eskiden 30s)
     enabled: universe !== 'ALL',
+    staleTime: useWebSocket ? 0 : 30000, // WebSocket varsa staleTime yok, yoksa 30s
   });
 }
 
-export function useBistAllPredictions(horizons: string[]) {
+export function useBistAllPredictions(horizons: string[], useWebSocket: boolean = false) {
   return useQuery({
     queryKey: ['bistPredictionsAll', horizons.join(',')],
     queryFn: async () => {
@@ -34,7 +35,8 @@ export function useBistAllPredictions(horizons: string[]) {
       merged.sort((a:any,b:any)=> (b.confidence||0) - (a.confidence||0));
       return { predictions: merged };
     },
-    refetchInterval: 30000,
+    refetchInterval: useWebSocket ? false : 60000, // WebSocket varsa polling kapalı, yoksa 60s
+    staleTime: useWebSocket ? 0 : 30000,
   });
 }
 
@@ -263,6 +265,27 @@ export function useTriggerRetrainMutation() {
       queryKey: ['aiHealth'],
       queryFn: async () => Api.getAIHealth(),
       refetchInterval: 60000, // 1 dakikada bir güncelle
+      staleTime: 30000,
+    });
+  }
+
+  // NASDAQ/NYSE predictions
+  export function useNasdaqPredictions(horizons: string[] = ['1d', '4h'], enabled: boolean = true) {
+    return useQuery({
+      queryKey: ['nasdaqPredictions', horizons.join(',')],
+      queryFn: async () => Api.getNasdaqPredictions(horizons.join(',')),
+      enabled,
+      refetchInterval: 60000,
+      staleTime: 30000,
+    });
+  }
+
+  export function useNysePredictions(horizons: string[] = ['1d', '4h'], enabled: boolean = true) {
+    return useQuery({
+      queryKey: ['nysePredictions', horizons.join(',')],
+      queryFn: async () => Api.getNysePredictions(horizons.join(',')),
+      enabled,
+      refetchInterval: 60000,
       staleTime: 30000,
     });
   }

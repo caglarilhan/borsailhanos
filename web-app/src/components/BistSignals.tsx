@@ -127,6 +127,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [maxRows, setMaxRows] = useState<number>(30);
   const [filterAcc80, setFilterAcc80] = useState<boolean>(false);
   const [filterMomentum, setFilterMomentum] = useState<boolean>(false);
+  // WebSocket state for real-time updates
+  const [wsConnected, setWsConnected] = useState<boolean>(false);
+  const wsUrl = useMemo(() => {
+    const base = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
+    return `${base}/ws`;
+  }, []);
 
   // Tutarlılık Endeksi: 1H/4H/1D aynı yönde mi?
   const consistencyIndex = useMemo(() => {
@@ -277,9 +283,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     }
     throw lastErr || new Error('All API candidates failed');
   };
-  // react-query: tahminler
+  // react-query: tahminler (WebSocket-aware)
   const horizonsEff = activeHorizons.length === 0 ? ['1d'] : activeHorizons;
-  const predQ = universe === 'ALL' ? useBistAllPredictions(horizonsEff) : useBistPredictions(universe, horizonsEff, true);
+  const predQ = universe === 'ALL' ? useBistAllPredictions(horizonsEff, wsConnected) : useBistPredictions(universe, horizonsEff, true, wsConnected);
   useEffect(() => {
     const data = predQ.data as any;
     const arr = Array.isArray(data?.predictions) ? data.predictions : [];

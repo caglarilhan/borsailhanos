@@ -1613,21 +1613,57 @@ class ProductionAPI(BaseHTTPRequestHandler):
 
     # --- New: Foreign market predictions (NASDAQ/NYSE) ---
     def _handle_foreign_predictions(self, market: str):
+        """NASDAQ/NYSE predictions with Yahoo Finance integration (mock for now, real API can be added)."""
         self._set_headers(200)
         query_params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
         horizons_str = query_params.get('horizons', ['1d,4h'])[0]
         horizons = [h.strip() for h in horizons_str.split(',') if h.strip()]
-        symbols = ['AAPL','MSFT','NVDA','AMZN','META'] if market=='NASDAQ' else ['JPM','GS','KO','DIS','GE']
+        
+        # NASDAQ top tech stocks
+        if market == 'NASDAQ':
+            symbols = ['AAPL','MSFT','NVDA','AMZN','META','GOOGL','TSLA','NFLX','AMD','INTC']
+        # NYSE top stocks
+        elif market == 'NYSE':
+            symbols = ['JPM','GS','KO','DIS','GE','BAC','WMT','V','JNJ','PG']
+        else:
+            symbols = []
+        
         now = datetime.now()
+        random.seed(int(now.strftime('%Y%j%H')) + sum(ord(c) for c in market))
         out = []
+        
         for sym in symbols:
+            # Mock price data (gerçek implementasyonda yfinance veya AlphaVantage API kullanılabilir)
+            base_price = 100 + (abs(hash(sym)) % 500)
             for h in horizons:
-                raw = (abs(hash(sym + h + market)) % 200 - 100) / 1000.0
-                drift = random.uniform(-0.02, 0.02)
-                pred = max(-0.15, min(0.15, raw + drift))
-                conf = max(0.55, min(0.97, 0.75 + abs(pred)))
-                out.append({'symbol': sym, 'horizon': h, 'prediction': round(pred,4), 'confidence': round(conf,3), 'valid_until': (now+timedelta(hours=1)).isoformat(), 'generated_at': now.isoformat()})
-        self.wfile.write(json.dumps({'market': market, 'predictions': out}).encode('utf-8'))
+                # Horizon'a göre tahmin varyansı
+                if h in ['5m','15m','30m']:
+                    drift = random.uniform(-0.01, 0.01)
+                    conf_base = 0.65
+                elif h in ['1h','4h']:
+                    drift = random.uniform(-0.02, 0.02)
+                    conf_base = 0.70
+                else:  # 1d, 7d
+                    drift = random.uniform(-0.03, 0.03)
+                    conf_base = 0.75
+                
+                pred = max(-0.15, min(0.15, drift))
+                conf = max(0.55, min(0.97, conf_base + abs(pred) * 0.2 + random.uniform(-0.05, 0.05)))
+                
+                out.append({
+                    'symbol': sym,
+                    'horizon': h,
+                    'prediction': round(pred, 4),
+                    'confidence': round(conf, 3),
+                    'currentPrice': round(base_price * (1 + random.uniform(-0.1, 0.1)), 2),
+                    'valid_until': (now + timedelta(hours=1)).isoformat(),
+                    'generated_at': now.isoformat(),
+                    'market': market
+                })
+        
+        # Sort by confidence (highest first)
+        out.sort(key=lambda x: x['confidence'], reverse=True)
+        self.wfile.write(json.dumps({'market': market, 'predictions': out, 'count': len(out)}).encode('utf-8'))
 
     # --- New: Backtest report with benchmark and XAI hooks ---
     def _handle_backtest_report(self):
