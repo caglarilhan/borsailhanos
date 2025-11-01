@@ -191,6 +191,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [strategyMode, setStrategyMode] = useState<'scalper'|'swing'|'auto'>('auto');
   // Forecast hook for Analysis Panel (selectedSymbol + analysisHorizon)
   const panelForecastQ = useForecast(selectedSymbol || undefined as any, analysisHorizon, !!selectedSymbol);
+  // Regime and PI hooks (must be at top level - Rules of Hooks)
+  const { useRegime, usePI } = require('@/hooks/queries');
+  const regimeQ = useRegime();
+  const piQ = usePI(selectedSymbol || undefined, analysisHorizon, !!selectedSymbol);
   // TraderGPT conversational panel state
   const [gptOpen, setGptOpen] = useState<boolean>(false);
   const [gptInput, setGptInput] = useState<string>('');
