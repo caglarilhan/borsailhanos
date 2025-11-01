@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useTheme } from 'next-themes';
 import { Api } from '@/services/api';
 import { useBistPredictions, useBistAllPredictions, useBist30News as useBist30NewsQ, useBist30Overview as useBist30OverviewQ, useSentimentSummary as useSentimentSummaryQ, useWatchlist as useWatchlistQ, usePredictiveTwin, useUpdateWatchlistMutation, useAlertsGenerateMutation, useForecast } from '@/hooks/queries';
 import { useWebSocket } from '@/hooks/useWebSocket';
@@ -218,6 +219,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const backtestQ = useBacktestQuick(universe, backtestTcost, backtestRebDays, !!selectedSymbol);
   // TraderGPT conversational panel state
   const [gptOpen, setGptOpen] = useState<boolean>(false);
+  // Dark mode toggle
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
   const [gptInput, setGptInput] = useState<string>('');
   const [gptSpeaking, setGptSpeaking] = useState<boolean>(false);
   const [gptMessages, setGptMessages] = useState<Array<{role:'user'|'ai'; text:string}>>([
@@ -1017,7 +1022,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             >
               {gptOpen ? '✓ ' : ''}🤖 TraderGPT
             </button>
-            {/* Dark Mode Toggle (Foundation) - Eklenecek */}
+            {/* Dark Mode Toggle */}
+            {mounted && (
+              <button
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400"
+                title={theme === 'dark' ? 'Açık temaya geç' : 'Koyu temaya geç'}
+              >
+                {theme === 'dark' ? '☀️ Açık' : '🌙 Koyu'}
+              </button>
+            )}
           </div>
         </div>
       </div>
