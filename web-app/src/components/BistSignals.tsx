@@ -1101,6 +1101,26 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               }
               side="bottom"
             />
+            {/* Görselleştirme Hub Butonu */}
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => { /* Viz Hub aç */ }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-1.5 transition-colors"
+                >
+                  📊 Viz
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Görselleştirme Hub</div>
+                  <div className="text-xs text-slate-700">
+                    Tüm grafikler, heatmap, korelasyon matrisi ve görsel analiz araçları.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
           </div>
 
           {/* Kullanıcı Merkezi Grubu */}
