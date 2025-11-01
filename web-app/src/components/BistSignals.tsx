@@ -4368,12 +4368,6 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                             </table>
                           </div>
                         </div>
-                            }}
-                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1.5 transition-colors"
-                          >
-                            📤 PDF Export
-                          </button>
-                        </div>
                         {/* Backtest Pro: Kullanıcı Dostu Özet Metin */}
                         <div className="border-t border-slate-300 pt-2 mt-2 bg-blue-50 rounded p-2">
                           <div className="text-xs font-semibold text-blue-900 mb-1">📊 Backtest Özeti</div>
