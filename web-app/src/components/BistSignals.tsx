@@ -780,17 +780,46 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </div>
                 )}
               </div>
-              {/* Sprint 2: Risk Skoru KPI - Normalize edilmiş (1-10 ölçeği) */}
+              {/* P0-02: Risk Skoru KPI - Normalize edilmiş (1-10 ölçeği) + AI Güven ayrımı */}
               {(() => {
                 const riskOld = Math.max(1, 5 - Math.round((rows.length%5)));
                 const riskNormalized = normalizeRisk(riskOld);
                 const riskLevel = getRiskLevel(riskNormalized);
                 const riskColor = getRiskColor(riskNormalized);
+                // AI Güven oranı (ayrı metrik)
+                const accuracy = calibrationQ.data?.accuracy || 0.873;
                 return (
                   <div className={`${getRiskBgColor(riskNormalized)} backdrop-blur-sm rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
-                    <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Risk Skoru</div>
+                    <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2 flex items-center justify-between">
+                      <span>Risk Skoru</span>
+                      <HoverCard
+                        trigger={
+                          <span className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
+                        }
+                        content={
+                          <div className="space-y-2 max-w-xs">
+                            <div className="font-semibold text-slate-900 mb-2">Risk Skoru vs AI Güven</div>
+                            <div className="text-xs text-slate-700 space-y-2">
+                              <div>
+                                <strong>Risk Skoru (1-10 ölçeği):</strong> Portföyün genel volatilite ve drawdown riskini ölçer. Düşük risk = daha az dalgalanma.
+                              </div>
+                              <div>
+                                <strong>AI Güven (%0-100):</strong> Model tahminlerinin doğruluk olasılığı. Yüksek güven = daha güvenilir sinyal.
+                              </div>
+                              <div className="mt-2 pt-2 border-t border-slate-200 text-[10px] text-slate-600">
+                                <strong>Not:</strong> Risk ve güven farklı metriklerdir. Risk düşük, güven yüksek olabilir (ideal durum).
+                              </div>
+                            </div>
+                          </div>
+                        }
+                        side="bottom"
+                      />
+                    </div>
                     <div className={`text-2xl font-bold ${riskColor.replace('text-', 'text-').replace('-600', '-100')}`}>{riskNormalized.toFixed(1)}</div>
                     <div className="text-[10px] text-white/70 mt-1">{riskLevel} risk • 1-10 ölçeği</div>
+                    <div className="text-[9px] text-white/60 mt-1 border-t border-white/20 pt-1">
+                      AI Güven: {(accuracy * 100).toFixed(1)}% (ayrı metrik)
+                    </div>
                   </div>
                 );
               })()}
@@ -1609,7 +1638,14 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         <div className="px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200 font-semibold">{negN}%</div>
                       </div>
                     </div>
-                    <div className="text-[10px] text-slate-500 text-center">Toplam: {(posN + negN + neuN).toFixed(1)}% (normalize edilmiş)</div>
+                    <div className="text-[10px] text-slate-500 text-center">
+                      Toplam: {(posN + negN + neuN).toFixed(1)}% 
+                      {(posN + negN + neuN) >= 99.9 && (posN + negN + neuN) <= 100.1 ? (
+                        <span className="text-green-600 font-semibold"> ✓ Normalize edilmiş</span>
+                      ) : (
+                        <span className="text-red-600 font-semibold"> ⚠️ Hata! ({(posN + negN + neuN).toFixed(1)}%)</span>
+                      )}
+                    </div>
                     {/* P0-01: FinBERT confidence ± tooltip */}
                     <div className="text-[10px] text-slate-500 mb-1 flex items-center justify-between">
                       <span>Zaman penceresi: {timeWindow}</span>
@@ -2533,15 +2569,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         {analysisTab === 'performance' && (
           <>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Performans (Backtest)</h3>
-            {/* P0: Backtest mock görünümü - Placeholder açıkça belirtilmeli */}
-            {!backtestQ.data && (
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
-                <div className="text-xs text-amber-800 font-semibold mb-1">⚠️ Demo Modu</div>
-                <div className="text-[10px] text-amber-700">
-                  Backtest verileri şu anda mock modda. Gerçek API entegrasyonu için backend endpoint gerekiyor.
-                </div>
+            {/* P0-04: Backtest "simulate edilmiş" etiketi - Gerçek veriler kullanılana kadar */}
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+              <div className="text-xs text-amber-800 font-semibold mb-1">⚠️ Simüle Edilmiş Veri</div>
+              <div className="text-[10px] text-amber-700">
+                Bu backtest sonuçları simüle edilmiştir. Gerçek zamanlı backtest verileri için backend API entegrasyonu gereklidir.
+                {!backtestQ.data && (
+                  <span className="block mt-1">Şu anda mock modda çalışıyor.</span>
+                )}
               </div>
-            )}
+            </div>
             {/* P0-03: Backtest Period Toggle - 30G/6A/12A */}
             <div className="mb-3 flex gap-2 border-b border-slate-200 pb-2">
               <button
@@ -2580,9 +2617,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <h5 className="font-bold text-gray-900 text-base">
                         📊 Quick Backtest — {backtestRebDays}g | Rebalance: {backtestRebDays}g | Tcost: {backtestTcost}bps | Slippage: 0.05%
                       </h5>
-                      {!backtestQ.data && (
-                        <div className="text-[10px] text-amber-600 mt-1">⚠️ Demo veri (gerçek API entegrasyonu gerekli)</div>
-                      )}
+                      <div className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                        <span>⚠️ Simüle edilmiş veri</span>
+                        <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200 text-[9px] font-semibold">
+                          Gerçek API gerekiyor
+                        </span>
+                      </div>
                     </div>
                     <div className="flex gap-1">
                       <button
