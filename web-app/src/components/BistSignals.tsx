@@ -191,11 +191,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [strategyMode, setStrategyMode] = useState<'scalper'|'swing'|'auto'>('auto');
   // Forecast hook for Analysis Panel (selectedSymbol + analysisHorizon)
   const panelForecastQ = useForecast(selectedSymbol || undefined as any, analysisHorizon, !!selectedSymbol);
-  // Regime, PI and Macro hooks (must be at top level - Rules of Hooks)
-  const { useRegime, usePI, useMacro } = require('@/hooks/queries');
+  // Regime, PI, Macro and Calibration hooks (must be at top level - Rules of Hooks)
+  const { useRegime, usePI, useMacro, useCalibration } = require('@/hooks/queries');
   const regimeQ = useRegime();
   const piQ = usePI(selectedSymbol || undefined, analysisHorizon, !!selectedSymbol);
   const macroQ = useMacro();
+  const calibrationQ = useCalibration();
   // TraderGPT conversational panel state
   const [gptOpen, setGptOpen] = useState<boolean>(false);
   const [gptInput, setGptInput] = useState<string>('');
@@ -1546,7 +1547,21 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <tr><td className="py-1 text-slate-700">PSI</td><td className="py-1 text-right font-medium">{analysisData.drift?.population_stability_index || 'N/A'}</td></tr>
                     </tbody>
                   </table>
-                  {(() => { const { useCalibration } = require('@/hooks/queries'); const cal = useCalibration(); const pts = Array.isArray(cal.data?.curve) ? cal.data.curve : []; if (!pts || pts.length===0) return <div className="mt-2 text-xs text-slate-500">Kalibrasyon eğrisi yok</div>; const w = 180, h = 80; const pad = 6; const sx = (p:number)=> pad + p*(w-2*pad); const sy = (o:number)=> (h-pad) - o*(h-2*pad); let d=''; pts.forEach((p:any, i:number)=>{ const x=sx(Number(p.pred||p.p||p.x||0)); const y=sy(Number(p.obs||p.y||0)); d += (i===0? 'M':'L') + x + ' ' + y + ' '; }); return (
+                  {(() => {
+                    // Using calibrationQ from top-level hook call (Rules of Hooks compliance)
+                    const pts = Array.isArray(calibrationQ.data?.curve) ? calibrationQ.data.curve : [];
+                    if (!pts || pts.length===0) return <div className="mt-2 text-xs text-slate-500">Kalibrasyon eğrisi yok</div>;
+                    const w = 180, h = 80;
+                    const pad = 6;
+                    const sx = (p:number)=> pad + p*(w-2*pad);
+                    const sy = (o:number)=> (h-pad) - o*(h-2*pad);
+                    let d='';
+                    pts.forEach((p:any, i:number)=>{
+                      const x=sx(Number(p.pred||p.p||p.x||0));
+                      const y=sy(Number(p.obs||p.y||0));
+                      d += (i===0? 'M':'L') + x + ' ' + y + ' ';
+                    });
+                    return (
                     <div className="mt-3">
                       <div className="text-xs text-slate-700 mb-1">Reliability Curve</div>
                       <svg width={w} height={h} viewBox={'0 0 '+w+' '+h}>
