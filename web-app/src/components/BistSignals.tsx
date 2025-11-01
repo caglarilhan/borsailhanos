@@ -4928,25 +4928,27 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                 </button>
               </div>
               
-              {/* Model Accuracy Drift Grafik (30g) */}
-              <div className="bg-white rounded p-2 border border-slate-200 mb-2">
-                <div className="text-[10px] text-slate-600 mb-2 font-semibold">Model Accuracy Drift (30g)</div>
-                <div className="h-20 w-full">
-                  {(() => {
-                    // 30 günlük accuracy drift trendi (mock - gerçek implementasyonda Firestore'dan gelecek)
-                    const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-                    let r = seed;
-                    const seededRandom = () => {
-                      r = (r * 1103515245 + 12345) >>> 0;
-                      return (r / 0xFFFFFFFF);
-                    };
-                    const driftSeries = Array.from({ length: 30 }, (_, i) => {
-                      const base = calibrationQ.data?.accuracy || 0.873;
-                      const day = i / 30;
-                      const trend = day * 0.02; // +2% trend over 30 days
-                      const noise = (seededRandom() - 0.5) * 0.03;
-                      return Math.max(0.80, Math.min(0.95, base + trend + noise));
-                    });
+              {/* v4.7: Model Drift Tracker + Confidence Decay Graph */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {/* Model Drift Tracker */}
+                <div className="bg-white rounded p-2 border border-slate-200">
+                  <div className="text-[10px] text-slate-600 mb-2 font-semibold">📉 Model Drift Tracker (30g)</div>
+                  <div className="h-24 w-full">
+                    {(() => {
+                      // v4.7: 30 günlük model drift trendi (mock - gerçek implementasyonda Firestore'dan gelecek)
+                      const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                      let r = seed;
+                      const seededRandom = () => {
+                        r = (r * 1103515245 + 12345) >>> 0;
+                        return (r / 0xFFFFFFFF);
+                      };
+                      const driftSeries = Array.from({ length: 30 }, (_, i) => {
+                        const base = calibrationQ.data?.accuracy || 0.873;
+                        const day = i / 30;
+                        const trend = day * 0.02; // +2% trend over 30 days
+                        const noise = (seededRandom() - 0.5) * 0.03;
+                        return Math.max(0.80, Math.min(0.95, base + trend + noise));
+                      });
                     return (
                       <svg width="100%" height="80" viewBox="0 0 300 80" className="overflow-visible">
                         <defs>
@@ -4988,27 +4990,82 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                       </svg>
                     );
                   })()}
+                  <div className="flex items-center justify-between mt-1 text-[9px] text-slate-600">
+                    <span>Min: {(Math.min(...driftSeries) * 100).toFixed(1)}%</span>
+                    <span>Max: {(Math.max(...driftSeries) * 100).toFixed(1)}%</span>
+                    <span>Avg: {((driftSeries.reduce((a, b) => a + b, 0) / driftSeries.length) * 100).toFixed(1)}%</span>
+                  </div>
                 </div>
-                <div className="flex items-center justify-between mt-1 text-[9px] text-slate-600">
-                  <span>Min: {((Math.min(...(() => {
-                    const base = calibrationQ.data?.accuracy || 0.873;
-                    return Array.from({ length: 30 }, (_, i) => {
-                      const day = i / 30;
-                      const trend = day * 0.02;
-                      const noise = (Math.random() - 0.5) * 0.03;
-                      return Math.max(0.80, Math.min(0.95, base + trend + noise));
-                    });
-                  })())) * 100).toFixed(1)}%</span>
-                  <span>Max: {((Math.max(...(() => {
-                    const base = calibrationQ.data?.accuracy || 0.873;
-                    return Array.from({ length: 30 }, (_, i) => {
-                      const day = i / 30;
-                      const trend = day * 0.02;
-                      const noise = (Math.random() - 0.5) * 0.03;
-                      return Math.max(0.80, Math.min(0.95, base + trend + noise));
-                    });
-                  })())) * 100).toFixed(1)}%</span>
-                  <span>Avg: {((calibrationQ.data?.accuracy || 0.873) * 100).toFixed(1)}%</span>
+                
+                {/* v4.7: Confidence Decay Graph */}
+                <div className="bg-white rounded p-2 border border-slate-200">
+                  <div className="text-[10px] text-slate-600 mb-2 font-semibold">📊 Confidence Decay Graph (30g)</div>
+                  <div className="h-24 w-full">
+                    {(() => {
+                      // v4.7: 30 günlük confidence decay trendi (mock - gerçek implementasyonda Firestore'dan gelecek)
+                      const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                      let r = seed;
+                      const seededRandom = () => {
+                        r = (r * 1103515245 + 12345) >>> 0;
+                        return (r / 0xFFFFFFFF);
+                      };
+                      const confidenceSeries = Array.from({ length: 30 }, (_, i) => {
+                        const base = calibrationQ.data?.accuracy || 0.873;
+                        const day = i / 30;
+                        const decay = -day * 0.01; // -1% decay over 30 days (model aging)
+                        const noise = (seededRandom() - 0.5) * 0.02;
+                        return Math.max(0.75, Math.min(0.95, base + decay + noise));
+                      });
+                      
+                      return (
+                        <svg width="100%" height="96" viewBox="0 0 300 96" className="overflow-visible">
+                          <defs>
+                            <linearGradient id="confidenceDecayGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.3" />
+                              <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+                            </linearGradient>
+                          </defs>
+                          {/* Grid lines */}
+                          {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
+                            const value = Math.min(...confidenceSeries) + (Math.max(...confidenceSeries) - Math.min(...confidenceSeries)) * percent;
+                            const y = 96 - ((value - Math.min(...confidenceSeries)) / (Math.max(...confidenceSeries) - Math.min(...confidenceSeries) || 0.1)) * 96;
+                            return (
+                              <line key={percent} x1="0" y1={y} x2="300" y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                            );
+                          })}
+                          {/* Confidence path */}
+                          {(() => {
+                            const minY = Math.min(...confidenceSeries);
+                            const maxY = Math.max(...confidenceSeries);
+                            const range = maxY - minY || 0.1;
+                            const scaleX = (i: number) => (i / (confidenceSeries.length - 1)) * 300;
+                            const scaleY = (v: number) => 96 - ((v - minY) / range) * 96;
+                            let path = '';
+                            confidenceSeries.forEach((v, i) => {
+                              const x = scaleX(i);
+                              const y = scaleY(v);
+                              path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                            });
+                            const fillPath = path + ` L 300 ${scaleY(confidenceSeries[confidenceSeries.length - 1])} L 300 96 L 0 96 Z`;
+                            return (
+                              <>
+                                <path d={fillPath} fill="url(#confidenceDecayGradient)" />
+                                <path d={path} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" />
+                                <circle cx={scaleX(confidenceSeries.length - 1)} cy={scaleY(confidenceSeries[confidenceSeries.length - 1])} r="3" fill="#2563eb" stroke="white" strokeWidth="1.5" />
+                              </>
+                            );
+                          })()}
+                          {/* Eksen etiketleri */}
+                          <text x={150} y={110} textAnchor="middle" fontSize="8" fill="#64748b">Gün</text>
+                          <text x={-20} y={48} textAnchor="middle" fontSize="8" fill="#64748b" transform="rotate(-90, -20, 48)">Confidence</text>
+                        </svg>
+                      );
+                    })()}
+                  </div>
+                  <div className="flex items-center justify-between mt-1 text-[9px] text-slate-600">
+                    <span>Decay Rate: -1.0%/30g</span>
+                    <span>Current: {((calibrationQ.data?.accuracy || 0.873) * 100).toFixed(1)}%</span>
+                  </div>
                 </div>
               </div>
               
