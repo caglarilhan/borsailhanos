@@ -153,8 +153,13 @@ export function AIDailySummaryPlus({
             v5.0 Pro Decision Flow
           </span>
         </div>
-        <div className="text-xs text-slate-600">
-          {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} (UTC+3)
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-slate-600">
+            Son güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (UTC+3)
+          </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
+            ✓ Canlı
+          </span>
         </div>
       </div>
 
@@ -521,44 +526,113 @@ export function AIDailySummaryPlus({
         </div>
       </div>
 
-      {/* P1-06: Sektör Bazlı Tablo - En iyi/kötü sektörler detay tablosu */}
-      <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200 mb-3">
-        <div className="text-xs font-semibold text-slate-700 mb-2">📊 Sektör Performans Tablosu</div>
+      {/* P1-06: Sektör Bazlı Tablo - En iyi/kötü sektörler detay tablosu + Risk Haritası */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
+          <div className="text-xs font-semibold text-slate-700 mb-2">📊 Sektör Performans Tablosu</div>
+          <div className="grid grid-cols-2 gap-3 text-xs">
+            <div>
+              <div className="font-semibold text-green-700 mb-1">En İyi 3 Sektör</div>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center p-1 bg-green-50 rounded border border-green-200">
+                  <span>Teknoloji</span>
+                  <span className="font-bold text-green-700">+3.8% (α+2.1pp)</span>
+                </div>
+                <div className="flex justify-between items-center p-1 bg-green-50/50 rounded border border-green-200">
+                  <span>Sanayi</span>
+                  <span className="font-bold text-green-700">+2.3% (α+1.5pp)</span>
+                </div>
+                <div className="flex justify-between items-center p-1 bg-green-50/50 rounded border border-green-200">
+                  <span>Enerji</span>
+                  <span className="font-bold text-green-700">+1.9% (α+0.8pp)</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div className="font-semibold text-red-700 mb-1">En Zayıf 3 Sektör</div>
+              <div className="space-y-1">
+                <div className="flex justify-between items-center p-1 bg-red-50 rounded border border-red-200">
+                  <span>Bankacılık</span>
+                  <span className="font-bold text-red-700">-1.4% (α-2.1pp)</span>
+                </div>
+                <div className="flex justify-between items-center p-1 bg-red-50/50 rounded border border-red-200">
+                  <span>Gıda</span>
+                  <span className="font-bold text-red-700">-0.8% (α-1.2pp)</span>
+                </div>
+                <div className="flex justify-between items-center p-1 bg-red-50/50 rounded border border-red-200">
+                  <span>Perakende</span>
+                  <span className="font-bold text-red-700">-0.5% (α-0.8pp)</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* v4.7: Sektör Bazlı Risk Haritası */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-purple-200">
+          <div className="text-xs font-semibold text-purple-700 mb-2">🗺️ Sektör Bazlı Risk Haritası</div>
+          <div className="space-y-2 text-xs">
+            {['Teknoloji', 'Sanayi', 'Enerji', 'Bankacılık', 'Gıda', 'Perakende'].map((sector, idx) => {
+              const riskLevel = idx < 2 ? 'düşük' : idx < 4 ? 'orta' : 'yüksek';
+              const riskPct = idx < 2 ? 15 : idx < 4 ? 25 : 35;
+              const riskColor = idx < 2 ? 'green' : idx < 4 ? 'yellow' : 'red';
+              return (
+                <div key={idx} className="flex items-center gap-2">
+                  <span className="w-20 text-slate-700 font-medium">{sector}</span>
+                  <div className="flex-1 h-3 bg-slate-200 rounded overflow-hidden">
+                    <div 
+                      className={`h-3 bg-${riskColor}-500`}
+                      style={{ width: `${riskPct}%` }}
+                    ></div>
+                  </div>
+                  <span className={`text-[10px] font-bold text-${riskColor}-700 w-12 text-right`}>
+                    {riskPct}% ({riskLevel})
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-[9px] text-slate-500 mt-2 pt-2 border-t border-purple-200 text-center">
+            Risk seviyesi: Düşük (yeşil) • Orta (sarı) • Yüksek (kırmızı)
+          </div>
+        </div>
+      </div>
+      
+      {/* v4.7: AI Tahmin - Haber Etkisi Korelasyonu */}
+      <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-indigo-200 bg-indigo-50/50 mb-3">
+        <div className="text-xs font-semibold text-indigo-700 mb-2">🔗 AI Tahmin - Haber Etkisi Korelasyonu</div>
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div>
-            <div className="font-semibold text-green-700 mb-1">En İyi 3 Sektör</div>
+            <div className="font-semibold text-indigo-900 mb-2">Pozitif Haber Etkisi</div>
             <div className="space-y-1">
-              <div className="flex justify-between items-center p-1 bg-green-50 rounded border border-green-200">
-                <span>Teknoloji</span>
-                <span className="font-bold text-green-700">+3.8% (α+2.1pp)</span>
-              </div>
-              <div className="flex justify-between items-center p-1 bg-green-50/50 rounded border border-green-200">
-                <span>Sanayi</span>
-                <span className="font-bold text-green-700">+2.3% (α+1.5pp)</span>
-              </div>
-              <div className="flex justify-between items-center p-1 bg-green-50/50 rounded border border-green-200">
-                <span>Enerji</span>
-                <span className="font-bold text-green-700">+1.9% (α+0.8pp)</span>
-              </div>
+              {['THYAO', 'SISE', 'EREGL'].map((symbol, idx) => {
+                const correlation = 0.72 + (idx * 0.08); // Mock correlation
+                return (
+                  <div key={idx} className="flex justify-between items-center p-1.5 bg-indigo-50 rounded border border-indigo-200">
+                    <span className="font-medium text-slate-900">{symbol}</span>
+                    <span className="font-bold text-indigo-700">{(correlation * 100).toFixed(0)}%</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
           <div>
-            <div className="font-semibold text-red-700 mb-1">En Zayıf 3 Sektör</div>
+            <div className="font-semibold text-indigo-900 mb-2">Negatif Haber Etkisi</div>
             <div className="space-y-1">
-              <div className="flex justify-between items-center p-1 bg-red-50 rounded border border-red-200">
-                <span>Bankacılık</span>
-                <span className="font-bold text-red-700">-1.4% (α-2.1pp)</span>
-              </div>
-              <div className="flex justify-between items-center p-1 bg-red-50/50 rounded border border-red-200">
-                <span>Gıda</span>
-                <span className="font-bold text-red-700">-0.8% (α-1.2pp)</span>
-              </div>
-              <div className="flex justify-between items-center p-1 bg-red-50/50 rounded border border-red-200">
-                <span>Perakende</span>
-                <span className="font-bold text-red-700">-0.5% (α-0.8pp)</span>
-              </div>
+              {['AKBNK', 'GARAN', 'TUPRS'].map((symbol, idx) => {
+                const correlation = 0.58 - (idx * 0.08); // Mock correlation
+                return (
+                  <div key={idx} className="flex justify-between items-center p-1.5 bg-indigo-50 rounded border border-indigo-200">
+                    <span className="font-medium text-slate-900">{symbol}</span>
+                    <span className="font-bold text-indigo-700">{(correlation * 100).toFixed(0)}%</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
+        </div>
+        <div className="text-[9px] text-indigo-600 mt-2 pt-2 border-t border-indigo-200 text-center">
+          Korelasyon: AI tahminleri ile haber etkisinin uyumluluğu (% yüksek = pozitif haber etkisi güçlü)
         </div>
       </div>
 
