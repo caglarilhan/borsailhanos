@@ -761,8 +761,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   <div className="text-xs font-semibold text-white/90 uppercase tracking-wide">Doğruluk (30g)</div>
                   <span title="Son 30 gün backtest tahmin isabeti" className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
                 </div>
-                <div className="text-2xl font-bold text-emerald-100 mb-1">%87.3</div>
-                <div className="text-[10px] text-white/70">MAE 0.021 • RMSE 0.038</div>
+                <div className="text-2xl font-bold text-emerald-100 mb-1">%{(calibrationQ.data?.accuracy || 0.873) * 100}</div>
+                <div className="text-[10px] text-white/70">MAE {calibrationQ.data?.mae || 0.021} • RMSE {calibrationQ.data?.rmse || 0.038}</div>
                 {metrics24s.modelDrift !== 0 && (
                   <div className={`text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block ${metrics24s.modelDrift >= 0 ? 'bg-green-500/30 text-green-100' : 'bg-red-500/30 text-red-100'}`}>
                     Model drift: {metrics24s.modelDrift >= 0 ? '+' : ''}{metrics24s.modelDrift.toFixed(1)}pp
