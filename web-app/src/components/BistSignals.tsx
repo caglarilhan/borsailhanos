@@ -246,6 +246,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const backtestQ = useBacktestQuick(universe, backtestTcost, backtestRebDays, !!selectedSymbol);
   // TraderGPT conversational panel state
   const [gptOpen, setGptOpen] = useState<boolean>(false);
+  // Header navigation active states
+  const [aiOpen, setAiOpen] = useState<boolean>(false);
+  const [riskOpen, setRiskOpen] = useState<boolean>(false);
+  const [metaOpen, setMetaOpen] = useState<boolean>(false);
+  const [strategyOpen, setStrategyOpen] = useState<boolean>(false);
   // Dark mode toggle
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -937,8 +942,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <HoverCard
               trigger={
             <button
-                  onClick={() => { /* AI Confidence aç */ }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5 transition-colors"
+                  onClick={() => setAiOpen(v => !v)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${aiOpen?'bg-blue-600 text-white border-blue-700 shadow-md':'bg-blue-600 text-white hover:bg-blue-700 border-blue-500'}`}
                 >
                   🧠 AI
                 </button>
@@ -975,8 +980,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <HoverCard
               trigger={
                 <button
-                  onClick={() => { /* Risk Model aç */ }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1.5 transition-colors"
+                  onClick={() => setRiskOpen(v => !v)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${riskOpen?'bg-red-600 text-white border-red-700 shadow-md':'bg-red-600 text-white hover:bg-red-700 border-red-500'}`}
                 >
                   📈 Risk Model
                 </button>
@@ -994,8 +999,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <HoverCard
               trigger={
                 <button
-                  onClick={() => { /* Meta-Model aç */ }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1.5 transition-colors"
+                  onClick={() => setMetaOpen(v => !v)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${metaOpen?'bg-purple-600 text-white border-purple-700 shadow-md':'bg-purple-600 text-white hover:bg-purple-700 border-purple-500'}`}
                 >
                   🧮 Meta-Model
                 </button>
@@ -1018,8 +1023,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <HoverCard
               trigger={
                 <button
-                  onClick={() => { /* Strateji aç */ }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5 transition-colors"
+                  onClick={() => setStrategyOpen(v => !v)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${strategyOpen?'bg-emerald-600 text-white border-emerald-700 shadow-md':'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-500'}`}
                 >
                   🎯 Strateji
                 </button>
@@ -1952,6 +1957,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         </div>
                       </td>
                       <td className="py-2 pr-4">86%</td>
+                      <td className="py-2 pr-4 hidden md:table-cell">+2.5pp</td>
                       <td className="py-2 pr-4 hidden md:table-cell">—</td>
                       <td className="py-2 pr-4">—</td>
                     </tr>
@@ -2111,6 +2117,27 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           })()}
                         </div>
                       </td>
+                      {/* Δ Accuracy: Current confidence - Historical accuracy */}
+                      <td className="py-2 pr-4 hidden md:table-cell whitespace-nowrap">
+                        {(() => {
+                          const deltaAcc = confPct - success10;
+                          const deltaColor = deltaAcc >= 5 ? 'text-green-600' : deltaAcc >= -5 ? 'text-yellow-600' : 'text-red-600';
+                          const deltaText = deltaAcc >= 0 ? `+${deltaAcc.toFixed(1)}` : deltaAcc.toFixed(1);
+                          return (
+                            <div className="flex items-center gap-1">
+                              <span className={`text-xs font-semibold ${deltaColor}`}>
+                                {deltaText}pp
+                    </span>
+                              <span 
+                                className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] cursor-help"
+                                title={`Δ Accuracy: ${deltaText}pp (Güncel Güven: ${confPct}% - Tarihsel Doğruluk: ${success10}%)`}
+                              >
+                                ⓘ
+                              </span>
+                            </div>
+                          );
+                        })()}
+                  </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-gray-800 hidden md:table-cell whitespace-nowrap">
                     <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
                     {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}

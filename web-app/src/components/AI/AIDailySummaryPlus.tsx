@@ -382,6 +382,18 @@ export function AIDailySummaryPlus({
               <div className="w-full h-2 bg-slate-200 rounded overflow-hidden">
                 <div className="h-2 bg-red-500" style={{ width: `${riskDistribution.high}%` }}></div>
               </div>
+              {/* Risk Distribution Normalize Status */}
+              <div className="mt-2 pt-2 border-t border-purple-200 text-[9px] text-center">
+                {(() => {
+                  const totalPct = (riskDistribution.low || 0) + (riskDistribution.medium || 0) + (riskDistribution.high || 0);
+                  const isNormalized = Math.abs(totalPct - 100) < 0.1;
+                  return isNormalized ? (
+                    <span className="text-green-600 font-semibold">✓ Toplam: {totalPct.toFixed(1)}% (Normalize edilmiş)</span>
+                  ) : (
+                    <span className="text-red-600 font-semibold">⚠️ Toplam: {totalPct.toFixed(1)}% (Normalize edilmemiş)</span>
+                  );
+                })()}
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
