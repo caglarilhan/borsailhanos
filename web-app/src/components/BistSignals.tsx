@@ -620,7 +620,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         'RSI ve MACD uyumlu, momentum devam ediyor.'
       ],
       medium: [
-        `RSI ${Math.round(50 + pred*100*5)} — ${pred >= 0.05 ? 'yükseliş bölgesi' : 'nötr'}; hacim ${pred >= 0.05 ? 'artıyor' : 'stabil'}.`,
+        `RSI ${mockRSI} — ${rsiStateLabel} (${rsiState}); hacim ${pred >= 0.05 ? 'artıyor' : 'stabil'}.`,
         'Yükseliş eğilimi sürüyor, destek seviyeleri korunuyor.',
         'Pozitif momentum var, teknik destekler güçlü.',
         `Kısa vadeli trend yukarı, izlemeye devam. Sektör ${corrSym} ile %${mockCorr} korelasyon.`,
