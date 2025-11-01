@@ -5384,7 +5384,6 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
             <IntelligenceHub />
           </div>
         )}
-        </div>
       </div>
       
       {/* Smart Alerts 2.0: Toast Notifications */}
