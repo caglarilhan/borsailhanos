@@ -3149,19 +3149,23 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
             </div>
           </div>
 
-          {/* AI Rebalance Butonu */}
-          <div className="flex justify-center">
+          {/* v4.7: AI Rebalance Butonları - Rolling 90D + Sharpe-Optimal */}
+          <div className="flex justify-center gap-3">
             <button
               onClick={async () => {
                 try {
-                  const { optimizePortfolio } = await import('@/lib/portfolio-optimizer');
+                  const { optimizeRolling90D } = await import('@/lib/portfolio-optimizer');
                   const topSymbols = rows.slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 10).map(r => r.symbol);
                   const riskLevel = portfolioRiskLevel || 'medium';
-                  const newWeights = optimizePortfolio({
+                  
+                  // v4.7: Rolling 90D optimization
+                  const rollingResult = optimizeRolling90D({
                     symbols: topSymbols,
-                    riskLevel: riskLevel as 'low' | 'medium' | 'high'
+                    riskLevel: riskLevel as 'low' | 'medium' | 'high',
+                    windowDays: 90
                   });
-                  const message = `AI Rebalance: Portföy yeniden dengelendi!\n\nRisk Seviyesi: ${riskLevel}\nTop ${newWeights.length} sembol:\n${newWeights.slice(0, 5).map(w => `  • ${w.symbol}: ${(w.weight * 100).toFixed(1)}%`).join('\n')}`;
+                  
+                  const message = `AI Rebalance (Rolling 90D): Portföy yeniden dengelendi!\n\nRisk Seviyesi: ${riskLevel}\nSharpe Ratio: ${rollingResult.sharpeRatio.toFixed(2)}\nRolling Window: 90 gün\nTop ${rollingResult.weights.length} sembol:\n${rollingResult.weights.slice(0, 5).map(w => `  • ${w.symbol}: ${(w.weight * 100).toFixed(1)}%`).join('\n')}`;
                   const warning = wsConnected 
                     ? '\n\n✓ Gerçek optimizasyon sonucu (Backend API)'
                     : '\n\n⚠️ Test modu - Frontend mock - Gerçek backend endpoint için optimizer.ts API gerekiyor.';
@@ -3171,11 +3175,46 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                   alert('Rebalance hesaplama hatası. Lütfen tekrar deneyin.');
                 }
               }}
-              className="px-6 py-3 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg relative"
-              title={wsConnected ? "AI Rebalance: Portföyü optimize et (✓ Gerçek Backend API)" : "AI Rebalance: Portföyü optimize et (⚠️ Test modu - Frontend mock - gerçek backend API gerekiyor)"}
+              className="px-4 py-2 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg relative"
+              title={wsConnected ? "AI Rebalance (Rolling 90D): Portföyü optimize et (✓ Gerçek Backend API)" : "AI Rebalance (Rolling 90D): Portföyü optimize et (⚠️ Test modu - Frontend mock)"}
             >
-              🔄 AI Rebalance Yap
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-white" title="Frontend mock modu"></span>
+              🔄 Rolling 90D
+              {!wsConnected && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full border border-white" title="Frontend mock modu"></span>
+              )}
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const { optimizeSharpeOptimal, calculatePortfolioMetrics } = await import('@/lib/portfolio-optimizer');
+                  const topSymbols = rows.slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 10).map(r => r.symbol);
+                  
+                  // v4.7: Sharpe-optimal optimization
+                  const sharpeOptimal = optimizeSharpeOptimal({
+                    symbols: topSymbols,
+                    maxWeight: 0.3, // Max 30% per symbol
+                    minWeight: 0.05 // Min 5% per symbol
+                  });
+                  
+                  const metrics = calculatePortfolioMetrics(sharpeOptimal, topSymbols);
+                  
+                  const message = `AI Rebalance (Sharpe-Optimal): Portföy maksimize edildi!\n\nSharpe Ratio: ${metrics.sharpeRatio.toFixed(2)}\nBeklenen Getiri: +${(metrics.expectedReturn * 100).toFixed(1)}%\nVolatilite: ${(metrics.volatility * 100).toFixed(1)}%\nTop ${sharpeOptimal.length} sembol:\n${sharpeOptimal.slice(0, 5).map(w => `  • ${w.symbol}: ${(w.weight * 100).toFixed(1)}%`).join('\n')}`;
+                  const warning = wsConnected 
+                    ? '\n\n✓ Gerçek optimizasyon sonucu (Backend API)'
+                    : '\n\n⚠️ Test modu - Frontend mock - Gerçek backend endpoint için optimizer.ts API gerekiyor.';
+                  alert(message + warning);
+                } catch (e) {
+                  console.error('Sharpe-optimal error:', e);
+                  alert('Sharpe-optimal hesaplama hatası. Lütfen tekrar deneyin.');
+                }
+              }}
+              className="px-4 py-2 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md hover:shadow-lg relative"
+              title={wsConnected ? "Sharpe-Optimal Portfolio: Maksimum Sharpe Ratio ile optimize et (✓ Gerçek Backend API)" : "Sharpe-Optimal Portfolio: Maksimum Sharpe Ratio ile optimize et (⚠️ Test modu - Frontend mock)"}
+            >
+              ⚡ Sharpe-Optimal
+              {!wsConnected && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full border border-white" title="Frontend mock modu"></span>
+              )}
             </button>
           </div>
         </div>
