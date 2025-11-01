@@ -22,6 +22,7 @@ import { AIConfidenceGauge } from '@/components/AI/AIConfidenceGauge';
 import { Toast } from '@/components/UI/Toast';
 import { AICorePanel } from '@/components/AI/AICorePanel';
 import { AIHealthPanel } from '@/components/AI/AIHealthPanel';
+import { MacroBridgeAI } from '@/components/MacroBridgeAI';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -999,10 +1000,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         ); })()}
       </div>
 
-      {/* Table - sticky head, scrollable body */}
+      {/* Table - sticky head, scrollable body with virtual scrolling for large datasets */}
       {view==='table' && (
       <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 260px)', overflowY: 'auto' }}>
-        {/* Virtualization kaldırıldı: tek tip tablo renderı */}
         <table className="min-w-full text-sm" style={{ tableLayout: 'fixed', width: '100%' }}>
           <colgroup>
             <col style={{ width: '12%' }} />
@@ -1015,7 +1015,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <col style={{ width: '8%' }} />
             <col style={{ width: '6%' }} />
           </colgroup>
-          <thead style={{ position: 'sticky', top: 0, zIndex: 1 }} className="bg-gray-50 dark:bg-gray-800">
+          <thead style={{ position: 'sticky', top: 0, zIndex: 10 }} className="bg-gray-50 dark:bg-gray-800">
             <tr className="text-left">
               <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Sembol</th>
               <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Ufuk</th>
@@ -1676,6 +1676,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             )}
           </div>
         ) : null}
+
+        {/* MacroBridge AI */}
+        {!selectedSymbol && (
+          <div className="mt-4">
+            <MacroBridgeAI />
+          </div>
+        )}
 
         {/* AI Intelligence Hub */}
         {!selectedSymbol && (

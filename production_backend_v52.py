@@ -433,16 +433,48 @@ class ProductionAPI(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(resp, ensure_ascii=False).encode('utf-8'))
 
     def _handle_data_macro(self):
-        """Macro snapshot mock (CDS, USDTRY, policy rate, VIX)."""
+        """MacroBridge AI: TCMB/FED kararlarının otomatik analizi ve sektör etkisi."""
         self._set_headers(200)
-        now = datetime.now().isoformat()
-        random.seed(int(time.time())//3600)
+        now = datetime.now()
+        random.seed(int(now.strftime('%Y%j%H')))
+        
+        # Macro indicators
+        usd_try = round(34.2 + random.uniform(-0.5, 0.8), 3)
+        cds_5y = round(280 + random.uniform(-30, 50), 1)
+        policy_rate = round(45.0 + random.uniform(-0.5, 0.5), 2)
+        vix = round(18.5 + random.uniform(-3, 5), 2)
+        
+        # Recent macro events (mock - gerçek implementasyonda TCMB/FED API'den gelecek)
+        recent_events = [
+            {'event': 'TCMB Faiz Kararı', 'date': (now - timedelta(days=2)).isoformat(), 'value': f'%{policy_rate}', 'impact': 'pozitif' if policy_rate >= 45 else 'negatif'},
+            {'event': 'FED Faiz Beklentisi', 'date': (now - timedelta(days=1)).isoformat(), 'value': '%5.25', 'impact': 'nötr'},
+            {'event': 'CDS 5Y Güncellemesi', 'date': (now - timedelta(hours=6)).isoformat(), 'value': f'{cds_5y} bps', 'impact': 'pozitif' if cds_5y < 285 else 'negatif'},
+        ]
+        
+        # Sector impact analysis (mock AI analysis)
+        sector_impacts = [
+            {'sector': 'Bankacılık', 'impact': 'pozitif', 'confidence': round(75 + random.uniform(-5, 5), 1), 
+             'reason': 'Faiz artışı kâr marjını artırır, net faiz geliri yükselir'},
+            {'sector': 'Teknoloji', 'impact': 'negatif', 'confidence': round(68 + random.uniform(-5, 5), 1),
+             'reason': 'USD/TRY yükselişi ithalat maliyetlerini artırır, dış ticaret dengesi bozulur'},
+            {'sector': 'Enerji', 'impact': 'nötr', 'confidence': round(55 + random.uniform(-5, 5), 1),
+             'reason': 'Fiyatlar dolar bazlı, etkisi dengelenir, sektör stabil'},
+            {'sector': 'İnşaat', 'impact': 'negatif', 'confidence': round(72 + random.uniform(-5, 5), 1),
+             'reason': 'Yüksek faiz borçlanmayı zorlaştırır, yatırım projeleri yavaşlar'},
+            {'sector': 'Perakende', 'impact': 'negatif', 'confidence': round(65 + random.uniform(-5, 5), 1),
+             'reason': 'Enflasyon ve faiz tüketici harcamalarını düşürür'},
+        ]
+        
         data = {
-            'generated_at': now,
-            'usdtry': round(28 + random.uniform(-0.3,0.6), 3),
-            'cds_5y': round(300 + random.uniform(-40, 60), 1),
-            'policy_rate': round(30 + random.uniform(-1, 1), 2),
-            'vix': round(15 + random.uniform(-3, 6), 2)
+            'generated_at': now.isoformat(),
+            'usd_try': usd_try,
+            'cds_5y': cds_5y,
+            'policy_rate': policy_rate,
+            'vix': vix,
+            'recent_events': recent_events,
+            'sector_impacts': sector_impacts,
+            'market_regime': 'risk_off' if cds_5y > 300 or vix > 20 else ('risk_on' if cds_5y < 260 and vix < 15 else 'neutral'),
+            'ai_summary': f'Makro ortam: USD/TRY {usd_try:.2f}, CDS {cds_5y:.0f} bps. TCMB faiz {policy_rate:.1f}%. Piyasa rejimi: {"Risk-off" if cds_5y > 300 else "Risk-on" if cds_5y < 260 else "Nötr"}.'
         }
         self.wfile.write(json.dumps(data, ensure_ascii=False).encode('utf-8'))
 
