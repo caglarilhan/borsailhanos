@@ -27,6 +27,7 @@ import { AICorePanel } from '@/components/AI/AICorePanel';
 import { AIHealthPanel } from '@/components/AI/AIHealthPanel';
 import { MacroBridgeAI } from '@/components/MacroBridgeAI';
 import { DriftTracker } from '@/components/AI/DriftTracker';
+import { AIDailySummaryPlus } from '@/components/AI/AIDailySummaryPlus';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -1035,20 +1036,41 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           </div>
         </div>
       </div>
-      {/* AI-first Header banner */}
-      <div className="mb-3">
-        <div className="w-full rounded-xl border bg-white p-3 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-            <div>
-              <div className="text-base sm:text-lg font-bold text-slate-900">🤖 BIST AI Smart Trader — Powered by Meta-Model Engine</div>
-              <div className="text-xs text-slate-600">Gerçek zamanlı öğrenen yapay zekâ. 87.3% doğruluk, 0.5% alpha avantajı.</div>
-            </div>
-            <div className="text-[11px] text-slate-500">
-              AI Realtime Core aktif ({lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}) : '—'} güncelleme)
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* AI Günlük Özeti+ (v5.0 Pro Decision Flow - Yeni Üst Blok) */}
+      <AIDailySummaryPlus
+        metaStats={{
+          totalSignals: rows.length,
+          highConfidenceBuys: rows.filter(r => (r.confidence || 0) >= 0.85 && (r.prediction || 0) >= 0.05).length,
+          regime: regimeQ.data?.regime || 'risk-on',
+          volatility: calibrationQ.data?.drift?.volatility || 0.85
+        }}
+        macroFeed={{
+          usdtry: macroQ.data?.usdtry || 32.5,
+          cds: macroQ.data?.cds_5y || 420,
+          vix: macroQ.data?.vix || 18.5,
+          gold: 2850.00 // Mock - will be replaced with real data
+        }}
+        sectoralMatch={{
+          sectors: bist30Overview?.sector_distribution?.map((s: any) => ({
+            name: s.sector,
+            correlation: 0.72 // Mock - will be replaced with real correlation
+          })) || []
+        }}
+        aiConfidenceHistory={(() => {
+          const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+          let r = seed;
+          const seededRandom = () => {
+            r = (r * 1103515245 + 12345) >>> 0;
+            return (r / 0xFFFFFFFF);
+          };
+          return Array.from({ length: 24 }, (_, i) => {
+            const base = 0.75;
+            const trend = (i / 24) * 0.05;
+            const noise = (seededRandom() - 0.5) * 0.1;
+            return Math.max(0.65, Math.min(0.95, base + trend + noise));
+          });
+        })()}
+      />
 
       {/* Zaman damgası / veri kaynağı / API durum */}
       <div className="flex items-center justify-end -mt-2 mb-2 text-[11px] text-slate-500 gap-2 flex-wrap">
@@ -1063,42 +1085,6 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             </span>
           </>
         )}
-      </div>
-
-      {/* AI Intelligence – üstte AI odaklı sekme/kart (stub) */}
-      <div className="mb-4 grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* AI Günlük Özeti (gradient + hafif vurgu) */}
-        <div className="rounded-xl p-3 border shadow-sm" style={{ background: 'linear-gradient(135deg,#6d28d9 0%, #2563eb 100%)' }}>
-          <div className="text-sm font-semibold text-white mb-1">AI Günlük Özeti</div>
-          <div className="text-xs text-white/90">Son 24 saatte model {Math.max(1, Math.round((rows.length||12)/4))} kez öğrenme/güncelleme yaptı. Meta-confidence stabil.</div>
-        </div>
-        {/* Meta-Model Heatmap */}
-        <div className="rounded-xl p-3 border bg-white">
-          <MetaHeatmap limit={6} />
-        </div>
-        {/* Drift & Mismatch */}
-        <div className="rounded-xl p-3 border bg-white">
-          {(() => {
-            // Seeded confidence history (SSR-safe, hydration uyumlu)
-            const seed = Math.floor(Date.now() / (1000 * 60 * 60)); // Her saat değişir
-            let r = seed;
-            const seededRandom = () => {
-              r = (r * 1103515245 + 12345) >>> 0;
-              return (r / 0xFFFFFFFF);
-            };
-            const mockHistory = Array.from({ length: 20 }, (_, i) => {
-              // İlk değer 0.75 civarında, yavaşça değişen bir trend
-              const base = 0.75;
-              const trend = (i / 20) * 0.05; // Hafif trend
-              const noise = (seededRandom() - 0.5) * 0.1;
-              return Math.max(0.65, Math.min(0.95, base + trend + noise));
-            });
-            return <DriftTracker series={mockHistory} />;
-          })()}
-          <div className="mt-2 text-xs text-slate-600">
-            <span title="Drift: Model dağılımının 24 saat içindeki sapması (pp). PSI (Population Stability Index): Veri dağılımının değişim ölçüsü.">Sentiment-fiyat uyumsuzluğu: orta düzey (AI Core izlemede)</span>
-          </div>
-        </div>
       </div>
 
       {/* BIST30 özel üst özet */}
