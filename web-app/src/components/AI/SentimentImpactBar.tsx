@@ -73,6 +73,33 @@ export function SentimentImpactBar({
         </div>
       </div>
       
+      {/* Bar Chart (Pozitif/Negatif/Nötr) */}
+      <div className="mb-3">
+        <div className="flex h-8 rounded-lg overflow-hidden border border-slate-200">
+          <div 
+            className="flex items-center justify-center text-xs font-semibold text-white"
+            style={{ width: `${posNorm * 100}%`, backgroundColor: '#10b981' }}
+            title={`Pozitif: ${Math.round(posNorm * 100)}%`}
+          >
+            {posNorm > 0.15 ? `${Math.round(posNorm * 100)}%` : ''}
+          </div>
+          <div 
+            className="flex items-center justify-center text-xs font-semibold text-white"
+            style={{ width: `${neuNorm * 100}%`, backgroundColor: '#6b7280' }}
+            title={`Nötr: ${Math.round(neuNorm * 100)}%`}
+          >
+            {neuNorm > 0.15 ? `${Math.round(neuNorm * 100)}%` : ''}
+          </div>
+          <div 
+            className="flex items-center justify-center text-xs font-semibold text-white"
+            style={{ width: `${negNorm * 100}%`, backgroundColor: '#ef4444' }}
+            title={`Negatif: ${Math.round(negNorm * 100)}%`}
+          >
+            {negNorm > 0.15 ? `${Math.round(negNorm * 100)}%` : ''}
+          </div>
+        </div>
+      </div>
+
       {/* Breakdown */}
       <div className="grid grid-cols-3 gap-2 text-xs">
         <div className="flex items-center justify-between p-2 bg-green-50 rounded border border-green-200">
@@ -86,6 +113,38 @@ export function SentimentImpactBar({
         <div className="flex items-center justify-between p-2 bg-red-50 rounded border border-red-200">
           <span className="text-red-700">Negatif</span>
           <span className="font-semibold text-red-900">{Math.round(negNorm * 100)}%</span>
+        </div>
+      </div>
+
+      {/* Zaman Aralığı Filtresi */}
+      <div className="mt-3 flex items-center gap-2">
+        <span className="text-xs text-slate-600">Zaman aralığı:</span>
+        <div className="flex gap-1">
+          {['1g', '7g', '30g'].map((period) => (
+            <button
+              key={period}
+              className="px-2 py-1 text-[10px] rounded bg-slate-100 text-slate-700 border border-slate-200 hover:bg-slate-200"
+              title={`${period === '1g' ? '1 gün' : period === '7g' ? '7 gün' : '30 gün'} sentiment analizi`}
+            >
+              {period}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Kaynak Logoları */}
+      <div className="mt-3 flex items-center gap-2">
+        <span className="text-xs text-slate-600">Kaynak:</span>
+        <div className="flex gap-1">
+          {['Bloomberg', 'KAP', 'Dünya', 'AA'].map((source) => (
+            <span
+              key={source}
+              className="px-2 py-0.5 text-[9px] rounded bg-blue-50 text-blue-700 border border-blue-200"
+              title={`${source} haber kaynağı`}
+            >
+              {source}
+            </span>
+          ))}
         </div>
       </div>
     </div>

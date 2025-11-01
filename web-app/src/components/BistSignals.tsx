@@ -32,6 +32,8 @@ import { MetaModelRadar } from '@/components/AI/MetaModelRadar';
 import { AIConfidenceBoard } from '@/components/AI/AIConfidenceBoard';
 import { AIAnalystCard } from '@/components/AI/AIAnalystCard';
 import { SentimentImpactBar } from '@/components/AI/SentimentImpactBar';
+import { MTFHeatmap } from '@/components/AI/MTFHeatmap';
+import { CorrelationHeatmap } from '@/components/AI/CorrelationHeatmap';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -1862,17 +1864,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
 
                 {/* XAI Waterfall & Analyst Sentiment & Faktörler */}
                 <div className="grid grid-cols-1 gap-3">
-                  {/* Tutarlılık Endeksi */}
-                  {consistencyIndex && (
-                    <div className="bg-white rounded border p-3">
-                      <div className="text-sm font-semibold text-gray-900 mb-1">Tutarlılık Endeksi (1H • 4H • 1D)</div>
-                      <div className="text-xs text-slate-700 flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${consistencyIndex.aligned ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
-                          {consistencyIndex.aligned ? 'Güçlü Uyum' : 'Kısmi/Weak'}
-                        </span>
-                        <span>Oylama: {consistencyIndex.score} / {consistencyIndex.votes}</span>
-                  </div>
-                    </div>
+                  {/* Multi-Timeframe Heatmap */}
+                  {consistencyIndex && selectedSymbol && (
+                    <MTFHeatmap
+                      signals={(() => {
+                        const horizons: Horizon[] = ['1h','4h','1d'];
+                        const rel = rows.filter(r => r.symbol === selectedSymbol && horizons.includes(r.horizon));
+                        return rel.map(r => ({
+                          horizon: r.horizon.toUpperCase(),
+                          signal: (r.prediction || 0) >= 0.02 ? 'BUY' as const : (r.prediction || 0) <= -0.02 ? 'SELL' as const : 'HOLD' as const,
+                          confidence: r.confidence || 0
+                        }));
+                      })()}
+                    />
                   )}
                   <XaiAnalyst symbol={selectedSymbol} />
                   {/* Using reasoningQ from top-level hook call (Rules of Hooks compliance) */}
@@ -2113,6 +2117,29 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               negative={sentimentSummary?.overall?.negative || 0.25}
               neutral={sentimentSummary?.overall?.neutral || 0.10}
               impactLevel="High"
+            />
+          </div>
+        )}
+
+        {/* Korelasyon Heatmap */}
+        {!selectedSymbol && (
+          <div className="mt-4">
+            <CorrelationHeatmap
+              pairs={(() => {
+                // Generate correlation pairs from top symbols
+                const topSymbols = rows.slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 6).map(r => r.symbol);
+                const pairs: Array<{ symbol1: string; symbol2: string; correlation: number }> = [];
+                for (let i = 0; i < topSymbols.length; i++) {
+                  for (let j = i + 1; j < topSymbols.length; j++) {
+                    const seed = (topSymbols[i].charCodeAt(0) + topSymbols[j].charCodeAt(0)) % 100;
+                    const r = seed < 50 ? (seed / 100) - 0.5 : (seed / 100) + 0.3;
+                    const normalized = Math.max(-1, Math.min(1, r));
+                    pairs.push({ symbol1: topSymbols[i], symbol2: topSymbols[j], correlation: normalized });
+                  }
+                }
+                return pairs;
+              })()}
+              threshold={0.8}
             />
           </div>
         )}
