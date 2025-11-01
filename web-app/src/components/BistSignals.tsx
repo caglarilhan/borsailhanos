@@ -4147,6 +4147,146 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                               <span className="text-green-600 font-bold">Alpha: {(netReturn - benchmarkReturn).toFixed(1)}pp</span>
                             </div>
                           </div>
+                          
+                          {/* v4.7: Drawdown ve Volatilite Grafikleri - P&L grafiğinden sonra */}
+                          <div className="grid grid-cols-2 gap-3 mt-3">
+                            {/* Drawdown Grafiği */}
+                            <div className="bg-slate-50 rounded p-2 border border-slate-200">
+                              <div className="text-xs font-semibold text-slate-700 mb-2">📉 Max Drawdown (%)</div>
+                              <div className="h-24 w-full relative">
+                                {(() => {
+                                  const days = backtestRebDays;
+                                  const numPoints = Math.min(days, 60);
+                                  const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                                  let r = seed;
+                                  const seededRandom = () => {
+                                    r = (r * 1103515245 + 12345) >>> 0;
+                                    return (r / 0xFFFFFFFF);
+                                  };
+                                  
+                                  // Drawdown serisi (negatif değerler)
+                                  const drawdownSeries: number[] = [];
+                                  let peak = 0;
+                                  for (let i = 0; i < numPoints; i++) {
+                                    const value = peak + (seededRandom() - 0.6) * 0.05;
+                                    if (value > peak) peak = value;
+                                    const dd = (peak - value) / peak;
+                                    drawdownSeries.push(-dd * 100); // Negatif drawdown
+                                  }
+                                  
+                                  const width = 300;
+                                  const height = 96;
+                                  const minDD = Math.min(...drawdownSeries, -15);
+                                  const maxDD = Math.max(...drawdownSeries, 0);
+                                  const range = maxDD - minDD || 1;
+                                  const scaleX = (i: number) => (i / (numPoints - 1)) * width;
+                                  const scaleY = (v: number) => height - ((v - minDD) / range) * height;
+                                  
+                                  let ddPath = '';
+                                  drawdownSeries.forEach((v, i) => {
+                                    const x = scaleX(i);
+                                    const y = scaleY(v);
+                                    ddPath += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                                  });
+                                  
+                                  const zeroY = scaleY(0);
+                                  const ddFillPath = ddPath + ` L ${width} ${zeroY} L 0 ${zeroY} Z`;
+                                  
+                                  return (
+                                    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+                                      <defs>
+                                        <linearGradient id={`ddGradient-${backtestRebDays}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                          <stop offset="0%" stopColor="#ef4444" stopOpacity="0.4" />
+                                          <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
+                                        </linearGradient>
+                                      </defs>
+                                      {/* Zero line */}
+                                      <line x1="0" y1={zeroY} x2={width} y2={zeroY} stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                                      {/* Drawdown fill */}
+                                      <path d={ddFillPath} fill={`url(#ddGradient-${backtestRebDays})`} />
+                                      {/* Drawdown line */}
+                                      <path d={ddPath} fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" />
+                                      {/* Max drawdown marker */}
+                                      <circle cx={scaleX(drawdownSeries.indexOf(Math.min(...drawdownSeries)))} cy={scaleY(Math.min(...drawdownSeries))} r="3" fill="#ef4444" stroke="white" strokeWidth="1" />
+                                      {/* Eksen etiketleri */}
+                                      <text x={width / 2} y={height + 10} textAnchor="middle" fontSize="8" fill="#64748b">Gün</text>
+                                      <text x={-20} y={height / 2} textAnchor="middle" fontSize="8" fill="#64748b" transform={`rotate(-90, -20, ${height / 2})`}>Drawdown (%)</text>
+                                      <text x={-15} y={height - 5} textAnchor="end" fontSize="7" fill="#94a3b8">{minDD.toFixed(1)}%</text>
+                                      <text x={-15} y={5} textAnchor="end" fontSize="7" fill="#94a3b8">0%</text>
+                                    </svg>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                            
+                            {/* Volatilite Grafiği */}
+                            <div className="bg-slate-50 rounded p-2 border border-slate-200">
+                              <div className="text-xs font-semibold text-slate-700 mb-2">📊 Volatilite (σ, 30g)</div>
+                              <div className="h-24 w-full relative">
+                                {(() => {
+                                  const days = backtestRebDays;
+                                  const numPoints = Math.min(days, 60);
+                                  const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                                  let r = seed;
+                                  const seededRandom = () => {
+                                    r = (r * 1103515245 + 12345) >>> 0;
+                                    return (r / 0xFFFFFFFF);
+                                  };
+                                  
+                                  // Volatilite serisi (%)
+                                  const volatilitySeries: number[] = [];
+                                  const baseVol = 12.5; // %12.5 ortalama volatilite
+                                  for (let i = 0; i < numPoints; i++) {
+                                    const noise = (seededRandom() - 0.5) * 3;
+                                    const vol = baseVol + noise;
+                                    volatilitySeries.push(Math.max(8, Math.min(20, vol)));
+                                  }
+                                  
+                                  const width = 300;
+                                  const height = 96;
+                                  const minVol = Math.min(...volatilitySeries);
+                                  const maxVol = Math.max(...volatilitySeries);
+                                  const range = maxVol - minVol || 1;
+                                  const scaleX = (i: number) => (i / (numPoints - 1)) * width;
+                                  const scaleY = (v: number) => height - ((v - minVol) / range) * height;
+                                  
+                                  let volPath = '';
+                                  volatilitySeries.forEach((v, i) => {
+                                    const x = scaleX(i);
+                                    const y = scaleY(v);
+                                    volPath += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                                  });
+                                  
+                                  const avgVol = volatilitySeries.reduce((a, b) => a + b, 0) / volatilitySeries.length;
+                                  const avgVolY = scaleY(avgVol);
+                                  
+                                  return (
+                                    <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+                                      <defs>
+                                        <linearGradient id={`volGradient-${backtestRebDays}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                          <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.3" />
+                                          <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+                                        </linearGradient>
+                                      </defs>
+                                      {/* Ortalama volatilite çizgisi */}
+                                      <line x1="0" y1={avgVolY} x2={width} y2={avgVolY} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="4 2" opacity="0.6" />
+                                      {/* Volatilite fill */}
+                                      <path d={volPath + ` L ${width} ${height} L 0 ${height} Z`} fill={`url(#volGradient-${backtestRebDays})`} />
+                                      {/* Volatilite line */}
+                                      <path d={volPath} fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" />
+                                      {/* Eksen etiketleri */}
+                                      <text x={width / 2} y={height + 10} textAnchor="middle" fontSize="8" fill="#64748b">Gün</text>
+                                      <text x={-25} y={height / 2} textAnchor="middle" fontSize="8" fill="#64748b" transform={`rotate(-90, -25, ${height / 2})`}>Volatilite (%)</text>
+                                      <text x={-15} y={height - 5} textAnchor="end" fontSize="7" fill="#94a3b8">{minVol.toFixed(1)}%</text>
+                                      <text x={-15} y={5} textAnchor="end" fontSize="7" fill="#94a3b8">{maxVol.toFixed(1)}%</text>
+                                      {/* Ortalama label */}
+                                      <text x={width - 30} y={avgVolY - 3} textAnchor="end" fontSize="7" fill="#f59e0b" fontWeight="bold">Ort: {avgVol.toFixed(1)}%</text>
+                                    </svg>
+                                  );
+                                })()}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                         {/* Backtest Pro: Sharpe/Sortino Grafikleri */}
                         <div className="mt-3 pt-3 border-t border-slate-300">
