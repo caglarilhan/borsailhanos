@@ -147,39 +147,39 @@ export function AIDailySummaryPlus({
 
       {/* Multi-layer AI Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mb-3">
-        {/* Layer 1: Piyasa Trend */}
+        {/* Sprint 3: Layer 1: Piyasa Rejimi */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
-          <div className="text-xs font-semibold text-slate-700 mb-1">📈 Piyasa Trend</div>
-          <div className="text-sm text-slate-900 font-semibold">{aiSummary.marketTrend}</div>
-          <div className="text-[10px] text-slate-600 mt-1">Piyasa genel yönü</div>
+          <div className="text-xs font-semibold text-slate-700 mb-1">📈 Piyasa Rejimi</div>
+          <div className="text-sm text-slate-900 font-semibold">{aiSummary.marketRegime}</div>
+          <div className="text-[10px] text-slate-600 mt-1">Risk-on/off, Volatilite, CDS</div>
         </div>
 
-        {/* Layer 2: AI Görüşü */}
+        {/* Sprint 3: Layer 2: Sektör Liderleri */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
-          <div className="text-xs font-semibold text-slate-700 mb-1">🧠 AI Görüşü</div>
-          <div className="text-sm text-slate-900 font-semibold">{aiSummary.aiView}</div>
-          <div className="text-[10px] text-slate-600 mt-1">Risk rejimi analizi</div>
+          <div className="text-xs font-semibold text-slate-700 mb-1">💡 Sektör Liderleri</div>
+          <div className="text-sm text-slate-900 font-semibold">{aiSummary.sectorLeaders}</div>
+          <div className="text-[10px] text-slate-600 mt-1">En yüksek performanslı sektörler</div>
         </div>
 
-        {/* Layer 3: En Güçlü Sektör */}
-        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
-          <div className="text-xs font-semibold text-slate-700 mb-1">🔍 En Güçlü Sektör</div>
-          <div className="text-sm text-slate-900 font-semibold">{aiSummary.topSector}</div>
-          <div className="text-[10px] text-slate-600 mt-1">Momentum analizi</div>
+        {/* Sprint 3: Layer 3: AI Snapshot */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-blue-200 bg-blue-50/50">
+          <div className="text-xs font-semibold text-blue-700 mb-1">🔍 AI Snapshot</div>
+          <div className="text-sm text-blue-900 font-semibold">{aiSummary.aiSnapshot}</div>
+          <div className="text-[10px] text-blue-600 mt-1">Aktif sinyal & ortalama güven</div>
         </div>
 
-        {/* Layer 4: Top 3 Momentum */}
-        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
-          <div className="text-xs font-semibold text-slate-700 mb-1">📊 Top 3 Momentum</div>
-          <div className="text-sm text-slate-900 font-semibold">{aiSummary.top3Momentum}</div>
-          <div className="text-[10px] text-slate-600 mt-1">En yüksek momentum hisseleri</div>
-        </div>
-
-        {/* Layer 5: Uyarılar */}
+        {/* Sprint 3: Layer 4: Uyarılar */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-amber-200 bg-amber-50/50">
           <div className="text-xs font-semibold text-amber-700 mb-1">⚠️ Uyarı</div>
           <div className="text-sm text-amber-900 font-semibold">{aiSummary.warnings}</div>
           <div className="text-[10px] text-amber-600 mt-1">Teknik uyarılar</div>
+        </div>
+
+        {/* Sprint 3: Layer 5: Model Drift */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-purple-200 bg-purple-50/50">
+          <div className="text-xs font-semibold text-purple-700 mb-1">🧠 Model Drift</div>
+          <div className="text-sm text-purple-900 font-semibold">{aiSummary.modelDrift}</div>
+          <div className="text-[10px] text-purple-600 mt-1">Drift trend & stabilite</div>
         </div>
 
         {/* AI Core Confidence */}
