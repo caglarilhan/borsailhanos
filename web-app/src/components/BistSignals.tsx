@@ -1507,6 +1507,50 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <option value="sell">Satış</option>
                     <option value="hold">Bekle</option>
                   </select>
+                  {/* Risk-on only seçici */}
+                  <HoverCard
+                    trigger={
+                      <button
+                        onClick={() => {
+                          const currentRegime = String(regimeQ.data?.regime || '—');
+                          // Risk-on modunda ise tüm sinyalleri göster, değilse sadece pozitif sinyalleri göster
+                          if (/risk\s*-?on/i.test(currentRegime)) {
+                            setSignalFilter('all');
+                          } else {
+                            setSignalFilter('buy');
+                            setFilterAcc80(true);
+                          }
+                        }}
+                        className={`ml-2 px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${(() => {
+                          const regime = String(regimeQ.data?.regime || '—');
+                          return /risk\s*-?on/i.test(regime) ? 'bg-green-500 text-white border-green-600 shadow-md' : 'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200';
+                        })()}`}
+                        title="Risk-on modunda tüm sinyalleri göster, risk-off modunda sadece pozitif sinyalleri göster"
+                      >
+                        {(() => {
+                          const regime = String(regimeQ.data?.regime || '—');
+                          return /risk\s*-?on/i.test(regime) ? '✓ Risk-on' : 'Risk-off';
+                        })()}
+                      </button>
+                    }
+                    content={
+                      <div className="space-y-2">
+                        <div className="font-semibold text-slate-900">Risk Rejimi Filtresi</div>
+                        <div className="text-xs text-slate-700">
+                          {(() => {
+                            const regime = String(regimeQ.data?.regime || '—');
+                            if (/risk\s*-?on/i.test(regime)) {
+                              return 'Risk-on modunda: Tüm sinyaller gösterilir. Piyasa risk alma modunda.';
+                            } else if (/risk\s*-?off/i.test(regime)) {
+                              return 'Risk-off modunda: Sadece yüksek güvenli pozitif sinyaller gösterilir. Piyasa riskten kaçınma modunda.';
+                            }
+                            return 'Nötr mod: Tüm sinyaller gösterilir.';
+                          })()}
+                        </div>
+                      </div>
+                    }
+                    side="bottom"
+                  />
                   <select
                     value={sortBy}
                     onChange={(e)=>setSortBy(e.target.value as any)}
