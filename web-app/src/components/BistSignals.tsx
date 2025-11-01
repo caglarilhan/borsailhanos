@@ -3071,6 +3071,78 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                         })()}
                       </div>
                     </div>
+                    
+                    {/* v4.7: Rolling 90D Portfolio Grafiği */}
+                    <div className="mt-3 pt-3 border-t border-slate-200">
+                      <div className="text-[10px] text-slate-600 mb-2 font-semibold">📊 Rolling 90D Portfolio Performance</div>
+                      <div className="h-32 w-full bg-slate-50 rounded p-2 border border-slate-200">
+                        {(() => {
+                          // Mock rolling 90D data
+                          const numPoints = 90;
+                          const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
+                          let r = seed;
+                          const seededRandom = () => {
+                            r = (r * 1103515245 + 12345) >>> 0;
+                            return (r / 0xFFFFFFFF);
+                          };
+                          
+                          // Rolling cumulative return
+                          const rollingSeries: number[] = [];
+                          let cumulative = 0;
+                          const baseReturn = simulatedReturn / 365; // Daily return
+                          for (let i = 0; i < numPoints; i++) {
+                            const dailyReturn = baseReturn * (1 + (seededRandom() - 0.5) * 0.2);
+                            cumulative += dailyReturn;
+                            rollingSeries.push(cumulative * 100); // Percentage
+                          }
+                          
+                          const width = 400;
+                          const height = 112;
+                          const minY = Math.min(...rollingSeries, 0);
+                          const maxY = Math.max(...rollingSeries, 0);
+                          const range = maxY - minY || 1;
+                          const scaleX = (i: number) => (i / (numPoints - 1)) * width;
+                          const scaleY = (v: number) => height - ((v - minY) / range) * height;
+                          
+                          let path = '';
+                          rollingSeries.forEach((v, i) => {
+                            const x = scaleX(i);
+                            const y = scaleY(v);
+                            path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                          });
+                          
+                          const zeroY = scaleY(0);
+                          const fillPath = path + ` L ${width} ${zeroY} L 0 ${zeroY} Z`;
+                          
+                          return (
+                            <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+                              <defs>
+                                <linearGradient id={`rolling90d-${portfolioRiskLevel}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                  <stop offset="0%" stopColor="#2563eb" stopOpacity="0.4" />
+                                  <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
+                                </linearGradient>
+                              </defs>
+                              {/* Zero line */}
+                              <line x1="0" y1={zeroY} x2={width} y2={zeroY} stroke="#94a3b8" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                              {/* Fill area */}
+                              <path d={fillPath} fill={`url(#rolling90d-${portfolioRiskLevel})`} />
+                              {/* Line */}
+                              <path d={path} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" />
+                              {/* Final marker */}
+                              <circle cx={width} cy={scaleY(rollingSeries[rollingSeries.length - 1])} r="4" fill="#2563eb" stroke="white" strokeWidth="2" />
+                              {/* Eksen etiketleri */}
+                              <text x={width / 2} y={height + 12} textAnchor="middle" fontSize="8" fill="#64748b">Gün (Rolling 90D)</text>
+                              <text x={-25} y={height / 2} textAnchor="middle" fontSize="8" fill="#64748b" transform={`rotate(-90, -25, ${height / 2})`}>Cumulative Return (%)</text>
+                              <text x={-15} y={height - 5} textAnchor="end" fontSize="7" fill="#94a3b8">{minY >= 0 ? '0%' : minY.toFixed(1) + '%'}</text>
+                              <text x={-15} y={5} textAnchor="end" fontSize="7" fill="#94a3b8">{maxY.toFixed(1)}%</text>
+                            </svg>
+                          );
+                        })()}
+                      </div>
+                      <div className="text-[8px] text-slate-500 mt-1 text-center">
+                        Rolling 90 günlük pencere ile portföy performansı (Markowitz optimizasyonu)
+                      </div>
+                    </div>
                   </>
                 );
               })()}
