@@ -801,7 +801,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       <div className="absolute left-0 right-0 -top-4">
         <div className="mx-auto max-w-7xl">
           <div className={`rounded-xl text-white shadow-sm ${strategyMode==='scalper' ? 'bg-yellow-600' : strategyMode==='swing' ? 'bg-blue-700' : 'bg-slate-900'}`}>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3">
               {/* Sprint 2: Doğruluk KPI - 24s değişim etiketi */}
               <div className="bg-emerald-500/20 backdrop-blur-sm rounded-xl p-4 border border-emerald-400/30 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between mb-2">
@@ -888,6 +888,37 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </div>
                 );
               })()}
+              {/* Toplam Kâr KPI - Yeşil ton (eğer backtest verisi varsa) */}
+              {(() => {
+                // Mock toplam kâr - Gerçek implementasyonda backtest/portföy verisinden gelecek
+                const mockTotalProfit = metrics24s.profitChange || (rows.length * 12500); // Mock: sinyal başına ortalama kâr
+                const profitPct = (mockTotalProfit / 100000) * 100; // Başlangıç sermayesi ₺100.000
+                return (
+                  <div className="bg-green-500/20 backdrop-blur-sm rounded-xl p-4 border border-green-400/30 shadow-md hover:shadow-lg transition-shadow">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs font-semibold text-white/90 uppercase tracking-wide">Toplam Kâr</div>
+                      <span title="Portföyün toplam kâr/zarar durumu (simüle)" className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
+                    </div>
+                    <div className="text-2xl font-bold text-green-100 mb-1">
+                      ₺{mockTotalProfit.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                    </div>
+                    <div className={`text-[10px] ${profitPct >= 0 ? 'text-green-200' : 'text-red-200'} font-semibold`}>
+                      {profitPct >= 0 ? '+' : ''}{profitPct.toFixed(1)}%
+                    </div>
+                    {metrics24s.profitChange !== 0 && (
+                      <div className={`text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block ${metrics24s.profitChange >= 0 ? 'bg-green-500/30 text-green-100' : 'bg-red-500/30 text-red-100'}`}>
+                        Son 24s: {metrics24s.profitChange >= 0 ? '+' : ''}{metrics24s.profitChange.toFixed(1)}%
+                      </div>
+                    )}
+                    {/* Son Güncelleme Timestamp */}
+                    {lastUpdated && (
+                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
+                        Son güncelleme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               {/* Toplam Sinyal KPI - Mor ton */}
               <div className="bg-purple-500/20 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30 shadow-md hover:shadow-lg transition-shadow">
                 <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Toplam Sinyal</div>
@@ -901,7 +932,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 )}
               </div>
               {/* AI Core Panel (compact) */}
-              <div className="col-span-2 md:col-span-4">
+              <div className="col-span-2 md:col-span-5">
                 <AICorePanel />
               </div>
               {(() => {
@@ -909,7 +940,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 const regime = String(regimeQ.data?.regime || '—');
                 const weights = (()=>{ if (/risk\s*-?on/i.test(regime)) return { equity: 0.8, cash: 0.2 }; if (/neutral|side/i.test(regime)) return { equity: 0.6, cash: 0.4 }; if (/risk\s*-?off/i.test(regime)) return { equity: 0.4, cash: 0.6 }; return { equity: 0.6, cash: 0.4 }; })();
                 return (
-                <div className="col-span-2 md:col-span-4 bg-white/10 rounded-lg p-3">
+                <div className="col-span-2 md:col-span-5 bg-white/10 rounded-lg p-3">
       <div className="flex items-center justify-between">
                     <div className="text-xs opacity-80">Rejim • Ağırlıklar</div>
                     <div className="text-xs opacity-80">{regime}</div>
