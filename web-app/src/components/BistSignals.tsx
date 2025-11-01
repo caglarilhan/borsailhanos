@@ -22,7 +22,7 @@ import { AIOrchestrator } from '@/components/AI/AIOrchestrator';
 import { IntelligenceHub } from '@/components/AI/IntelligenceHub';
 import { MetaHeatmap } from '@/components/AI/MetaHeatmap';
 import { AIConfidenceGauge } from '@/components/AI/AIConfidenceGauge';
-import { Toast } from '@/components/UI/Toast';
+import { Toast, ToastManager } from '@/components/UI/Toast';
 import { AICorePanel } from '@/components/AI/AICorePanel';
 import { AIHealthPanel } from '@/components/AI/AIHealthPanel';
 import { MacroBridgeAI } from '@/components/MacroBridgeAI';
@@ -138,6 +138,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     newSignals: 0,
     newSignalsTime: ''
   });
+  // Smart Alerts 2.0: Toast notifications state
+  const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }>>([]);
   // User-defined alert thresholds (from Settings)
   const [alertThresholds, setAlertThresholds] = useState<{ minConfidence: number; minPriceChange: number; enabled: boolean }>({
     minConfidence: 70,
@@ -464,6 +466,21 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     return () => clearInterval(interval);
   }, []);
 
+  // Smart Alerts 2.0: Toast management functions
+  const addToast = (message: string, type: 'success' | 'error' | 'warning' | 'info' = 'info', duration: number = 5000) => {
+    const id = `toast-${Date.now()}-${Math.random()}`;
+    setToasts((prev: Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }>) => [...prev, { id, message, type, duration }]);
+    // Auto-remove after duration
+    if (duration > 0) {
+      setTimeout(() => {
+        setToasts((prev: Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }>) => prev.filter((t: { id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }) => t.id !== id));
+      }, duration);
+    }
+  };
+  const removeToast = (id: string) => {
+    setToasts((prev: Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }>) => prev.filter((t: { id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }) => t.id !== id));
+  };
+
   // WebSocket integration for real-time updates
   const { connected: wsConnectedState, lastMessage: wsMessage } = useWebSocket({
     url: wsUrl,
@@ -489,6 +506,31 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           return Array.from(updated.values());
         });
         setLastUpdated(new Date());
+      }
+      // Smart Alerts 2.0: WebSocket alert notifications
+      else if (data?.type === 'alert' && alertThresholds.enabled) {
+        const alert = data.alert || data;
+        const { symbol, confidence, priceChange, signal, message: alertMessage } = alert;
+        
+        // Filter alerts based on user-defined thresholds
+        if (confidence >= alertThresholds.minConfidence && Math.abs(priceChange || 0) >= alertThresholds.minPriceChange) {
+          const toastMessage = alertMessage || `${symbol}: ${signal} sinyali (Güven: ${confidence?.toFixed(1)}%, Değişim: ${priceChange >= 0 ? '+' : ''}${priceChange?.toFixed(2)}%)`;
+          const toastType = signal === 'BUY' ? 'success' : signal === 'SELL' ? 'error' : 'warning';
+          addToast(toastMessage, toastType, 6000);
+          
+          // Optional: Browser notification (if permitted)
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification(`BIST AI: ${symbol} ${signal}`, {
+                body: toastMessage,
+                icon: '/favicon.ico',
+                tag: `${symbol}-${signal}-${Date.now()}`,
+              });
+            } catch (e) {
+              console.warn('Browser notification failed:', e);
+            }
+          }
+        }
       }
     },
     onConnect: () => {
@@ -3696,6 +3738,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         )}
         </div>
       </div>
+      
+      {/* Smart Alerts 2.0: Toast Notifications */}
+      {toasts.length > 0 && <ToastManager toasts={toasts} onRemove={removeToast} />}
     </AIOrchestrator>
   );
 }
