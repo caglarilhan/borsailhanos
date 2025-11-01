@@ -155,6 +155,22 @@ export function AIConfidenceBoard({
         </div>
       </div>
       
+      {/* P1 - Confidence Trend: 24s değişim etiketi */}
+      <div className="mb-3 flex items-center justify-between text-xs">
+        <span className="text-slate-700">24s değişim:</span>
+        <span className={`font-semibold px-2 py-0.5 rounded ${
+          trend.length > 1 && trend[trend.length - 1] > trend[0] 
+            ? 'bg-green-100 text-green-700 border border-green-200' 
+            : trend.length > 1 && trend[trend.length - 1] < trend[0]
+            ? 'bg-red-100 text-red-700 border border-red-200'
+            : 'bg-slate-100 text-slate-700 border border-slate-200'
+        }`}>
+          {trend.length > 1 
+            ? `${trend[trend.length - 1] > trend[0] ? '+' : ''}${((trend[trend.length - 1] - trend[0]) * 100).toFixed(1)}%`
+            : '—'}
+        </span>
+      </div>
+
       {/* Metin analizi */}
       <div className="bg-slate-50 rounded p-2 text-xs text-slate-700">
         <div className="font-semibold mb-1">📊 Analiz:</div>

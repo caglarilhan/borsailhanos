@@ -36,6 +36,8 @@ import { MTFHeatmap } from '@/components/AI/MTFHeatmap';
 import { CorrelationHeatmap } from '@/components/AI/CorrelationHeatmap';
 import { mapRSIToState, getRSIStateLabel, getRSIStateColor } from '@/lib/rsi';
 import { normalizeSentiment } from '@/lib/format';
+import { isAdmin } from '@/lib/featureFlags';
+import { Tabs } from '@/components/UI/Tabs';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -212,6 +214,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const DATA_SOURCE = 'Mock API v5.2';
   const [strategyMode, setStrategyMode] = useState<'scalper'|'swing'|'auto'>('auto');
+  // P2-07: Backtest Tab - Tab state for Analysis Panel
+  const [analysisTab, setAnalysisTab] = useState<'forecast' | 'factors' | 'performance'>('forecast');
   // Forecast hook for Analysis Panel (selectedSymbol + analysisHorizon)
   const panelForecastQ = useForecast(selectedSymbol || undefined as any, analysisHorizon, !!selectedSymbol);
   // Regime, PI, Macro, Calibration, Ranker, Reasoning, MetaEnsemble, BOCalibrate, Factors, Backtest hooks (must be at top level - Rules of Hooks)
@@ -235,8 +239,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [gptInput, setGptInput] = useState<string>('');
   const [gptSpeaking, setGptSpeaking] = useState<boolean>(false);
   const [gptMessages, setGptMessages] = useState<Array<{role:'user'|'ai'; text:string}>>([
-    { role: 'ai', text: 'Merhaba! Bugün BIST30’da en güçlü 3 sinyali görmek ister misin?' }
+    { role: 'ai', text: 'Merhaba! Bugün BIST30\'da en güçlü 3 sinyali görmek ister misin?' }
   ]);
+  // P0-04: Admin RBAC - Check user role
+  const [userRole, setUserRole] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const storedRole = localStorage.getItem('userRole') || 'user';
+      setUserRole(storedRole);
+    }
+  }, []);
   const speakText = (text: string) => {
     try {
       if (typeof window === 'undefined' || !(window as any).speechSynthesis) return;
@@ -794,6 +806,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <Cog6ToothIcon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             <span>Ayarlar</span>
           </Link>
+          {/* P0-04: Admin RBAC - Conditional render */}
+          {isAdmin(userRole || undefined) && (
+            <Link
+              href="/admin"
+              className="px-3 py-1.5 text-xs rounded-lg bg-red-700 text-white hover:bg-red-800 flex items-center gap-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500 focus-visible:outline-offset-2"
+              title="Admin Paneli - Sadece admin kullanıcılar için"
+            >
+              <span>⚙️</span>
+              <span>Admin</span>
+            </Link>
+          )}
           <button
             onClick={async () => { 
               try { 
@@ -1685,7 +1708,20 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       </div>
       {/* Sağ Panel - Analiz */}
       <div className="w-80 bg-white rounded-lg shadow-sm p-4">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Analiz Paneli</h3>
+        {/* P2-07: Backtest Tab - Tab navigation */}
+        <Tabs
+          tabs={[
+            { id: 'forecast', label: 'Tahmin', icon: '📈' },
+            { id: 'factors', label: 'Faktörler', icon: '🔍' },
+            { id: 'performance', label: 'AI Performans', icon: '📊' }
+          ]}
+          activeTab={analysisTab}
+          onTabChange={(tabId) => setAnalysisTab(tabId as 'forecast' | 'factors' | 'performance')}
+          className="mb-4"
+        />
+        {analysisTab === 'forecast' && (
+          <>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Tahmin Paneli</h3>
         {/* AI Health Panel */}
         <div className="mb-4">
           <AIHealthPanel />
@@ -1986,8 +2022,41 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </div>
                 </div>
 
-                {/* Quick Backtest (tcost/rebalance) */}
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
+              </>
+        )}
+        {analysisTab === 'factors' && (
+          <>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Faktörler Paneli</h3>
+            {/* Using factorsQ from top-level hook call (Rules of Hooks compliance) */}
+            <div className="bg-white rounded border p-3 mb-3">
+              <div className="text-sm font-semibold text-gray-900 mb-1">Faktör Skorları</div>
+              {!factorsQ.data ? <Skeleton className="h-10 w-full rounded" /> : (
+                <ul className="text-xs text-slate-700 space-y-1">
+                  <li className="flex justify-between"><span>Quality</span><span className="font-medium">{Math.round(factorsQ.data.quality*100)}%</span></li>
+                  <li className="flex justify-between"><span>Value</span><span className="font-medium">{Math.round(factorsQ.data.value*100)}%</span></li>
+                  <li className="flex justify-between"><span>Momentum</span><span className="font-medium">{Math.round(factorsQ.data.momentum*100)}%</span></li>
+                  <li className="flex justify-between"><span>Low Vol</span><span className="font-medium">{Math.round(factorsQ.data.low_vol*100)}%</span></li>
+                </ul>
+              )}
+            </div>
+            {/* Meta-Model Engine - Radar Chart */}
+            <MetaModelRadar
+              factors={{
+                rsi: factorsQ.data?.rsi_impact || 0.22,
+                macd: factorsQ.data?.macd_impact || 0.25,
+                sentiment: metaEnsembleQ.data?.components?.finbert_price_fusion ? metaEnsembleQ.data.components.finbert_price_fusion / 100 : 0.31,
+                volume: factorsQ.data?.volume_impact || 0.20
+              }}
+              version="v5.1 Ensemble LSTM + Prophet Hybrid"
+            />
+          </>
+        )}
+        {analysisTab === 'performance' && (
+          <>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Performans (Backtest)</h3>
+            {/* P2-07: Backtest Tab - Moved to Performance tab */}
+            {/* Quick Backtest (tcost/rebalance) */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
                   <div className="flex items-center justify-between mb-3">
                     <h5 className="font-bold text-gray-900 text-base">
                       📊 Quick Backtest — {backtestRebDays}g | Rebalance: {backtestRebDays}g | Tcost: {backtestTcost}bps | Slippage: 0.05%

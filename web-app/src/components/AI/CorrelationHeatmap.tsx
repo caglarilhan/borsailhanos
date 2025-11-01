@@ -82,7 +82,7 @@ export function CorrelationHeatmap({
                 backgroundColor: isPairTrade ? color.bg + '20' : color.bg + '10',
                 borderColor: color.bg
               }}
-              title={`${pair.symbol1} ↔ ${pair.symbol2}, 7g korelasyon ${(pair.correlation * 100).toFixed(0)}%`}
+              title={`${pair.symbol1} ↔ ${pair.symbol2}, 7g korelasyon: ${pair.correlation.toFixed(2)} (${pair.correlation >= 0 ? '+' : ''}${(pair.correlation * 100).toFixed(0)}%) — normalize edilmiş: -1.00 ile +1.00 arası`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="text-xs font-semibold text-slate-900">
@@ -98,8 +98,9 @@ export function CorrelationHeatmap({
                 <div 
                   className="text-sm font-bold"
                   style={{ color: color.bg }}
+                  title={`Korelasyon değeri: ${pair.correlation.toFixed(2)} (normalize edilmiş: -1.00 ile +1.00 arası)`}
                 >
-                  {(pair.correlation * 100).toFixed(0)}%
+                  {pair.correlation.toFixed(2)}
                 </div>
                 <div className="text-[10px] text-slate-600">{label}</div>
               </div>
@@ -117,7 +118,7 @@ export function CorrelationHeatmap({
           <div className="space-y-1">
             {pairTrades.slice(0, 3).map((pair, idx) => (
               <div key={idx} className="text-xs text-purple-800">
-                • {pair.symbol1} ↔ {pair.symbol2}: {(pair.correlation * 100).toFixed(0)}% 
+                • {pair.symbol1} ↔ {pair.symbol2}: {pair.correlation.toFixed(2)} ({pair.correlation >= 0 ? '+' : ''}{(pair.correlation * 100).toFixed(0)}%)
                 {pair.correlation >= 0 ? ' (pozitif)' : ' (negatif)'}
               </div>
             ))}
