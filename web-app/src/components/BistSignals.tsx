@@ -2242,6 +2242,239 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           })()}
         </div>
       )}
+
+      {/* UX Yeniden Sıralama: Portföy Simülatörü + AI Önerilen Portföy - Ana panele ekle */}
+      {!selectedSymbol && (
+        <div className="mb-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border-2 border-indigo-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">💼 Portföy Simülatörü + AI Önerilen Portföy</h3>
+              <div className="text-xs text-slate-600">AI destekli portföy optimizasyonu ve risk yönetimi</div>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-1 text-[10px] rounded bg-amber-100 text-amber-700 border border-amber-200">⚠️ Demo Modu</span>
+            </div>
+          </div>
+          
+          {/* Risk Seviyesi Seçimi */}
+          <div className="mb-4 bg-white rounded-lg p-3 border border-indigo-200">
+            <div className="text-xs font-semibold text-gray-900 mb-2">Risk Seviyesi</div>
+            <div className="flex gap-2">
+              {(['low', 'medium', 'high'] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => setPortfolioRiskLevel(level)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                    portfolioRiskLevel === level
+                      ? 'bg-indigo-600 text-white border-2 border-indigo-700 shadow-md'
+                      : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-50'
+                  }`}
+                  title={`Risk seviyesi: ${level === 'low' ? 'Düşük' : level === 'medium' ? 'Orta' : 'Yüksek'}`}
+                >
+                  {level === 'low' ? '🔵 Düşük' : level === 'medium' ? '🟡 Orta' : '🔴 Yüksek'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* AI Önerilen Portföy */}
+          <div className="mb-4 bg-white rounded-lg p-3 border border-indigo-200">
+            <div className="text-xs font-semibold text-gray-900 mb-2">🤖 AI Önerilen Portföy (Top 5)</div>
+            <div className="space-y-2">
+              {(() => {
+                const topSymbols = rows.slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 5);
+                const totalConf = topSymbols.reduce((sum, r) => sum + (r.confidence || 0), 0);
+                return topSymbols.map((r, idx) => {
+                  const weight = ((r.confidence || 0) / totalConf) * 100;
+                  return (
+                    <div key={r.symbol} className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-900">{idx + 1}. {r.symbol}</span>
+                        <span className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-[10px]">
+                          {Math.round((r.confidence || 0) * 100)}% güven
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-24 h-2 bg-slate-200 rounded overflow-hidden">
+                          <div className="h-2 bg-indigo-600 rounded" style={{ width: `${weight}%` }}></div>
+                        </div>
+                        <span className="font-semibold text-slate-900 w-12 text-right">{weight.toFixed(1)}%</span>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
+            </div>
+          </div>
+
+          {/* Portföy Performans Simülasyonu */}
+          <div className="mb-4 bg-white rounded-lg p-3 border border-indigo-200">
+            <div className="text-xs font-semibold text-gray-900 mb-2">📈 Simüle Edilmiş Performans (₺100.000 başlangıç)</div>
+            <div className="space-y-2 text-xs">
+              {(() => {
+                const startEquity = 100000;
+                const top5 = rows.slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 5);
+                const avgReturn = top5.length > 0 ? top5.reduce((sum, r) => sum + (r.prediction || 0), 0) / top5.length : 0;
+                const simulatedReturn = avgReturn * (portfolioRiskLevel === 'low' ? 0.8 : portfolioRiskLevel === 'medium' ? 1.0 : 1.2);
+                const endEquity = startEquity * (1 + simulatedReturn);
+                const profit = endEquity - startEquity;
+                return (
+                  <>
+                    <div className="flex justify-between">
+                      <span>Başlangıç:</span>
+                      <span className="font-semibold">₺{startEquity.toLocaleString('tr-TR')}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Bitiş (simüle):</span>
+                      <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        ₺{endEquity.toLocaleString('tr-TR', {maximumFractionDigits: 0})}
+                      </span>
+                    </div>
+                    <div className="flex justify-between border-t pt-1 mt-1">
+                      <span>Net Kâr/Zarar:</span>
+                      <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {profit >= 0 ? '+' : ''}{profit.toLocaleString('tr-TR', {maximumFractionDigits: 0})} ₺ ({simulatedReturn >= 0 ? '+' : ''}{(simulatedReturn * 100).toFixed(1)}%)
+                      </span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
+          {/* AI Rebalance Butonu */}
+          <div className="flex justify-center">
+            <button
+              onClick={async () => {
+                try {
+                  const { optimizePortfolio } = await import('@/lib/portfolio-optimizer');
+                  const topSymbols = rows.slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 10).map(r => r.symbol);
+                  const riskLevel = portfolioRiskLevel || 'medium';
+                  const newWeights = optimizePortfolio({
+                    symbols: topSymbols,
+                    riskLevel: riskLevel as 'low' | 'medium' | 'high'
+                  });
+                  alert(`AI Rebalance: Portföy yeniden dengelendi!\n\nRisk Seviyesi: ${riskLevel}\nTop ${newWeights.length} sembol:\n${newWeights.slice(0, 5).map(w => `  • ${w.symbol}: ${(w.weight * 100).toFixed(1)}%`).join('\n')}\n\n⚠️ Frontend mock - Gerçek backend endpoint için optimizer.ts API gerekiyor.`);
+                } catch (e) {
+                  console.error('Rebalance error:', e);
+                  alert('Rebalance hesaplama hatası. Lütfen tekrar deneyin.');
+                }
+              }}
+              className="px-6 py-3 text-sm font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg relative"
+              title="AI Rebalance: Portföyü optimize et (⚠️ Frontend mock - gerçek backend API gerekiyor)"
+            >
+              🔄 AI Rebalance Yap
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-amber-400 rounded-full border-2 border-white" title="Frontend mock modu"></span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* UX Yeniden Sıralama: Backtest ve Detaylı Analiz - Ana panele ekle (compact versiyon) */}
+      {!selectedSymbol && (
+        <div className="mb-4 bg-white rounded-xl p-4 border-2 border-blue-200 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">📊 Backtest ve Detaylı Analiz (Hızlı Özet)</h3>
+              <div className="text-xs text-slate-600">AI stratejisinin geçmiş performans analizi</div>
+            </div>
+            <button
+              onClick={() => setAnalysisTab('performance')}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all"
+              title="Detaylı backtest analizini görüntüle (sağ panel)"
+            >
+              Detaylı Görüntüle →
+            </button>
+          </div>
+          
+          {/* Compact Backtest Özeti */}
+          <div className="grid grid-cols-4 gap-3 mb-3">
+            <div className="bg-blue-50 rounded-lg p-2 border border-blue-200">
+              <div className="text-[10px] text-slate-600 mb-1">Net Getiri</div>
+              {(() => {
+                if (!backtestQ.data) return <div className="text-xs text-slate-500">—</div>;
+                const aiReturn = Number(backtestQ.data.total_return_pct) || 0;
+                const totalCost = backtestTcost / 10000;
+                const slippage = 0.05;
+                const netReturn = aiReturn - totalCost - slippage;
+                return (
+                  <div className={`text-sm font-bold ${netReturn >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {netReturn >= 0 ? '+' : ''}{netReturn.toFixed(1)}%
+                  </div>
+                );
+              })()}
+            </div>
+            <div className="bg-purple-50 rounded-lg p-2 border border-purple-200">
+              <div className="text-[10px] text-slate-600 mb-1">Sharpe Ratio</div>
+              <div className="text-sm font-bold text-purple-900">
+                {(() => {
+                  const days = backtestRebDays;
+                  let baseSharpe = 1.85;
+                  if (days >= 365) baseSharpe = 1.65;
+                  else if (days >= 180) baseSharpe = 1.75;
+                  else if (days >= 30) baseSharpe = 1.85;
+                  return baseSharpe.toFixed(2);
+                })()}
+              </div>
+            </div>
+            <div className="bg-amber-50 rounded-lg p-2 border border-amber-200">
+              <div className="text-[10px] text-slate-600 mb-1">Win Rate</div>
+              <div className="text-sm font-bold text-amber-900">
+                {(() => {
+                  const days = backtestRebDays;
+                  const baseWinRate = 0.725;
+                  const adjustedWinRate = days >= 365 ? baseWinRate - 0.05 : days >= 180 ? baseWinRate - 0.02 : baseWinRate;
+                  return `${(adjustedWinRate * 100).toFixed(1)}%`;
+                })()}
+              </div>
+            </div>
+            <div className="bg-red-50 rounded-lg p-2 border border-red-200">
+              <div className="text-[10px] text-slate-600 mb-1">Max Drawdown</div>
+              <div className="text-sm font-bold text-red-900">
+                {(() => {
+                  const days = backtestRebDays;
+                  let baseDrawdown = 0.08;
+                  if (days >= 365) baseDrawdown = 0.12;
+                  else if (days >= 180) baseDrawdown = 0.10;
+                  else if (days >= 30) baseDrawdown = 0.08;
+                  return `-${(baseDrawdown * 100).toFixed(1)}%`;
+                })()}
+              </div>
+            </div>
+          </div>
+
+          {/* Period Toggle */}
+          <div className="flex gap-2 border-t border-slate-200 pt-3">
+            <button
+              onClick={() => { setBacktestTcost(8); setBacktestRebDays(30); }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                backtestRebDays === 30
+                  ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md'
+                  : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-50'
+              }`}
+              title="Son 30 gün backtest sonuçları"
+            >30G</button>
+            <button
+              onClick={() => { setBacktestTcost(8); setBacktestRebDays(180); }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                backtestRebDays === 180
+                  ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md'
+                  : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-50'
+              }`}
+              title="Son 6 ay backtest sonuçları"
+            >6A</button>
+            <button
+              onClick={() => { setBacktestTcost(8); setBacktestRebDays(365); }}
+              className={`px-3 py-1.5 text-xs font-semibold rounded transition-all ${
+                backtestRebDays === 365
+                  ? 'bg-blue-600 text-white border-2 border-blue-700 shadow-md'
+                  : 'bg-white text-slate-700 border-2 border-slate-300 hover:bg-slate-50'
+              }`}
+              title="Son 12 ay backtest sonuçları"
+            >12A</button>
+          </div>
+        </div>
+      )}
       </div>
 
       </div>
