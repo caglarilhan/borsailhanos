@@ -535,6 +535,34 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               console.warn('Browser notification failed:', e);
             }
           }
+          
+          // v4.7: Mock Firebase Push Notification (gerçek implementasyonda Firebase Cloud Messaging kullanılacak)
+          if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+            try {
+              // Mock Firebase push - Gerçek implementasyonda FCM token ile backend'e gönderilecek
+              const mockFirebasePush = {
+                to: 'mock-fcm-token',
+                notification: {
+                  title: `BIST AI: ${symbol} ${signal}`,
+                  body: toastMessage,
+                  icon: '/favicon.ico',
+                  badge: '/favicon.ico',
+                  sound: 'default',
+                  data: {
+                    symbol,
+                    signal,
+                    confidence: confidence?.toFixed(1) || '0',
+                    priceChange: priceChange?.toFixed(2) || '0',
+                    timestamp: Date.now(),
+                    source: 'AI v4.7 Smart Alerts'
+                  }
+                };
+              console.log('📱 Mock Firebase Push:', mockFirebasePush);
+              // Gerçek implementasyonda: await fetch('/api/firebase/push', { method: 'POST', body: JSON.stringify(mockFirebasePush) });
+            } catch (e) {
+              console.warn('Mock Firebase push failed:', e);
+            }
+          }
         }
       }
     },
