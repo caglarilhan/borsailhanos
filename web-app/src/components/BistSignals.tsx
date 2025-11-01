@@ -2268,16 +2268,37 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
           </colgroup>
           <thead style={{ position: 'sticky', top: 0, zIndex: 10 }} className="bg-gray-50 dark:bg-gray-800">
             <tr className="text-left">
-              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Sembol</th>
-              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Ufuk</th>
-              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Tahmin</th>
-              <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100">Trend</th>
-              <th className="py-2 pr-4 hidden lg:table-cell text-gray-900 font-semibold dark:text-gray-100">Teknik</th>
-              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Sinyal</th>
-              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Güven</th>
-              <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100">Δ Accuracy</th>
-              <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100">Geçerlilik</th>
-              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">İşlemler</th>
+              {/* v4.7: Tooltip'li başlıklar */}
+              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="BIST hisse senedi sembolü (ör: THYAO, AKBNK)">
+                Sembol
+              </th>
+              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="Tahmin zaman ufku (5m, 15m, 30m, 1h, 4h, 1d, 7d, 30d)">
+                Ufuk
+              </th>
+              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="AI tahmini: 24 saatte beklenen fiyat değişimi (%)">
+                Tahmin
+              </th>
+              <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="Yön tahmini: Yükseliş (↑), Düşüş (↓) veya Bekle (→)">
+                Trend
+              </th>
+              <th className="py-2 pr-4 hidden lg:table-cell text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="Teknik göstergeler: RSI (overbought/oversold), MACD (momentum), Momentum (fiyat değişim hızı)">
+                Teknik
+              </th>
+              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="İşlem önerisi: Güçlü Al (>10%), Al (5-10%), Sat (-5% to -10%), Güçlü Sat (<-10%), Bekle">
+                Sinyal
+              </th>
+              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="AI güven yüzdesi: Modelin tahminine olan güveni (0-100%). >80% yüksek güven">
+                Güven
+              </th>
+              <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="Accuracy değişimi: Güncel güven - tarihsel doğruluk (pp). Pozitif = iyileşme">
+                Δ Accuracy
+              </th>
+              <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="Sinyal geçerlilik süresi: Tahminin ne kadar süre geçerli olduğu">
+                Geçerlilik
+              </th>
+              <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100 cursor-help" title="İşlemler: Takibe Al, Bildirim Gönder">
+                İşlemler
+              </th>
             </tr>
           </thead>
           <tbody className="text-slate-900">
@@ -2440,10 +2461,17 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                           return (
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-1 flex-wrap">
-                    <span className={`px-2 py-0.5 rounded text-xs font-medium ${signalColor}`}>
+                    {/* v4.7: Sinyal tooltip ile */}
+                    <span 
+                      className={`px-2 py-0.5 rounded text-xs font-medium ${signalColor} cursor-help`}
+                      title={`${signal}: ${signal === 'Güçlü Al' ? '>10% beklenen yükseliş, yüksek güven' : signal === 'Al' ? '5-10% beklenen yükseliş' : signal === 'Güçlü Sat' ? '<-10% beklenen düşüş, yüksek güven' : signal === 'Sat' ? '-5% to -10% beklenen düşüş' : 'Bekle: Net yön yok'}. Güven: ${confPct}%, Tahmin: ${(r.prediction * 100).toFixed(2)}%`}
+                    >
                       {signal}
                     </span>
-                                <span className="text-[10px] text-slate-500" title={`Model: Meta-Model v5.4 • Ufuk: ${r.horizon}`}>
+                                <span 
+                                  className="text-[10px] text-slate-500 cursor-help" 
+                                  title={`Model: Meta-Model v5.4 • Ufuk: ${r.horizon} • AI tahmin: ${(r.prediction * 100).toFixed(2)}% • Güven: ${confPct}%`}
+                                >
                                   ({r.horizon})
                     </span>
                               </div>
@@ -2462,8 +2490,19 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                             {/* P2-14: Renk tutarlılığı - Tailwind palette (#22c55e / #ef4444) */}
                             <div className="h-2" style={{ width: confPct + '%', background: confPct>=85 ? '#22c55e' : confPct>=70 ? '#fbbf24' : '#ef4444' }}></div>
                           </div>
-                          <span className="text-[12px] font-semibold text-[#111827]">{confPct}%</span>
-                          <span className="px-2 py-0.5 rounded bg-gray-100 text-[10px]">S10 {success10}%</span>
+                          {/* v4.7: Güven tooltip ile */}
+                          <span 
+                            className="text-[12px] font-semibold text-[#111827] cursor-help" 
+                            title={`AI Güven: ${confPct}% (${confPct >= 85 ? 'Çok Yüksek' : confPct >= 70 ? 'Yüksek' : confPct >= 50 ? 'Orta' : 'Düşük'}). Modelin bu tahmine olan güveni`}
+                          >
+                            {confPct}%
+                          </span>
+                          <span 
+                            className="px-2 py-0.5 rounded bg-gray-100 text-[10px] cursor-help" 
+                            title={`Tarihsel Doğruluk (S10): ${success10}% - Son 10 sinyalin ortalama başarı oranı`}
+                          >
+                            S10 {success10}%
+                          </span>
                           {(() => {
                             const sameSymbolRows = list.filter(x => x.symbol === r.symbol);
                             const dirs = sameSymbolRows.map(x => (x.prediction||0) >= 0 ? 1 : -1);
@@ -4378,9 +4417,23 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                                   {/* Final markers */}
                                   <circle cx={width} cy={scaleY(sharpeSeries[sharpeSeries.length - 1])} r="3" fill="#2563eb" stroke="white" strokeWidth="1.5" />
                                   <circle cx={width} cy={scaleY(sortinoSeries[sortinoSeries.length - 1])} r="3" fill="#22c55e" stroke="white" strokeWidth="1.5" />
+                                  {/* v4.7: Eksen etiketleri */}
+                                  <text x={width / 2} y={height + 12} textAnchor="middle" fontSize="8" fill="#64748b">Gün</text>
+                                  <text x={-20} y={height / 2} textAnchor="middle" fontSize="8" fill="#64748b" transform={`rotate(-90, -20, ${height / 2})`}>Ratio</text>
+                                  <text x={-15} y={height - 5} textAnchor="end" fontSize="7" fill="#94a3b8">{minY.toFixed(2)}</text>
+                                  <text x={-15} y={5} textAnchor="end" fontSize="7" fill="#94a3b8">{maxY.toFixed(2)}</text>
                                 </svg>
                               );
                             })()}
+                          </div>
+                          {/* v4.7: Risk/Ödül Dinamiği Açıklaması */}
+                          <div className="mt-2 p-2 bg-blue-50 rounded border border-blue-200">
+                            <div className="text-[9px] font-semibold text-blue-900 mb-1">💡 Risk/Ödül Dinamiği (Sharpe by Horizon)</div>
+                            <div className="text-[8px] text-blue-800 leading-relaxed">
+                              <strong>Sharpe Ratio</strong>, risk başına getiri ölçüsüdür. <strong>1.0 üzeri = iyi</strong>, <strong>1.5+ = çok iyi</strong>. 
+                              <strong> Sortino Ratio</strong>, sadece negatif volatiliteyi hesaba katar ve <strong>%18 daha hassas</strong> bir ölçümdür. 
+                              Yüksek değerler, daha iyi risk-ayarlanmış getiri anlamına gelir.
+                            </div>
                           </div>
                           <div className="flex items-center gap-4 mt-2 text-[10px] text-slate-600">
                             <div className="flex items-center gap-1">
