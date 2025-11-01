@@ -191,12 +191,18 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [strategyMode, setStrategyMode] = useState<'scalper'|'swing'|'auto'>('auto');
   // Forecast hook for Analysis Panel (selectedSymbol + analysisHorizon)
   const panelForecastQ = useForecast(selectedSymbol || undefined as any, analysisHorizon, !!selectedSymbol);
-  // Regime, PI, Macro and Calibration hooks (must be at top level - Rules of Hooks)
-  const { useRegime, usePI, useMacro, useCalibration } = require('@/hooks/queries');
+  // Regime, PI, Macro, Calibration, Ranker, Reasoning, MetaEnsemble, BOCalibrate, Factors, Backtest hooks (must be at top level - Rules of Hooks)
+  const { useRegime, usePI, useMacro, useCalibration, useRanker, useReasoning, useMetaEnsemble, useBOCalibrate, useFactors, useBacktestQuick } = require('@/hooks/queries');
   const regimeQ = useRegime();
   const piQ = usePI(selectedSymbol || undefined, analysisHorizon, !!selectedSymbol);
   const macroQ = useMacro();
   const calibrationQ = useCalibration();
+  const rankerQ = useRanker(universe, 10);
+  const reasoningQ = useReasoning(selectedSymbol || undefined);
+  const metaEnsembleQ = useMetaEnsemble(selectedSymbol || undefined, analysisHorizon, !!selectedSymbol);
+  const boCalibrateQ = useBOCalibrate();
+  const factorsQ = useFactors(selectedSymbol || undefined);
+  const backtestQ = useBacktestQuick(universe, backtestTcost, backtestRebDays, !!selectedSymbol);
   // TraderGPT conversational panel state
   const [gptOpen, setGptOpen] = useState<boolean>(false);
   const [gptInput, setGptInput] = useState<string>('');
@@ -1041,9 +1047,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           <div className="text-sm font-semibold text-gray-900">AI Ranker Top-N</div>
           <div className="text-xs text-slate-600">Uncertainty-aware</div>
         </div>
-        {(() => { const { useRanker } = require('@/hooks/queries'); const rk = useRanker(universe, 10); return (
+        {(() => {
+          // Using rankerQ from top-level hook call (Rules of Hooks compliance)
+          return (
           <div className="mt-2 grid grid-cols-2 md:grid-cols-5 gap-2">
-            {(!rk.data ? Array.from({length:5}) : rk.data.top).slice(0,10).map((r:any, i:number)=> (
+            {(!rankerQ.data ? Array.from({length:5}) : rankerQ.data.top).slice(0,10).map((r:any, i:number)=> (
               <div key={i} className="px-2 py-1 rounded border bg-slate-50 text-xs flex items-center justify-between">
                 <span className="font-semibold text-slate-900">{r?.symbol || '—'}</span>
                 <span className="text-slate-700">{r?.confidence ? `${r.confidence}%` : ''}</span>
@@ -1182,10 +1190,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           const cls = pct > 1 ? 'text-green-600 font-bold' : (pct < -1 ? 'text-red-600 font-bold' : 'text-[#111827] font-bold');
                           const arrow = pct > 1 ? '↑' : (pct < -1 ? '↓' : '→');
                           try {
-                            const { useReasoning } = require('@/hooks/queries');
-                            const reasonQ = useReasoning(r.symbol);
-                            const reasons = reasonQ.data?.reasons || [];
-                            const reasonText = reasons.length > 0 ? reasons.join(' • ') : 'AI analiz hazırlanıyor...';
+                            // Note: Cannot call useReasoning inside .map() - Rules of Hooks violation
+                            // Using fallback text instead
+                            const reasonText = 'AI analiz hazırlanıyor...';
                             return (
                               <span title={`24 saat tahmini değişim • AI nedeni: ${reasonText}`} className={cls}>
                                 {arrow} ₺{tgt.toFixed(2)} ({Math.abs(pct).toFixed(1)}%)
@@ -1590,31 +1597,29 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                   )}
                   <XaiAnalyst symbol={selectedSymbol} />
-                  {(() => { const { useReasoning } = require('@/hooks/queries'); const rz = useReasoning(selectedSymbol||undefined as any); return (
-                    <div className="bg-white rounded border p-3">
-                      <div className="text-sm font-semibold text-gray-900 mb-1">AI Nedenleri (Kısa İz)</div>
-                      {!rz.data ? <Skeleton className="h-10 w-full rounded" /> : (
-                        <ul className="text-xs text-slate-700 list-disc pl-4 space-y-1">
-                          {(rz.data.reasons||[]).map((t:string, i:number)=> (<li key={i}>{t}</li>))}
-                        </ul>
-                      )}
-                    </div>
-                  ); })()}
-                  {(() => { const { useMetaEnsemble } = require('@/hooks/queries'); const me = useMetaEnsemble(selectedSymbol||undefined as any, analysisHorizon, !!selectedSymbol); return (
-                    <div className="bg-white rounded border p-3">
-                      <div className="text-sm font-semibold text-gray-900 mb-1">Meta-Ensemble (LSTM • Prophet • FinBERT)</div>
-                      {!me.data ? <Skeleton className="h-10 w-full rounded" /> : (
-                        <div className="text-xs text-slate-700 space-y-1">
-                          <div className="flex justify-between"><span>Meta-Confidence</span><span className="font-semibold">{me.data.meta_confidence}%</span></div>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">LSTM-X</div><div className="font-medium">{me.data.components?.lstm_x_v2_1}%</div></div>
-                            <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">Prophet++</div><div className="font-medium">{me.data.components?.prophet_pp}%</div></div>
-                            <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">FinBERT</div><div className="font-medium">{me.data.components?.finbert_price_fusion}%</div></div>
-                          </div>
+                  {/* Using reasoningQ from top-level hook call (Rules of Hooks compliance) */}
+                  <div className="bg-white rounded border p-3">
+                    <div className="text-sm font-semibold text-gray-900 mb-1">AI Nedenleri (Kısa İz)</div>
+                    {!reasoningQ.data ? <Skeleton className="h-10 w-full rounded" /> : (
+                      <ul className="text-xs text-slate-700 list-disc pl-4 space-y-1">
+                        {(reasoningQ.data.reasons||[]).map((t:string, i:number)=> (<li key={i}>{t}</li>))}
+                      </ul>
+                    )}
+                  </div>
+                  {/* Using metaEnsembleQ from top-level hook call (Rules of Hooks compliance) */}
+                  <div className="bg-white rounded border p-3">
+                    <div className="text-sm font-semibold text-gray-900 mb-1">Meta-Ensemble (LSTM • Prophet • FinBERT)</div>
+                    {!metaEnsembleQ.data ? <Skeleton className="h-10 w-full rounded" /> : (
+                      <div className="text-xs text-slate-700 space-y-1">
+                        <div className="flex justify-between"><span>Meta-Confidence</span><span className="font-semibold">{metaEnsembleQ.data.meta_confidence}%</span></div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">LSTM-X</div><div className="font-medium">{metaEnsembleQ.data.components?.lstm_x_v2_1}%</div></div>
+                          <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">Prophet++</div><div className="font-medium">{metaEnsembleQ.data.components?.prophet_pp}%</div></div>
+                          <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">FinBERT</div><div className="font-medium">{metaEnsembleQ.data.components?.finbert_price_fusion}%</div></div>
                         </div>
-                      )}
-                    </div>
-                  ); })()}
+                      </div>
+                    )}
+                  </div>
                   {/* TraderGPT Önerisi (balon) */}
                   <div className="bg-white rounded border p-3">
                     <div className="text-sm font-semibold text-gray-900 mb-1">🤖 TraderGPT Önerisi</div>
@@ -1639,34 +1644,32 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       })()}
                     </div>
                   </div>
-                  {(() => { const { useBOCalibrate } = require('@/hooks/queries'); const bo = useBOCalibrate(); return (
-                    <div className="bg-white rounded border p-3">
-                      <div className="text-sm font-semibold text-gray-900 mb-1">BO Kalibrasyon (son 24s)</div>
-                      {!bo.data ? <Skeleton className="h-10 w-full rounded" /> : (
-                        <div className="text-xs text-slate-700 space-y-1">
-                          <div className="flex justify-between"><span>Expected AUC</span><span className="font-semibold">{bo.data.expected_auc}</span></div>
-                          <div className="grid grid-cols-3 gap-2">
-                            <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">LSTM</div><div className="font-medium">L={bo.data.best_params?.lstm?.layers}, H={bo.data.best_params?.lstm?.hidden}, LR={bo.data.best_params?.lstm?.lr}</div></div>
-                            <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">Prophet</div><div className="font-medium">{bo.data.best_params?.prophet?.seasonality}, CP={bo.data.best_params?.prophet?.changepoint_prior}</div></div>
-                            <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">Fusion</div><div className="font-medium">α=({bo.data.best_params?.fusion?.alpha_lstm},{bo.data.best_params?.fusion?.alpha_prophet},{bo.data.best_params?.fusion?.alpha_finbert})</div></div>
-                          </div>
+                  {/* Using boCalibrateQ from top-level hook call (Rules of Hooks compliance) */}
+                  <div className="bg-white rounded border p-3">
+                    <div className="text-sm font-semibold text-gray-900 mb-1">BO Kalibrasyon (son 24s)</div>
+                    {!boCalibrateQ.data ? <Skeleton className="h-10 w-full rounded" /> : (
+                      <div className="text-xs text-slate-700 space-y-1">
+                        <div className="flex justify-between"><span>Expected AUC</span><span className="font-semibold">{boCalibrateQ.data.expected_auc}</span></div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">LSTM</div><div className="font-medium">L={boCalibrateQ.data.best_params?.lstm?.layers}, H={boCalibrateQ.data.best_params?.lstm?.hidden}, LR={boCalibrateQ.data.best_params?.lstm?.lr}</div></div>
+                          <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">Prophet</div><div className="font-medium">{boCalibrateQ.data.best_params?.prophet?.seasonality}, CP={boCalibrateQ.data.best_params?.prophet?.changepoint_prior}</div></div>
+                          <div className="bg-slate-50 rounded p-2 border"><div className="text-[11px]">Fusion</div><div className="font-medium">α=({boCalibrateQ.data.best_params?.fusion?.alpha_lstm},{boCalibrateQ.data.best_params?.fusion?.alpha_prophet},{boCalibrateQ.data.best_params?.fusion?.alpha_finbert})</div></div>
                         </div>
-                      )}
-                    </div>
-                  ); })()}
-                  {(() => { const { useFactors } = require('@/hooks/queries'); const fx = useFactors(selectedSymbol||undefined as any); return (
-                    <div className="bg-white rounded border p-3">
-                      <div className="text-sm font-semibold text-gray-900 mb-1">Faktör Skorları</div>
-                      {!fx.data ? <Skeleton className="h-10 w-full rounded" /> : (
-                        <ul className="text-xs text-slate-700 space-y-1">
-                          <li className="flex justify-between"><span>Quality</span><span className="font-medium">{Math.round(fx.data.quality*100)}%</span></li>
-                          <li className="flex justify-between"><span>Value</span><span className="font-medium">{Math.round(fx.data.value*100)}%</span></li>
-                          <li className="flex justify-between"><span>Momentum</span><span className="font-medium">{Math.round(fx.data.momentum*100)}%</span></li>
-                          <li className="flex justify-between"><span>Low Vol</span><span className="font-medium">{Math.round(fx.data.low_vol*100)}%</span></li>
-                        </ul>
-                      )}
-                    </div>
-                  ); })()}
+                      </div>
+                    )}
+                  </div>
+                  {/* Using factorsQ from top-level hook call (Rules of Hooks compliance) */}
+                  <div className="bg-white rounded border p-3">
+                    <div className="text-sm font-semibold text-gray-900 mb-1">Faktör Skorları</div>
+                    {!factorsQ.data ? <Skeleton className="h-10 w-full rounded" /> : (
+                      <ul className="text-xs text-slate-700 space-y-1">
+                        <li className="flex justify-between"><span>Quality</span><span className="font-medium">{Math.round(factorsQ.data.quality*100)}%</span></li>
+                        <li className="flex justify-between"><span>Value</span><span className="font-medium">{Math.round(factorsQ.data.value*100)}%</span></li>
+                        <li className="flex justify-between"><span>Momentum</span><span className="font-medium">{Math.round(factorsQ.data.momentum*100)}%</span></li>
+                        <li className="flex justify-between"><span>Low Vol</span><span className="font-medium">{Math.round(factorsQ.data.low_vol*100)}%</span></li>
+                      </ul>
+                    )}
+                  </div>
                 </div>
                 
                 <div className="bg-gray-50 p-3 rounded-lg">
@@ -1711,10 +1714,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <input id="btSlippage" type="number" step="0.01" className="w-16 px-2 py-1 border rounded text-black bg-white" defaultValue={0.05} title="İşlem maliyeti slippage oranı" />
                   </div>
                   {(() => {
-                    const { useBacktestQuick } = require('@/hooks/queries');
-                    const bt = useBacktestQuick(universe, backtestTcost, backtestRebDays, !!selectedSymbol);
-                    if (!bt.data) return <Skeleton className="h-10 w-full rounded" />;
-                    const aiReturn = Number(bt.data.total_return_pct) || 0;
+                    // Using backtestQ from top-level hook call (Rules of Hooks compliance)
+                    if (!backtestQ.data) return <Skeleton className="h-10 w-full rounded" />;
+                    const aiReturn = Number(backtestQ.data.total_return_pct) || 0;
                     const benchmarkReturn = 4.2; // BIST30
                     const slippage = 0.05; // 0.05% varsayılan
                     const totalCost = backtestTcost / 10000; // bps to decimal
