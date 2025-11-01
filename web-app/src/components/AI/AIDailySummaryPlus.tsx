@@ -48,6 +48,7 @@ interface AIDailySummaryPlusProps {
   confidenceChange24h?: number; // Confidence değişimi (24h) in percentage points
   sentimentAverage?: number; // Sentiment ortalaması (0-1)
   alphaVsBenchmark?: number; // Alpha (vs BIST30) in percentage points
+  sharpeChange24h?: number; // Sharpe Ratio değişimi (24h)
 }
 
 export function AIDailySummaryPlus({ 
@@ -62,7 +63,8 @@ export function AIDailySummaryPlus({
   modelDrift24h,
   confidenceChange24h,
   sentimentAverage,
-  alphaVsBenchmark
+  alphaVsBenchmark,
+  sharpeChange24h
 }: AIDailySummaryPlusProps) {
   const [tickerText, setTickerText] = useState<string>('');
   
@@ -281,6 +283,7 @@ export function AIDailySummaryPlus({
                   <div className="flex items-center gap-2">
                     <span className="text-emerald-700 font-bold text-base">+{stock.return.toFixed(1)}%</span>
                     <span className="text-[10px] text-emerald-600 px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                    <span className="text-xs text-emerald-600 font-bold">↑</span>
                   </div>
                 </div>
               );
@@ -344,6 +347,7 @@ export function AIDailySummaryPlus({
                   <div className="flex items-center gap-2">
                     <span className="text-red-700 font-bold text-base">{stock.return.toFixed(1)}%</span>
                     <span className="text-[10px] text-red-600 px-1.5 py-0.5 rounded bg-red-50 border border-red-200">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                    <span className="text-xs text-red-600 font-bold">↓</span>
                   </div>
                 </div>
               );
@@ -357,26 +361,61 @@ export function AIDailySummaryPlus({
             <span>🤖 Model Metrikleri</span>
           </div>
           <div className="space-y-2">
-            {/* Model Drift */}
+            {/* Model Drift - v4.7: Trend yönü oku ile */}
             <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
               <span className="text-xs text-slate-700">Model Drift (24s):</span>
-              <span className={`text-sm font-bold ${(modelDrift24h !== undefined ? modelDrift24h : -0.3) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                {modelDrift24h !== undefined ? modelDrift24h.toFixed(1) : '-0.3'}%
-              </span>
+              <div className="flex items-center gap-1">
+                <span className={`text-sm font-bold ${(modelDrift24h !== undefined ? modelDrift24h : -0.3) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {modelDrift24h !== undefined ? modelDrift24h.toFixed(1) : '-0.3'}%
+                </span>
+                {modelDrift24h !== undefined && (
+                  <span className={`text-xs font-bold ${modelDrift24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {modelDrift24h >= 0 ? '↑' : modelDrift24h < 0 ? '↓' : '→'}
+                  </span>
+                )}
+              </div>
             </div>
-            {/* Confidence Değişimi */}
+            {/* Confidence Değişimi - v4.7: Trend yönü oku ile */}
             <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
               <span className="text-xs text-slate-700">Confidence Δ (24h):</span>
-              <span className={`text-sm font-bold ${(confidenceChange24h !== undefined ? confidenceChange24h : 1.5) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                {confidenceChange24h !== undefined ? (confidenceChange24h >= 0 ? '+' : '') + confidenceChange24h.toFixed(1) : '+1.5'}pp
-              </span>
+              <div className="flex items-center gap-1">
+                <span className={`text-sm font-bold ${(confidenceChange24h !== undefined ? confidenceChange24h : 1.5) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {confidenceChange24h !== undefined ? (confidenceChange24h >= 0 ? '+' : '') + confidenceChange24h.toFixed(1) : '+1.5'}pp
+                </span>
+                {confidenceChange24h !== undefined && (
+                  <span className={`text-xs font-bold ${confidenceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {confidenceChange24h > 0 ? '↑' : confidenceChange24h < 0 ? '↓' : '→'}
+                  </span>
+                )}
+              </div>
             </div>
-            {/* Alpha vs BIST30 */}
+            {/* Alpha vs BIST30 - v4.7: Trend yönü oku ile */}
             <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
               <span className="text-xs text-slate-700">Alpha (vs BIST30):</span>
-              <span className={`text-sm font-bold ${(alphaVsBenchmark !== undefined ? alphaVsBenchmark : 0.8) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                {alphaVsBenchmark !== undefined ? (alphaVsBenchmark >= 0 ? '+' : '') + alphaVsBenchmark.toFixed(1) : '+0.8'}pp
-              </span>
+              <div className="flex items-center gap-1">
+                <span className={`text-sm font-bold ${(alphaVsBenchmark !== undefined ? alphaVsBenchmark : 0.8) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {alphaVsBenchmark !== undefined ? (alphaVsBenchmark >= 0 ? '+' : '') + alphaVsBenchmark.toFixed(1) : '+0.8'}pp
+                </span>
+                {alphaVsBenchmark !== undefined && (
+                  <span className={`text-xs font-bold ${alphaVsBenchmark >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {alphaVsBenchmark >= 0 ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* v4.7: Sharpe Değişimi (24h) - Trend yönü oku ile */}
+            <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">
+              <span className="text-xs text-slate-700">Sharpe Δ (24h):</span>
+              <div className="flex items-center gap-1">
+                <span className={`text-sm font-bold ${(sharpeChange24h !== undefined ? sharpeChange24h : 0.15) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
+                  {sharpeChange24h !== undefined ? (sharpeChange24h >= 0 ? '+' : '') + sharpeChange24h.toFixed(2) : '+0.15'}
+                </span>
+                {sharpeChange24h !== undefined && (
+                  <span className={`text-xs font-bold ${sharpeChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {sharpeChange24h >= 0 ? '↑' : '↓'}
+                  </span>
+                )}
+              </div>
             </div>
             {/* Sentiment Ortalama */}
             <div className="flex justify-between items-center p-2 bg-white/80 rounded border border-purple-200">

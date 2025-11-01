@@ -1846,6 +1846,13 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
             : 0.8;
           return top5Avg;
         })()}
+        sharpeChange24h={(() => {
+          // v4.7: Sharpe Ratio değişimi (24h) - Mock hesaplama
+          // Gerçek implementasyonda backend'den gelecek
+          const baseSharpe = 1.85;
+          const yesterdaySharpe = 1.82;
+          return baseSharpe - yesterdaySharpe; // +0.03 change
+        })()}
       />
 
       {/* Sprint 1: Zaman damgası / veri kaynağı / WebSocket bağlantı göstergesi */}
