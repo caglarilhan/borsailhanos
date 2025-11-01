@@ -2103,7 +2103,30 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
             </div>
           </div>
           <div className="bg-white rounded-lg p-3 border">
-            <div className="text-sm font-semibold text-gray-900 mb-2">FinBERT Duygu Özeti</div>
+            <div className="text-sm font-semibold text-gray-900 mb-2 flex items-center justify-between">
+              <span>FinBERT Duygu Özeti</span>
+              {/* v4.7: Sentiment Momentum Bar */}
+              <div className="flex items-center gap-1">
+                <span className="text-[9px] text-slate-500">24s Momentum:</span>
+                <div className="h-2 w-16 bg-slate-200 rounded overflow-hidden flex">
+                  {(() => {
+                    // Mock 24s sentiment momentum (pozitif/negatif değişim)
+                    const momentum = (sentimentSummary?.overall?.positive || 0.65) - (sentimentSummary?.overall?.negative || 0.25);
+                    const momentumPct = Math.abs(momentum) * 100;
+                    const isPositive = momentum >= 0;
+                    return (
+                      <>
+                        {isPositive ? (
+                          <div className="bg-green-500" style={{ width: `${momentumPct}%` }} title={`Pozitif momentum: +${momentumPct.toFixed(0)}%`}></div>
+                        ) : (
+                          <div className="bg-red-500 ml-auto" style={{ width: `${momentumPct}%` }} title={`Negatif momentum: -${momentumPct.toFixed(0)}%`}></div>
+                        )}
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
             <div className="text-xs text-slate-700">
               {(() => {
                 // P0-02: Sentiment Normalize - Use format.ts function
@@ -2113,18 +2136,27 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                 const timeWindow = sentimentSummary?.time_window || '7g';
                 return (
                   <>
-                    {/* P2-02: Sektörel Sentiment başlıkları (Pozitif/Nötr/Negatif) */}
+                    {/* v4.7: Sektörel Sentiment - Renk kodları (🔴🟢⚪) ve Impact seviyesi */}
                     <div className="grid grid-cols-3 gap-2 mb-2">
                       <div className="text-center">
-                        <div className="text-[9px] text-slate-600 mb-1">Pozitif</div>
+                        <div className="text-[9px] text-slate-600 mb-1 flex items-center justify-center gap-1">
+                          <span>🟢</span>
+                          <span>Pozitif</span>
+                        </div>
                         <div className="px-2 py-1 rounded bg-green-50 text-green-700 border border-green-200 font-semibold">{posN}%</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-[9px] text-slate-600 mb-1">Nötr</div>
+                        <div className="text-[9px] text-slate-600 mb-1 flex items-center justify-center gap-1">
+                          <span>⚪</span>
+                          <span>Nötr</span>
+                        </div>
                         <div className="px-2 py-1 rounded bg-slate-50 text-slate-700 border border-slate-200 font-semibold">{neuN}%</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-[9px] text-slate-600 mb-1">Negatif</div>
+                        <div className="text-[9px] text-slate-600 mb-1 flex items-center justify-center gap-1">
+                          <span>🔴</span>
+                          <span>Negatif</span>
+                        </div>
                         <div className="px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200 font-semibold">{negN}%</div>
                       </div>
                     </div>
@@ -4949,52 +4981,55 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                         const noise = (seededRandom() - 0.5) * 0.03;
                         return Math.max(0.80, Math.min(0.95, base + trend + noise));
                       });
-                    return (
-                      <svg width="100%" height="80" viewBox="0 0 300 80" className="overflow-visible">
-                        <defs>
-                          <linearGradient id="driftGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
-                            <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        {/* Grid lines */}
-                        {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
-                          const value = Math.min(...driftSeries) + (Math.max(...driftSeries) - Math.min(...driftSeries)) * percent;
-                          const y = 80 - ((value - Math.min(...driftSeries)) / (Math.max(...driftSeries) - Math.min(...driftSeries) || 0.1)) * 80;
-                          return (
-                            <line key={percent} x1="0" y1={y} x2="300" y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
-                          );
-                        })}
-                        {/* Drift path */}
-                        {(() => {
-                          const minY = Math.min(...driftSeries);
-                          const maxY = Math.max(...driftSeries);
-                          const range = maxY - minY || 0.1;
-                          const scaleX = (i: number) => (i / (driftSeries.length - 1)) * 300;
-                          const scaleY = (v: number) => 80 - ((v - minY) / range) * 80;
-                          let path = '';
-                          driftSeries.forEach((v, i) => {
-                            const x = scaleX(i);
-                            const y = scaleY(v);
-                            path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
-                          });
-                          const fillPath = path + ` L 300 ${scaleY(driftSeries[driftSeries.length - 1])} L 300 80 L 0 80 Z`;
-                          return (
-                            <>
-                              <path d={fillPath} fill="url(#driftGradient)" />
-                              <path d={path} fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
-                              <circle cx={scaleX(driftSeries.length - 1)} cy={scaleY(driftSeries[driftSeries.length - 1])} r="3" fill="#8b5cf6" stroke="white" strokeWidth="1.5" />
-                            </>
-                          );
-                        })()}
-                      </svg>
-                    );
-                  })()}
-                  <div className="flex items-center justify-between mt-1 text-[9px] text-slate-600">
-                    <span>Min: {(Math.min(...driftSeries) * 100).toFixed(1)}%</span>
-                    <span>Max: {(Math.max(...driftSeries) * 100).toFixed(1)}%</span>
-                    <span>Avg: {((driftSeries.reduce((a, b) => a + b, 0) / driftSeries.length) * 100).toFixed(1)}%</span>
-                  </div>
+                      
+                      return (
+                        <>
+                          <svg width="100%" height="80" viewBox="0 0 300 80" className="overflow-visible">
+                            <defs>
+                              <linearGradient id="driftGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.3" />
+                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {/* Grid lines */}
+                            {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
+                              const value = Math.min(...driftSeries) + (Math.max(...driftSeries) - Math.min(...driftSeries)) * percent;
+                              const y = 80 - ((value - Math.min(...driftSeries)) / (Math.max(...driftSeries) - Math.min(...driftSeries) || 0.1)) * 80;
+                              return (
+                                <line key={percent} x1="0" y1={y} x2="300" y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
+                              );
+                            })}
+                            {/* Drift path */}
+                            {(() => {
+                              const minY = Math.min(...driftSeries);
+                              const maxY = Math.max(...driftSeries);
+                              const range = maxY - minY || 0.1;
+                              const scaleX = (i: number) => (i / (driftSeries.length - 1)) * 300;
+                              const scaleY = (v: number) => 80 - ((v - minY) / range) * 80;
+                              let path = '';
+                              driftSeries.forEach((v, i) => {
+                                const x = scaleX(i);
+                                const y = scaleY(v);
+                                path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                              });
+                              const fillPath = path + ` L 300 ${scaleY(driftSeries[driftSeries.length - 1])} L 300 80 L 0 80 Z`;
+                              return (
+                                <>
+                                  <path d={fillPath} fill="url(#driftGradient)" />
+                                  <path d={path} fill="none" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" />
+                                  <circle cx={scaleX(driftSeries.length - 1)} cy={scaleY(driftSeries[driftSeries.length - 1])} r="3" fill="#8b5cf6" stroke="white" strokeWidth="1.5" />
+                                </>
+                              );
+                            })()}
+                          </svg>
+                          <div className="flex items-center justify-between mt-1 text-[9px] text-slate-600">
+                            <span>Min: {(Math.min(...driftSeries) * 100).toFixed(1)}%</span>
+                            <span>Max: {(Math.max(...driftSeries) * 100).toFixed(1)}%</span>
+                            <span>Avg: {((driftSeries.reduce((a: number, b: number) => a + b, 0) / driftSeries.length) * 100).toFixed(1)}%</span>
+                          </div>
+                        </>
+                      );
+                    })()}
                 </div>
                 
                 {/* v4.7: Confidence Decay Graph */}
@@ -5066,6 +5101,51 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                     <span>Decay Rate: -1.0%/30g</span>
                     <span>Current: {((calibrationQ.data?.accuracy || 0.873) * 100).toFixed(1)}%</span>
                   </div>
+                </div>
+              </div>
+              
+              {/* v4.7: AI Öğrenme Geçmişi Tablosu */}
+              <div className="bg-slate-50 rounded p-2 border border-slate-200 mb-2">
+                <div className="text-[10px] text-slate-600 mb-1 font-semibold">📚 AI Öğrenme Geçmişi (Model Versiyonları)</div>
+                <div className="max-h-32 overflow-y-auto">
+                  <table className="w-full text-[9px] border-collapse">
+                    <thead className="bg-slate-100 sticky top-0">
+                      <tr>
+                        <th className="border border-slate-300 px-1 py-0.5 text-left">Tarih</th>
+                        <th className="border border-slate-300 px-1 py-0.5 text-left">Model</th>
+                        <th className="border border-slate-300 px-1 py-0.5 text-right">Accuracy</th>
+                        <th className="border border-slate-300 px-1 py-0.5 text-right">Drift</th>
+                        <th className="border border-slate-300 px-1 py-0.5 text-center">Değişiklik</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(() => {
+                        // v4.7: Mock öğrenme geçmişi (gerçek implementasyonda Firestore'dan gelecek)
+                        const learningHistory = [
+                          { date: '2024-01-20', model: 'v4.7', accuracy: 0.883, drift: +0.010, change: '↑' },
+                          { date: '2024-01-15', model: 'v4.6', accuracy: 0.873, drift: -0.005, change: '→' },
+                          { date: '2024-01-10', model: 'v4.5', accuracy: 0.878, drift: +0.008, change: '↑' },
+                          { date: '2024-01-05', model: 'v4.4', accuracy: 0.870, drift: -0.003, change: '→' },
+                          { date: '2024-01-01', model: 'v4.3', accuracy: 0.873, drift: +0.002, change: '→' }
+                        ];
+                        return learningHistory.map((entry, idx) => (
+                          <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                            <td className="border border-slate-300 px-1 py-0.5 text-slate-700">{entry.date}</td>
+                            <td className="border border-slate-300 px-1 py-0.5 font-semibold text-slate-900">{entry.model}</td>
+                            <td className="border border-slate-300 px-1 py-0.5 text-right font-semibold text-blue-700">{(entry.accuracy * 100).toFixed(1)}%</td>
+                            <td className={`border border-slate-300 px-1 py-0.5 text-right font-semibold ${entry.drift >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {entry.drift >= 0 ? '+' : ''}{(entry.drift * 100).toFixed(2)}pp
+                            </td>
+                            <td className="border border-slate-300 px-1 py-0.5 text-center">
+                              <span className={`font-bold ${entry.change === '↑' ? 'text-green-600' : entry.change === '↓' ? 'text-red-600' : 'text-slate-500'}`}>
+                                {entry.change}
+                              </span>
+                            </td>
+                          </tr>
+                        ));
+                      })()}
+                    </tbody>
+                  </table>
                 </div>
               </div>
               
