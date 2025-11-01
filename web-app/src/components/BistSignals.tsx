@@ -1427,11 +1427,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <span className="text-xs text-slate-600 font-medium">Ufuk:</span>
                       <span className="text-sm font-bold text-[#111827] bg-slate-100 px-2 py-0.5 rounded">{best.horizon}</span>
                     </div>
-                      {bestH && (
-                        <span title="En güvenilir ufuk" className="px-2 py-0.5 text-[10px] rounded bg-blue-50 text-blue-800 border border-blue-200">En iyi: {bestH}</span>
-                      )}
-                      <span title="Multi-timeframe tutarlılık" className="px-2 py-0.5 text-[10px] rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Tutarlılık {consistency}</span>
-                    </div>
+                    {bestH && (
+                      <span title="En güvenilir ufuk" className="px-2 py-0.5 text-[10px] rounded bg-blue-50 text-blue-800 border border-blue-200">En iyi: {bestH}</span>
+                    )}
+                    <span title="Multi-timeframe tutarlılık" className="px-2 py-0.5 text-[10px] rounded bg-emerald-50 text-emerald-700 border border-emerald-200">Tutarlılık {consistency}</span>
                     {/* Mini sparkline */}
                     <div className="hidden sm:block">
                       <Sparkline series={seededSeries(sym + '-24h', 24)} width={90} height={24} color={up? '#16a34a':'#dc2626'} />
