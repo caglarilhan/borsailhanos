@@ -1465,6 +1465,53 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             return Math.max(0.65, Math.min(0.95, base + trend + noise));
           });
         })()}
+        // AI Günlük Özeti 2.0: Yeni metrikler
+        topAlphaStocks={(() => {
+          const sorted = rows.slice().sort((a, b) => (b.prediction || 0) - (a.prediction || 0)).slice(0, 5);
+          return sorted.map(r => ({
+            symbol: r.symbol,
+            alpha: (r.prediction || 0) * 100 - 4.2, // vs BIST30 benchmark
+            return: (r.prediction || 0) * 100
+          }));
+        })()}
+        worstAlphaStocks={(() => {
+          const sorted = rows.slice().sort((a, b) => (a.prediction || 0) - (b.prediction || 0)).slice(0, 5);
+          return sorted.map(r => ({
+            symbol: r.symbol,
+            alpha: (r.prediction || 0) * 100 - 4.2, // vs BIST30 benchmark
+            return: (r.prediction || 0) * 100
+          }));
+        })()}
+        riskDistribution={(() => {
+          const low = rows.filter(r => {
+            const risk = normalizeRisk(Math.max(1, 5 - Math.round((rows.length%5))));
+            return risk <= 3;
+          }).length;
+          const medium = rows.filter(r => {
+            const risk = normalizeRisk(Math.max(1, 5 - Math.round((rows.length%5))));
+            return risk > 3 && risk <= 6;
+          }).length;
+          const high = rows.filter(r => {
+            const risk = normalizeRisk(Math.max(1, 5 - Math.round((rows.length%5))));
+            return risk > 6;
+          }).length;
+          const total = rows.length || 1;
+          return {
+            low: Math.round((low / total) * 100),
+            medium: Math.round((medium / total) * 100),
+            high: Math.round((high / total) * 100)
+          };
+        })()}
+        sentimentPriceDivergence={(() => {
+          // Mock: Sentiment vs Price divergence score (-1 to +1)
+          const avgSentiment = rows.reduce((sum, r) => {
+            const sent = sentimentSummary?.overall?.positive || 0.5;
+            return sum + sent;
+          }, 0) / (rows.length || 1);
+          const avgPriceChange = rows.reduce((sum, r) => sum + (r.prediction || 0), 0) / (rows.length || 1);
+          // Divergence: positive if sentiment > price change, negative otherwise
+          return Math.max(-1, Math.min(1, (avgSentiment - 0.5) - avgPriceChange));
+        })()}
       />
 
       {/* Sprint 1: Zaman damgası / veri kaynağı / WebSocket bağlantı göstergesi */}

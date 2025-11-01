@@ -17,11 +17,13 @@ export function CorrelationHeatmap({
   pairs = [],
   threshold = 0.8
 }: CorrelationHeatmapProps) {
-  // Generate demo pairs if not provided
+  // Generate demo pairs if not provided - Minimum 3×3 matrix (ISCTR, GARAN, THYAO, EREGL, etc.)
   const defaultPairs: CorrelationPair[] = useMemo(() => {
     if (pairs.length > 0) return pairs;
-    const symbols = ['THYAO', 'AKBNK', 'GARAN', 'EREGL', 'ISCTR', 'TUPRS'];
+    // Minimum 3×3 matrix için en az 4 sembol (6 çift)
+    const symbols = ['ISCTR', 'GARAN', 'THYAO', 'EREGL', 'AKBNK', 'TUPRS', 'SISE', 'BIMAS'].slice(0, 6);
     const out: CorrelationPair[] = [];
+    // Full matrix (her sembol çifti için)
     for (let i = 0; i < symbols.length; i++) {
       for (let j = i + 1; j < symbols.length; j++) {
         // Seeded correlation (SSR-safe)
@@ -31,6 +33,7 @@ export function CorrelationHeatmap({
         out.push({ symbol1: symbols[i], symbol2: symbols[j], correlation: normalized });
       }
     }
+    // 3×3 matrix için minimum 4 sembol = 6 çift, şu an 6 sembol = 15 çift
     return out;
   }, [pairs]);
 
@@ -66,9 +69,9 @@ export function CorrelationHeatmap({
         <div className="text-xs text-slate-600">Eşik: |r| ≥ {threshold}</div>
       </div>
 
-      {/* P0-03: Korelasyon Heatmap - Self-correlation filtresi + normalize gösterim */}
-      {/* Heatmap Grid */}
-      <div className="grid grid-cols-2 gap-2 mb-3 max-h-60 overflow-auto">
+      {/* P0-03: Korelasyon Heatmap - Minimum 3×3 matrix (ISCTR, GARAN, THYAO, EREGL vb.) */}
+      {/* Heatmap Grid - Minimum 3×3 matrix için grid yapısı */}
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 max-h-96 overflow-auto">
         {defaultPairs.map((pair, idx) => {
           // P0-03: Self-correlation kontrolü - Aynı sembol çiftleri gri ve "1.00" göster
           const isSelfCorrelation = pair.symbol1 === pair.symbol2;

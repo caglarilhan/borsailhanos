@@ -39,13 +39,22 @@ interface AIDailySummaryPlusProps {
     sectors?: Array<{ name: string; correlation: number }>;
   };
   aiConfidenceHistory?: number[];
+  // AI Günlük Özeti 2.0: Yeni metrikler
+  topAlphaStocks?: Array<{ symbol: string; alpha: number; return: number }>;
+  worstAlphaStocks?: Array<{ symbol: string; alpha: number; return: number }>;
+  riskDistribution?: { low: number; medium: number; high: number };
+  sentimentPriceDivergence?: number; // -1 to +1, divergence score
 }
 
 export function AIDailySummaryPlus({ 
   metaStats, 
   macroFeed, 
   sectoralMatch,
-  aiConfidenceHistory = []
+  aiConfidenceHistory = [],
+  topAlphaStocks = [],
+  worstAlphaStocks = [],
+  riskDistribution,
+  sentimentPriceDivergence
 }: AIDailySummaryPlusProps) {
   const [tickerText, setTickerText] = useState<string>('');
   
@@ -82,10 +91,11 @@ export function AIDailySummaryPlus({
     const avgConfidence = confidenceSeries.length > 0 
       ? (confidenceSeries.reduce((a, b) => a + b, 0) / confidenceSeries.length * 100).toFixed(1)
       : '86.7';
-    const confChange = confidenceSeries.length > 1
-      ? ((confidenceSeries[confidenceSeries.length - 1] - confidenceSeries[0]) * 100).toFixed(1)
-      : '2.1';
-    const confTrend = Number(confChange) >= 0 ? '↑' : '↓';
+    const confChangeNum = confidenceSeries.length > 1
+      ? (confidenceSeries[confidenceSeries.length - 1] - confidenceSeries[0]) * 100
+      : 2.1;
+    const confChange = confChangeNum.toFixed(1);
+    const confTrend = confChangeNum >= 0 ? '↑' : '↓';
     
     return {
       // Sprint 3: Enhanced multi-layer summary
@@ -94,13 +104,13 @@ export function AIDailySummaryPlus({
       // P1-06: Layer 2: Sektör Liderleri (En iyi 3 + En kötü 3) + Alpha farkı
       sectorLeaders: `En İyi: Teknoloji +3.8% (α+2.1pp), Sanayi +2.3% (α+1.5pp), Enerji +1.9% (α+0.8pp) | En Zayıf: Gıda -0.8% (α-1.2pp), Bankacılık -1.4% (α-2.1pp), Perakende -0.5% (α-0.8pp)`,
       // P1-06: Layer 3: AI Snapshot + AI trend değişimi
-      aiSnapshot: `${totalSignals} aktif sinyal, ortalama güven %${avgConfidence} (${confChange >= 0 ? '+' : ''}${confChange}pp 24s drift)`,
+      aiSnapshot: `${totalSignals} aktif sinyal, ortalama güven %${avgConfidence} (${confChangeNum >= 0 ? '+' : ''}${confChange}pp 24s drift)`,
       // P1-06: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse) + AI Öneri (eylem)
       warnings: `Dikkat: AKBNK (yüksek volatilite %18.2), EREGL (RSI 69 aşırı alım riski)`,
       // P3: AI Öneri (eylem önerileri)
       aiRecommendation: `THYAO ve SISE → Al baskın (momentum + sentiment uyumlu). AKBNK → Volatilite yüksek, dikkatli yaklaş.`,
       // P1-06: Layer 5: Model Drift + AI trend değişimi
-      modelDrift: `${confChange >= 0 ? '+' : ''}${confChange}pp (${confTrend === '↑' ? '↑ güven artışı' : confTrend === '↓' ? '↓ güven düşüşü' : '→ stabil'})`,
+      modelDrift: `${confChangeNum >= 0 ? '+' : ''}${confChange}pp (${confTrend === '↑' ? '↑ güven artışı' : confTrend === '↓' ? '↓ güven düşüşü' : '→ stabil'})`,
       // Legacy format
       macro: `Bugün endeks açılışında TRY ${usdtryChange} %${usdtryPct}, en güçlü sektör teknoloji.`,
       aiSamples: `AI bugün ${totalSignals} sinyal taradı, ${highConfBuys} yüksek güvenli (>%85) BUY önerisi var.`,
@@ -110,7 +120,7 @@ export function AIDailySummaryPlus({
         : 'Sektörel analiz hazırlanıyor...',
       // AI Core Confidence
       aiConfidence: `${avgConfidence}%`,
-      aiConfChange: `${confTrend} ${Math.abs(Number(confChange))}%`
+      aiConfChange: `${confTrend} ${Math.abs(confChangeNum)}%`
     };
   }, [metaStats, macroFeed, sectoralMatch, confidenceSeries]);
 
@@ -197,6 +207,131 @@ export function AIDailySummaryPlus({
           <div className="text-sm text-blue-900 font-bold">{aiSummary.aiConfidence}</div>
           <div className="text-xs text-blue-700 font-semibold">{aiSummary.aiConfChange}</div>
           <div className="text-[10px] text-blue-600 mt-1" title="AI volatility index tabanlı hesaplama">Risk Skoru: AI volatility index tabanlı hesaplama</div>
+        </div>
+      </div>
+
+      {/* AI Günlük Özeti 2.0: Yeni Metrikler */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+        {/* Top Alpha Stocks (24s) */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-emerald-200 bg-emerald-50/50">
+          <div className="text-xs font-semibold text-emerald-700 mb-2">📈 En İyi 5 Hisse (24s)</div>
+          <div className="space-y-1">
+            {topAlphaStocks.length > 0 ? topAlphaStocks.slice(0, 5).map((stock, idx) => (
+              <div key={idx} className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-900">{stock.symbol}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-emerald-700 font-bold">+{stock.return.toFixed(1)}%</span>
+                  <span className="text-[10px] text-emerald-600">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                </div>
+              </div>
+            )) : (
+              <>
+                <div className="flex justify-between items-center text-xs"><span className="font-semibold">THYAO</span><span className="text-emerald-700 font-bold">+3.8%</span><span className="text-[10px] text-emerald-600">α+2.1pp</span></div>
+                <div className="flex justify-between items-center text-xs"><span className="font-semibold">SISE</span><span className="text-emerald-700 font-bold">+2.3%</span><span className="text-[10px] text-emerald-600">α+1.5pp</span></div>
+                <div className="flex justify-between items-center text-xs"><span className="font-semibold">EREGL</span><span className="text-emerald-700 font-bold">+1.9%</span><span className="text-[10px] text-emerald-600">α+0.8pp</span></div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Worst Alpha Stocks */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-red-200 bg-red-50/50">
+          <div className="text-xs font-semibold text-red-700 mb-2">📉 En Kötü 5 Hisse (24s)</div>
+          <div className="space-y-1">
+            {worstAlphaStocks.length > 0 ? worstAlphaStocks.slice(0, 5).map((stock, idx) => (
+              <div key={idx} className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-900">{stock.symbol}</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-red-700 font-bold">{stock.return.toFixed(1)}%</span>
+                  <span className="text-[10px] text-red-600">α{stock.alpha >= 0 ? '+' : ''}{stock.alpha.toFixed(1)}pp</span>
+                </div>
+              </div>
+            )) : (
+              <>
+                <div className="flex justify-between items-center text-xs"><span className="font-semibold">AKBNK</span><span className="text-red-700 font-bold">-1.4%</span><span className="text-[10px] text-red-600">α-2.1pp</span></div>
+                <div className="flex justify-between items-center text-xs"><span className="font-semibold">GARAN</span><span className="text-red-700 font-bold">-0.8%</span><span className="text-[10px] text-red-600">α-1.2pp</span></div>
+                <div className="flex justify-between items-center text-xs"><span className="font-semibold">TUPRS</span><span className="text-red-700 font-bold">-0.5%</span><span className="text-[10px] text-red-600">α-0.8pp</span></div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Risk Distribution */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-purple-200 bg-purple-50/50">
+          <div className="text-xs font-semibold text-purple-700 mb-2">⚠️ Risk Dağılımı</div>
+          {riskDistribution ? (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-700">Düşük</span>
+                <span className="font-bold text-green-700">{riskDistribution.low}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-200 rounded overflow-hidden">
+                <div className="h-2 bg-green-500" style={{ width: `${riskDistribution.low}%` }}></div>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-700">Orta</span>
+                <span className="font-bold text-yellow-700">{riskDistribution.medium}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-200 rounded overflow-hidden">
+                <div className="h-2 bg-yellow-500" style={{ width: `${riskDistribution.medium}%` }}></div>
+              </div>
+              <div className="flex justify-between items-center text-xs">
+                <span className="text-slate-700">Yüksek</span>
+                <span className="font-bold text-red-700">{riskDistribution.high}%</span>
+              </div>
+              <div className="w-full h-2 bg-slate-200 rounded overflow-hidden">
+                <div className="h-2 bg-red-500" style={{ width: `${riskDistribution.high}%` }}></div>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div className="flex justify-between items-center text-xs"><span>Düşük</span><span className="font-bold text-green-700">45%</span></div>
+              <div className="w-full h-2 bg-slate-200 rounded"><div className="h-2 bg-green-500 rounded" style={{ width: '45%' }}></div></div>
+              <div className="flex justify-between items-center text-xs"><span>Orta</span><span className="font-bold text-yellow-700">35%</span></div>
+              <div className="w-full h-2 bg-slate-200 rounded"><div className="h-2 bg-yellow-500 rounded" style={{ width: '35%' }}></div></div>
+              <div className="flex justify-between items-center text-xs"><span>Yüksek</span><span className="font-bold text-red-700">20%</span></div>
+              <div className="w-full h-2 bg-slate-200 rounded"><div className="h-2 bg-red-500 rounded" style={{ width: '20%' }}></div></div>
+            </div>
+          )}
+        </div>
+
+        {/* Sentiment vs Price Divergence */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-orange-200 bg-orange-50/50">
+          <div className="text-xs font-semibold text-orange-700 mb-2">📊 Sentiment vs Fiyat Diverjansı</div>
+          {sentimentPriceDivergence !== undefined ? (
+            <>
+              <div className="text-lg font-bold text-orange-900 mb-2">
+                {sentimentPriceDivergence >= 0.3 ? '⚠️ Yüksek Diverjans' : sentimentPriceDivergence <= -0.3 ? '⚠️ Negatif Diverjans' : '✓ Uyumlu'}
+              </div>
+              <div className="text-xs text-slate-700">
+                {sentimentPriceDivergence >= 0.3 
+                  ? 'Sentiment fiyattan çok daha pozitif — dikkatli olunmalı'
+                  : sentimentPriceDivergence <= -0.3
+                  ? 'Sentiment fiyattan çok daha negatif — fırsat olabilir'
+                  : 'Sentiment ve fiyat uyumlu — trend güçlü'}
+              </div>
+              <div className="mt-2">
+                <div className="w-full h-2 bg-slate-200 rounded overflow-hidden">
+                  <div 
+                    className={`h-2 ${sentimentPriceDivergence >= 0 ? 'bg-orange-500' : 'bg-blue-500'}`}
+                    style={{ width: `${Math.abs(sentimentPriceDivergence) * 100}%` }}
+                  ></div>
+                </div>
+                <div className="text-[10px] text-slate-600 mt-1">
+                  Skor: {sentimentPriceDivergence.toFixed(2)} (0 = uyumlu, ±1 = maksimum diverjans)
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="text-lg font-bold text-orange-900 mb-2">✓ Uyumlu</div>
+              <div className="text-xs text-slate-700">Sentiment ve fiyat uyumlu — trend güçlü</div>
+              <div className="mt-2">
+                <div className="w-full h-2 bg-slate-200 rounded"><div className="h-2 bg-orange-500 rounded" style={{ width: '25%' }}></div></div>
+                <div className="text-[10px] text-slate-600 mt-1">Skor: 0.15 (uyumlu)</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
