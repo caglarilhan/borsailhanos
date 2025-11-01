@@ -1722,12 +1722,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         {analysisTab === 'forecast' && (
           <>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Tahmin Paneli</h3>
-        {/* AI Health Panel */}
-        <div className="mb-4">
-          <AIHealthPanel />
-        </div>
-        {/* TraderGPT Conversational Panel */}
-        {gptOpen && (
+            {/* AI Health Panel */}
+            <div className="mb-4">
+              <AIHealthPanel />
+            </div>
+            {/* TraderGPT Conversational Panel */}
+            {gptOpen && (
           <div className="mb-4 border rounded-lg p-3 bg-white">
             <div className="flex items-center justify-between mb-2">
               <div className="text-sm font-semibold text-slate-900">TraderGPT</div>
@@ -1757,9 +1757,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               ))}
             </div>
           </div>
-        )}
-        
-        {selectedSymbol ? (
+            )}
+            {selectedSymbol && (
           <div className="space-y-4">
             <div className="bg-blue-50 p-3 rounded-lg">
               <h4 className="font-medium text-blue-900">{selectedSymbol}</h4>
@@ -2021,6 +2020,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                   </div>
                 </div>
+              ) : (
+                <div className="py-4 space-y-3">
+                  <Skeleton className="h-5 w-40 rounded" />
+                  <Skeleton className="h-4 w-64 rounded" />
+                  <Skeleton className="h-24 w-full rounded" />
+                </div>
+              )}
           </>
         )}
         {analysisTab === 'factors' && (
@@ -2048,6 +2054,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               }}
               version="v5.1 Ensemble LSTM + Prophet Hybrid"
             />
+            {!selectedSymbol && (
+              <div className="mt-4 text-sm text-slate-600">Lütfen bir sembol seçin</div>
+            )}
           </>
         )}
         {analysisTab === 'performance' && (
@@ -2135,19 +2144,14 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     );
                   })()}
                 </div>
-              </div>
-            ) : (
-              <div className="py-4 space-y-3">
-                <Skeleton className="h-5 w-40 rounded" />
-                <Skeleton className="h-4 w-64 rounded" />
-                <Skeleton className="h-24 w-full rounded" />
-              </div>
-            )}
-          </div>
-        ) : null}
-
-        {/* AI Analyst Card */}
+              ) : (
+                <div className="mt-4 text-sm text-slate-600">Lütfen bir sembol seçin</div>
+              )}
+          </>
+        )}
         {!selectedSymbol && (
+          <>
+            {/* AI Analyst Card */}
           <div className="mt-4">
             <AIAnalystCard
               version="MetaLSTM v5.1"
