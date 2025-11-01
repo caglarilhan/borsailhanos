@@ -753,7 +753,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             </button>
           ))}
         </div>
-        <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin">
+        {/* Header Buton Grupları - Overflow önleme */}
+        <div className="flex flex-col sm:flex-row gap-2">
+          {/* Ana Buton Grubu */}
+          <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin">
           <Link
             href="/settings"
             className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-white hover:bg-slate-800 flex items-center gap-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
@@ -1002,14 +1005,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               Kartlar
             </button>
           </div>
-          {/* TraderGPT aç/kapa */}
-          <button
-            onClick={()=> setGptOpen(v=>!v)}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${gptOpen?'bg-purple-600 text-white border-purple-700 shadow-md hover:shadow-lg scale-105':'bg-purple-500/10 text-purple-700 border-purple-400 hover:bg-purple-500/20'}`}
-            title={gptOpen ? 'TraderGPT paneli açık - AI yorumlayıcı konuşmalı panel' : 'TraderGPT panelini aç - AI yorumlayıcı konuşmalı panel'}
-          >
-            {gptOpen ? '✓ ' : ''}🤖 TraderGPT
-          </button>
+          {/* AI Araçları Grubu */}
+          <div className="flex gap-2 items-center bg-purple-50/60 backdrop-blur p-2 rounded-xl shadow-sm">
+            {/* TraderGPT aç/kapa */}
+            <button
+              onClick={()=> setGptOpen(v=>!v)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${gptOpen?'bg-purple-600 text-white border-purple-700 shadow-md hover:shadow-lg scale-105':'bg-purple-500/10 text-purple-700 border-purple-400 hover:bg-purple-500/20'}`}
+              title={gptOpen ? 'TraderGPT paneli açık - AI yorumlayıcı konuşmalı panel' : 'TraderGPT panelini aç - AI yorumlayıcı konuşmalı panel'}
+            >
+              {gptOpen ? '✓ ' : ''}🤖 TraderGPT
+            </button>
+            {/* Dark Mode Toggle (Foundation) */}
+            <ThemeToggleButton />
+          </div>
         </div>
       </div>
       {/* AI-first Header banner */}
@@ -1341,9 +1349,24 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </td>
                       <td className="py-2 pr-4 hidden md:table-cell">
                         <div className="flex items-center gap-2 flex-wrap overflow-hidden">
-                          {techs.map((c) => (
-                            <span key={c} title={c.includes('RSI')? 'RSI>70 → aşırı alım; RSI<30 → aşırı satım' : c.includes('MACD')? 'MACD sinyali trend yönünü teyit eder' : 'Momentum ve hacim birleşimi'} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-900 border border-blue-200 whitespace-nowrap overflow-hidden text-ellipsis dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-800">{c}</span>
-                          ))}
+                          {techs.map((c) => {
+                            const tooltipText = c.includes('RSI') 
+                              ? 'RSI (Relative Strength Index): >70 → aşırı alım; <30 → aşırı satım. 14 periyot standart.'
+                              : c.includes('MACD') 
+                                ? 'MACD (Moving Average Convergence Divergence): Sinyal çizgisi trend yönünü teyit eder. Histogram momentum gösterir.'
+                                : c.includes('Momentum')
+                                  ? 'Momentum: Fiyat değişim hızı. Pozitif → yükseliş momentumu, negatif → düşüş momentumu.'
+                                  : 'Teknik gösterge: Fiyat hareketini analiz eder.';
+                            return (
+                              <span 
+                                key={c} 
+                                title={tooltipText}
+                                className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-900 border border-blue-200 whitespace-nowrap overflow-hidden text-ellipsis dark:bg-blue-900/40 dark:text-blue-100 dark:border-blue-800 cursor-help"
+                              >
+                                {c}
+                              </span>
+                            );
+                          })}
                           <div className="ml-auto hidden xl:block">
                             <Sparkline series={seededSeries(r.symbol + '-row', 24)} width={80} height={18} color={up? '#16a34a':'#dc2626'} />
                           </div>
