@@ -815,6 +815,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     Model drift: {metrics24s.modelDrift >= 0 ? '+' : ''}{metrics24s.modelDrift.toFixed(1)}pp
                   </div>
                 )}
+                {/* Son Güncelleme Timestamp */}
+                {lastUpdated && (
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
+                    Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                )}
               </div>
               {/* Sprint 2: Aktif Sinyal KPI - Yeni sinyal sayısı (son 1 saat) */}
               <div className="bg-blue-500/20 backdrop-blur-sm rounded-xl p-4 border border-blue-400/30 shadow-md hover:shadow-lg transition-shadow">
@@ -824,6 +830,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 {metrics24s.newSignals > 0 && (
                   <div className="text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block bg-blue-500/30 text-blue-100">
                     +{metrics24s.newSignals} yeni (son 1 saat)
+                  </div>
+                )}
+                {/* Son Güncelleme Timestamp */}
+                {lastUpdated && (
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
+                    Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 )}
               </div>
@@ -867,6 +879,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <div className="text-[9px] text-white/60 mt-1 border-t border-white/20 pt-1">
                       AI Güven: {(accuracy * 100).toFixed(1)}% (ayrı metrik)
                     </div>
+                    {/* Son Güncelleme Timestamp */}
+                    {lastUpdated && (
+                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
+                        Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -875,6 +893,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Toplam Sinyal</div>
                 <div className="text-2xl font-bold text-purple-100">{Math.max(rows.length, 100)}</div>
                 <div className="text-[10px] text-white/70 mt-1">Bugün işlem</div>
+                {/* Son Güncelleme Timestamp */}
+                {lastUpdated && (
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
+                    Son güncelleme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  </div>
+                )}
               </div>
               {/* AI Core Panel (compact) */}
               <div className="col-span-2 md:col-span-4">
