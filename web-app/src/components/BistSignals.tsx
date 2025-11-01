@@ -1802,7 +1802,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                     {/* P0-01: FinBERT confidence ± tooltip */}
                     <div className="text-[10px] text-slate-500 mb-1 flex items-center justify-between">
-                      <span>Zaman penceresi: {timeWindow}</span>
+                      <span>Zaman penceresi: {timeWindow} {timeWindow.includes('24') || timeWindow.includes('saat') ? '(Son 24 saat)' : timeWindow.includes('7') || timeWindow.includes('gün') ? '(Son 7 gün)' : '(Son 30 gün)'}</span>
                       <span 
                         className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 cursor-help"
                         title={`FinBERT confidence: ${sentimentSummary?.confidence || 0.87} (${sentimentSummary?.confidence_drift ? (sentimentSummary.confidence_drift >= 0 ? '+' : '') + sentimentSummary.confidence_drift.toFixed(1) + 'pp' : '±0.0pp'} 24s değişim)`}
@@ -2368,15 +2368,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   
                   // Mean-Variance Optimization
                   const { optimizePortfolio, calculatePortfolioMetrics } = require('@/lib/portfolio-optimizer');
+                  const { normalizeWeights } = require('@/lib/portfolio-weights-normalize');
                   const optimizedWeights = optimizePortfolio({
                     symbols: topSymbols,
                     riskLevel: portfolioRiskLevel || 'medium'
                   });
                   
-                  const metrics = calculatePortfolioMetrics(optimizedWeights, topSymbols);
+                  // Normalize weights to ensure sum = 100%
+                  const normalizedWeights = normalizeWeights(optimizedWeights);
                   
-                  // Show top 5 optimized weights
-                  const top5Weights = optimizedWeights.slice(0, 5);
+                  const metrics = calculatePortfolioMetrics(normalizedWeights, topSymbols);
+                  
+                  // Show top 5 optimized weights (normalized)
+                  const top5Weights = normalizedWeights.slice(0, 5);
                   
                   return (
                     <>
@@ -2819,7 +2823,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                             </div>
                             
                             {/* Visualization with confidence band */}
-                            <div className="h-24 w-full bg-slate-50 rounded-lg p-2 border border-slate-200 relative">
+                            <div className="h-24 w-full bg-slate-50 rounded-lg p-2 border border-slate-200 relative group">
                               <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
                                 <defs>
                                   <linearGradient id={`confidenceBand-${selectedSymbol}`} x1="0%" y1="0%" x2="0%" y2="100%">
