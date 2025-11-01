@@ -303,6 +303,21 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     }
   }, [forcedUniverse]);
 
+  // API latency tracking
+  useEffect(() => {
+    if (!predQ.dataUpdatedAt) return;
+    const startTime = predQ.dataUpdatedAt;
+    const checkLatency = () => {
+      const latency = Date.now() - startTime;
+      setApiLatency(latency);
+      if (latency < 500) setApiStatus('good');
+      else if (latency < 1500) setApiStatus('warning');
+      else setApiStatus('error');
+    };
+    const timer = setTimeout(checkLatency, 100);
+    return () => clearTimeout(timer);
+  }, [predQ.dataUpdatedAt]);
+
   const endpoint = useMemo(() => {
     // Eğer hiçbir ufuk seçili değilse, güvenli varsayılan uygula
     const horizons = activeHorizons.length === 0 ? ['1d'] : activeHorizons;
@@ -1364,7 +1379,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         </div>
                       </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-gray-800 hidden md:table-cell whitespace-nowrap">
-                    <ClockIcon className="h-4 w-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
+                    <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
                     {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
                   </td>
                       <td className="py-2 pr-4 flex items-center gap-2 whitespace-nowrap">
@@ -1538,7 +1553,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     {miniAnalysis(best.prediction||0, best.confidence||0, sym)}
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-slate-700">
-                    <ClockIcon className="h-4 w-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
+                    <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
                     Geçerlilik: {new Date(best.valid_until).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})}
                   </div>
                   <div className="mt-3 flex items-center gap-2">
