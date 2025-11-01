@@ -1371,13 +1371,26 @@ function DashboardV33Inner() {
             // Derive symbol list from signals or fallback
             const symbols = (signals && signals.length > 0 ? signals.map((s:any)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
             const n = symbols.length;
+            // P0-02: Korelasyon Heatmap Simetrik Kontrolü (ρ = ρᵀ)
             const corr: number[][] = [];
-            for (let i=0;i<n;i++){ corr[i]=[]; for(let j=0;j<n;j++){ if(i===j){corr[i][j]=1;} else {
-              const key = symbols[i] + '-' + symbols[j];
-              let h=0; for (let k=0;k<key.length;k++) h=(h*31+key.charCodeAt(k))>>>0;
-              const v = ((h % 161) - 80) / 100; // -0.8..+0.8
-              corr[i][j]=parseFloat(v.toFixed(2));
-            } } }
+            for (let i=0;i<n;i++){ 
+              corr[i]=[]; 
+              for(let j=0;j<n;j++){ 
+                if(i===j){
+                  corr[i][j]=1; // Self-correlation always 1
+                } else if(i<j){
+                  // Upper triangle: generate once
+                  const key = symbols[i] + '-' + symbols[j];
+                  let h=0; for (let k=0;k<key.length;k++) h=(h*31+key.charCodeAt(k))>>>0;
+                  const v = ((h % 161) - 80) / 100; // -0.8..+0.8
+                  const normalized = parseFloat(v.toFixed(2));
+                  corr[i][j]=normalized;
+                } else {
+                  // Lower triangle: mirror upper (ρ = ρᵀ)
+                  corr[i][j]=corr[j][i];
+                }
+              } 
+            }
             return (
               <div style={{ overflowX: 'auto' }}>
                 <div style={{ display: 'inline-grid', gridTemplateColumns: '80px repeat(' + n + ', 40px)' }}>

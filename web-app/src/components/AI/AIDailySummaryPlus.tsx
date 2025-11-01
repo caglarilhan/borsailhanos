@@ -91,12 +91,12 @@ export function AIDailySummaryPlus({
       // Sprint 3: Enhanced multi-layer summary
       // Layer 1: Piyasa Rejimi (Risk-on/off with volatility, CDS)
       marketRegime: `Risk-${regime === 'risk-on' ? 'on' : 'off'} (Volatilite ${volatility >= 0.8 ? 'düşüyor' : 'yükseliyor'}, CDS ${macroFeed?.cds ? (macroFeed.cds < 400 ? '-2%' : '+1%') : 'stabil'})`,
-      // Layer 2: Sektör Liderleri
-      sectorLeaders: `Teknoloji +3.8%, Sanayi +2.1%`,
+      // P0-04: Layer 2: Sektör Liderleri (En iyi 3 + En kötü 3)
+      sectorLeaders: `En İyi: Teknoloji +3.8%, Sanayi +2.3%, Enerji +1.9% | En Zayıf: Gıda -0.8%, Bankacılık -1.4%, Perakende -0.5%`,
       // Layer 3: AI Snapshot
       aiSnapshot: `${totalSignals} aktif sinyal, ortalama güven %${avgConfidence}`,
-      // Layer 4: Uyarılar
-      warnings: `Bankacılık RSI 69 (aşırı alım riski)`,
+      // P0-04: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse)
+      warnings: `Dikkat: AKBNK (yüksek volatilite %18.2), EREGL (RSI 69 aşırı alım riski)`,
       // Layer 5: Model Drift
       modelDrift: `${confChange >= 0 ? '+' : ''}${confChange}pp (${confTrend === '↑' ? 'stabil' : 'dikkat'})`,
       // Legacy format
@@ -154,11 +154,11 @@ export function AIDailySummaryPlus({
           <div className="text-[10px] text-slate-600 mt-1">Risk-on/off, Volatilite, CDS</div>
         </div>
 
-        {/* Sprint 3: Layer 2: Sektör Liderleri */}
+        {/* P0-04: Layer 2: Sektör Liderleri (En iyi 3 + En kötü 3) */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-slate-200">
-          <div className="text-xs font-semibold text-slate-700 mb-1">💡 Sektör Liderleri</div>
-          <div className="text-sm text-slate-900 font-semibold">{aiSummary.sectorLeaders}</div>
-          <div className="text-[10px] text-slate-600 mt-1">En yüksek performanslı sektörler</div>
+          <div className="text-xs font-semibold text-slate-700 mb-1">💡 Sektör Analizi</div>
+          <div className="text-sm text-slate-900 font-semibold leading-relaxed">{aiSummary.sectorLeaders}</div>
+          <div className="text-[10px] text-slate-600 mt-1">En iyi 3 sektör | En zayıf 3 sektör</div>
         </div>
 
         {/* Sprint 3: Layer 3: AI Snapshot */}
@@ -168,11 +168,11 @@ export function AIDailySummaryPlus({
           <div className="text-[10px] text-blue-600 mt-1">Aktif sinyal & ortalama güven</div>
         </div>
 
-        {/* Sprint 3: Layer 4: Uyarılar */}
+        {/* P0-04: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse) */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-amber-200 bg-amber-50/50">
-          <div className="text-xs font-semibold text-amber-700 mb-1">⚠️ Uyarı</div>
-          <div className="text-sm text-amber-900 font-semibold">{aiSummary.warnings}</div>
-          <div className="text-[10px] text-amber-600 mt-1">Teknik uyarılar</div>
+          <div className="text-xs font-semibold text-amber-700 mb-1">⚠️ Dikkat Edilmesi Gereken Hisse</div>
+          <div className="text-sm text-amber-900 font-semibold leading-relaxed">{aiSummary.warnings}</div>
+          <div className="text-[10px] text-amber-600 mt-1">Bugün dikkat edilmesi gereken 2 hisse</div>
         </div>
 
         {/* Sprint 3: Layer 5: Model Drift */}

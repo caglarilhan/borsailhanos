@@ -1541,11 +1541,22 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 const timeWindow = sentimentSummary?.time_window || '7g';
                 return (
                   <>
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="px-2 py-0.5 rounded bg-green-50 text-green-700 border border-green-200">Pozitif {posN}%</span>
-                      <span className="px-2 py-0.5 rounded bg-red-50 text-red-700 border border-red-200">Negatif {negN}%</span>
-                      <span className="px-2 py-0.5 rounded bg-slate-50 text-slate-700 border border-slate-200">Nötr {neuN}%</span>
+                    {/* P2-02: Sektörel Sentiment başlıkları (Pozitif/Nötr/Negatif) */}
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      <div className="text-center">
+                        <div className="text-[9px] text-slate-600 mb-1">Pozitif</div>
+                        <div className="px-2 py-1 rounded bg-green-50 text-green-700 border border-green-200 font-semibold">{posN}%</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-[9px] text-slate-600 mb-1">Nötr</div>
+                        <div className="px-2 py-1 rounded bg-slate-50 text-slate-700 border border-slate-200 font-semibold">{neuN}%</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-[9px] text-slate-600 mb-1">Negatif</div>
+                        <div className="px-2 py-1 rounded bg-red-50 text-red-700 border border-red-200 font-semibold">{negN}%</div>
+                      </div>
                     </div>
+                    <div className="text-[10px] text-slate-500 text-center">Toplam: {(posN + negN + neuN).toFixed(1)}% (normalize edilmiş)</div>
                     <div className="text-[10px] text-slate-500 mb-1">Zaman penceresi: {timeWindow}</div>
                   </>
                 );
