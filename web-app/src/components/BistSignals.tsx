@@ -998,9 +998,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               trigger={
             <button
                   onClick={() => setAiOpen(v => !v)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${aiOpen?'bg-blue-600 text-white border-blue-700 shadow-md':'bg-blue-600 text-white hover:bg-blue-700 border-blue-500'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all relative ${aiOpen?'bg-blue-600 text-white border-blue-700 shadow-md':'bg-blue-600 text-white hover:bg-blue-700 border-blue-500'}`}
                 >
                   🧠 AI
+                  {/* Aktif sekme vurgusu - Underline */}
+                  {aiOpen && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></span>
+                  )}
                 </button>
               }
               content={
@@ -1036,9 +1040,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               trigger={
                 <button
                   onClick={() => setRiskOpen(v => !v)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${riskOpen?'bg-red-600 text-white border-red-700 shadow-md':'bg-red-600 text-white hover:bg-red-700 border-red-500'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all relative ${riskOpen?'bg-red-600 text-white border-red-700 shadow-md':'bg-red-600 text-white hover:bg-red-700 border-red-500'}`}
                 >
                   📈 Risk Model
+                  {/* Aktif sekme vurgusu - Underline */}
+                  {riskOpen && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></span>
+                  )}
                 </button>
               }
               content={
@@ -1055,9 +1063,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               trigger={
                 <button
                   onClick={() => setMetaOpen(v => !v)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${metaOpen?'bg-purple-600 text-white border-purple-700 shadow-md':'bg-purple-600 text-white hover:bg-purple-700 border-purple-500'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all relative ${metaOpen?'bg-purple-600 text-white border-purple-700 shadow-md':'bg-purple-600 text-white hover:bg-purple-700 border-purple-500'}`}
                 >
                   🧮 Meta-Model
+                  {/* Aktif sekme vurgusu - Underline */}
+                  {metaOpen && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></span>
+                  )}
                 </button>
               }
               content={
@@ -1079,9 +1091,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               trigger={
                 <button
                   onClick={() => setStrategyOpen(v => !v)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${strategyOpen?'bg-emerald-600 text-white border-emerald-700 shadow-md':'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-500'}`}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all relative ${strategyOpen?'bg-emerald-600 text-white border-emerald-700 shadow-md':'bg-emerald-600 text-white hover:bg-emerald-700 border-emerald-500'}`}
                 >
                   🎯 Strateji
+                  {/* Aktif sekme vurgusu - Underline */}
+                  {strategyOpen && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-white rounded-full"></span>
+                  )}
                 </button>
               }
               content={
@@ -1137,14 +1153,14 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               trigger={
                 <button
                   onClick={() => { /* Viz Hub aç */ }}
-                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-1.5 transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 flex items-center gap-1.5 transition-colors relative"
                 >
                   📊 Viz
                 </button>
               }
               content={
                 <div className="space-y-2">
-                  <div className="font-semibold text-slate-900">Görselleştirme Hub</div>
+                  <div className="font-semibold text-slate-900">📊 Viz — Gelişmiş Görselleştirme Hub</div>
                   <div className="text-xs text-slate-700">
                     Tüm grafikler, heatmap, korelasyon matrisi ve görsel analiz araçları.
                   </div>
@@ -3798,6 +3814,36 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           </div>
                         </div>
 
+                        {/* Backtest Pro: PDF Export Butonu */}
+                        <div className="mt-3 pt-3 border-t border-slate-200">
+                          <button
+                            onClick={() => {
+                              // PDF Export - Mock implementation
+                              const win = window.open('', '_blank');
+                              if (win) {
+                                win.document.write(`
+                                  <html>
+                                    <head><title>BIST AI Backtest Raporu</title></head>
+                                    <body style="font-family: Arial; padding: 20px;">
+                                      <h1>BIST AI Backtest Raporu</h1>
+                                      <p><strong>Periyot:</strong> ${backtestRebDays} gün</p>
+                                      <p><strong>Ortalama Getiri:</strong> %${((() => { const m = backtestRebDays === 30 ? 0.086 : backtestRebDays === 180 ? 0.095 : 0.104; return (m * 100).toFixed(1); })())}</p>
+                                      <p><strong>Sharpe Ratio:</strong> ${(() => { const s = backtestRebDays === 30 ? 1.85 : backtestRebDays === 180 ? 1.92 : 2.01; return s.toFixed(2); })()}</p>
+                                      <p><strong>Win Rate:</strong> %${(() => { const w = backtestRebDays === 30 ? 72.5 : backtestRebDays === 180 ? 75.2 : 78.1; return w.toFixed(1); })()}</p>
+                                      <p><strong>Max Drawdown:</strong> %${(() => { const d = backtestRebDays === 30 ? 8.2 : backtestRebDays === 180 ? 12.5 : 15.3; return d.toFixed(1); })()}</p>
+                                      <p><em>Not: Bu rapor simüle edilmiş verilerle oluşturulmuştur.</em></p>
+                                    </body>
+                                  </html>
+                                `);
+                                win.document.close();
+                                win.print();
+                              }
+                            }}
+                            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1.5 transition-colors"
+                          >
+                            📤 PDF Export
+                          </button>
+                        </div>
                         {/* Backtest Pro: Kullanıcı Dostu Özet Metin */}
                         <div className="border-t border-slate-300 pt-2 mt-2 bg-blue-50 rounded p-2">
                           <div className="text-xs font-semibold text-blue-900 mb-1">📊 Backtest Özeti</div>
