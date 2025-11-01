@@ -2427,9 +2427,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       {/* Portfolio Weights Normalize Status */}
                       <div className="mt-2 pt-2 border-t border-slate-200 text-[9px] text-slate-500 text-center">
                         {(() => {
-                          const totalWeight = normalizedWeights.reduce((sum, w) => sum + (w.weight / 100), 0); // Already in percentage
-                          const isNormalized = Math.abs(totalWeight - 1.0) < 0.001 || Math.abs(totalWeight * 100 - 100) < 0.1;
-                          const totalPct = normalizedWeights.reduce((sum, w) => sum + w.weight, 0);
+                          const totalPct = normalizedWeights.reduce((sum: number, w: { symbol: string; weight: number }) => sum + w.weight, 0);
+                          const isNormalized = Math.abs(totalPct - 100) < 0.1;
                           return isNormalized ? (
                             <span className="text-green-600 font-semibold">✓ Toplam ağırlık: {totalPct.toFixed(1)}% (Normalize edilmiş)</span>
                           ) : (
