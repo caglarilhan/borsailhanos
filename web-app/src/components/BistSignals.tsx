@@ -1997,15 +1997,35 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         <span className="font-semibold text-[#111827]">AI Yorum:</span>
                         <span className="truncate">{miniAnalysis(best.prediction||0, best.confidence||0, sym)}</span>
                       </summary>
+                      {/* P1-03: Sinyal açıklamaları kullanıcı dostu - Teknik metrikler tooltip içinde */}
                       <div className="mt-1 pl-4 text-[10px] text-slate-600">
-                        <div className="font-semibold mb-1">XAI Ağırlıkları (toplam: 1.0):</div>
-                        <ul className="list-disc pl-4 space-y-0.5">
-                          <li>RSI: 0.25 (momentum) — {Math.round(0.25 * 100)}%</li>
-                          <li>MACD: 0.25 (trend) — {Math.round(0.25 * 100)}%</li>
-                          <li>Sentiment: 0.30 (FinBERT) — {Math.round(0.30 * 100)}%</li>
-                          <li>Volume: 0.20 (hacim) — {Math.round(0.20 * 100)}%</li>
-                          <li>Kalibrasyon: Platt scaling</li>
-                        </ul>
+                        {(() => {
+                          const mockRSI = getMockRSI(best.prediction || 0, sym);
+                          const rsiState = mapRSIToState(mockRSI);
+                          const rsiStateLabel = getRSIStateLabel(mockRSI);
+                          return (
+                            <>
+                              <div className="font-semibold mb-1">📊 Teknik Detaylar (Hover için):</div>
+                              <ul className="list-disc pl-4 space-y-0.5">
+                                <li title={`RSI: ${mockRSI} — ${rsiStateLabel} (14 periyot)`}>
+                                  RSI: {mockRSI} — {rsiStateLabel} ({Math.round(0.25 * 100)}% ağırlık)
+                                </li>
+                                <li title="MACD: Trend yönünü teyit eder, histogram momentum gösterir">
+                                  MACD: Trend onayı ({Math.round(0.25 * 100)}% ağırlık)
+                                </li>
+                                <li title="Sentiment: FinBERT-TR Türkçe NLP analizi">
+                                  Sentiment: FinBERT analizi ({Math.round(0.30 * 100)}% ağırlık)
+                                </li>
+                                <li title="Volume: Hacim artışı/azalışı momentumu etkiler">
+                                  Volume: Hacim momentumu ({Math.round(0.20 * 100)}% ağırlık)
+                                </li>
+                              </ul>
+                              <div className="mt-2 pt-2 border-t border-slate-200 text-[9px] text-slate-500">
+                                Kalibrasyon: Platt scaling • Toplam ağırlık: 100%
+                              </div>
+                            </>
+                          );
+                        })()}
                       </div>
                     </details>
                     <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${formatCurrency(targetPrice)} (${formatNumber(diffPct)}%), Stop loss: ${formatCurrency(currentPrice*0.9)}. Formül: RSI*0.25 + MACD*0.25 + Sentiment*0.3 + Volume*0.2`}>
@@ -2493,16 +2513,22 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           <button
                             onClick={async () => {
                               try {
-                                // Mock rebalance - in production this would call API
-                                alert('AI Rebalance: Portföy yeniden dengeleniyor...\nYeni dağılım hesaplanıyor.');
+                                // P1-04: Portföy Simülatörü dinamik - Şimdilik mock, gerçek hesaplama modülü gerekiyor
+                                // TODO: Gerçek rebalance.ts modülü entegre edilecek (Markowitz/Black-Litterman)
+                                alert('AI Rebalance: Portföy yeniden dengeleniyor...\n⚠️ Demo modu - Gerçek hesaplama için optimizer.ts gerekiyor.');
+                                // Gerçek implementasyon:
+                                // const newWeights = await optimizePortfolio(symbols, riskLevel, constraints);
+                                // setPortfolioWeights(newWeights);
+                                // updatePnLChart(newWeights);
                               } catch (e) {
                                 console.error('Rebalance error:', e);
                               }
                             }}
-                            className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
-                            title="AI Rebalance: Portföyü optimize et"
+                            className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all shadow-md hover:shadow-lg relative"
+                            title="AI Rebalance: Portföyü optimize et (⚠️ Demo modu - gerçek hesaplama modülü gerekiyor)"
                           >
                             🔄 AI Rebalance
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-amber-400 rounded-full" title="Demo modu"></span>
                           </button>
                         </div>
                       </div>
