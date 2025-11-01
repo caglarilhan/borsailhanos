@@ -88,16 +88,17 @@ export function AIDailySummaryPlus({
     const confTrend = Number(confChange) >= 0 ? '↑' : '↓';
     
     return {
-      // Layer 1: Piyasa Trend
-      marketTrend: `%71 pozitif`,
-      // Layer 2: AI Görüşü
-      aiView: `Risk-${regime === 'risk-on' ? 'on' : 'off'} rejimi`,
-      // Layer 3: En güçlü sektör
-      topSector: `Teknoloji +3.8%`,
-      // Layer 4: Top 3 momentum
-      top3Momentum: `THYAO, SISE, AKBNK`,
-      // Layer 5: Uyarılar
-      warnings: `Bankacılıkta RSI 68 (aşırı alım)`,
+      // Sprint 3: Enhanced multi-layer summary
+      // Layer 1: Piyasa Rejimi (Risk-on/off with volatility, CDS)
+      marketRegime: `Risk-${regime === 'risk-on' ? 'on' : 'off'} (Volatilite ${volatility >= 0.8 ? 'düşüyor' : 'yükseliyor'}, CDS ${macroFeed?.cds ? (macroFeed.cds < 400 ? '-2%' : '+1%') : 'stabil'})`,
+      // Layer 2: Sektör Liderleri
+      sectorLeaders: `Teknoloji +3.8%, Sanayi +2.1%`,
+      // Layer 3: AI Snapshot
+      aiSnapshot: `${totalSignals} aktif sinyal, ortalama güven %${avgConfidence}`,
+      // Layer 4: Uyarılar
+      warnings: `Bankacılık RSI 69 (aşırı alım riski)`,
+      // Layer 5: Model Drift
+      modelDrift: `${confChange >= 0 ? '+' : ''}${confChange}pp (${confTrend === '↑' ? 'stabil' : 'dikkat'})`,
       // Legacy format
       macro: `Bugün endeks açılışında TRY ${usdtryChange} %${usdtryPct}, en güçlü sektör teknoloji.`,
       aiSamples: `AI bugün ${totalSignals} sinyal taradı, ${highConfBuys} yüksek güvenli (>%85) BUY önerisi var.`,
