@@ -1713,7 +1713,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <div style={{ width: s.weight + '%', background: s.change>=0 ? '#22c55e' : '#ef4444' }} className="h-2 rounded"></div>
                   </div>
                 </div>
-              ))}
+                ));
+              })()}
             </div>
           </div>
           <div className="bg-white rounded-lg p-3 border">

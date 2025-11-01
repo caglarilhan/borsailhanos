@@ -512,7 +512,12 @@ export function AIDailySummaryPlus({
             color="#2563eb"
           />
         </div>
-        <div className="text-[10px] text-slate-500 mt-1">
+        <div className="flex items-center justify-between mt-2 text-[10px] text-slate-600">
+          <span>Min: {(Math.min(...confidenceSeries) * 100).toFixed(1)}%</span>
+          <span>Ortalama: {((confidenceSeries.reduce((a, b) => a + b, 0) / confidenceSeries.length) * 100).toFixed(1)}%</span>
+          <span>Max: {(Math.max(...confidenceSeries) * 100).toFixed(1)}%</span>
+        </div>
+        <div className="text-[10px] text-slate-500 mt-1 text-center">
           Son 24 saatte AI güven trendi: {confidenceSeries[confidenceSeries.length - 1] > confidenceSeries[0] ? '↑ Yükseliş' : '↓ Düşüş'}
         </div>
       </div>
