@@ -67,7 +67,7 @@ export default function AdvancedCharts({ symbol = 'THYAO', data, isLoading }: Ad
     }
   };
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
+  const CustomTooltip = memo(({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       return (
@@ -329,4 +329,8 @@ export default function AdvancedCharts({ symbol = 'THYAO', data, isLoading }: Ad
       </div>
     </div>
   );
-}
+});
+
+AdvancedCharts.displayName = 'AdvancedCharts';
+
+export default AdvancedCharts;

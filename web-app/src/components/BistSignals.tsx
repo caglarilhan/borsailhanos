@@ -39,7 +39,7 @@ function seededSeries(key: string, len: number = 20): number[] {
   return out;
 }
 
-function Sparkline({ series, width = 80, height = 24, color = '#10b981' }: { series: number[]; width?: number; height?: number; color?: string }) {
+const Sparkline = React.memo(({ series, width = 80, height = 24, color = '#10b981' }: { series: number[]; width?: number; height?: number; color?: string }) => {
   if (!series || series.length === 0) return null;
   const min = Math.min(...series);
   const max = Math.max(...series);
@@ -56,7 +56,13 @@ function Sparkline({ series, width = 80, height = 24, color = '#10b981' }: { ser
       <path d={d} fill="none" stroke={color} strokeWidth={1.5} />
     </svg>
   );
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison: only re-render if series actually changed
+  if (prevProps.series.length !== nextProps.series.length) return false;
+  if (prevProps.width !== nextProps.width || prevProps.height !== nextProps.height || prevProps.color !== nextProps.color) return false;
+  return prevProps.series.every((v, i) => v === nextProps.series[i]);
+});
+Sparkline.displayName = 'Sparkline';
 
 type Horizon = '5m'|'15m'|'30m'|'1h'|'4h'|'1d'|'7d'|'30d';
 type Universe = 'BIST30'|'BIST100'|'BIST300'|'ALL';
@@ -112,8 +118,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       }
     }
   }, []);
-  // Lazy subcomponent: XAI + Analyst
-  const XaiAnalyst: React.FC<{ symbol: string | null }> = ({ symbol }) => {
+  // Lazy subcomponent: XAI + Analyst (memoized for performance)
+  const XaiAnalyst: React.FC<{ symbol: string | null }> = React.memo(({ symbol }) => {
     const { useXaiWaterfall, useSentimentAnalyst, useBacktestQuick } = require('@/hooks/queries');
     const xai = useXaiWaterfall(symbol || undefined);
     const an = useSentimentAnalyst(symbol || undefined);
@@ -141,7 +147,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         </div>
       </div>
     );
-  };
+  }, (prevProps, nextProps) => prevProps.symbol === nextProps.symbol);
+  XaiAnalyst.displayName = 'XaiAnalyst';
   const [analysisHorizon, setAnalysisHorizon] = useState<'1d'|'7d'|'30d'>('1d');
   const [signalFilter, setSignalFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<'confidence' | 'prediction' | 'symbol'>('confidence');
