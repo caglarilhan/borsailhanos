@@ -57,7 +57,8 @@ function seededSeries(key: string, len: number = 20): number[] {
   return out;
 }
 
-const Sparkline = React.memo(({ series, width = 80, height = 24, color = '#10b981' }: { series: number[]; width?: number; height?: number; color?: string }) => {
+// P2-14: Renk tutarlılığı - Tailwind palette standartlaştırma (#22c55e / #ef4444)
+const Sparkline = React.memo(({ series, width = 80, height = 24, color = '#22c55e' }: { series: number[]; width?: number; height?: number; color?: string }) => {
   if (!series || series.length === 0) return null;
   const min = Math.min(...series);
   const max = Math.max(...series);
@@ -1509,7 +1510,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 <div key={s.sector} className="text-xs">
                   <div className="flex justify-between mb-1 text-gray-700"><span>{s.sector}</span><span>{s.weight}%</span></div>
                   <div className="w-full h-2 bg-gray-100 rounded">
-                    <div style={{ width: s.weight + '%', background: s.change>=0 ? '#10b981' : '#ef4444' }} className="h-2 rounded"></div>
+                    {/* P2-14: Renk tutarlılığı - Tailwind palette standartlaştırma (#22c55e / #ef4444) */}
+                    <div style={{ width: s.weight + '%', background: s.change>=0 ? '#22c55e' : '#ef4444' }} className="h-2 rounded"></div>
                   </div>
                 </div>
               ))}
@@ -1524,8 +1526,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               <div className="mt-3 text-xs text-gray-600">İlk 5 yükseliş: {(bist30Overview?.top5_gainers_24h||[]).map((x:any)=> x.symbol + ' +' + x.chg24h + '%').join(', ')}</div>
             </div>
           </div>
+          {/* P2-15: AI News Hub - Tek haber bölümü (çift liste önlendi) */}
           <div className="bg-white rounded-lg p-3 border">
-            <div className="text-sm font-semibold text-gray-900 mb-2">BIST30 Haberleri (24s)</div>
+            <div className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <span>📰 AI News Hub</span>
+              <span className="text-[10px] text-gray-500">(24s • BIST30)</span>
+            </div>
             <div className="space-y-2 max-h-40 overflow-auto pr-1">
               {bist30News.map((n:any, idx:number)=> {
                 const url: string = String(n.url || '').trim();
@@ -1556,17 +1562,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <div className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-2">
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">{host}</span>
                       <span>{n.symbol}</span>
-                      {/* P1-08: Gerçek Zamanlı Uyarılar - Dinamik zaman gösterimi */}
+                      {/* P1-10: FinBERT Kaynakları UTC timestamp - Her habere UTC timestamp eklendi */}
                       <span>• {(() => {
                         const published = new Date(n.published_at);
                         const now = new Date();
                         const diffMs = now.getTime() - published.getTime();
                         const diffMins = Math.floor(diffMs / (1000 * 60));
                         const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                        if (diffMins < 1) return 'Az önce';
-                        if (diffMins < 60) return `${diffMins} dk önce`;
-                        if (diffHours < 24) return `${diffHours} sa önce`;
-                        return published.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'}) + ' UTC+3';
+                        // P1-10: UTC timestamp gösterimi
+                        const utcTime = published.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+                        if (diffMins < 1) return 'Az önce (' + utcTime + ')';
+                        if (diffMins < 60) return `${diffMins} dk önce (${utcTime})`;
+                        if (diffHours < 24) return `${diffHours} sa önce (${utcTime})`;
+                        return published.toLocaleString('tr-TR', {year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit'}) + ' (' + utcTime + ')';
                       })()}</span>
                     </div>
                   </a>
@@ -1619,7 +1627,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 <div className="text-[11px] text-slate-500 mb-1">7g Pozitif Trend</div>
                 {(() => {
                   const series = Array.isArray(sentimentSummary?.trend_7d) ? sentimentSummary.trend_7d.map((d:any)=> Number(d.positive) || 0) : [];
-                  return <Sparkline series={series} width={120} height={24} color="#10b981" />;
+                  // P2-14: Renk tutarlılığı - Tailwind green-500 (#22c55e)
+                  return <Sparkline series={series} width={120} height={24} color="#22c55e" />;
                 })()}
               </div>
               <div className="mt-2 flex items-center justify-between text-[10px] text-slate-500">
@@ -1875,7 +1884,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <td className="py-2 pr-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 w-full max-w-[220px]">
                           <div className="flex-1 h-2 rounded bg-gray-100 overflow-hidden">
-                            <div className="h-2" style={{ width: confPct + '%', background: confPct>=85 ? '#10b981' : confPct>=70 ? '#fbbf24' : '#ef4444' }}></div>
+                            {/* P2-14: Renk tutarlılığı - Tailwind palette (#22c55e / #ef4444) */}
+                            <div className="h-2" style={{ width: confPct + '%', background: confPct>=85 ? '#22c55e' : confPct>=70 ? '#fbbf24' : '#ef4444' }}></div>
                           </div>
                           <span className="text-[12px] font-semibold text-[#111827]">{confPct}%</span>
                           <span className="px-2 py-0.5 rounded bg-gray-100 text-[10px]">S10 {success10}%</span>
@@ -1973,6 +1983,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   {/* Başlık - Sembol + Yön Badge */}
                   <div className="flex items-center justify-between mb-3">
                     <div className="text-[18px] font-extrabold text-[#111827]">{sym}</div>
+                    {/* P2-14: Renk tutarlılığı - Tailwind green-500/red-500 standart renkler */}
                     <div className={`text-xs font-bold px-3 py-1.5 rounded-full border-2 ${up?'bg-green-500 text-white border-green-600 shadow-md':'bg-red-500 text-white border-red-600 shadow-md'}`}>
                       {up ? '▲ YÜKSELİŞ' : '▼ DÜŞÜŞ'}
                     </div>
@@ -2309,7 +2320,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <div className="mt-2">
                       <div className="text-xs text-slate-700 mb-1">Yükseliş</div>
                       <div className="h-2 bg-slate-200 rounded">
-                        <div className="h-2 rounded bg-green-500" style={{ width: ((analysisData.predictions?.[analysisHorizon]?.up_prob || 0) * 100) + '%' }}></div>
+                        {/* P2-14: Renk tutarlılığı - Tailwind green-500 (#22c55e) */}
+                        <div className="h-2 rounded bg-green-500" style={{ width: ((analysisData.predictions?.[analysisHorizon]?.up_prob || 0) * 100) + '%', background: '#22c55e' }}></div>
                       </div>
                     </div>
                     <div className="mt-2">

@@ -95,8 +95,10 @@ export function AIDailySummaryPlus({
       sectorLeaders: `En İyi: Teknoloji +3.8% (α+2.1pp), Sanayi +2.3% (α+1.5pp), Enerji +1.9% (α+0.8pp) | En Zayıf: Gıda -0.8% (α-1.2pp), Bankacılık -1.4% (α-2.1pp), Perakende -0.5% (α-0.8pp)`,
       // P1-06: Layer 3: AI Snapshot + AI trend değişimi
       aiSnapshot: `${totalSignals} aktif sinyal, ortalama güven %${avgConfidence} (${confChange >= 0 ? '+' : ''}${confChange}pp 24s drift)`,
-      // P0-04: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse)
+      // P1-06: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse) + AI Öneri (eylem)
       warnings: `Dikkat: AKBNK (yüksek volatilite %18.2), EREGL (RSI 69 aşırı alım riski)`,
+      // P3: AI Öneri (eylem önerileri)
+      aiRecommendation: `THYAO ve SISE → Al baskın (momentum + sentiment uyumlu). AKBNK → Volatilite yüksek, dikkatli yaklaş.`,
       // P1-06: Layer 5: Model Drift + AI trend değişimi
       modelDrift: `${confChange >= 0 ? '+' : ''}${confChange}pp (${confTrend === '↑' ? '↑ güven artışı' : confTrend === '↓' ? '↓ güven düşüşü' : '→ stabil'})`,
       // Legacy format
@@ -168,11 +170,18 @@ export function AIDailySummaryPlus({
           <div className="text-[10px] text-blue-600 mt-1">Aktif sinyal & ortalama güven & 24s drift</div>
         </div>
 
-        {/* P0-04: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse) */}
+        {/* P1-06: Layer 4: Uyarılar (Bugün dikkat edilmesi gereken 2 hisse) */}
         <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-amber-200 bg-amber-50/50">
           <div className="text-xs font-semibold text-amber-700 mb-1">⚠️ Dikkat Edilmesi Gereken Hisse</div>
           <div className="text-sm text-amber-900 font-semibold leading-relaxed">{aiSummary.warnings}</div>
           <div className="text-[10px] text-amber-600 mt-1">Bugün dikkat edilmesi gereken 2 hisse</div>
+        </div>
+        
+        {/* P3: AI Öneri (eylem önerileri) */}
+        <div className="bg-white/80 backdrop-blur rounded-lg p-3 border border-emerald-200 bg-emerald-50/50">
+          <div className="text-xs font-semibold text-emerald-700 mb-1">💡 AI Öneri</div>
+          <div className="text-sm text-emerald-900 font-semibold leading-relaxed">{aiSummary.aiRecommendation}</div>
+          <div className="text-[10px] text-emerald-600 mt-1">AI analiz bazlı eylem önerileri</div>
         </div>
 
         {/* P1-06: Layer 5: Model Drift + AI trend değişimi */}
