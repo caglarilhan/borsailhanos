@@ -3,15 +3,37 @@
  */
 
 /**
- * Normalize sentiment percentages to sum to 100%
+ * Normalize sentiment percentages to sum to exactly 100.0%
+ * Fix: Ensures sum = 100.0 ± 0.1
  */
 export function normalizeSentiment(p: number, n: number, u: number): [number, number, number] {
-  const sum = p + n + u || 1;
-  const np = +(p * 100 / sum).toFixed(1);
-  const nn = +(n * 100 / sum).toFixed(1);
-  const nu = +(u * 100 / sum).toFixed(1);
-  const diff = +(100 - (np + nn + nu)).toFixed(1);
-  if (diff !== 0) return [np + diff, nn, nu];
+  // Ensure non-negative values
+  const pos = Math.max(0, p);
+  const neg = Math.max(0, n);
+  const neu = Math.max(0, u);
+  const sum = pos + neg + neu || 1;
+  
+  // Round to 1 decimal place
+  const round = (x: number) => Math.round(x * 10) / 10;
+  
+  let np = round((pos / sum) * 100);
+  let nn = round((neg / sum) * 100);
+  let nu = round((neu / sum) * 100);
+  
+  // Calculate difference from 100
+  const diff = round(100 - (np + nn + nu));
+  
+  // Add difference to largest component to ensure sum = 100.0
+  if (diff !== 0) {
+    if (np >= nn && np >= nu) {
+      np = round(np + diff);
+    } else if (nn >= nu) {
+      nn = round(nn + diff);
+    } else {
+      nu = round(nu + diff);
+    }
+  }
+  
   return [np, nn, nu];
 }
 

@@ -34,6 +34,8 @@ import { AIAnalystCard } from '@/components/AI/AIAnalystCard';
 import { SentimentImpactBar } from '@/components/AI/SentimentImpactBar';
 import { MTFHeatmap } from '@/components/AI/MTFHeatmap';
 import { CorrelationHeatmap } from '@/components/AI/CorrelationHeatmap';
+import { mapRSIToState, getRSIStateLabel, getRSIStateColor } from '@/lib/rsi';
+import { normalizeSentiment } from '@/lib/format';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -1093,9 +1095,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
 
       {/* Zaman damgası / veri kaynağı / API durum */}
       <div className="flex items-center justify-end -mt-2 mb-2 text-[11px] text-slate-500 gap-2 flex-wrap">
-        <span>Son güncelleme: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'} (UTC+3)</span>
+        {/* P0-05: Zaman/Gerçek Zamanlı Tutarsızlık Düzeltme */}
+        {wsConnected ? (
+          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
+            🟢 Canlı
+          </span>
+        ) : (
+          <span>Son senkron: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'} (UTC+3)</span>
+        )}
         <span className="hidden sm:inline">•</span>
-        <span>Kaynak: {DATA_SOURCE}</span>
+        <span>Kaynak: {wsConnected ? 'WebSocket' : DATA_SOURCE}</span>
         {apiLatency !== null && (
           <>
             <span className="hidden sm:inline">•</span>
@@ -1175,14 +1184,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <div className="text-sm font-semibold text-gray-900 mb-2">FinBERT Duygu Özeti</div>
             <div className="text-xs text-slate-700">
               {(() => {
+                // P0-02: Sentiment Normalize - Use format.ts function
                 const ov = sentimentSummary?.overall || {};
                 const a = Number(ov.positive||0), b = Number(ov.negative||0), c = Number(ov.neutral||0);
-                // Normalize to 100% (±1 rounding tolerance)
-                const sum = a + b + c;
-                const normalize = (v: number): number => Math.round((v / Math.max(1, sum)) * 100);
-                const posN = normalize(a);
-                const negN = normalize(b);
-                const neuN = Math.max(0, 100 - posN - negN); // Ensure total = 100%
+                const [posN, negN, neuN] = normalizeSentiment(a, b, c); // Use format.ts normalizeSentiment
                 const timeWindow = sentimentSummary?.time_window || '7g';
                 return (
                   <>
@@ -1370,8 +1375,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <td className="py-2 pr-4 hidden md:table-cell">
                         <div className="flex items-center gap-2 flex-wrap overflow-hidden">
                           {techs.map((c) => {
+                            // P0-01: RSI State Düzeltme - Use mapRSIToState
                             const tooltipText = c.includes('RSI') 
-                              ? 'RSI (Relative Strength Index): >70 → aşırı alım; <30 → aşırı satım. 14 periyot standart.'
+                              ? `RSI (Relative Strength Index): >70 → ${getRSIStateLabel(71)} (overbought); <30 → ${getRSIStateLabel(25)} (oversold); 30-70 → ${getRSIStateLabel(50)} (neutral). 14 periyot standart.`
                               : c.includes('MACD') 
                                 ? 'MACD (Moving Average Convergence Divergence): Sinyal çizgisi trend yönünü teyit eder. Histogram momentum gösterir.'
                                 : c.includes('Momentum')
