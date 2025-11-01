@@ -1900,10 +1900,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           </thead>
           <tbody className="text-slate-900">
             {/* Debug satırı */}
-            <tr><td className="py-1 text-[11px] text-gray-500" colSpan={9}>rows.len={rows?.length||0} | universe={universe}</td></tr>
+            <tr><td className="py-1 text-[11px] text-gray-500" colSpan={10}>rows.len={rows?.length||0} | universe={universe}</td></tr>
             {loading ? (
               <tr>
-                <td colSpan={9} className="py-4">
+                <td colSpan={10} className="py-4">
                   <div className="space-y-2">
                     <Skeleton className="h-6 w-52 rounded" />
                     <Skeleton className="h-8 w-full rounded" />
