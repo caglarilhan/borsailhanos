@@ -8,19 +8,29 @@ interface AIConfidenceBoardProps {
   riskExposure?: number;
   signalStability?: number;
   trend7d?: number[];
+  trend24h?: number[]; // 24-hour confidence trend (hourly)
 }
 
 export function AIConfidenceBoard({
   aiConfidence = 0.87,
   riskExposure = 0.65,
   signalStability = 0.82,
-  trend7d = []
+  trend7d = [],
+  trend24h = []
 }: AIConfidenceBoardProps) {
   // Generate 7d trend if not provided
   const trend = trend7d.length > 0 ? trend7d : Array.from({ length: 7 }, (_, i) => {
     const base = 0.75;
     const trend = (i / 7) * 0.05;
     return Math.max(0.65, Math.min(0.95, base + trend));
+  });
+  
+  // Generate 24h trend if not provided (hourly data)
+  const trend24 = trend24h.length > 0 ? trend24h : Array.from({ length: 24 }, (_, i) => {
+    const base = aiConfidence || 0.87;
+    const hour = i / 24;
+    const noise = (Math.sin(hour * Math.PI * 2) * 0.05); // Daily cycle
+    return Math.max(0.70, Math.min(0.95, base + noise));
   });
 
   const getGaugeColor = (value: number) => {
