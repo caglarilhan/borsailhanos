@@ -92,6 +92,25 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [alertChannel, setAlertChannel] = useState<'web'|'telegram'>('web');
   const [backtestTcost, setBacktestTcost] = useState<number>(8);
   const [backtestRebDays, setBacktestRebDays] = useState<number>(5);
+  // User-defined alert thresholds (from Settings)
+  const [alertThresholds, setAlertThresholds] = useState<{ minConfidence: number; minPriceChange: number; enabled: boolean }>({
+    minConfidence: 70,
+    minPriceChange: 5,
+    enabled: true,
+  });
+  
+  // Load alert settings from localStorage
+  useEffect(() => {
+    const stored = localStorage.getItem('alertSettings');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setAlertThresholds({ ...alertThresholds, ...parsed });
+      } catch (e) {
+        console.warn('Failed to parse alert settings:', e);
+      }
+    }
+  }, []);
   // Lazy subcomponent: XAI + Analyst
   const XaiAnalyst: React.FC<{ symbol: string | null }> = ({ symbol }) => {
     const { useXaiWaterfall, useSentimentAnalyst, useBacktestQuick } = require('@/hooks/queries');
@@ -147,8 +166,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     const aligned = Math.abs(score) === votes.length && votes.length >= 2;
     return { aligned, votes: votes.length, score };
   }, [rows, selectedSymbol]);
-  const [alertDelta, setAlertDelta] = useState<number>(5);
-  const [alertMinConf, setAlertMinConf] = useState<number>(70);
+  // Alert thresholds - now using user-defined settings from localStorage
+  // alertDelta and alertMinConf are deprecated - use alertThresholds instead
+  const alertDelta = alertThresholds.minPriceChange; // Backward compatibility
+  const alertMinConf = alertThresholds.minConfidence; // Backward compatibility
   const [strategyPreset, setStrategyPreset] = useState<'custom'|'momentum'|'meanrev'|'news'|'mixed'>('custom');
   const [bist30Overview, setBist30Overview] = useState<any>(null);
   const [bist30News, setBist30News] = useState<any[]>([]);
@@ -697,12 +718,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           {/* Uyarı eşikleri */}
           <div className="ml-2 hidden md:flex items-center gap-1 text-xs text-slate-700">
             <label htmlFor="alertDelta">Δ%</label>
-            <input id="alertDelta" name="alertDelta" type="number" value={alertDelta}
-              onChange={(e)=> setAlertDelta(Math.max(1, Math.min(20, parseInt(e.target.value)||5)))}
+            <input id="alertDelta" name="alertDelta" type="number" value={alertThresholds.minPriceChange}
+              onChange={(e)=> { const val = Math.max(1, Math.min(20, parseInt(e.target.value)||5)); setAlertThresholds({ ...alertThresholds, minPriceChange: val }); localStorage.setItem('alertSettings', JSON.stringify({ ...alertThresholds, minPriceChange: val })); }}
               className="w-12 px-2 py-1 border rounded text-black bg-white" />
             <label htmlFor="alertConf">Conf%</label>
-            <input id="alertConf" name="alertConf" type="number" value={alertMinConf}
-              onChange={(e)=> setAlertMinConf(Math.max(50, Math.min(99, parseInt(e.target.value)||70)))}
+            <input id="alertConf" name="alertConf" type="number" value={alertThresholds.minConfidence}
+              onChange={(e)=> { const val = Math.max(50, Math.min(99, parseInt(e.target.value)||70)); setAlertThresholds({ ...alertThresholds, minConfidence: val }); localStorage.setItem('alertSettings', JSON.stringify({ ...alertThresholds, minConfidence: val })); }}
               className="w-12 px-2 py-1 border rounded text-black bg-white" />
             <select id="alertChannel" name="alertChannel" value={alertChannel} onChange={(e)=> setAlertChannel(e.target.value as any)} className="ml-2 px-2 py-1 border rounded text-black bg-white">
               <option value="web">Web</option>
@@ -1155,10 +1176,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           onClick={async ()=>{ try { const mode = inWatch ? 'remove':'add'; await wlMut.mutateAsync({ symbols: r.symbol, mode }); } catch {} }}
                       className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-700'}`}
                         >{inWatch?'⭐ Takipte':'☆ Takibe Al'}</button>
-                        {confPct>=alertMinConf && (
+                        {confPct>=alertThresholds.minConfidence && Math.abs(r.prediction*100)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
                           <button onClick={async ()=>{ try { 
-                            if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertDelta, minConf: alertMinConf, source: 'AI v4.6 model BIST30 dataset' }); }
-                            else { await Api.sendTelegramAlert(r.symbol, `AI uyarı: ${r.symbol} Δ>${alertDelta}%, Conf≥${alertMinConf}%`, 'demo'); }
+                            if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertThresholds.minPriceChange, minConf: alertThresholds.minConfidence, source: 'AI v4.6 model BIST30 dataset' }); }
+                            else { await Api.sendTelegramAlert(r.symbol, `AI uyarı: ${r.symbol} Δ>${alertThresholds.minPriceChange}%, Conf≥${alertThresholds.minConfidence}%`, 'demo'); }
                           } catch {} }} className="px-2 py-1 text-xs rounded bg-blue-600 text-white">Bildirim</button>
                     )}
                   </td>
@@ -1320,9 +1341,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       }}
                       className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
                     >{inWatch?'Takipte':'Takibe Al'}</button>
-                    {confPct>=alertMinConf && (
+                    {confPct>=alertThresholds.minConfidence && Math.abs(pct)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
                       <button
-                        onClick={async (e)=>{ e.stopPropagation(); try { if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertDelta, minConf: alertMinConf, source: 'AI v4.6 model BIST30 dataset' }); } else { await Api.sendTelegramAlert(sym, `AI uyarı: ${sym} Δ>${alertDelta}%, Conf≥${alertMinConf}%`, 'demo'); } } catch {} }}
+                        onClick={async (e)=>{ e.stopPropagation(); try { if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertThresholds.minPriceChange, minConf: alertThresholds.minConfidence, source: 'AI v4.6 model BIST30 dataset' }); } else { await Api.sendTelegramAlert(sym, `AI uyarı: ${sym} Δ>${alertThresholds.minPriceChange}%, Conf≥${alertThresholds.minConfidence}%`, 'demo'); } } catch {} }}
                         className="px-2 py-1 text-xs rounded bg-blue-600 text-white"
                       >Bildirim</button>
                     )}
