@@ -3,6 +3,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Api } from '@/services/api';
 import { useBistPredictions, useBistAllPredictions, useBist30News as useBist30NewsQ, useBist30Overview as useBist30OverviewQ, useSentimentSummary as useSentimentSummaryQ, useWatchlist as useWatchlistQ, usePredictiveTwin, useUpdateWatchlistMutation, useAlertsGenerateMutation, useForecast } from '@/hooks/queries';
+import { useWebSocket } from '@/hooks/useWebSocket';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085';
 const API_CANDIDATES = Array.from(new Set([
   API_BASE_URL,
@@ -297,6 +298,48 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     }
     setLoading(Boolean(predQ.isLoading || predQ.isFetching));
   }, [predQ.data, predQ.isLoading, predQ.isFetching]);
+
+  // WebSocket integration for real-time updates
+  const { connected: wsConnectedState, lastMessage: wsMessage } = useWebSocket({
+    url: wsUrl,
+    maxReconnectAttempts: 5,
+    onMessage: (data: any) => {
+      if (data?.type === 'market_update' && Array.isArray(data?.predictions)) {
+        // WebSocket'ten gelen gerçek zamanlı güncellemeleri işle
+        setRows((prev) => {
+          const updated = new Map();
+          prev.forEach((r) => updated.set(`${r.symbol}-${r.horizon}`, r));
+          data.predictions.forEach((p: any) => {
+            if (p.symbol && p.horizon) {
+              updated.set(`${p.symbol}-${p.horizon}`, {
+                symbol: p.symbol,
+                horizon: p.horizon,
+                prediction: p.prediction || p.change || 0,
+                confidence: p.confidence || 0,
+                signal: p.signal || (p.prediction >= 0 ? 'BUY' : 'SELL'),
+                currentPrice: p.price || p.currentPrice || 0,
+              });
+            }
+          });
+          return Array.from(updated.values());
+        });
+        setLastUpdated(new Date());
+      }
+    },
+    onConnect: () => {
+      console.log('✅ WebSocket connected for real-time updates');
+      setWsConnected(true);
+    },
+    onDisconnect: () => {
+      console.warn('⚠️ WebSocket disconnected');
+      setWsConnected(false);
+    },
+  });
+
+  // Sync WebSocket state
+  useEffect(() => {
+    setWsConnected(wsConnectedState);
+  }, [wsConnectedState]);
 
   // Veri geldikten sonra varsayılan sembol seçimi (boş durum saatini engeller)
   useEffect(() => {
