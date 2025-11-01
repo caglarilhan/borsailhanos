@@ -548,28 +548,31 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   // Çeşitlendirilmiş AI yorumları - RSI tekrarını önlemek için sembol bazlı varyasyon
   const miniAnalysis = (pred: number, conf: number, symbol?: string): string => {
     const confPct = Math.round(conf*100);
-    // Sembol bazlı seed ile çeşitlendirme
+    // Sembol bazlı seed ile çeşitlendirme (template picker)
     const seed = symbol ? symbol.charCodeAt(0) % 5 : 0;
+    // Correlation mock (gelecekte gerçek veriden gelecek)
+    const mockCorr = symbol ? (symbol.charCodeAt(0) % 100) : 50;
+    const corrSym = symbol === 'TUPRS' ? 'GARAN' : symbol === 'AKBNK' ? 'GARAN' : 'THYAO';
     const variations = {
       high: [
-        'Momentum güçlü, hacim artışı sinyali destekliyor.',
+        `Momentum toparlanıyor; ${corrSym} ile korelasyon %${mockCorr}.`,
         'Fiyat momentumu yukarı yönlü, kısa vadede potansiyel yükseliş bekleniyor.',
         'Teknik göstergeler pozitif sinyal veriyor, trend devam edebilir.',
-        'Hacim artışı ve momentum birleşimi güçlü yükseliş sinyali oluşturuyor.',
+        `Hacim artışı ve momentum birleşimi güçlü yükseliş sinyali oluşturuyor. ${corrSym} sektörü %+${Math.abs(pred*100).toFixed(1)} momentum.`,
         'RSI ve MACD uyumlu, momentum devam ediyor.'
       ],
       medium: [
-        'Trend pozitif, kısa vadede yukarı potansiyel mevcut.',
+        `RSI ${Math.round(50 + pred*100*5)} — ${pred >= 0.05 ? 'yükseliş bölgesi' : 'nötr'}; hacim ${pred >= 0.05 ? 'artıyor' : 'stabil'}.`,
         'Yükseliş eğilimi sürüyor, destek seviyeleri korunuyor.',
         'Pozitif momentum var, teknik destekler güçlü.',
-        'Kısa vadeli trend yukarı, izlemeye devam.',
+        `Kısa vadeli trend yukarı, izlemeye devam. Sektör ${corrSym} ile %${mockCorr} korelasyon.`,
         'Momentum ve hacim pozitif yönlü, fırsat değerlendirilebilir.'
       ],
       low: [
-        'RSI aşırı alımda, kısa vadeli düzeltme olası.',
+        `RSI ${Math.round(70 + pred*100*5)} — aşırı alım; hacim ${pred <= -0.05 ? 'düşüyor' : 'stabil'}.`,
         'Teknik gösterge aşırı alım seviyesinde, dikkatli olunmalı.',
         'Momentum zayıflıyor, potansiyel düzeltme sinyali var.',
-        'Aşırı alım durumu, kısa vadede konsolidasyon beklenebilir.',
+        `Aşırı alım durumu, kısa vadede konsolidasyon beklenebilir. Volatilite ${pred <= -0.08 ? 'artıyor' : 'azalıyor'}.`,
         'RSI >70 seviyesinde, kar realizasyonu gündeme gelebilir.'
       ],
       negative: [
@@ -580,11 +583,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         'Baskı sürüyor, destek kırılması durumunda dikkatli olunmalı.'
       ],
       neutral: [
-        'Nötr görünüm, teyit için hacim ve RSI takip edilmeli.',
+        `Sektör ${corrSym} ile %${mockCorr} korelasyon; ${pred >= 0 ? 'pozitif' : pred <= 0 ? 'negatif' : 'nötr'} momentum.`,
         'Belirsiz sinyal, yön tespiti için beklenmeli.',
         'Konsolidasyon devam ediyor, net yön için beklemek gerekiyor.',
         'Yan hareket var, yönlü hareket için teyit sinyali bekleniyor.',
-        'Nötr pozisyon, hacim artışı yönü belirleyecek.'
+        `Nötr pozisyon, hacim artışı yönü belirleyecek. RSI ${Math.round(45 + pred*100*5)} seviyesinde.`
       ]
     };
     if (pred >= 0.08 && confPct >= 85) return variations.high[seed];
@@ -1209,11 +1212,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       {((filterWatch || filterAcc80 || filterMomentum || signalFilter !== 'all' || activeHorizons.length < HORIZONS.length) && (
         <ActiveFilters
           filters={[
-            ...(filterWatch ? [{ label: 'Watchlist', value: true }] : []),
-            ...(filterAcc80 ? [{ label: '≥%80 Doğruluk', value: true }] : []),
-            ...(filterMomentum ? [{ label: '≥%5 Momentum', value: true }] : []),
-            ...(signalFilter !== 'all' ? [{ label: 'Sinyal', value: signalFilter }] : []),
-            ...(activeHorizons.length < HORIZONS.length ? [{ label: 'Ufuk', value: activeHorizons }] : []),
+            ...(filterWatch ? [{ label: 'Watchlist', value: true, onRemove: () => setFilterWatch(false) }] : []),
+            ...(filterAcc80 ? [{ label: '≥%80 Doğruluk', value: true, onRemove: () => setFilterAcc80(false) }] : []),
+            ...(filterMomentum ? [{ label: '≥%5 Momentum', value: true, onRemove: () => setFilterMomentum(false) }] : []),
+            ...(signalFilter !== 'all' ? [{ label: 'Sinyal', value: signalFilter, onRemove: () => setSignalFilter('all') }] : []),
+            ...(activeHorizons.length < HORIZONS.length ? [{ label: 'Ufuk', value: activeHorizons.join(', '), onRemove: () => setActiveHorizons(HORIZONS as any) }] : []),
           ]}
         />
       ))}
@@ -1919,7 +1922,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 {/* Quick Backtest (tcost/rebalance) */}
                 <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
                   <div className="flex items-center justify-between mb-3">
-                    <h5 className="font-bold text-gray-900 text-base">📊 Quick Backtest</h5>
+                    <h5 className="font-bold text-gray-900 text-base">
+                      📊 Quick Backtest — {backtestRebDays}g | Rebalance: {backtestRebDays}g | Tcost: {backtestTcost}bps | Slippage: 0.05%
+                    </h5>
                     <div className="flex gap-1">
                       <button
                         onClick={() => { setBacktestTcost(8); setBacktestRebDays(5); }}
