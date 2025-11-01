@@ -1873,14 +1873,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
       <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 260px)', overflowY: 'auto' }}>
         <table className="min-w-full text-sm" style={{ tableLayout: 'fixed', width: '100%' }}>
           <colgroup>
+            <col style={{ width: '10%' }} />
+            <col style={{ width: '7%' }} />
+            <col style={{ width: '14%' }} />
             <col style={{ width: '12%' }} />
-            <col style={{ width: '8%' }} />
-            <col style={{ width: '16%' }} />
-            <col style={{ width: '14%' }} />
-            <col style={{ width: '14%' }} />
             <col style={{ width: '12%' }} />
             <col style={{ width: '10%' }} />
+            <col style={{ width: '9%' }} />
             <col style={{ width: '8%' }} />
+            <col style={{ width: '7%' }} />
             <col style={{ width: '6%' }} />
           </colgroup>
           <thead style={{ position: 'sticky', top: 0, zIndex: 10 }} className="bg-gray-50 dark:bg-gray-800">
@@ -1892,6 +1893,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               <th className="py-2 pr-4 hidden lg:table-cell text-gray-900 font-semibold dark:text-gray-100">Teknik</th>
               <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Sinyal</th>
               <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">Güven</th>
+              <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100">Δ Accuracy</th>
               <th className="py-2 pr-4 hidden md:table-cell text-gray-900 font-semibold dark:text-gray-100">Geçerlilik</th>
               <th className="py-2 pr-4 text-gray-900 font-semibold dark:text-gray-100">İşlemler</th>
             </tr>

@@ -20,8 +20,8 @@ export function CorrelationHeatmap({
   // Generate demo pairs if not provided - Minimum 3×3 matrix (ISCTR, GARAN, THYAO, EREGL, etc.)
   const defaultPairs: CorrelationPair[] = useMemo(() => {
     if (pairs.length > 0) return pairs;
-    // Minimum 3×3 matrix için en az 4 sembol (6 çift)
-    const symbols = ['ISCTR', 'GARAN', 'THYAO', 'EREGL', 'AKBNK', 'TUPRS', 'SISE', 'BIMAS'].slice(0, 6);
+    // 5×5 matrix için tam 5 sembol (10 çift)
+    const symbols = ['AKBNK', 'ASELS', 'THYAO', 'SISE', 'EREGL'].slice(0, 5);
     const out: CorrelationPair[] = [];
     // Full matrix (her sembol çifti için)
     for (let i = 0; i < symbols.length; i++) {

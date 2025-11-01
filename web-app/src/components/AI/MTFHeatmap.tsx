@@ -67,13 +67,29 @@ export function MTFHeatmap({ signals = [] }: MTFHeatmapProps) {
         </div>
       </div>
 
-      {/* Heatmap Grid */}
+      {/* Heatmap Grid with Sparklines */}
       <div className="grid grid-cols-3 gap-2 mb-3">
         {horizons.map((horizon) => {
           const signal = horizonMap.get(horizon);
           const color = signal ? getSignalColor(signal.signal) : { bg: '#e5e7eb', text: '#6b7280' };
           const icon = signal ? getTrendIcon(signal.signal) : '—';
           const conf = signal ? Math.round(signal.confidence * 100) : 0;
+          
+          // Mock confidence trend (24 hours) for sparkline
+          const seed = horizon.charCodeAt(0) + (signal?.confidence || 0.5) * 1000;
+          let r = seed;
+          const seededRandom = () => {
+            r = (r * 1103515245 + 12345) >>> 0;
+            return (r / 0xFFFFFFFF);
+          };
+          const confidenceTrend = Array.from({ length: 24 }, (_, i) => {
+            const base = signal?.confidence || 0.75;
+            const hour = i / 24;
+            const cycle = Math.sin(hour * Math.PI * 2) * 0.05;
+            const noise = (seededRandom() - 0.5) * 0.03;
+            return Math.max(0.60, Math.min(0.95, base + cycle + noise));
+          });
+          
           return (
             <div
               key={horizon}
@@ -84,6 +100,39 @@ export function MTFHeatmap({ signals = [] }: MTFHeatmapProps) {
               <div className="text-lg font-bold">{icon}</div>
               <div className="text-xs font-semibold mt-1">{signal?.signal || '—'}</div>
               <div className="text-[10px] mt-1 opacity-80">{conf}%</div>
+              {/* Sparkline confidence trend */}
+              <div className="mt-2 h-8 w-full">
+                <svg width="100%" height="32" viewBox="0 0 100 32" className="overflow-visible">
+                  <defs>
+                    <linearGradient id={`mtfSparkline-${horizon}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                      <stop offset="0%" stopColor={color.bg} stopOpacity="0.3" />
+                      <stop offset="100%" stopColor={color.bg} stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {(() => {
+                    const minY = Math.min(...confidenceTrend);
+                    const maxY = Math.max(...confidenceTrend);
+                    const range = maxY - minY || 1;
+                    const scaleX = (i: number) => (i / (confidenceTrend.length - 1)) * 100;
+                    const scaleY = (v: number) => 32 - ((v - minY) / range) * 32;
+                    let path = '';
+                    confidenceTrend.forEach((v, i) => {
+                      const x = scaleX(i);
+                      const y = scaleY(v);
+                      path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                    });
+                    const fillPath = path + ` L 100 ${scaleY(confidenceTrend[confidenceTrend.length - 1])} L 100 32 L 0 32 Z`;
+                    return (
+                      <>
+                        <path d={fillPath} fill={`url(#mtfSparkline-${horizon})`} />
+                        <path d={path} fill="none" stroke={color.bg} strokeWidth="1.5" strokeLinecap="round" />
+                        {/* Final point */}
+                        <circle cx={scaleX(confidenceTrend.length - 1)} cy={scaleY(confidenceTrend[confidenceTrend.length - 1])} r="2" fill={color.bg} stroke="white" strokeWidth="0.5" />
+                      </>
+                    );
+                  })()}
+                </svg>
+              </div>
             </div>
           );
         })}
