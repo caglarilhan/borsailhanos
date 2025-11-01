@@ -1535,8 +1535,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         })()}
         alphaVsBenchmark={(() => {
           // Alpha (vs BIST30) in percentage points
-          const top5Avg = topAlphaStocks.length > 0 
-            ? topAlphaStocks.reduce((sum, s) => sum + s.alpha, 0) / topAlphaStocks.length
+          const topStocks = (() => {
+            const sorted = rows.slice().sort((a, b) => (b.prediction || 0) - (a.prediction || 0)).slice(0, 5);
+            return sorted.map(r => ({
+              symbol: r.symbol,
+              alpha: (r.prediction || 0) * 100 - 4.2, // vs BIST30 benchmark
+              return: (r.prediction || 0) * 100
+            }));
+          })();
+          const top5Avg = topStocks.length > 0 
+            ? topStocks.reduce((sum: number, s: { alpha: number }) => sum + s.alpha, 0) / topStocks.length
             : 0.8;
           return top5Avg;
         })()}
