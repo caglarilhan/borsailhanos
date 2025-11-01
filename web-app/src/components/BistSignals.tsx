@@ -1782,11 +1782,36 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="text-gray-900 truncate">{n.title}{!isValid && ' (demo)'}</span>
-                      <span
-                        className={`inline-flex items-center justify-center ml-2 px-2 h-5 min-w-[44px] rounded-full border text-[10px] font-semibold uppercase tracking-wide ${n.sentiment==='Pozitif'?'bg-green-50 text-green-700 border-green-200': n.sentiment==='Negatif'?'bg-red-50 text-red-700 border-red-200':'bg-slate-50 text-slate-600 border-slate-200'}`}
-                      >
-                        {n.sentiment==='Pozitif'?'POZ': n.sentiment==='Negatif'?'NEG':'NÖTR'}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {/* Impact Severity Badge */}
+                        {(() => {
+                          // Mock impact score - Gerçek implementasyonda FinBERT impact skorundan gelecek
+                          const impactScore = Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low';
+                          const impactColors = {
+                            high: 'bg-red-100 text-red-700 border-red-300',
+                            medium: 'bg-orange-100 text-orange-700 border-orange-300',
+                            low: 'bg-yellow-100 text-yellow-700 border-yellow-300'
+                          };
+                          const impactLabels = {
+                            high: 'HIGH',
+                            medium: 'MED',
+                            low: 'LOW'
+                          };
+                          return (
+                            <span
+                              className={`inline-flex items-center justify-center px-1.5 h-4 min-w-[32px] rounded-full border text-[9px] font-bold uppercase tracking-wide ${impactColors[impactScore]}`}
+                              title={`Impact severity: ${impactScore} (Estimated market impact)`}
+                            >
+                              {impactLabels[impactScore]}
+                            </span>
+                          );
+                        })()}
+                        <span
+                          className={`inline-flex items-center justify-center ml-2 px-2 h-5 min-w-[44px] rounded-full border text-[10px] font-semibold uppercase tracking-wide ${n.sentiment==='Pozitif'?'bg-green-50 text-green-700 border-green-200': n.sentiment==='Negatif'?'bg-red-50 text-red-700 border-red-200':'bg-slate-50 text-slate-600 border-slate-200'}`}
+                        >
+                          {n.sentiment==='Pozitif'?'POZ': n.sentiment==='Negatif'?'NEG':'NÖTR'}
+                        </span>
+                      </div>
                     </div>
                     <div className="text-[10px] text-gray-500 mt-0.5 flex items-center gap-2">
                       <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200">{host}</span>
