@@ -607,7 +607,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               <div className="col-span-2 md:col-span-4">
                 <AICorePanel />
               </div>
-              {(() => { const { useRegime } = require('@/hooks/queries'); const r = useRegime(); const regime = String(r.data?.regime || '—'); const weights = (()=>{ if (/risk\s*-?on/i.test(regime)) return { equity: 0.8, cash: 0.2 }; if (/neutral|side/i.test(regime)) return { equity: 0.6, cash: 0.4 }; if (/risk\s*-?off/i.test(regime)) return { equity: 0.4, cash: 0.6 }; return { equity: 0.6, cash: 0.4 }; })(); return (
+              {(() => {
+                // Using regimeQ from top-level hook call (Rules of Hooks compliance)
+                const regime = String(regimeQ.data?.regime || '—');
+                const weights = (()=>{ if (/risk\s*-?on/i.test(regime)) return { equity: 0.8, cash: 0.2 }; if (/neutral|side/i.test(regime)) return { equity: 0.6, cash: 0.4 }; if (/risk\s*-?off/i.test(regime)) return { equity: 0.4, cash: 0.6 }; return { equity: 0.6, cash: 0.4 }; })();
+                return (
                 <div className="col-span-2 md:col-span-4 bg-white/10 rounded-lg p-3">
       <div className="flex items-center justify-between">
                     <div className="text-xs opacity-80">Rejim • Ağırlıklar</div>
@@ -623,13 +627,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <div className="h-1.5 bg-white/20 rounded mt-1"><div className="h-1.5 bg-slate-200 rounded" style={{ width: (weights.cash*100)+'%' }}></div></div>
                     </div>
                   </div>
-                  {(() => { const { useMacro } = require('@/hooks/queries'); const m = useMacro(); return (
-                    <div className="mt-2 grid grid-cols-3 gap-2 text-[12px]">
-                      <div className="bg-white/20 rounded p-2 flex items-center justify-between"><span>USD/TRY</span><span className="font-semibold">{m.data?.usdtry ?? '—'}</span></div>
-                      <div className="bg-white/20 rounded p-2 flex items-center justify-between"><span>CDS 5Y</span><span className="font-semibold">{m.data?.cds_5y ?? '—'}</span></div>
-                      <div className="bg-white/20 rounded p-2 flex items-center justify-between"><span>VIX</span><span className="font-semibold">{m.data?.vix ?? '—'}</span></div>
-                    </div>
-                  ); })()}
+                  {/* Using macroQ from top-level hook call (Rules of Hooks compliance) */}
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-[12px]">
+                    <div className="bg-white/20 rounded p-2 flex items-center justify-between"><span>USD/TRY</span><span className="font-semibold">{macroQ.data?.usdtry ?? '—'}</span></div>
+                    <div className="bg-white/20 rounded p-2 flex items-center justify-between"><span>CDS 5Y</span><span className="font-semibold">{macroQ.data?.cds_5y ?? '—'}</span></div>
+                    <div className="bg-white/20 rounded p-2 flex items-center justify-between"><span>VIX</span><span className="font-semibold">{macroQ.data?.vix ?? '—'}</span></div>
+                  </div>
                 </div>
               ); })()}
             </div>
