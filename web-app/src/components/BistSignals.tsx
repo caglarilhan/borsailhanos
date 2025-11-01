@@ -603,9 +603,18 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   };
 
   // Mini analiz cümlesi (tek satır)
+  // P1-03: Mock RSI değeri fonksiyon dışında üret (details içinde kullanım için)
+  const getMockRSI = (pred: number, sym?: string): number => {
+    return Math.max(20, Math.min(80, Math.round(50 + (pred * 20)))); // 20-80 arası, pred'e göre
+  };
+  
   // Çeşitlendirilmiş AI yorumları - RSI tekrarını önlemek için sembol bazlı varyasyon
   const miniAnalysis = (pred: number, conf: number, symbol?: string): string => {
     const confPct = Math.round(conf*100);
+    // P0-01: RSI State Düzeltme - Mock RSI değeri üret ve doğru state ile etiketle
+    const mockRSI = getMockRSI(pred, symbol);
+    const rsiState = mapRSIToState(mockRSI);
+    const rsiStateLabel = getRSIStateLabel(mockRSI);
     // Sembol bazlı seed ile çeşitlendirme (template picker)
     const seed = symbol ? symbol.charCodeAt(0) % 5 : 0;
     // Correlation mock (gelecekte gerçek veriden gelecek)
