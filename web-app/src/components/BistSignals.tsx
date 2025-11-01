@@ -815,10 +815,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     Model drift: {metrics24s.modelDrift >= 0 ? '+' : ''}{metrics24s.modelDrift.toFixed(1)}pp
                   </div>
                 )}
-                {/* Son Güncelleme Timestamp */}
+                {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
-                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
-                    Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                    <span>Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    {metrics24s.modelDrift !== 0 && (
+                      <span className={`text-[8px] ${metrics24s.modelDrift >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                        {metrics24s.modelDrift >= 0 ? '↑' : '↓'} {Math.abs(metrics24s.modelDrift).toFixed(1)}pp
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -832,10 +837,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     +{metrics24s.newSignals} yeni (son 1 saat)
                   </div>
                 )}
-                {/* Son Güncelleme Timestamp */}
+                {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
-                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
-                    Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                    <span>Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    {metrics24s.newSignals > 0 && (
+                      <span className="text-[8px] text-green-300">
+                        ↑ +{metrics24s.newSignals} yeni
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -879,10 +889,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <div className="text-[9px] text-white/60 mt-1 border-t border-white/20 pt-1">
                       AI Güven: {(accuracy * 100).toFixed(1)}% (ayrı metrik)
                     </div>
-                    {/* Son Güncelleme Timestamp */}
+                    {/* Son Güncelleme Timestamp + Trend Oku */}
                     {lastUpdated && (
-                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
-                        Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                        <span>Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        {metrics24s.modelDrift !== 0 && (
+                          <span className={`text-[8px] ${metrics24s.modelDrift >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                            {metrics24s.modelDrift >= 0 ? '↑' : '↓'} {Math.abs(metrics24s.modelDrift).toFixed(1)}pp
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -910,10 +925,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         Son 24s: {metrics24s.profitChange >= 0 ? '+' : ''}{metrics24s.profitChange.toFixed(1)}%
                       </div>
                     )}
-                    {/* Son Güncelleme Timestamp */}
+                    {/* Son Güncelleme Timestamp + Trend Oku */}
                     {lastUpdated && (
-                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
-                        Son güncelleme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                        <span>Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        {profitPct >= 0 ? (
+                          <span className="text-[8px] text-green-300">↑ {profitPct.toFixed(1)}%</span>
+                        ) : (
+                          <span className="text-[8px] text-red-300">↓ {Math.abs(profitPct).toFixed(1)}%</span>
+                        )}
                       </div>
                     )}
                   </div>
@@ -924,10 +944,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Toplam Sinyal</div>
                 <div className="text-2xl font-bold text-purple-100">{Math.max(rows.length, 100)}</div>
                 <div className="text-[10px] text-white/70 mt-1">Bugün işlem</div>
-                {/* Son Güncelleme Timestamp */}
+                {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
-                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20">
-                    Son güncelleme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                    <span>Güncellenme: {lastUpdated.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    <span className="text-[8px] text-purple-300">→ {rows.length} sinyal</span>
                   </div>
                 )}
               </div>
