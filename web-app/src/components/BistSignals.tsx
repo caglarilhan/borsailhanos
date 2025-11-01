@@ -1270,7 +1270,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <td className="py-2 pr-4">Yükseliş ({pctText}%)</td>
                       <td className="py-2 pr-4 hidden md:table-cell">demo</td>
                       <td className="py-2 pr-4 hidden lg:table-cell">MACD/RSI</td>
-                      <td className="py-2 pr-4"><span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">Al</span></td>
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-700">Al</span>
+                          <span className="text-[10px] text-slate-500" title={`Model: Meta-Model v5.4 • Ufuk: 1d`}>(1d)</span>
+                        </div>
+                      </td>
                       <td className="py-2 pr-4">86%</td>
                       <td className="py-2 pr-4 hidden md:table-cell">—</td>
                       <td className="py-2 pr-4">—</td>
@@ -1358,6 +1363,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           }
                         })()}
                   </td>
+                      {/* Sinyal kolonu - horizon etiketi ile */}
+                      <td className="py-2 pr-4 whitespace-nowrap">
+                        <div className="flex items-center gap-1 flex-wrap">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${signalColor}`}>
+                            {signal}
+                          </span>
+                          <span className="text-[10px] text-slate-500" title={`Model: Meta-Model v5.4 • Ufuk: ${r.horizon}`}>
+                            ({r.horizon})
+                          </span>
+                        </div>
+                      </td>
                       <td className="py-2 pr-4 whitespace-nowrap">
                         <div className="flex items-center gap-2 w-full max-w-[220px]">
                           <div className="flex-1 h-2 rounded bg-gray-100 overflow-hidden">

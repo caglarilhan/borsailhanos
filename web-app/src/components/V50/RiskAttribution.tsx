@@ -38,8 +38,8 @@ export default function RiskAttribution() {
                   {item.symbol}
                 </div>
                 <div>
-                  <div className="font-bold text-white">{item.symbol}</div>
-                  <div className="text-xs text-gray-400">Risk payı</div>
+                  <div className="font-bold text-white">Risk payı</div>
+                  <div className="text-xs text-gray-400">{item.riskShare}%</div>
                 </div>
               </div>
               <div className="text-right">
