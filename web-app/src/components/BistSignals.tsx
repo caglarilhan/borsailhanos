@@ -1035,7 +1035,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             return <DriftTracker series={mockHistory} />;
           })()}
           <div className="mt-2 text-xs text-slate-600">
-            Sentiment-fiyat uyumsuzluğu: orta düzey (AI Core izlemede)
+            <span title="Drift: Model dağılımının 24 saat içindeki sapması (pp). PSI (Population Stability Index): Veri dağılımının değişim ölçüsü.">Sentiment-fiyat uyumsuzluğu: orta düzey (AI Core izlemede)</span>
           </div>
         </div>
       </div>
@@ -1163,6 +1163,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           </div>
         ); })()}
       </div>
+
+      {/* Aktif Filtreler */}
+      {((filterWatch || filterAcc80 || filterMomentum || signalFilter !== 'all' || activeHorizons.length < HORIZONS.length) && (
+        <ActiveFilters
+          filters={[
+            ...(filterWatch ? [{ label: 'Watchlist', value: true }] : []),
+            ...(filterAcc80 ? [{ label: '≥%80 Doğruluk', value: true }] : []),
+            ...(filterMomentum ? [{ label: '≥%5 Momentum', value: true }] : []),
+            ...(signalFilter !== 'all' ? [{ label: 'Sinyal', value: signalFilter }] : []),
+            ...(activeHorizons.length < HORIZONS.length ? [{ label: 'Ufuk', value: activeHorizons }] : []),
+          ]}
+        />
+      ))}
 
       {/* Table - sticky head, scrollable body with virtual scrolling for large datasets */}
       {view==='table' && (
@@ -1480,12 +1493,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         <span className="truncate">{miniAnalysis(best.prediction||0, best.confidence||0, sym)}</span>
                       </summary>
                       <div className="mt-1 pl-4 text-[10px] text-slate-600">
-                        <div className="font-semibold mb-1">XAI Ağırlıkları:</div>
+                        <div className="font-semibold mb-1">XAI Ağırlıkları (toplam: 1.0):</div>
                         <ul className="list-disc pl-4 space-y-0.5">
-                          <li>RSI: 0.25 (momentum)</li>
-                          <li>MACD: 0.25 (trend)</li>
-                          <li>Sentiment: 0.30 (FinBERT)</li>
-                          <li>Volume: 0.20 (hacim)</li>
+                          <li>RSI: 0.25 (momentum) — {Math.round(0.25 * 100)}%</li>
+                          <li>MACD: 0.25 (trend) — {Math.round(0.25 * 100)}%</li>
+                          <li>Sentiment: 0.30 (FinBERT) — {Math.round(0.30 * 100)}%</li>
+                          <li>Volume: 0.20 (hacim) — {Math.round(0.20 * 100)}%</li>
                           <li>Kalibrasyon: Platt scaling</li>
                         </ul>
                       </div>
