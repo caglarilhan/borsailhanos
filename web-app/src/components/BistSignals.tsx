@@ -54,7 +54,7 @@ const Sparkline = React.memo(({ series, width = 80, height = 24, color = '#10b98
     d += (i === 0 ? 'M' : 'L') + x + ' ' + y + ' ';
   });
   return (
-    <svg width={width} height={height} viewBox={'0 0 ' + width + ' ' + height}>
+    <svg width={width} height={height} viewBox={'0 0 ' + width + ' ' + height} className="flex-shrink-0" style={{ maxWidth: width, maxHeight: height }}>
       <path d={d} fill="none" stroke={color} strokeWidth={1.5} />
     </svg>
   );
@@ -1689,7 +1689,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     return (
                     <div className="mt-3">
                       <div className="text-xs text-slate-700 mb-1">Reliability Curve</div>
-                      <svg width={w} height={h} viewBox={'0 0 '+w+' '+h}>
+                      <svg width={w} height={h} viewBox={'0 0 '+w+' '+h} className="flex-shrink-0" style={{ maxWidth: w, maxHeight: h }} preserveAspectRatio="xMidYMid meet">
                         <rect x={0} y={0} width={w} height={h} fill="#ffffff" stroke="#e5e7eb" />
                         {/* perfect calibration diagonal */}
                         <line x1={pad} y1={h-pad} x2={w-pad} y2={pad} stroke="#94a3b8" strokeDasharray="4 3" />
