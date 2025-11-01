@@ -2873,12 +2873,23 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                                   />
                                 </g>
                               </svg>
-                              {/* Tooltip overlay */}
-                              <div className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur text-white text-[9px] rounded-b-lg opacity-0 hover:opacity-100 transition-opacity duration-300">
-                                <div className="flex justify-between">
-                                  <span>Gerçek: {formatCurrency(currentPrice)}</span>
-                                  <span>AI: {formatCurrency(targetPrice)}</span>
-                                  <span>Sapma: {((basePred * 100)).toFixed(1)}%</span>
+                              {/* Tooltip overlay - Enhanced with hover visibility */}
+                              <div className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/90 backdrop-blur text-white text-[10px] rounded-b-lg border-t border-slate-700 group-hover:opacity-100 opacity-0 hover:opacity-100 transition-opacity duration-300">
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                  <div>
+                                    <div className="text-[9px] text-slate-400 mb-0.5">Gerçek</div>
+                                    <div className="font-bold text-white">{formatCurrency(currentPrice)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[9px] text-slate-400 mb-0.5">AI Tahmin</div>
+                                    <div className="font-bold text-blue-300">{formatCurrency(targetPrice)}</div>
+                                  </div>
+                                  <div>
+                                    <div className="text-[9px] text-slate-400 mb-0.5">Sapma (Δ%)</div>
+                                    <div className={`font-bold ${basePred >= 0 ? 'text-green-300' : 'text-red-300'}`}>
+                                      {basePred >= 0 ? '+' : ''}{((basePred * 100)).toFixed(1)}%
+                                    </div>
+                                  </div>
                                 </div>
                               </div>
                             </div>
