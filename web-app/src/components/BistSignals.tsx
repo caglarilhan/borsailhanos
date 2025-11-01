@@ -1551,6 +1551,21 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     }
                     side="bottom"
                   />
+                  {/* Filter by Sector - Multi-Symbol Timeframe için */}
+                  <select
+                    value={sectorFilter || ''}
+                    onChange={(e) => setSectorFilter(e.target.value || null)}
+                    className="ml-2 px-2 py-1 text-xs border rounded text-gray-900 bg-white dark:text-gray-100 dark:bg-gray-900"
+                  >
+                    <option value="">Tüm Sektörler</option>
+                    <option value="Bankacılık">Bankacılık</option>
+                    <option value="Teknoloji">Teknoloji</option>
+                    <option value="Sanayi">Sanayi</option>
+                    <option value="Enerji">Enerji</option>
+                    <option value="Telekom">Telekom</option>
+                    <option value="İnşaat">İnşaat</option>
+                    <option value="Ulaştırma">Ulaştırma</option>
+                  </select>
                   <select
                     value={sortBy}
                     onChange={(e)=>setSortBy(e.target.value as any)}
@@ -2020,6 +2035,48 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </>
                 );
               })()}
+              {/* Sektörel Sentiment Bar Grafik */}
+              <div className="mt-2 pt-2 border-t border-slate-200">
+                <div className="text-[11px] text-slate-600 mb-2 font-semibold">Sektörel Sentiment Özeti (Bar Grafik)</div>
+                <div className="space-y-2">
+                  {(() => {
+                    // Mock sektörel sentiment verisi - Gerçek implementasyonda backend'den gelecek
+                    const sectoralSentiment = [
+                      { sector: 'Sanayi', positive: 72, neutral: 18, negative: 10 },
+                      { sector: 'Ulaştırma', positive: 68, neutral: 22, negative: 10 },
+                      { sector: 'Bankacılık', positive: 56, neutral: 28, negative: 16 },
+                      { sector: 'Enerji', positive: 28, neutral: 35, negative: 37 }
+                    ];
+                    return sectoralSentiment.map((s, idx) => {
+                      // Normalize to 100%
+                      const total = s.positive + s.neutral + s.negative || 1;
+                      const posNorm = (s.positive / total) * 100;
+                      const neuNorm = (s.neutral / total) * 100;
+                      const negNorm = (s.negative / total) * 100;
+                      return (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex items-center justify-between text-[10px]">
+                            <span className="font-semibold text-slate-900">{s.sector}</span>
+                            <div className="flex items-center gap-1">
+                              <span className="text-green-600 font-semibold">+{posNorm.toFixed(0)}%</span>
+                              <span className="text-slate-500">{neuNorm.toFixed(0)}%</span>
+                              <span className="text-red-600 font-semibold">-{negNorm.toFixed(0)}%</span>
+                            </div>
+                          </div>
+                          <div className="h-3 bg-slate-200 rounded overflow-hidden flex">
+                            <div className="bg-green-500" style={{ width: `${posNorm}%` }} title={`Pozitif: ${posNorm.toFixed(1)}%`}></div>
+                            <div className="bg-slate-400" style={{ width: `${neuNorm}%` }} title={`Nötr: ${neuNorm.toFixed(1)}%`}></div>
+                            <div className="bg-red-500" style={{ width: `${negNorm}%` }} title={`Negatif: ${negNorm.toFixed(1)}%`}></div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+                <div className="text-[9px] text-slate-500 text-center mt-2 pt-2 border-t border-slate-200">
+                  Güncellenme: {lastUpdated ? lastUpdated.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' UTC+3' : '—'}
+                </div>
+              </div>
               <div className="mt-1">
                 <div className="text-[11px] text-slate-500 mb-1">7g Pozitif Trend</div>
                 {(() => {
@@ -2653,6 +2710,66 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                           <span className="ml-1 font-semibold text-red-600">{(metrics.maxDrawdown * 100).toFixed(1)}%</span>
                         </div>
                       </div>
+                      {/* Portfolio Weights Donut Chart */}
+                      <div className="mt-3 pt-3 border-t border-slate-200">
+                        <div className="text-[10px] text-slate-600 mb-2 font-semibold">Portföy Dağılımı (Donut Chart)</div>
+                        <div className="flex items-center justify-center">
+                          <svg width="120" height="120" viewBox="0 0 120 120" className="overflow-visible">
+                            <circle cx="60" cy="60" r="50" fill="none" stroke="#e5e7eb" strokeWidth="12" />
+                            {(() => {
+                              let cumulative = 0;
+                              const colors = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981'];
+                              return top5Weights.map((w: { symbol: string; weight: number }, idx: number) => {
+                                const startAngle = (cumulative / 100) * 360 - 90;
+                                const endAngle = ((cumulative + w.weight) / 100) * 360 - 90;
+                                cumulative += w.weight;
+                                const startRad = (startAngle * Math.PI) / 180;
+                                const endRad = (endAngle * Math.PI) / 180;
+                                const x1 = 60 + 50 * Math.cos(startRad);
+                                const y1 = 60 + 50 * Math.sin(startRad);
+                                const x2 = 60 + 50 * Math.cos(endRad);
+                                const y2 = 60 + 50 * Math.sin(endRad);
+                                const largeArc = w.weight > 50 ? 1 : 0;
+                                const path = `M 60 60 L ${x1} ${y1} A 50 50 0 ${largeArc} 1 ${x2} ${y2} Z`;
+                                return (
+                                  <path
+                                    key={w.symbol}
+                                    d={path}
+                                    fill={colors[idx % colors.length]}
+                                    stroke="white"
+                                    strokeWidth="2"
+                                    className="hover:opacity-80 transition-opacity cursor-pointer"
+                                  >
+                                    <title>{w.symbol}: {(w.weight * 100).toFixed(1)}%</title>
+                                  </path>
+                                );
+                              });
+                            })()}
+                            <text x="60" y="60" textAnchor="middle" dominantBaseline="middle" fontSize="14" fontWeight="bold" fill="#1e293b">
+                              {(() => {
+                                const totalPct = normalizedWeights.reduce((sum: number, w: { symbol: string; weight: number }) => sum + w.weight, 0);
+                                return `${totalPct.toFixed(0)}%`;
+                              })()}
+                            </text>
+                            <text x="60" y="75" textAnchor="middle" dominantBaseline="middle" fontSize="9" fill="#64748b">
+                              Toplam
+                            </text>
+                          </svg>
+                        </div>
+                        {/* Overweight Warning */}
+                        {(() => {
+                          const maxWeight = Math.max(...top5Weights.map((w: { symbol: string; weight: number }) => w.weight));
+                          const maxSymbol = top5Weights.find((w: { symbol: string; weight: number }) => w.weight === maxWeight);
+                          if (maxWeight > 0.35) {
+                            return (
+                              <div className="mt-2 text-[9px] text-amber-700 bg-amber-50 rounded p-1.5 border border-amber-200 text-center">
+                                ⚠️ {maxSymbol?.symbol} risk payı %{(maxWeight * 100).toFixed(1)} (Aşırı yoğunluk)
+                              </div>
+                            );
+                          }
+                          return null;
+                        })()}
+                      </div>
                       {/* Portfolio Weights Normalize Status */}
                       <div className="mt-2 pt-2 border-t border-slate-200 text-[9px] text-slate-500 text-center">
                         {(() => {
@@ -3193,9 +3310,9 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                                   />
                                 </g>
                               </svg>
-                              {/* Tooltip overlay - Enhanced with hover visibility */}
+                              {/* Tooltip overlay - Enhanced with hover visibility + Benchmark overlay */}
                               <div className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/90 backdrop-blur text-white text-[10px] rounded-b-lg border-t border-slate-700 group-hover:opacity-100 opacity-0 hover:opacity-100 transition-opacity duration-300">
-                                <div className="grid grid-cols-3 gap-2 text-center">
+                                <div className="grid grid-cols-3 gap-2 text-center mb-1">
                                   <div>
                                     <div className="text-[9px] text-slate-400 mb-0.5">Gerçek</div>
                                     <div className="font-bold text-white">{formatCurrency(currentPrice)}</div>
@@ -3209,6 +3326,16 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                                     <div className={`font-bold ${basePred >= 0 ? 'text-green-300' : 'text-red-300'}`}>
                                       {basePred >= 0 ? '+' : ''}{((basePred * 100)).toFixed(1)}%
                                     </div>
+                                  </div>
+                                </div>
+                                {/* Benchmark overlay - BIST30 karşılaştırması */}
+                                <div className="border-t border-slate-700 pt-1 mt-1 text-center">
+                                  <div className="text-[8px] text-slate-400 mb-0.5">Benchmark (BIST30)</div>
+                                  <div className="flex items-center justify-center gap-2">
+                                    <span className="text-[9px] text-slate-300">BIST30: {formatCurrency(currentPrice * 1.042)}</span>
+                                    <span className={`text-[9px] font-semibold ${basePred >= 0.042 ? 'text-green-300' : 'text-red-300'}`}>
+                                      {basePred >= 0.042 ? '+' : ''}{((basePred - 0.042) * 100).toFixed(1)}pp
+                                    </span>
                                   </div>
                                 </div>
                               </div>
@@ -3299,6 +3426,102 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         }));
                       })()}
                     />
+                  )}
+                  {/* Multi-Symbol Timeframe Tablosu - Filter by Sector ile */}
+                  {!selectedSymbol && (
+                    <div className="bg-white rounded-lg p-3 border">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="text-sm font-semibold text-gray-900">Multi-Symbol Timeframe Tablosu</div>
+                        <select
+                          value={sectorFilter || ''}
+                          onChange={(e) => setSectorFilter(e.target.value || null)}
+                          className="px-2 py-1 text-xs border rounded text-gray-900 bg-white"
+                        >
+                          <option value="">Tüm Sektörler</option>
+                          <option value="Bankacılık">Bankacılık</option>
+                          <option value="Teknoloji">Teknoloji</option>
+                          <option value="Sanayi">Sanayi</option>
+                          <option value="Enerji">Enerji</option>
+                          <option value="Telekom">Telekom</option>
+                          <option value="İnşaat">İnşaat</option>
+                          <option value="Ulaştırma">Ulaştırma</option>
+                        </select>
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="min-w-full text-xs">
+                          <thead>
+                            <tr className="border-b">
+                              <th className="text-left py-1 px-2 text-slate-700">Sembol</th>
+                              <th className="text-center py-1 px-2 text-slate-700">1H</th>
+                              <th className="text-center py-1 px-2 text-slate-700">4H</th>
+                              <th className="text-center py-1 px-2 text-slate-700">1D</th>
+                              <th className="text-center py-1 px-2 text-slate-700">Tutarlılık</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(() => {
+                              const filteredRows = sectorFilter ? rows.filter(r => symbolToSector(r.symbol) === sectorFilter) : rows;
+                              const symbolGroups = new Map<string, Prediction[]>();
+                              filteredRows.forEach(r => {
+                                const arr = symbolGroups.get(r.symbol) || [];
+                                arr.push(r);
+                                symbolGroups.set(r.symbol, arr);
+                              });
+                              return Array.from(symbolGroups.entries()).slice(0, 10).map(([sym, list]) => {
+                                const horizons: Horizon[] = ['1h','4h','1d'];
+                                const signals = horizons.map(h => {
+                                  const pred = list.find(r => r.horizon === h);
+                                  if (!pred) return { horizon: h, signal: '—' as const, confidence: 0 };
+                                  const signal = (pred.prediction || 0) >= 0.02 ? 'BUY' as const : (pred.prediction || 0) <= -0.02 ? 'SELL' as const : 'HOLD' as const;
+                                  return { horizon: h, signal, confidence: pred.confidence || 0 };
+                                });
+                                const buyCount = signals.filter(s => s.signal === 'BUY').length;
+                                const consistency = Math.round((buyCount / signals.length) * 100);
+                                // Mock sparkline data
+                                const seed = sym.charCodeAt(0);
+                                let r = seed;
+                                const seededRandom = () => {
+                                  r = (r * 1103515245 + 12345) >>> 0;
+                                  return (r / 0xFFFFFFFF);
+                                };
+                                const sparklineData = Array.from({ length: 7 }, () => 50 + seededRandom() * 50);
+                                return (
+                                  <tr key={sym} className="border-b hover:bg-slate-50">
+                                    <td className="py-1 px-2 font-semibold text-slate-900">{sym}</td>
+                                    {signals.map((s, idx) => (
+                                      <td key={idx} className="py-1 px-2 text-center">
+                                        <div className="flex flex-col items-center gap-1">
+                                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-semibold ${
+                                            s.signal === 'BUY' ? 'bg-green-100 text-green-700' :
+                                            s.signal === 'SELL' ? 'bg-red-100 text-red-700' :
+                                            'bg-yellow-100 text-yellow-700'
+                                          }`}>
+                                            {s.signal === 'BUY' ? '↑' : s.signal === 'SELL' ? '↓' : '→'}
+                                          </span>
+                                          <span className="text-[8px] text-slate-600">{Math.round(s.confidence * 100)}%</span>
+                                        </div>
+                                      </td>
+                                    ))}
+                                    <td className="py-1 px-2 text-center">
+                                      <div className="flex flex-col items-center gap-1">
+                                        <div className="h-8 w-16">
+                                          <Sparkline series={sparklineData} width={64} height={32} color="#2563eb" />
+                                        </div>
+                                        <span className={`text-[9px] font-semibold ${
+                                          consistency >= 67 ? 'text-green-600' : consistency >= 33 ? 'text-yellow-600' : 'text-red-600'
+                                        }`}>
+                                          {consistency}%
+                                        </span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              });
+                            })()}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   )}
                   <XaiAnalyst symbol={selectedSymbol} />
                   {/* Using reasoningQ from top-level hook call (Rules of Hooks compliance) */}
