@@ -259,7 +259,12 @@ textarea:focus-visible {
 
 /* Icon standardization */
 .btn-icon {
-  @apply inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.75rem;
 }
 
 .btn-icon > svg,

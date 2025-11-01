@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Force dynamic rendering - disables SSR to prevent hydration mismatches
@@ -39,7 +39,8 @@ import SubscriptionTiers from './V60/SubscriptionTiers';
 import StrategyBuilder from './V60/StrategyBuilder';
 import InvestorPanel from './V60/InvestorPanel';
 
-function DashboardV33() {
+// Inner component that uses useSearchParams (must be wrapped in Suspense)
+function DashboardV33Inner() {
   // URL sync for tab navigation
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -3671,6 +3672,15 @@ function DashboardV33() {
     </div>
       )}
   </div>
+  );
+}
+
+// Outer component with Suspense wrapper
+function DashboardV33() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="text-slate-600">Yükleniyor...</div></div>}>
+      <DashboardV33Inner />
+    </Suspense>
   );
 }
 

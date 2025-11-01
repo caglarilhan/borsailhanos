@@ -162,7 +162,7 @@ export default function AdminPage() {
                 <span className="px-2 py-1 rounded bg-green-100 text-green-700 text-xs font-semibold">OK</span>
               </div>
             </div>
-          </div> */}
+          </div>
 
           {/* Recent Activity */}
           <div className="bg-white rounded-lg shadow-sm p-6 border border-slate-200 col-span-1 md:col-span-2 lg:col-span-1">
