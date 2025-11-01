@@ -890,8 +890,20 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         {/* Drift & Mismatch */}
         <div className="rounded-xl p-3 border bg-white">
           {(() => {
-            // Mock confidence history (gerçek implementasyonda AI Core'dan gelecek)
-            const mockHistory = Array.from({ length: 20 }, (_, i) => 0.75 + (Math.random() * 0.15) - 0.075);
+            // Seeded confidence history (SSR-safe, hydration uyumlu)
+            const seed = Math.floor(Date.now() / (1000 * 60 * 60)); // Her saat değişir
+            let r = seed;
+            const seededRandom = () => {
+              r = (r * 1103515245 + 12345) >>> 0;
+              return (r / 0xFFFFFFFF);
+            };
+            const mockHistory = Array.from({ length: 20 }, (_, i) => {
+              // İlk değer 0.75 civarında, yavaşça değişen bir trend
+              const base = 0.75;
+              const trend = (i / 20) * 0.05; // Hafif trend
+              const noise = (seededRandom() - 0.5) * 0.1;
+              return Math.max(0.65, Math.min(0.95, base + trend + noise));
+            });
             return <DriftTracker series={mockHistory} />;
           })()}
           <div className="mt-2 text-xs text-slate-600">

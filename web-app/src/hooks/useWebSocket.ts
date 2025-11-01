@@ -130,7 +130,12 @@ export function useWebSocket({
     };
 
     ws.onerror = (err) => {
-      console.error("❌ [WS] Error:", err);
+      // Only log if it's a real error (not just connection attempts)
+      if (wsRef.current?.readyState === WebSocket.CLOSING || wsRef.current?.readyState === WebSocket.CLOSED) {
+        // Silent fail for normal disconnections
+      } else {
+        console.warn("⚠️ [WS] Connection issue:", err);
+      }
       updateState({ error: "WebSocket error", connected: false });
     };
 
