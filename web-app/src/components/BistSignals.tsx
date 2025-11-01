@@ -1584,7 +1584,36 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <div className="space-y-2">
               {(bist30Overview?.sector_distribution||[]).map((s:any)=> (
                 <div key={s.sector} className="text-xs">
-                  <div className="flex justify-between mb-1 text-gray-700"><span>{s.sector}</span><span>{s.weight}%</span></div>
+                  {/* UX: Sektör Isı Haritası hover tooltip - Son 7g değişim */}
+                  <HoverCard
+                    trigger={
+                      <div className="flex justify-between mb-1 text-gray-700 cursor-help hover:text-blue-700 transition-colors">
+                        <span>{s.sector}</span>
+                        <span>{s.weight}%</span>
+                      </div>
+                    }
+                    content={
+                      <div className="space-y-2 max-w-xs">
+                        <div className="font-semibold text-slate-900">{s.sector} Sektörü</div>
+                        <div className="text-xs text-slate-700 space-y-1">
+                          <div className="flex justify-between">
+                            <span>Ağırlık:</span>
+                            <span className="font-medium">{s.weight}%</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Son 7g Değişim:</span>
+                            <span className={`font-medium ${s.change>=0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {s.change>=0 ? '+' : ''}{s.change || 0}%
+                            </span>
+                          </div>
+                          <div className="text-[10px] text-slate-600 mt-2 pt-2 border-t border-slate-200">
+                            Sektör içindeki hisse sayısı ve performans analizi hazırlanıyor...
+                          </div>
+                        </div>
+                      </div>
+                    }
+                    side="top"
+                  />
                   <div className="w-full h-2 bg-gray-100 rounded">
                     {/* P2-14: Renk tutarlılığı - Tailwind palette standartlaştırma (#22c55e / #ef4444) */}
                     <div style={{ width: s.weight + '%', background: s.change>=0 ? '#22c55e' : '#ef4444' }} className="h-2 rounded"></div>
