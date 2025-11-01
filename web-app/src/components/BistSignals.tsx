@@ -2021,8 +2021,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     </div>
                   </div>
                 </div>
-
-              </>
+          </>
         )}
         {analysisTab === 'factors' && (
           <>
