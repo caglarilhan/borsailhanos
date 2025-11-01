@@ -4637,9 +4637,28 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         {!selectedSymbol && sentimentSummary && (
           <div className="mt-4">
             <SentimentImpactBar
-              positive={sentimentSummary?.overall?.positive || 0.65}
-              negative={sentimentSummary?.overall?.negative || 0.25}
-              neutral={sentimentSummary?.overall?.neutral || 0.10}
+              positive={(() => {
+                // v4.7: Sentiment değerlerini normalize et (toplam %100 olmalı)
+                const rawPos = sentimentSummary?.overall?.positive || 0.65;
+                const rawNeg = sentimentSummary?.overall?.negative || 0.25;
+                const rawNeu = sentimentSummary?.overall?.neutral || 0.10;
+                const total = rawPos + rawNeg + rawNeu || 1;
+                return rawPos / total; // Normalize edilmiş pozitif oran
+              })()}
+              negative={(() => {
+                const rawPos = sentimentSummary?.overall?.positive || 0.65;
+                const rawNeg = sentimentSummary?.overall?.negative || 0.25;
+                const rawNeu = sentimentSummary?.overall?.neutral || 0.10;
+                const total = rawPos + rawNeg + rawNeu || 1;
+                return rawNeg / total; // Normalize edilmiş negatif oran
+              })()}
+              neutral={(() => {
+                const rawPos = sentimentSummary?.overall?.positive || 0.65;
+                const rawNeg = sentimentSummary?.overall?.negative || 0.25;
+                const rawNeu = sentimentSummary?.overall?.neutral || 0.10;
+                const total = rawPos + rawNeg + rawNeu || 1;
+                return rawNeu / total; // Normalize edilmiş nötr oran
+              })()}
               impactLevel="High"
             />
           </div>
