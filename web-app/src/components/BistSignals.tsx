@@ -88,7 +88,19 @@ const HORIZONS: Horizon[] = ['5m','15m','30m','1h','4h','1d','7d','30d'];
 const maxRowsDefaultByUniverse: Record<Universe, number> = { BIST30: 30, BIST100: 100, BIST300: 150, ALL: 30 };
 const maxRowsAllByUniverse: Record<Universe, number> = { BIST30: 30, BIST100: 100, BIST300: 300, ALL: 30 };
 
+// Number formatter (TR locale)
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('tr-TR', { style: 'currency', currency: 'TRY', minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value);
+};
+
+const formatNumber = (value: number, decimals: number = 1): string => {
+  return new Intl.NumberFormat('tr-TR', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }).format(value);
+};
+
 export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSignalsProps) {
+  // API Status tracking
+  const [apiLatency, setApiLatency] = useState<number | null>(null);
+  const [apiStatus, setApiStatus] = useState<'good' | 'warning' | 'error'>('good');
   const [universe, setUniverse] = useState<Universe>(forcedUniverse || 'BIST30');
   const [activeHorizons, setActiveHorizons] = useState<Horizon[]>(['5m','15m','30m','1h']);
   const [loading, setLoading] = useState(false);
@@ -726,10 +738,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin">
           <Link
             href="/settings"
-            className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-white hover:bg-slate-800 flex items-center gap-1.5 transition-colors"
+            className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-white hover:bg-slate-800 flex items-center gap-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
             title="Ayarlar"
           >
-            <Cog6ToothIcon className="w-4 h-4" />
+            <Cog6ToothIcon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
             <span>Ayarlar</span>
           </Link>
           <button
@@ -741,7 +753,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 console.error('Yenileme hatası:', e);
               }
             }}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-white hover:bg-slate-800 border-2 border-slate-600 shadow-md hover:shadow-lg transition-all active:scale-95"
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-white hover:bg-slate-800 border-2 border-slate-600 shadow-md hover:shadow-lg transition-all active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
             title="Veriyi yenile - Tüm sinyalleri ve AI tahminlerini güncelle"
           >
             🔁 Yenile
@@ -997,11 +1009,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         </div>
       </div>
 
-      {/* Zaman damgası / veri kaynağı */}
-      <div className="flex items-center justify-end -mt-2 mb-2 text-[11px] text-slate-500">
+      {/* Zaman damgası / veri kaynağı / API durum */}
+      <div className="flex items-center justify-end -mt-2 mb-2 text-[11px] text-slate-500 gap-2 flex-wrap">
         <span>Son güncelleme: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'} (UTC+3)</span>
-        <span className="mx-2">•</span>
+        <span className="hidden sm:inline">•</span>
         <span>Kaynak: {DATA_SOURCE}</span>
+        {apiLatency !== null && (
+          <>
+            <span className="hidden sm:inline">•</span>
+            <span className={`px-2 py-0.5 rounded text-[10px] font-semibold api-status-${apiStatus}`} title={`API yanıt süresi: ${apiLatency}ms ${apiStatus === 'good' ? '(İyi)' : apiStatus === 'warning' ? '(Yavaş)' : '(Çok Yavaş)'}`}>
+              API: {apiLatency < 500 ? '🟢' : apiLatency < 1500 ? '🟡' : '🔴'} {apiLatency}ms
+            </span>
+          </>
+        )}
       </div>
 
       {/* AI Intelligence – üstte AI odaklı sekme/kart (stub) */}
@@ -1287,7 +1307,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         )}
                   </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis font-semibold">
-                        {trend==='Yükseliş' ? <ArrowTrendingUpIcon className="h-4 w-4 text-blue-600" /> : (trend==='Düşüş' ? <ArrowTrendingDownIcon className="h-4 w-4 text-red-600" /> : <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400" />)}
+                        {trend==='Yükseliş' ? <ArrowTrendingUpIcon className="w-4 h-4 text-blue-600 flex-shrink-0" aria-hidden="true" /> : (trend==='Düşüş' ? <ArrowTrendingDownIcon className="w-4 h-4 text-red-600 flex-shrink-0" aria-hidden="true" /> : <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0" aria-hidden="true" />)}
                         <span className="text-black font-bold">{trend}</span>
                   </td>
                       <td className="py-2 pr-4 hidden md:table-cell">
@@ -1311,13 +1331,13 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                             const reasonText = 'AI analiz hazırlanıyor...';
                             return (
                               <span title={`24 saat tahmini değişim • AI nedeni: ${reasonText}`} className={cls}>
-                                {pct !== 0 ? `${arrow} ` : ''}₺{tgt.toFixed(2)} ({pct >= 0 ? '+' : ''}{pct.toFixed(1)}%)
+                                {pct !== 0 ? `${arrow} ` : ''}{formatCurrency(tgt)} ({pct >= 0 ? '+' : ''}{formatNumber(pct, 1)}%)
                               </span>
                             );
                           } catch {
                             return (
                               <span title="24 saat tahmini değişim" className={cls}>
-                                {arrow} ₺{tgt.toFixed(2)} ({Math.abs(pct).toFixed(1)}%)
+                                {pct !== 0 ? `${arrow} ` : ''}{formatCurrency(tgt)} ({pct >= 0 ? '+' : ''}{formatNumber(Math.abs(pct), 1)}%)
                               </span>
                             );
                           }
@@ -1454,12 +1474,12 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center gap-3">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-600 font-medium">Gerçek Fiyat:</span>
-                      <span className="text-base font-extrabold text-[#111827]">₺{currentPrice.toFixed(2)}</span>
+                      <span className="text-base font-extrabold text-[#111827]">{formatCurrency(currentPrice)}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-600 font-medium">AI Hedef:</span>
                       <span title="24 saatlik tahmini değişim" className={`text-base font-extrabold ${up?'text-green-700':'text-red-700'}`}>
-                        ₺{Number(targetPrice).toFixed(2)} <span className="text-sm">({diffPct >= 0 ? '+' : ''}{diffPct.toFixed(1)}%)</span>
+                        {formatCurrency(Number(targetPrice))} <span className="text-sm">({diffPct >= 0 ? '+' : ''}{formatNumber(diffPct, 1)}%)</span>
                       </span>
                     </div>
                   </div>
@@ -1503,8 +1523,8 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         </ul>
                       </div>
                     </details>
-                    <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${targetPrice.toFixed(2)} (${diffPct}%), Stop loss: ${(currentPrice*0.9).toFixed(2)}. Formül: RSI*0.25 + MACD*0.25 + Sentiment*0.3 + Volume*0.2`}>
-                      🤖 Hedef ₺{Number(targetPrice).toFixed(2)} • Stop ₺{(currentPrice*0.9).toFixed(2)}
+                    <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${formatCurrency(targetPrice)} (${formatNumber(diffPct)}%), Stop loss: ${formatCurrency(currentPrice*0.9)}. Formül: RSI*0.25 + MACD*0.25 + Sentiment*0.3 + Volume*0.2`}>
+                      🤖 Hedef {formatCurrency(Number(targetPrice))} • Stop {formatCurrency(currentPrice*0.9)}
                     </span>
                   </div>
                   {/* Teknik mikro rozetler */}

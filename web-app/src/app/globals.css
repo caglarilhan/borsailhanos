@@ -236,3 +236,56 @@ table tbody tr:nth-child(even):not([class*="bg-"]) {
 table tbody tr:hover:not([class*="bg-"]) {
   background-color: #e0f2fe; /* sky-100 */
 }
+
+/* --- WCAG AA ACCESSIBILITY (Focus Rings & Contrast) --- */
+/* Button focus ring - belirgin ve erişilebilir */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Interactive elements focus */
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid #2563eb !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Icon standardization */
+.btn-icon {
+  @apply inline-flex items-center gap-2 text-sm px-3 py-2 rounded-xl;
+}
+
+.btn-icon > svg,
+.btn-icon > *[class*="icon"] {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+/* Minimum contrast for text (WCAG AA: 4.5:1 for normal text, 3:1 for large) */
+.text-slate-600 {
+  color: #374151 !important; /* gray-700 instead of gray-500 for better contrast */
+}
+
+/* API Status Indicator Colors */
+.api-status-good {
+  color: #10b981; /* emerald-500 */
+  background-color: rgba(16, 185, 129, 0.1);
+}
+
+.api-status-warning {
+  color: #f59e0b; /* amber-500 */
+  background-color: rgba(245, 158, 11, 0.1);
+}
+
+.api-status-error {
+  color: #ef4444; /* red-500 */
+  background-color: rgba(239, 68, 68, 0.1);
+}
