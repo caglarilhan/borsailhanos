@@ -4510,6 +4510,88 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 })()}
               />
             </div>
+            
+            {/* AI Güven Göstergesi - Sembol Bazlı Liste (THYAO 89% BUY | AKBNK 78% BUY | ...) */}
+            <div className="mt-4 bg-white rounded-lg p-4 border shadow-sm">
+              <div className="text-sm font-semibold text-gray-900 mb-3">🎯 AI Güven Göstergesi (Sembol Bazlı)</div>
+              <div className="space-y-2">
+                {(() => {
+                  // Top 4 sembol confidence gösterimi (sparkline ile)
+                  const topSymbols = rows.slice().sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 4);
+                  return topSymbols.map((r, idx) => {
+                    const confPct = Math.round((r.confidence || 0) * 100);
+                    const signal = (r.prediction || 0) >= 0.02 ? 'BUY' : (r.prediction || 0) <= -0.02 ? 'SELL' : 'HOLD';
+                    const signalColor = signal === 'BUY' ? 'bg-green-100 text-green-700 border-green-200' : signal === 'SELL' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                    // Mock 24s confidence trend (gerçek implementasyonda backend'den gelecek)
+                    const seed = r.symbol.charCodeAt(0);
+                    let rnd = seed;
+                    const seededRandom = () => {
+                      rnd = (rnd * 1103515245 + 12345) >>> 0;
+                      return (rnd / 0xFFFFFFFF);
+                    };
+                    const trend24h = Array.from({ length: 24 }, (_, i) => {
+                      const base = r.confidence || 0.75;
+                      const hour = i / 24;
+                      const cycle = Math.sin(hour * Math.PI * 2) * 0.03;
+                      const noise = (seededRandom() - 0.5) * 0.02;
+                      return Math.max(0.60, Math.min(0.95, base + cycle + noise));
+                    });
+                    const trendChange = ((trend24h[trend24h.length - 1] - trend24h[0]) * 100).toFixed(1);
+                    const trendDirection = Number(trendChange) >= 0 ? '↑' : '↓';
+                    return (
+                      <div key={r.symbol} className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200 hover:bg-slate-100 transition-colors">
+                        <div className="flex items-center gap-2 flex-1">
+                          <span className="font-bold text-slate-900 text-sm">{r.symbol}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${signalColor}`}>
+                            {signal}
+                          </span>
+                          <span className={`text-sm font-bold ${confPct >= 85 ? 'text-green-600' : confPct >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {confPct}%
+                          </span>
+                        </div>
+                        {/* Mini sparkline grafiği */}
+                        <div className="h-8 w-24 flex items-center gap-2">
+                          <svg width="96" height="32" viewBox="0 0 96 32" className="overflow-visible">
+                            <defs>
+                              <linearGradient id={`symbolSparkline-${r.symbol}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stopColor={confPct >= 85 ? '#22c55e' : confPct >= 70 ? '#fbbf24' : '#ef4444'} stopOpacity="0.3" />
+                                <stop offset="100%" stopColor={confPct >= 85 ? '#22c55e' : confPct >= 70 ? '#fbbf24' : '#ef4444'} stopOpacity="0" />
+                              </linearGradient>
+                            </defs>
+                            {(() => {
+                              const minY = Math.min(...trend24h);
+                              const maxY = Math.max(...trend24h);
+                              const range = maxY - minY || 0.1;
+                              const scaleX = (i: number) => (i / (trend24h.length - 1)) * 96;
+                              const scaleY = (v: number) => 32 - ((v - minY) / range) * 32;
+                              let path = '';
+                              trend24h.forEach((v, i) => {
+                                const x = scaleX(i);
+                                const y = scaleY(v);
+                                path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                              });
+                              const fillPath = path + ` L 96 ${scaleY(trend24h[trend24h.length - 1])} L 96 32 L 0 32 Z`;
+                              const color = confPct >= 85 ? '#22c55e' : confPct >= 70 ? '#fbbf24' : '#ef4444';
+                              return (
+                                <>
+                                  <path d={fillPath} fill={`url(#symbolSparkline-${r.symbol})`} />
+                                  <path d={path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
+                                  <circle cx={scaleX(trend24h.length - 1)} cy={scaleY(trend24h[trend24h.length - 1])} r="1.5" fill={color} stroke="white" strokeWidth="0.5" />
+                                </>
+                              );
+                            })()}
+                          </svg>
+                          {/* 24s trend oku */}
+                          <span className={`text-[9px] font-semibold ${Number(trendChange) >= 0 ? 'text-green-600' : 'text-red-600'}`} title="24s confidence değişimi">
+                            {trendDirection} {Math.abs(Number(trendChange)).toFixed(1)}pp
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
           </>
         )}
 

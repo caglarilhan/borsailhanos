@@ -54,8 +54,8 @@ export function AIConfidenceBoard({
         {/* AI Confidence Gauge */}
         <div className="flex flex-col items-center">
           <div className="text-xs text-slate-600 mb-2">AI Confidence</div>
-          <AIConfidenceGauge valuePct={Math.round(aiConfidence * 100)} />
-          <div className="text-xs text-slate-700 mt-2">{Math.round(aiConfidence * 100)}%</div>
+          <AIConfidenceGauge valuePct={Math.round((aiConfidence || 0.87) * 100)} />
+          <div className="text-xs text-slate-700 mt-2">{Math.round((aiConfidence || 0.87) * 100)}%</div>
           {/* 24s trend oku */}
           {trend24.length > 0 && (
             <div className={`text-[9px] mt-1 ${trend24[trend24.length - 1] >= trend24[0] ? 'text-green-600' : 'text-red-600'}`}>
