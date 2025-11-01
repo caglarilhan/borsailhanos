@@ -202,32 +202,37 @@ section {
 }
 
 /* --- HIGH-CONTRAST CLEAN MODE (soft dark on white) --- */
+/* Base body background - override with utility classes if needed */
 body {
   background-color: #ffffff;
   color: #111827; /* soft dark instead of pure black */
 }
 
-/* Table text on white */
-th, td {
-  color: #111827 !important;
-  background-color: #ffffff !important;
+/* Table text on white - only apply to default state, allow Tailwind overrides */
+table th:not([class*="text-"]):not([class*="bg-"]),
+table td:not([class*="text-"]):not([class*="bg-"]) {
+  color: #111827;
+  background-color: #ffffff;
 }
 
-/* Keep general elements readable without forcing pure black */
-span, p, div, label {
-  color: #111827 !important;
+/* Only override default text colors, not utility classes */
+span:not([class*="text-"]),
+p:not([class*="text-"]),
+div:not([class*="text-"]),
+label:not([class*="text-"]) {
+  color: #111827;
 }
 
-/* Signals: keep bold, reduce glare slightly */
+/* Signals: keep bold, reduce glare slightly - only if not overridden by utility */
 .text-green-700, .text-blue-700, .text-red-700, .text-yellow-600 {
-  font-weight: 700 !important;
+  font-weight: 700;
   filter: brightness(0.9);
 }
 
-/* Zebra rows and hover (pastel) */
-tr:nth-child(even) {
-  background-color: #f8fafc !important; /* slate-50 */
+/* Zebra rows and hover (pastel) - only for default table rows */
+table tbody tr:nth-child(even):not([class*="bg-"]) {
+  background-color: #f8fafc; /* slate-50 */
 }
-tr:hover {
-  background-color: #e0f2fe !important; /* sky-100 */
+table tbody tr:hover:not([class*="bg-"]) {
+  background-color: #e0f2fe; /* sky-100 */
 }
