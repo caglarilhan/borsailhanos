@@ -38,6 +38,7 @@ import { mapRSIToState, getRSIStateLabel, getRSIStateColor } from '@/lib/rsi';
 import { normalizeSentiment } from '@/lib/format';
 import { isAdmin } from '@/lib/featureFlags';
 import { Tabs } from '@/components/UI/Tabs';
+import { HoverCard } from '@/components/UI/HoverCard';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -794,107 +795,365 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             </button>
           ))}
         </div>
-        {/* Header Buton Grupları - Overflow önleme */}
+        {/* Sprint 1: ÜST NAVBAR Restructure - Menü grupları */}
         <div className="flex flex-col sm:flex-row gap-2">
-          {/* Ana Buton Grubu */}
-          <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin">
-          <Link
-            href="/settings"
-            className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-white hover:bg-slate-800 flex items-center gap-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
-            title="Ayarlar"
-          >
-            <Cog6ToothIcon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
-            <span>Ayarlar</span>
-          </Link>
-          {/* P0-04: Admin RBAC - Conditional render */}
-          {isAdmin(userRole || undefined) && (
-            <Link
-              href="/admin"
-              className="px-3 py-1.5 text-xs rounded-lg bg-red-700 text-white hover:bg-red-800 flex items-center gap-1.5 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500 focus-visible:outline-offset-2"
-              title="Admin Paneli - Sadece admin kullanıcılar için"
-            >
-              <span>⚙️</span>
-              <span>Admin</span>
-            </Link>
-          )}
-          <button
-            onClick={async () => { 
-              try { 
-                await (predQ as any)?.refetch?.(); 
-                setLastUpdated(new Date());
-              } catch (e) {
-                console.error('Yenileme hatası:', e);
+          {/* AI Merkezi Grubu */}
+          <div className="flex gap-2 overflow-x-auto items-center bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-blue-200">
+            <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide mr-1 hidden md:inline">AI Merkezi</span>
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => { /* AI Confidence aç */ }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1.5 transition-colors"
+                >
+                  🧠 AI
+                </button>
               }
-            }}
-            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-white hover:bg-slate-800 border-2 border-slate-600 shadow-md hover:shadow-lg transition-all active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500 focus-visible:outline-offset-2"
-            title="Veriyi yenile - Tüm sinyalleri ve AI tahminlerini güncelle"
-          >
-            🔁 Yenile
-          </button>
-          {/* Strateji modu */}
-          <div className="flex items-center gap-1 mr-2">
-            <span className="text-[11px] text-slate-600 font-medium">Mod:</span>
-            <button 
-              onClick={()=>{setActiveHorizons(['5m','15m']); setStrategyMode('scalper');}} 
-              className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='scalper'?'bg-yellow-500 text-white border-yellow-600 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
-              title="Scalper modu - Kısa vadeli (5m, 15m) sinyaller"
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">AI Güven Göstergesi</div>
+                  <div className="text-xs text-slate-700">
+                    Model tahmin güveni, kalibrasyon eğrisi, drift analizi ve faktör katkıları.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => setGptOpen(v => !v)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${gptOpen?'bg-purple-600 text-white border-purple-700':'bg-purple-500/10 text-purple-700 border-purple-400 hover:bg-purple-500/20'}`}
+                >
+                  💬 Yorum
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">TraderGPT</div>
+                  <div className="text-xs text-slate-700">
+                    AI destekli yorum ve sinyal açıklamaları. Sorularınızı sorun, anlık cevaplar alın.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => { /* Risk Model aç */ }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 flex items-center gap-1.5 transition-colors"
+                >
+                  📈 Risk Model
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Risk Yönetimi</div>
+                  <div className="text-xs text-slate-700">
+                    CVaR analizi, risk dağılımı, portfolio risk metrikleri ve hedge önerileri.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => { /* Meta-Model aç */ }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700 flex items-center gap-1.5 transition-colors"
+                >
+                  🧮 Meta-Model
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Meta-Model Engine</div>
+                  <div className="text-xs text-slate-700">
+                    RSI/MACD/Sentiment/Volume ağırlıkları, ensemble kombinasyonları, drift trend grafiği.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+          </div>
+
+          {/* Strateji Merkezi Grubu */}
+          <div className="flex gap-2 overflow-x-auto items-center bg-gradient-to-r from-emerald-50 to-teal-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-emerald-200">
+            <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide mr-1 hidden md:inline">Strateji</span>
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => { /* Strateji aç */ }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5 transition-colors"
+                >
+                  🎯 Strateji
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Strateji Oluşturucu</div>
+                  <div className="text-xs text-slate-700">
+                    Momentum, Mean-Reversion, News-based ve Mixed AI stratejileri. Strategy Lab ile test edin.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <HoverCard
+              trigger={
+                <Link
+                  href="/plans"
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1.5 transition-colors"
+                >
+                  💎 Planlar
+                </Link>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Abonelik Planları</div>
+                  <div className="text-xs text-slate-700">
+                    Basic, Pro ve Enterprise planları. Özellikleri karşılaştırın ve yükseltin.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => { /* Gelişmiş aç */ }}
+                  className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700 flex items-center gap-1.5 transition-colors"
+                >
+                  ⚡ Gelişmiş
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Gelişmiş Görselleştirme</div>
+                  <div className="text-xs text-slate-700">
+                    Heatmap, korelasyon matrisi, sentiment trend, multi-timeframe analiz.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+          </div>
+
+          {/* Kullanıcı Merkezi Grubu */}
+          <div className="flex gap-2 overflow-x-auto items-center bg-gradient-to-r from-slate-50 to-gray-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-slate-200">
+            <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide mr-1 hidden md:inline">Kullanıcı</span>
+            <HoverCard
+              trigger={
+                <button
+                  onClick={() => setFilterWatch(v => !v)}
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterWatch?'bg-emerald-500 text-white border-emerald-600':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
+                >
+                  📋 Watchlist
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">İzleme Listesi</div>
+                  <div className="text-xs text-slate-700">
+                    Favori sembollerinizi takip edin. Sadece watchlist'teki sinyalleri gösterin.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            {/* P0-04: Admin RBAC - Conditional render */}
+            {isAdmin(userRole || undefined) && (
+              <HoverCard
+                trigger={
+                  <Link
+                    href="/admin"
+                    className="px-3 py-1.5 text-xs rounded-lg bg-red-700 text-white hover:bg-red-800 flex items-center gap-1.5 transition-colors"
+                  >
+                    ⚙️ Admin
+                  </Link>
+                }
+                content={
+                  <div className="space-y-2">
+                    <div className="font-semibold text-slate-900">Admin Paneli</div>
+                    <div className="text-xs text-slate-700">
+                      Sistem yönetimi, kullanıcı yönetimi, model ayarları ve log izleme.
+                    </div>
+                  </div>
+                }
+                side="bottom"
+              />
+            )}
+            <HoverCard
+              trigger={
+                <Link
+                  href="/settings"
+                  className="px-3 py-1.5 text-xs rounded-lg bg-slate-700 text-white hover:bg-slate-800 flex items-center gap-1.5 transition-colors"
+                >
+                  <Cog6ToothIcon className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+                  <span>Ayarlar</span>
+                </Link>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Ayarlar</div>
+                  <div className="text-xs text-slate-700">
+                    Uygulama ayarları, bildirim tercihleri, tema ve dil seçenekleri.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <button
+              onClick={async () => { 
+                try { 
+                  await (predQ as any)?.refetch?.(); 
+                  setLastUpdated(new Date());
+                } catch (e) {
+                  console.error('Yenileme hatası:', e);
+                }
+              }}
+              className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-white hover:bg-slate-800 border-2 border-slate-600 shadow-md hover:shadow-lg transition-all active:scale-95 flex items-center gap-1.5"
+              title="Veriyi yenile - Tüm sinyalleri ve AI tahminlerini güncelle"
             >
-              {strategyMode==='scalper' ? '✓ ' : ''}Scalper
-            </button>
-            <button 
-              onClick={()=>{setActiveHorizons(['4h','1d']); setStrategyMode('swing');}} 
-              className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='swing'?'bg-blue-500 text-white border-blue-600 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
-              title="Swing modu - Orta vadeli (4h, 1d) sinyaller"
-            >
-              {strategyMode==='swing' ? '✓ ' : ''}Swing
-            </button>
-            <button 
-              onClick={()=>{setActiveHorizons(['1h','1d']); setStrategyMode('auto');}} 
-              className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='auto'?'bg-purple-600 text-white border-purple-700 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
-              title="AI Auto modu - Otomatik AI tabanlı strateji seçimi"
-            >
-              {strategyMode==='auto' ? '✓ ' : ''}AI Auto
+              🔁 Yenile
             </button>
           </div>
-      {HORIZONS.map(h => {
-        const isActive = activeHorizons.includes(h);
-        return (
-          <button
-            key={h}
-            onClick={() => {
-              console.log('⏱️ Horizon değiştiriliyor:', h);
-              toggleHorizon(h);
-            }}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all border-2 ${isActive?'bg-blue-600 text-white border-blue-700 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
-            title={isActive ? `${h} filtresi aktif` : `${h} filtresini aktif et`}
-          >
-            {isActive ? '✓ ' : ''}{h}
-          </button>
-        );
-      })}
-      <button 
-        onClick={()=>setFilterWatch(v=>!v)} 
-        className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterWatch?'bg-emerald-500 text-white border-emerald-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
-        title={filterWatch ? 'Watchlist filtresi aktif' : 'Watchlist filtresini aktif et'}
-      >
-        {filterWatch ? '✓ Watchlist' : 'Watchlist'}
-      </button>
-      <button 
-        onClick={()=>setFilterAcc80(v=>!v)} 
-        className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterAcc80?'bg-blue-500 text-white border-blue-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
-        title={filterAcc80 ? '≥%80 doğruluk filtresi aktif' : '≥%80 doğruluk filtresini aktif et'}
-      >
-        {filterAcc80 ? '✓ ≥%80 Doğruluk' : '≥%80 Doğruluk'}
-      </button>
-      <button 
-        onClick={()=>setFilterMomentum(v=>!v)} 
-        className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterMomentum?'bg-purple-500 text-white border-purple-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
-        title={filterMomentum ? '≥%5 momentum filtresi aktif' : '≥%5 momentum filtresini aktif et'}
-      >
-        {filterMomentum ? '✓ ≥%5 Momentum' : '≥%5 Momentum'}
-      </button>
-          {/* Strateji presetleri */}
-          <div className="ml-2 hidden lg:flex items-center gap-1">
+
+          {/* Filtreler & Kontroller Grubu - Ayrı bir satır */}
+          <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin w-full">
+            {/* Strateji modu */}
+            <div className="flex items-center gap-1 mr-2">
+              <span className="text-[11px] text-slate-600 font-medium">Mod:</span>
+              <HoverCard
+                trigger={
+                  <button 
+                    onClick={()=>{setActiveHorizons(['5m','15m']); setStrategyMode('scalper');}} 
+                    className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='scalper'?'bg-yellow-500 text-white border-yellow-600 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
+                  >
+                    {strategyMode==='scalper' ? '✓ ' : ''}Scalper
+                  </button>
+                }
+                content={
+                  <div className="space-y-2">
+                    <div className="font-semibold text-slate-900">Scalper Modu</div>
+                    <div className="text-xs text-slate-700">
+                      Kısa vadeli (5m, 15m) sinyaller. Hızlı giriş/çıkış stratejisi için optimize edilmiş.
+                    </div>
+                  </div>
+                }
+                side="bottom"
+              />
+              <HoverCard
+                trigger={
+                  <button 
+                    onClick={()=>{setActiveHorizons(['4h','1d']); setStrategyMode('swing');}} 
+                    className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='swing'?'bg-blue-500 text-white border-blue-600 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
+                  >
+                    {strategyMode==='swing' ? '✓ ' : ''}Swing
+                  </button>
+                }
+                content={
+                  <div className="space-y-2">
+                    <div className="font-semibold text-slate-900">Swing Modu</div>
+                    <div className="text-xs text-slate-700">
+                      Orta vadeli (4h, 1d) sinyaller. Trend takip stratejisi için optimize edilmiş.
+                    </div>
+                  </div>
+                }
+                side="bottom"
+              />
+              <HoverCard
+                trigger={
+                  <button 
+                    onClick={()=>{setActiveHorizons(['1h','1d']); setStrategyMode('auto');}} 
+                    className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='auto'?'bg-purple-600 text-white border-purple-700 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
+                  >
+                    {strategyMode==='auto' ? '✓ ' : ''}AI Auto
+                  </button>
+                }
+                content={
+                  <div className="space-y-2">
+                    <div className="font-semibold text-slate-900">AI Auto Modu</div>
+                    <div className="text-xs text-slate-700">
+                      Otomatik AI tabanlı strateji seçimi. En uygun zaman dilimi ve filtreler otomatik seçilir.
+                    </div>
+                  </div>
+                }
+                side="bottom"
+              />
+            </div>
+            {/* Horizon filtreleri */}
+            {HORIZONS.map(h => {
+              const isActive = activeHorizons.includes(h);
+              return (
+                <HoverCard
+                  key={h}
+                  trigger={
+                    <button
+                      onClick={() => {
+                        console.log('⏱️ Horizon değiştiriliyor:', h);
+                        toggleHorizon(h);
+                      }}
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all border-2 ${isActive?'bg-blue-600 text-white border-blue-700 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+                    >
+                      {isActive ? '✓ ' : ''}{h}
+                    </button>
+                  }
+                  content={
+                    <div className="space-y-2">
+                      <div className="font-semibold text-slate-900">{h} Filtresi</div>
+                      <div className="text-xs text-slate-700">
+                        {isActive ? 'Filtre aktif. ' : 'Filtreyi aktif etmek için tıklayın. '}
+                        Bu zaman dilimindeki sinyalleri gösterir.
+                      </div>
+                    </div>
+                  }
+                  side="bottom"
+                />
+              );
+            })}
+            {/* Filtre butonları */}
+            <HoverCard
+              trigger={
+                <button 
+                  onClick={()=>setFilterAcc80(v=>!v)} 
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterAcc80?'bg-blue-500 text-white border-blue-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+                >
+                  {filterAcc80 ? '✓ ≥%80 Doğruluk' : '≥%80 Doğruluk'}
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Yüksek Doğruluk Filtresi</div>
+                  <div className="text-xs text-slate-700">
+                    Sadece %80+ doğruluk oranına sahip sinyalleri gösterir.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <HoverCard
+              trigger={
+                <button 
+                  onClick={()=>setFilterMomentum(v=>!v)} 
+                  className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterMomentum?'bg-purple-500 text-white border-purple-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+                >
+                  {filterMomentum ? '✓ ≥%5 Momentum' : '≥%5 Momentum'}
+                </button>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">Momentum Filtresi</div>
+                  <div className="text-xs text-slate-700">
+                    Sadece %5+ momentum değerine sahip sinyalleri gösterir.
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            {/* Strateji presetleri */}
+            <div className="ml-2 hidden lg:flex items-center gap-1">
             {([
               {k:'momentum', label:'Momentum'},
               {k:'meanrev', label:'MeanReversion'},
@@ -1116,18 +1375,58 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         })()}
       />
 
-      {/* Zaman damgası / veri kaynağı / API durum */}
+      {/* Sprint 1: Zaman damgası / veri kaynağı / WebSocket bağlantı göstergesi */}
       <div className="flex items-center justify-end -mt-2 mb-2 text-[11px] text-slate-500 gap-2 flex-wrap">
-        {/* P0-05: Zaman/Gerçek Zamanlı Tutarsızlık Düzeltme */}
+        {/* WebSocket bağlantı göstergesi - Dinamik */}
         {wsConnected ? (
-          <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200">
-            🟢 Canlı
-          </span>
+          <>
+            <HoverCard
+              trigger={
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-green-100 text-green-700 border border-green-200 cursor-help">
+                  🟢 Canlı
+                </span>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">WebSocket Bağlı</div>
+                  <div className="text-xs text-slate-700">
+                    Gerçek zamanlı veri akışı aktif. Gecikme: {apiLatency !== null ? `${apiLatency}ms` : '—'}
+                  </div>
+                  <div className="text-[10px] text-slate-600">
+                    Son güncelleme: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'}
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <span className="hidden sm:inline">•</span>
+            <span className="text-[10px]">Veri akışı: {apiLatency !== null ? `${apiLatency}ms` : '<10ms'} gecikme</span>
+          </>
         ) : (
-          <span>Son senkron: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'} (UTC+3)</span>
+          <>
+            <HoverCard
+              trigger={
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-100 text-amber-700 border border-amber-200 cursor-help">
+                  ⚠️ Durağan
+                </span>
+              }
+              content={
+                <div className="space-y-2">
+                  <div className="font-semibold text-slate-900">WebSocket Bağlı Değil</div>
+                  <div className="text-xs text-slate-700">
+                    Şu anda mock veri kullanılıyor. Gerçek zamanlı veri için WebSocket bağlantısı gerekiyor.
+                  </div>
+                  <div className="text-[10px] text-slate-600">
+                    Son senkron: {lastUpdated ? lastUpdated.toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—'} (UTC+3)
+                  </div>
+                </div>
+              }
+              side="bottom"
+            />
+            <span className="hidden sm:inline">•</span>
+            <span>Kaynak: {DATA_SOURCE}</span>
+          </>
         )}
-        <span className="hidden sm:inline">•</span>
-        <span>Kaynak: {wsConnected ? 'WebSocket' : DATA_SOURCE}</span>
         {apiLatency !== null && (
           <>
             <span className="hidden sm:inline">•</span>
