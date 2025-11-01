@@ -141,10 +141,19 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   // Smart Alerts 2.0: Toast notifications state
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }>>([]);
   // User-defined alert thresholds (from Settings)
-  const [alertThresholds, setAlertThresholds] = useState<{ minConfidence: number; minPriceChange: number; enabled: boolean }>({
+  // v4.7: Enhanced alert thresholds with RSI and AI confidence thresholds
+  const [alertThresholds, setAlertThresholds] = useState<{ 
+    minConfidence: number; 
+    minPriceChange: number; 
+    enabled: boolean;
+    rsiThreshold: number; // RSI > threshold for overbought alert
+    minAiConfidence: number; // AI confidence < threshold for low confidence alert
+  }>({
     minConfidence: 70,
     minPriceChange: 5,
     enabled: true,
+    rsiThreshold: 75, // RSI > 75 for overbought alert
+    minAiConfidence: 60, // AI confidence < 60 for low confidence alert
   });
   
   // Load alert settings from localStorage
@@ -515,13 +524,19 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
         });
         setLastUpdated(new Date());
       }
-      // Smart Alerts 2.0: WebSocket alert notifications
+      // v4.7: Smart Alerts 2.0 - Enhanced WebSocket alert notifications with RSI and AI confidence thresholds
       else if (data?.type === 'alert' && alertThresholds.enabled) {
         const alert = data.alert || data;
-        const { symbol, confidence, priceChange, signal, message: alertMessage } = alert;
+        const { symbol, confidence, priceChange, signal, message: alertMessage, rsi, aiConfidence } = alert;
         
-        // Filter alerts based on user-defined thresholds
-        if (confidence >= alertThresholds.minConfidence && Math.abs(priceChange || 0) >= alertThresholds.minPriceChange) {
+        // v4.7: Enhanced threshold filtering - Multiple conditions
+        const meetsConfidenceThreshold = confidence >= alertThresholds.minConfidence;
+        const meetsPriceChangeThreshold = Math.abs(priceChange || 0) >= alertThresholds.minPriceChange;
+        const meetsRsiThreshold = rsi !== undefined && rsi > alertThresholds.rsiThreshold;
+        const meetsLowAiConfidenceThreshold = aiConfidence !== undefined && aiConfidence < alertThresholds.minAiConfidence;
+        
+        // Alert if any threshold condition is met
+        if (meetsConfidenceThreshold && meetsPriceChangeThreshold || meetsRsiThreshold || meetsLowAiConfidenceThreshold) {
           const toastMessage = alertMessage || `${symbol}: ${signal} sinyali (Güven: ${confidence?.toFixed(1)}%, Değişim: ${priceChange >= 0 ? '+' : ''}${priceChange?.toFixed(2)}%)`;
           const toastType = signal === 'BUY' ? 'success' : signal === 'SELL' ? 'error' : 'warning';
           addToast(toastMessage, toastType, 6000);
