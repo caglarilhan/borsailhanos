@@ -108,11 +108,12 @@ export default function AdvancedCharts({ symbol = 'THYAO', data, isLoading }: Ad
               </p>
             )}
           </div>
-        </div>
-      );
+      </div>
+    );
     }
     return null;
-  };
+  });
+  CustomTooltip.displayName = 'CustomTooltip';
 
   if (isLoading) {
     return (
