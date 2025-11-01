@@ -13,7 +13,7 @@ const API_CANDIDATES = Array.from(new Set([
   'http://localhost:18100',
   'http://localhost:18085',
 ]));
-import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, ClockIcon } from '@heroicons/react/24/outline';
+import { ArrowTrendingUpIcon, ArrowTrendingDownIcon, ClockIcon, Cog6ToothIcon } from '@heroicons/react/24/outline';
 import Top30Analysis from './Top30Analysis';
 import { Skeleton } from '@/components/UI/Skeleton';
 import { AIOrchestrator } from '@/components/AI/AIOrchestrator';
