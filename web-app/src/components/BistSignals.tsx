@@ -2614,7 +2614,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         </ul>
                       </details>
                     )}
-                    {/* P1-09: AI Fiyat Tahmin ±1σ - Mock volatilite gösterimi */}
+                    {/* P1-09: AI Fiyat Tahmin ±1σ - Band rengi highlight ve fade transition */}
                     <div className="mt-3 pt-3 border-t border-slate-300">
                       <div className="text-xs font-semibold text-slate-700 mb-2">📊 Fiyat Tahmin ±1σ Güven Aralığı</div>
                       {(() => {
@@ -2623,31 +2623,138 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         const volatility = Math.abs(basePred) * 0.15 || 0.02; // Mock volatilite (±1σ = ±15% of prediction or 2% default)
                         const upperBound = currentPrice * (1 + basePred + volatility);
                         const lowerBound = currentPrice * (1 + basePred - volatility);
+                        const targetPrice = currentPrice * (1 + basePred);
+                        
+                        // Confidence interval visualization (sparkline)
+                        const width = 240;
+                        const height = 80;
+                        const points = 20;
+                        const seed = (selectedSymbol || 'THYAO').charCodeAt(0);
+                        let r = seed;
+                        const seededRandom = () => {
+                          r = (r * 1103515245 + 12345) >>> 0;
+                          return (r / 0xFFFFFFFF);
+                        };
+                        
+                        // Generate price series with confidence band
+                        const priceSeries = Array.from({ length: points }, (_, i) => {
+                          const progress = i / (points - 1);
+                          const basePrice = currentPrice * (1 + basePred * progress);
+                          const noise = (seededRandom() - 0.5) * volatility * currentPrice;
+                          return basePrice + noise;
+                        });
+                        
+                        const minPrice = Math.min(...priceSeries, lowerBound);
+                        const maxPrice = Math.max(...priceSeries, upperBound);
+                        const priceRange = maxPrice - minPrice || currentPrice * 0.1;
+                        
+                        const scaleX = (i: number) => (i / (points - 1)) * width;
+                        const scaleY = (price: number) => height - ((price - minPrice) / priceRange) * height;
+                        
+                        // Main prediction line
+                        let mainPath = '';
+                        priceSeries.forEach((price, i) => {
+                          const x = scaleX(i);
+                          const y = scaleY(price);
+                          mainPath += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
+                        });
+                        
+                        // Confidence band (upper and lower bounds)
+                        let upperPath = '';
+                        let lowerPath = '';
+                        priceSeries.forEach((price, i) => {
+                          const x = scaleX(i);
+                          const upperY = scaleY(price + volatility * currentPrice);
+                          const lowerY = scaleY(price - volatility * currentPrice);
+                          upperPath += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + upperY;
+                          lowerPath += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + lowerY;
+                        });
+                        // Close the band
+                        const bandPath = upperPath + ' L ' + width + ' ' + scaleY(priceSeries[priceSeries.length - 1] + volatility * currentPrice) + ' ' + lowerPath.split('').reverse().join('') + ' Z';
+                        
                         return (
-                          <div className="text-xs text-slate-700 space-y-1">
-                            <div className="flex justify-between">
-                              <span>Mevcut Fiyat:</span>
-                              <span className="font-semibold">{formatCurrency(currentPrice)}</span>
+                          <div className="space-y-2">
+                            <div className="text-xs text-slate-700 space-y-1">
+                              <div className="flex justify-between">
+                                <span>Mevcut Fiyat:</span>
+                                <span className="font-semibold">{formatCurrency(currentPrice)}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span>Tahmin (±1σ):</span>
+                                <span className="font-semibold text-blue-600">
+                                  {formatCurrency(targetPrice)}
+                                </span>
+                              </div>
+                              <div className="flex justify-between text-[10px]">
+                                <span>Üst sınır (+1σ):</span>
+                                <span className="text-green-600 font-medium">{formatCurrency(upperBound)}</span>
+                              </div>
+                              <div className="flex justify-between text-[10px]">
+                                <span>Alt sınır (-1σ):</span>
+                                <span className="text-red-600 font-medium">{formatCurrency(lowerBound)}</span>
+                              </div>
                             </div>
-                            <div className="flex justify-between">
-                              <span>Tahmin (±1σ):</span>
-                              <span className="font-semibold text-blue-600">
-                                {formatCurrency(currentPrice * (1 + basePred))}
-                              </span>
+                            
+                            {/* Visualization with confidence band */}
+                            <div className="h-24 w-full bg-slate-50 rounded-lg p-2 border border-slate-200 relative">
+                              <svg width="100%" height={height} viewBox={`0 0 ${width} ${height}`} className="overflow-visible">
+                                <defs>
+                                  <linearGradient id={`confidenceBand-${selectedSymbol}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stopColor="#22c55e" stopOpacity="0.3" />
+                                    <stop offset="50%" stopColor="#2563eb" stopOpacity="0.2" />
+                                    <stop offset="100%" stopColor="#ef4444" stopOpacity="0.3" />
+                                  </linearGradient>
+                                </defs>
+                                {/* Confidence band (fade transition) */}
+                                <path
+                                  d={bandPath}
+                                  fill={`url(#confidenceBand-${selectedSymbol})`}
+                                  className="transition-opacity duration-300 hover:opacity-80"
+                                  title={`Güven aralığı: ${formatCurrency(lowerBound)} - ${formatCurrency(upperBound)}`}
+                                />
+                                {/* Main prediction line */}
+                                <path
+                                  d={mainPath}
+                                  fill="none"
+                                  stroke="#2563eb"
+                                  strokeWidth="2"
+                                  className="transition-all duration-300"
+                                  title={`AI Tahmin: ${formatCurrency(targetPrice)}`}
+                                />
+                                {/* Current price marker */}
+                                <circle
+                                  cx={0}
+                                  cy={scaleY(currentPrice)}
+                                  r="4"
+                                  fill="#111827"
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  title={`Mevcut Fiyat: ${formatCurrency(currentPrice)}`}
+                                />
+                                {/* Target price marker */}
+                                <circle
+                                  cx={width}
+                                  cy={scaleY(targetPrice)}
+                                  r="4"
+                                  fill="#2563eb"
+                                  stroke="white"
+                                  strokeWidth="2"
+                                  title={`Hedef Fiyat: ${formatCurrency(targetPrice)}`}
+                                />
+                              </svg>
+                              {/* Tooltip overlay */}
+                              <div className="absolute bottom-0 left-0 right-0 p-2 bg-slate-900/80 backdrop-blur text-white text-[9px] rounded-b-lg opacity-0 hover:opacity-100 transition-opacity duration-300">
+                                <div className="flex justify-between">
+                                  <span>Gerçek: {formatCurrency(currentPrice)}</span>
+                                  <span>AI: {formatCurrency(targetPrice)}</span>
+                                  <span>Sapma: {((basePred * 100)).toFixed(1)}%</span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex justify-between text-[10px]">
-                              <span>Üst sınır (+1σ):</span>
-                              <span className="text-green-600">{formatCurrency(upperBound)}</span>
-                            </div>
-                            <div className="flex justify-between text-[10px]">
-                              <span>Alt sınır (-1σ):</span>
-                              <span className="text-red-600">{formatCurrency(lowerBound)}</span>
-                            </div>
-                            <div className="text-[9px] text-slate-500 mt-1">
-                              Volatilite (σ): {(volatility * 100).toFixed(2)}% • Güven aralığı: 68%
-                            </div>
-                            <div className="text-[9px] text-amber-600 mt-1">
-                              ⚠️ Mock volatilite - Gerçek backend endpoint gerekiyor
+                            
+                            <div className="text-[9px] text-slate-500 mt-1 flex items-center justify-between">
+                              <span>Volatilite (σ): {(volatility * 100).toFixed(2)}% • Güven aralığı: 68%</span>
+                              <span className="text-amber-600">⚠️ Mock volatilite</span>
                             </div>
                           </div>
                         );
