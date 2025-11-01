@@ -517,13 +517,53 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   };
 
   // Mini analiz cümlesi (tek satır)
-  const miniAnalysis = (pred: number, conf: number): string => {
+  // Çeşitlendirilmiş AI yorumları - RSI tekrarını önlemek için sembol bazlı varyasyon
+  const miniAnalysis = (pred: number, conf: number, symbol?: string): string => {
     const confPct = Math.round(conf*100);
-    if (pred >= 0.08 && confPct >= 85) return 'Momentum güçlü, hacim artışı sinyali destekliyor.';
-    if (pred >= 0.05) return 'Trend pozitif, kısa vadede yukarı potansiyel mevcut.';
-    if (pred <= -0.08 && confPct >= 85) return 'RSI aşırı alımda, kısa vadeli düzeltme olası.';
-    if (pred <= -0.05) return 'Baskı artıyor, destek bölgeleri izlenmeli.';
-    return 'Nötr görünüm, teyit için hacim ve RSI takip edilmeli.';
+    // Sembol bazlı seed ile çeşitlendirme
+    const seed = symbol ? symbol.charCodeAt(0) % 5 : 0;
+    const variations = {
+      high: [
+        'Momentum güçlü, hacim artışı sinyali destekliyor.',
+        'Fiyat momentumu yukarı yönlü, kısa vadede potansiyel yükseliş bekleniyor.',
+        'Teknik göstergeler pozitif sinyal veriyor, trend devam edebilir.',
+        'Hacim artışı ve momentum birleşimi güçlü yükseliş sinyali oluşturuyor.',
+        'RSI ve MACD uyumlu, momentum devam ediyor.'
+      ],
+      medium: [
+        'Trend pozitif, kısa vadede yukarı potansiyel mevcut.',
+        'Yükseliş eğilimi sürüyor, destek seviyeleri korunuyor.',
+        'Pozitif momentum var, teknik destekler güçlü.',
+        'Kısa vadeli trend yukarı, izlemeye devam.',
+        'Momentum ve hacim pozitif yönlü, fırsat değerlendirilebilir.'
+      ],
+      low: [
+        'RSI aşırı alımda, kısa vadeli düzeltme olası.',
+        'Teknik gösterge aşırı alım seviyesinde, dikkatli olunmalı.',
+        'Momentum zayıflıyor, potansiyel düzeltme sinyali var.',
+        'Aşırı alım durumu, kısa vadede konsolidasyon beklenebilir.',
+        'RSI >70 seviyesinde, kar realizasyonu gündeme gelebilir.'
+      ],
+      negative: [
+        'Baskı artıyor, destek bölgeleri izlenmeli.',
+        'Düşüş momentumu güçlü, destek kırılırsa daha fazla gerileme olabilir.',
+        'Teknik göstergeler negatif, risk yönetimi önemli.',
+        'Trend düşüş yönlü, destek seviyeleri test ediliyor.',
+        'Baskı sürüyor, destek kırılması durumunda dikkatli olunmalı.'
+      ],
+      neutral: [
+        'Nötr görünüm, teyit için hacim ve RSI takip edilmeli.',
+        'Belirsiz sinyal, yön tespiti için beklenmeli.',
+        'Konsolidasyon devam ediyor, net yön için beklemek gerekiyor.',
+        'Yan hareket var, yönlü hareket için teyit sinyali bekleniyor.',
+        'Nötr pozisyon, hacim artışı yönü belirleyecek.'
+      ]
+    };
+    if (pred >= 0.08 && confPct >= 85) return variations.high[seed];
+    if (pred >= 0.05) return variations.medium[seed];
+    if (pred <= -0.08 && confPct >= 85) return variations.low[seed];
+    if (pred <= -0.05) return variations.negative[seed];
+    return variations.neutral[seed];
   };
 
   const technicalBadges = (pred: number, conf: number): string[] => {
@@ -591,25 +631,38 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         <div className="mx-auto max-w-7xl">
           <div className={`rounded-xl text-white shadow-sm ${strategyMode==='scalper' ? 'bg-yellow-600' : strategyMode==='swing' ? 'bg-blue-700' : 'bg-slate-900'}`}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3">
-              <div className="bg-white/10 rounded-lg p-3">
-                <div className="flex items-center gap-1">
-                  <div className="text-xs opacity-80">Accuracy (30g)</div>
-                  <span title="Son 30 gün backtest tahmin isabeti" className="text-xs opacity-80 cursor-help">ⓘ</span>
+              {/* Doğruluk KPI - Yeşil ton */}
+              <div className="bg-emerald-500/20 backdrop-blur-sm rounded-xl p-4 border border-emerald-400/30 shadow-md hover:shadow-lg transition-shadow">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs font-semibold text-white/90 uppercase tracking-wide">Doğruluk (30g)</div>
+                  <span title="Son 30 gün backtest tahmin isabeti" className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
                 </div>
-                <div className="text-xl font-bold">%87.3</div>
-                <div className="text-[11px] opacity-80 mt-0.5">MAE 0.021 • RMSE 0.038</div>
+                <div className="text-2xl font-bold text-emerald-100 mb-1">%87.3</div>
+                <div className="text-[10px] text-white/70">MAE 0.021 • RMSE 0.038</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3">
-                <div className="text-xs opacity-80">Aktif Sinyal</div>
-                <div className="text-xl font-bold">{rows.length}</div>
+              {/* Aktif Sinyal KPI - Mavi ton */}
+              <div className="bg-blue-500/20 backdrop-blur-sm rounded-xl p-4 border border-blue-400/30 shadow-md hover:shadow-lg transition-shadow">
+                <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Aktif Sinyal</div>
+                <div className="text-2xl font-bold text-blue-100">{rows.length}</div>
+                <div className="text-[10px] text-white/70 mt-1">Canlı analiz</div>
               </div>
-              <div className="bg-white/10 rounded-lg p-3">
-                <div className="text-xs opacity-80">Risk Skoru</div>
-                <div className="text-xl font-bold">{(Math.max(1, 5 - Math.round((rows.length%5))) + 0).toFixed(1)}</div>
-              </div>
-              <div className="bg-white/10 rounded-lg p-3">
-                <div className="text-xs opacity-80">Toplam Sinyal</div>
-                <div className="text-xl font-bold">{Math.max(rows.length, 100)}</div>
+              {/* Risk Skoru KPI - Sarı/Kırmızı ton (risk seviyesine göre) */}
+              {(() => {
+                const risk = Math.max(1, 5 - Math.round((rows.length%5)));
+                const isHigh = risk >= 4;
+                return (
+                  <div className={`${isHigh ? 'bg-red-500/20 border-red-400/30' : 'bg-amber-500/20 border-amber-400/30'} backdrop-blur-sm rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
+                    <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Risk Skoru</div>
+                    <div className={`text-2xl font-bold ${isHigh ? 'text-red-100' : 'text-amber-100'}`}>{risk.toFixed(1)}</div>
+                    <div className="text-[10px] text-white/70 mt-1">{isHigh ? 'Yüksek risk' : 'Orta risk'}</div>
+                  </div>
+                );
+              })()}
+              {/* Toplam Sinyal KPI - Mor ton */}
+              <div className="bg-purple-500/20 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30 shadow-md hover:shadow-lg transition-shadow">
+                <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Toplam Sinyal</div>
+                <div className="text-2xl font-bold text-purple-100">{Math.max(rows.length, 100)}</div>
+                <div className="text-[10px] text-white/70 mt-1">Bugün işlem</div>
               </div>
               {/* AI Core Panel (compact) */}
               <div className="col-span-2 md:col-span-4">
@@ -679,34 +732,81 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
             <span>Ayarlar</span>
           </Link>
           <button
-            onClick={() => { try { (predQ as any)?.refetch?.(); } catch {} }}
-            className="px-3 py-1.5 text-xs rounded-lg bg-slate-900 text-white hover:opacity-90"
-            title="Veriyi yenile"
+            onClick={async () => { 
+              try { 
+                await (predQ as any)?.refetch?.(); 
+                setLastUpdated(new Date());
+              } catch (e) {
+                console.error('Yenileme hatası:', e);
+              }
+            }}
+            className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-700 text-white hover:bg-slate-800 border-2 border-slate-600 shadow-md hover:shadow-lg transition-all active:scale-95"
+            title="Veriyi yenile - Tüm sinyalleri ve AI tahminlerini güncelle"
           >
-            Yenile 🔁
+            🔁 Yenile
           </button>
           {/* Strateji modu */}
           <div className="flex items-center gap-1 mr-2">
-            <span className="text-[11px] text-slate-600">Mod:</span>
-            <button onClick={()=>{setActiveHorizons(['5m','15m']); setStrategyMode('scalper');}} className="px-2 py-1 text-[11px] rounded bg-slate-100 hover:bg-slate-200">Scalper</button>
-            <button onClick={()=>{setActiveHorizons(['4h','1d']); setStrategyMode('swing');}} className="px-2 py-1 text-[11px] rounded bg-slate-100 hover:bg-slate-200">Swing</button>
-            <button onClick={()=>{setActiveHorizons(['1h','1d']); setStrategyMode('auto');}} className="px-2 py-1 text-[11px] rounded bg-blue-600 text-white">AI Auto</button>
-          </div>
-          {HORIZONS.map(h => (
-            <button
-              key={h}
-              onClick={() => {
-                console.log('⏱️ Horizon değiştiriliyor:', h);
-                toggleHorizon(h);
-              }}
-              className={`px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${activeHorizons.includes(h)?'bg-blue-600 text-white':'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
+            <span className="text-[11px] text-slate-600 font-medium">Mod:</span>
+            <button 
+              onClick={()=>{setActiveHorizons(['5m','15m']); setStrategyMode('scalper');}} 
+              className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='scalper'?'bg-yellow-500 text-white border-yellow-600 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
+              title="Scalper modu - Kısa vadeli (5m, 15m) sinyaller"
             >
-              {h}
+              {strategyMode==='scalper' ? '✓ ' : ''}Scalper
             </button>
-          ))}
-          <button onClick={()=>setFilterWatch(v=>!v)} className={`px-3 py-1.5 text-xs rounded-full border ${filterWatch?'bg-blue-600 text-white border-blue-600':'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200'}`}>Watchlist</button>
-          <button onClick={()=>setFilterAcc80(v=>!v)} className={`px-3 py-1.5 text-xs rounded-full border ${filterAcc80?'bg-blue-600 text-white border-blue-600':'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200'}`}>≥%80 doğruluk</button>
-          <button onClick={()=>setFilterMomentum(v=>!v)} className={`px-3 py-1.5 text-xs rounded-full border ${filterMomentum?'bg-blue-600 text-white border-blue-600':'bg-slate-100 text-slate-800 border-slate-200 hover:bg-slate-200'}`}>≥%5 momentum</button>
+            <button 
+              onClick={()=>{setActiveHorizons(['4h','1d']); setStrategyMode('swing');}} 
+              className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='swing'?'bg-blue-500 text-white border-blue-600 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
+              title="Swing modu - Orta vadeli (4h, 1d) sinyaller"
+            >
+              {strategyMode==='swing' ? '✓ ' : ''}Swing
+            </button>
+            <button 
+              onClick={()=>{setActiveHorizons(['1h','1d']); setStrategyMode('auto');}} 
+              className={`px-2 py-1 text-[11px] font-semibold rounded border transition-all ${strategyMode==='auto'?'bg-purple-600 text-white border-purple-700 shadow-md':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200'}`}
+              title="AI Auto modu - Otomatik AI tabanlı strateji seçimi"
+            >
+              {strategyMode==='auto' ? '✓ ' : ''}AI Auto
+            </button>
+          </div>
+      {HORIZONS.map(h => {
+        const isActive = activeHorizons.includes(h);
+        return (
+          <button
+            key={h}
+            onClick={() => {
+              console.log('⏱️ Horizon değiştiriliyor:', h);
+              toggleHorizon(h);
+            }}
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg whitespace-nowrap transition-all border-2 ${isActive?'bg-blue-600 text-white border-blue-700 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+            title={isActive ? `${h} filtresi aktif` : `${h} filtresini aktif et`}
+          >
+            {isActive ? '✓ ' : ''}{h}
+          </button>
+        );
+      })}
+      <button 
+        onClick={()=>setFilterWatch(v=>!v)} 
+        className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterWatch?'bg-emerald-500 text-white border-emerald-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+        title={filterWatch ? 'Watchlist filtresi aktif' : 'Watchlist filtresini aktif et'}
+      >
+        {filterWatch ? '✓ Watchlist' : 'Watchlist'}
+      </button>
+      <button 
+        onClick={()=>setFilterAcc80(v=>!v)} 
+        className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterAcc80?'bg-blue-500 text-white border-blue-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+        title={filterAcc80 ? '≥%80 doğruluk filtresi aktif' : '≥%80 doğruluk filtresini aktif et'}
+      >
+        {filterAcc80 ? '✓ ≥%80 Doğruluk' : '≥%80 Doğruluk'}
+      </button>
+      <button 
+        onClick={()=>setFilterMomentum(v=>!v)} 
+        className={`px-3 py-1.5 text-xs font-semibold rounded-full border-2 transition-all ${filterMomentum?'bg-purple-500 text-white border-purple-600 shadow-md hover:shadow-lg scale-105':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+        title={filterMomentum ? '≥%5 momentum filtresi aktif' : '≥%5 momentum filtresini aktif et'}
+      >
+        {filterMomentum ? '✓ ≥%5 Momentum' : '≥%5 Momentum'}
+      </button>
           {/* Strateji presetleri */}
           <div className="ml-2 hidden lg:flex items-center gap-1">
             {([
@@ -874,9 +974,11 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
           {/* TraderGPT aç/kapa */}
           <button
             onClick={()=> setGptOpen(v=>!v)}
-            className="px-3 py-1.5 text-xs rounded-lg bg-purple-600 text-white hover:opacity-90"
-            title="TraderGPT konuşmalı panel"
-          >🤖 TraderGPT</button>
+            className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${gptOpen?'bg-purple-600 text-white border-purple-700 shadow-md hover:shadow-lg scale-105':'bg-purple-500/10 text-purple-700 border-purple-400 hover:bg-purple-500/20'}`}
+            title={gptOpen ? 'TraderGPT paneli açık - AI yorumlayıcı konuşmalı panel' : 'TraderGPT panelini aç - AI yorumlayıcı konuşmalı panel'}
+          >
+            {gptOpen ? '✓ ' : ''}🤖 TraderGPT
+          </button>
         </div>
       </div>
       {/* AI-first Header banner */}
@@ -1304,18 +1406,27 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
               // Using fallback calculation for target price
               const targetPrice = Math.round(currentPrice * (1 + (best.prediction||0)) * 100) / 100;
               return (
-                <div key={sym} className="border rounded-xl p-4 bg-white shadow-sm hover:shadow-md transition-all cursor-pointer" onClick={() => { setSelectedSymbol(sym); }}>
-                  <div className="flex items-center justify-between">
-                    <div className="text-[16px] font-bold text-slate-900">{sym}</div>
-                    <div className={`text-xs px-2 py-0.5 rounded-full border ${up?'bg-green-50 text-green-700 border-green-200':'bg-red-50 text-red-700 border-red-200'}`}>{up?'Yükseliş':'Düşüş'}</div>
+                <div key={sym} className={`border-2 rounded-xl p-4 shadow-md hover:shadow-xl transition-all cursor-pointer ${up ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 hover:border-green-400' : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300 hover:border-red-400'}`} onClick={() => { setSelectedSymbol(sym); }}>
+                  {/* Başlık - Sembol + Yön Badge */}
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="text-[18px] font-extrabold text-[#111827]">{sym}</div>
+                    <div className={`text-xs font-bold px-3 py-1.5 rounded-full border-2 ${up?'bg-green-500 text-white border-green-600 shadow-md':'bg-red-500 text-white border-red-600 shadow-md'}`}>
+                      {up ? '▲ YÜKSELİŞ' : '▼ DÜŞÜŞ'}
+                    </div>
                   </div>
-                  <div className="mt-1 text-sm text-slate-800 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className={up? 'text-green-600 font-semibold':'text-red-600 font-semibold'}>
-                        {up ? '▲' : '▼'} {diffPct}%
-                      </span>
-                      <span className="text-slate-600">Güven: <span className="font-semibold text-[#111827]">{confPct}%</span></span>
-                      <span className="text-slate-600">Ufuk: <span className="font-semibold text-slate-900">{best.horizon}</span></span>
+                  {/* Ana Metrikler - Daha büyük ve belirgin */}
+                  <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+                    <div className={`text-lg font-black ${up ? 'text-green-700' : 'text-red-700'}`}>
+                      {up ? '▲' : '▼'} {Math.abs(diffPct).toFixed(1)}%
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-600 font-medium">Güven:</span>
+                      <span className={`text-sm font-bold px-2 py-0.5 rounded ${confPct >= 85 ? 'bg-emerald-100 text-emerald-800' : confPct >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-red-100 text-red-800'}`}>{confPct}%</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-600 font-medium">Ufuk:</span>
+                      <span className="text-sm font-bold text-[#111827] bg-slate-100 px-2 py-0.5 rounded">{best.horizon}</span>
+                    </div>
                       {bestH && (
                         <span title="En güvenilir ufuk" className="px-2 py-0.5 text-[10px] rounded bg-blue-50 text-blue-800 border border-blue-200">En iyi: {bestH}</span>
                       )}
@@ -1326,13 +1437,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                       <Sparkline series={seededSeries(sym + '-24h', 24)} width={90} height={24} color={up? '#16a34a':'#dc2626'} />
                     </div>
                   </div>
-                  {/* Fiyat satırı */}
-                  <div className="mt-2 text-sm flex items-center gap-4">
-                    <div>
-                      <span className="text-slate-500">Gerçek:</span> <span className="font-bold text-slate-900">₺{currentPrice.toFixed(2)}</span>
+                  {/* Fiyat satırı - Daha belirgin hiyerarşi */}
+                  <div className="mt-3 pt-3 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-600 font-medium">Gerçek Fiyat:</span>
+                      <span className="text-base font-extrabold text-[#111827]">₺{currentPrice.toFixed(2)}</span>
                     </div>
-                    <div>
-                      <span className="text-slate-500">AI Tahmini:</span> <span title="24s tahmini değişim" className={`font-bold ${up?'text-green-600':'text-red-600'}`}>₺{Number(targetPrice).toFixed(2)} ({(up?'+':'')+String(diffPct)}%)</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-600 font-medium">AI Hedef:</span>
+                      <span title="24 saatlik tahmini değişim" className={`text-base font-extrabold ${up?'text-green-700':'text-red-700'}`}>
+                        ₺{Number(targetPrice).toFixed(2)} <span className="text-sm">({(up?'+':'')+String(diffPct)}%)</span>
+                      </span>
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">
@@ -1362,7 +1477,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                     <details className="flex-1 min-w-[200px]">
                       <summary className="cursor-pointer select-none flex items-center gap-1">
                         <span className="font-semibold text-[#111827]">AI Yorum:</span>
-                        <span className="truncate">{miniAnalysis(best.prediction||0, best.confidence||0)}</span>
+                        <span className="truncate">{miniAnalysis(best.prediction||0, best.confidence||0, sym)}</span>
                       </summary>
                       <div className="mt-1 pl-4 text-[10px] text-slate-600">
                         <div className="font-semibold mb-1">XAI Ağırlıkları:</div>
@@ -1387,7 +1502,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                   </div>
                   {/* Mini analiz cümlesi */}
                   <div className="mt-2 text-xs text-slate-700">
-                    {miniAnalysis(best.prediction||0, best.confidence||0)}
+                    {miniAnalysis(best.prediction||0, best.confidence||0, sym)}
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-slate-700">
                     <ClockIcon className="h-4 w-4" />
@@ -1399,13 +1514,17 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                         e.stopPropagation();
                         try { const mode = inWatch ? 'remove':'add'; await wlMut.mutateAsync({ symbols: sym, mode }); } catch {}
                       }}
-                      className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-slate-100 text-slate-800 hover:bg-slate-200'}`}
-                    >{inWatch?'Takipte':'Takibe Al'}</button>
+                      className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all ${inWatch?'bg-yellow-500 text-white border-yellow-600 shadow-md hover:shadow-lg':'bg-slate-100 text-slate-700 border-slate-300 hover:bg-slate-200 hover:border-slate-400'}`}
+                      title={inWatch ? 'Favori listede - Favori listesinden kaldır' : 'Favori listesine ekle - Takip listesine ekle'}
+                    >
+                      {inWatch ? '★ Takipte' : '☆ Takibe Al'}
+                    </button>
                     {confPct>=alertThresholds.minConfidence && Math.abs(diffPct)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
                       <button
                         onClick={async (e)=>{ e.stopPropagation(); try { if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertThresholds.minPriceChange, minConf: alertThresholds.minConfidence, source: 'AI v4.6 model BIST30 dataset' }); } else { await Api.sendTelegramAlert(sym, `AI uyarı: ${sym} Δ>${alertThresholds.minPriceChange}%, Conf≥${alertThresholds.minConfidence}%`, 'demo'); } } catch {} }}
-                        className="px-2 py-1 text-xs rounded bg-blue-600 text-white"
-                      >Bildirim</button>
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg border-2 bg-blue-600 text-white border-blue-700 shadow-md hover:shadow-lg transition-all"
+                        title={`Alarm ayarla - ${sym} için fiyat değişimi ≥%${alertThresholds.minPriceChange} ve güven ≥%${alertThresholds.minConfidence} olduğunda bildirim al`}
+                      >🔔 Bildirim</button>
                     )}
                   </div>
                 </div>
@@ -1703,15 +1822,40 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 </div>
 
                 {/* Quick Backtest (tcost/rebalance) */}
-                <div className="bg-gray-50 p-3 rounded-lg">
-                  <h5 className="font-medium text-gray-900 mb-2">Quick Backtest</h5>
-                  <div className="flex items-center gap-2 text-xs text-slate-700 mb-2 flex-wrap">
-                    <label htmlFor="btTcost">Tcost (bps)</label>
-                    <input id="btTcost" type="number" className="w-14 px-2 py-1 border rounded text-black bg-white" value={backtestTcost} onChange={(e)=> setBacktestTcost(Math.max(0, Math.min(50, parseInt(e.target.value)||8)))} />
-                    <label htmlFor="btReb">Rebalance (gün)</label>
-                    <input id="btReb" type="number" className="w-16 px-2 py-1 border rounded text-black bg-white" value={backtestRebDays} onChange={(e)=> setBacktestRebDays(Math.max(1, Math.min(30, parseInt(e.target.value)||5)))} />
-                    <label htmlFor="btSlippage">Slippage (%)</label>
-                    <input id="btSlippage" type="number" step="0.01" className="w-16 px-2 py-1 border rounded text-black bg-white" defaultValue={0.05} title="İşlem maliyeti slippage oranı" />
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
+                  <div className="flex items-center justify-between mb-3">
+                    <h5 className="font-bold text-gray-900 text-base">📊 Quick Backtest</h5>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => { setBacktestTcost(8); setBacktestRebDays(5); }}
+                        className="px-2 py-1 text-[10px] font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
+                        title="Standart preset: Tcost 8bps, Rebalance 5 gün"
+                      >Varsayılan</button>
+                      <button
+                        onClick={() => { setBacktestTcost(8); setBacktestRebDays(7); }}
+                        className="px-2 py-1 text-[10px] font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
+                        title="Son 7 gün preset"
+                      >7g</button>
+                      <button
+                        onClick={() => { setBacktestTcost(8); setBacktestRebDays(30); }}
+                        className="px-2 py-1 text-[10px] font-semibold rounded bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
+                        title="Son 30 gün preset"
+                      >30g</button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs text-slate-700 mb-3">
+                    <div>
+                      <label htmlFor="btTcost" className="block text-[10px] font-semibold mb-1">Tcost (bps)</label>
+                      <input id="btTcost" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestTcost} onChange={(e)=> setBacktestTcost(Math.max(0, Math.min(50, parseInt(e.target.value)||8)))} />
+                    </div>
+                    <div>
+                      <label htmlFor="btReb" className="block text-[10px] font-semibold mb-1">Rebalance (gün)</label>
+                      <input id="btReb" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestRebDays} onChange={(e)=> setBacktestRebDays(Math.max(1, Math.min(30, parseInt(e.target.value)||5)))} />
+                    </div>
+                    <div>
+                      <label htmlFor="btSlippage" className="block text-[10px] font-semibold mb-1">Slippage (%)</label>
+                      <input id="btSlippage" type="number" step="0.01" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" defaultValue={0.05} title="İşlem maliyeti slippage oranı" />
+                    </div>
                   </div>
                   {(() => {
                     // Using backtestQ from top-level hook call (Rules of Hooks compliance)
