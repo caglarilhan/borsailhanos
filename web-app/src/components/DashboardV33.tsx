@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 // Force dynamic rendering - disables SSR to prevent hydration mismatches
 export const dynamic = 'force-dynamic';
-import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { normalizeSentiment } from '@/lib/format';
 import { formatPercent, formatCurrency, formatDate, formatTime } from '@/lib/format';
@@ -90,12 +90,18 @@ function DashboardV33() {
   
   // Memoize initial chart data to prevent unnecessary re-renders
   const initialChartData = useMemo(() => 
-    Array.from({ length: 30 }, (_, i) => ({
-      day: 'Gün ' + (i + 1),
-      actual: 240 + Math.random() * 20 - 10,
-      predicted: 242 + i * 0.8 + Math.random() * 15 - 7,
-      confidence: 85 + Math.random() * 10
-    }))
+    Array.from({ length: 30 }, (_, i) => {
+      const basePred = 242 + i * 0.8 + Math.random() * 15 - 7;
+      const sigma = basePred * 0.02; // ±2% güven aralığı (±1σ)
+      return {
+        day: 'Gün ' + (i + 1),
+        actual: 240 + Math.random() * 20 - 10,
+        predicted: basePred,
+        predicted_upper: basePred + sigma,
+        predicted_lower: basePred - sigma,
+        confidence: 85 + Math.random() * 10
+      };
+    })
   , []);
 
   const initialPortfolioData = useMemo(() => 
@@ -2062,6 +2068,22 @@ function DashboardV33() {
                   wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }}
                   iconType="line"
                 />
+                {/* ±σ Güven Aralığı Bandı */}
+                <Area 
+                  type="monotone"
+                  dataKey="predicted_upper"
+                  stroke="none"
+                  fill="#06b6d4"
+                  fillOpacity={0.15}
+                  name="±1σ Güven Aralığı"
+                />
+                <Area 
+                  type="monotone"
+                  dataKey="predicted_lower"
+                  stroke="none"
+                  fill="#06b6d4"
+                  fillOpacity={0.15}
+                />
                 <Line 
                   type="monotone" 
                   dataKey="actual" 
@@ -2169,7 +2191,7 @@ function DashboardV33() {
             <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Pair trading ve korelasyon analizi</div>
           </div>
           <div style={{ padding: '16px', display: 'grid', gap: '16px' }}>
-            {correlationMatrix.map((corr, idx) => (
+            {correlationMatrix.filter((corr) => corr.stock1 !== corr.stock2).map((corr, idx) => (
               <div key={idx} style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
