@@ -40,6 +40,7 @@ import { isAdmin } from '@/lib/featureFlags';
 import { Tabs } from '@/components/UI/Tabs';
 import { HoverCard } from '@/components/UI/HoverCard';
 import { normalizeRisk, getRiskLevel, getRiskColor, getRiskBgColor } from '@/lib/risk-normalize';
+import { syncConfidenceRiskColor } from '@/lib/confidence-risk-sync';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -2412,13 +2413,27 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         {analysisTab === 'performance' && (
           <>
             <h3 className="text-lg font-semibold text-gray-900 mb-4">AI Performans (Backtest)</h3>
+            {/* P0: Backtest mock görünümü - Placeholder açıkça belirtilmeli */}
+            {!backtestQ.data && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-3">
+                <div className="text-xs text-amber-800 font-semibold mb-1">⚠️ Demo Modu</div>
+                <div className="text-[10px] text-amber-700">
+                  Backtest verileri şu anda mock modda. Gerçek API entegrasyonu için backend endpoint gerekiyor.
+                </div>
+              </div>
+            )}
             {/* P2-07: Backtest Tab - Moved to Performance tab */}
             {/* Quick Backtest (tcost/rebalance) */}
             <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border-2 border-blue-200 shadow-md">
                   <div className="flex items-center justify-between mb-3">
-                    <h5 className="font-bold text-gray-900 text-base">
-                      📊 Quick Backtest — {backtestRebDays}g | Rebalance: {backtestRebDays}g | Tcost: {backtestTcost}bps | Slippage: 0.05%
-                    </h5>
+                    <div>
+                      <h5 className="font-bold text-gray-900 text-base">
+                        📊 Quick Backtest — {backtestRebDays}g | Rebalance: {backtestRebDays}g | Tcost: {backtestTcost}bps | Slippage: 0.05%
+                      </h5>
+                      {!backtestQ.data && (
+                        <div className="text-[10px] text-amber-600 mt-1">⚠️ Demo veri (gerçek API entegrasyonu gerekli)</div>
+                      )}
+                    </div>
                     <div className="flex gap-1">
                       <button
                         onClick={() => { setBacktestTcost(8); setBacktestRebDays(5); }}
