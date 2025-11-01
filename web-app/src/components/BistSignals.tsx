@@ -39,6 +39,7 @@ import { normalizeSentiment } from '@/lib/format';
 import { isAdmin } from '@/lib/featureFlags';
 import { Tabs } from '@/components/UI/Tabs';
 import { HoverCard } from '@/components/UI/HoverCard';
+import { normalizeRisk, getRiskLevel, getRiskColor, getRiskBgColor } from '@/lib/risk-normalize';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -422,6 +423,21 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     }
   }, [wsConnected, predQ]);
 
+  // Sprint 2: 24s metrics update (mock for now, will be replaced with real WebSocket)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Mock 24s metrics - in production this will come from WebSocket
+      const seed = Date.now();
+      setMetrics24s({
+        profitChange: ((seed % 100) / 100 - 0.5) * 0.5, // -0.25 to +0.25
+        modelDrift: ((seed % 100) / 100 - 0.5) * 2, // -1 to +1
+        newSignals: seed % 5, // 0 to 4
+        newSignalsTime: new Date().toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})
+      });
+    }, 24000); // 24 seconds
+    return () => clearInterval(interval);
+  }, []);
+
   // WebSocket integration for real-time updates
   const { connected: wsConnectedState, lastMessage: wsMessage } = useWebSocket({
     url: wsUrl,
@@ -704,7 +720,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
         <div className="mx-auto max-w-7xl">
           <div className={`rounded-xl text-white shadow-sm ${strategyMode==='scalper' ? 'bg-yellow-600' : strategyMode==='swing' ? 'bg-blue-700' : 'bg-slate-900'}`}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-3">
-              {/* Doğruluk KPI - Yeşil ton */}
+              {/* Sprint 2: Doğruluk KPI - 24s değişim etiketi */}
               <div className="bg-emerald-500/20 backdrop-blur-sm rounded-xl p-4 border border-emerald-400/30 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-xs font-semibold text-white/90 uppercase tracking-wide">Doğruluk (30g)</div>
@@ -712,22 +728,34 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
                 </div>
                 <div className="text-2xl font-bold text-emerald-100 mb-1">%87.3</div>
                 <div className="text-[10px] text-white/70">MAE 0.021 • RMSE 0.038</div>
+                {metrics24s.modelDrift !== 0 && (
+                  <div className={`text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block ${metrics24s.modelDrift >= 0 ? 'bg-green-500/30 text-green-100' : 'bg-red-500/30 text-red-100'}`}>
+                    Model drift: {metrics24s.modelDrift >= 0 ? '+' : ''}{metrics24s.modelDrift.toFixed(1)}pp
+                  </div>
+                )}
               </div>
-              {/* Aktif Sinyal KPI - Mavi ton */}
+              {/* Sprint 2: Aktif Sinyal KPI - Yeni sinyal sayısı (son 1 saat) */}
               <div className="bg-blue-500/20 backdrop-blur-sm rounded-xl p-4 border border-blue-400/30 shadow-md hover:shadow-lg transition-shadow">
                 <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Aktif Sinyal</div>
                 <div className="text-2xl font-bold text-blue-100">{rows.length}</div>
                 <div className="text-[10px] text-white/70 mt-1">Canlı analiz</div>
+                {metrics24s.newSignals > 0 && (
+                  <div className="text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block bg-blue-500/30 text-blue-100">
+                    +{metrics24s.newSignals} yeni (son 1 saat)
+                  </div>
+                )}
               </div>
-              {/* Risk Skoru KPI - Sarı/Kırmızı ton (risk seviyesine göre) */}
+              {/* Sprint 2: Risk Skoru KPI - Normalize edilmiş (1-10 ölçeği) */}
               {(() => {
-                const risk = Math.max(1, 5 - Math.round((rows.length%5)));
-                const isHigh = risk >= 4;
+                const riskOld = Math.max(1, 5 - Math.round((rows.length%5)));
+                const riskNormalized = normalizeRisk(riskOld);
+                const riskLevel = getRiskLevel(riskNormalized);
+                const riskColor = getRiskColor(riskNormalized);
                 return (
-                  <div className={`${isHigh ? 'bg-red-500/20 border-red-400/30' : 'bg-amber-500/20 border-amber-400/30'} backdrop-blur-sm rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
+                  <div className={`${getRiskBgColor(riskNormalized)} backdrop-blur-sm rounded-xl p-4 border shadow-md hover:shadow-lg transition-shadow`}>
                     <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Risk Skoru</div>
-                    <div className={`text-2xl font-bold ${isHigh ? 'text-red-100' : 'text-amber-100'}`}>{risk.toFixed(1)}</div>
-                    <div className="text-[10px] text-white/70 mt-1">{isHigh ? 'Yüksek risk' : 'Orta risk'}</div>
+                    <div className={`text-2xl font-bold ${riskColor.replace('text-', 'text-').replace('-600', '-100')}`}>{riskNormalized.toFixed(1)}</div>
+                    <div className="text-[10px] text-white/70 mt-1">{riskLevel} risk • 1-10 ölçeği</div>
                   </div>
                 );
               })()}
