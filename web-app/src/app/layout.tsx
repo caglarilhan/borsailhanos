@@ -2,6 +2,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import type { Metadata, Viewport } from "next";
 import Providers from "./providers";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const inter = Inter({ 
   subsets: ["latin"],
@@ -32,9 +33,11 @@ export default function RootLayout({
         className="antialiased font-inter bg-white text-[#111827] dark:bg-[#0B0C10] dark:text-[#EAEAEA]"
         suppressHydrationWarning
       >
-        <Providers>
-          {children}
-        </Providers>
+        <ErrorBoundary>
+          <Providers>
+            {children}
+          </Providers>
+        </ErrorBoundary>
       </body>
     </html>
   );
