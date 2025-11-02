@@ -2,14 +2,23 @@
 
 // Merkezi API katmanı – tüm fetch çağrılarını buradan yönetin
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085';
-const API_CANDIDATES = Array.from(new Set([
-  API_BASE_URL,
-  'http://127.0.0.1:18100',
-  'http://127.0.0.1:18085',
-  'http://localhost:18100',
-  'http://localhost:18085',
-]));
+const isProduction = process.env.NODE_ENV === 'production';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || process.env.NEXT_PUBLIC_API_URL || (
+  isProduction 
+    ? 'https://api.bistai.com' // Production API endpoint - .env.production'da override edilebilir
+    : 'http://127.0.0.1:18085' // Development default
+);
+
+// Production ortamında sadece production URL'leri, development'ta fallback'ler
+const API_CANDIDATES = isProduction 
+  ? [API_BASE_URL] // Production'da sadece ana URL
+  : Array.from(new Set([
+      API_BASE_URL,
+      'http://127.0.0.1:18100',
+      'http://127.0.0.1:18085',
+      'http://localhost:18100',
+      'http://localhost:18085',
+    ]));
 
 async function fetchSmart(input: string, init?: RequestInit): Promise<any> {
   const url = input;

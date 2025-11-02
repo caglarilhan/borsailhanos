@@ -96,11 +96,11 @@ function DashboardV33Inner() {
       const sigma = basePred * 0.02; // ±2% güven aralığı (±1σ)
       return {
         day: 'Gün ' + (i + 1),
-        actual: 240 + Math.random() * 20 - 10,
+      actual: 240 + Math.random() * 20 - 10,
         predicted: basePred,
         predicted_upper: basePred + sigma,
         predicted_lower: basePred - sigma,
-        confidence: 85 + Math.random() * 10
+      confidence: 85 + Math.random() * 10
       };
     })
   , []);
@@ -277,7 +277,7 @@ function DashboardV33Inner() {
       </div>
     );
   };
-
+  
   // ✅ DYNAMIC WATCHLIST: Gelen sinyallere göre dinamik güncelleme
   useEffect(() => {
     if (dynamicSignals.length > 0) {
@@ -643,12 +643,12 @@ function DashboardV33Inner() {
         if (pool.length > 0) {
           const randSymbol = pool[Math.floor(Math.random() * pool.length)];
           if (isWithinMarketScope(randSymbol, selectedMarket)) {
-            setAlerts(prev => [...prev, {
+        setAlerts(prev => [...prev, {
               id: 'realtime-' + Date.now() + '-' + randSymbol,
               message: '🔔 Yeni sinyal: ' + randSymbol + ' - AI analizi güncellendi',
-              type: 'success',
-              timestamp: new Date()
-            }]);
+          type: 'success',
+          timestamp: new Date()
+        }]);
           }
         }
       }
@@ -808,7 +808,7 @@ function DashboardV33Inner() {
   
   // ✅ DYNAMIC SIGNALS: WebSocket'ten gelirse kullan, yoksa fallback
   const rawSignals = dynamicSignals.length > 0 ? dynamicSignals : marketSignals[selectedMarket];
-  
+
   // Filter by market scope and deduplicate
   const marketFiltered = rawSignals.filter(s => isWithinMarketScope(s.symbol, selectedMarket));
   const signals = deduplicateBySymbol(marketFiltered);
@@ -1221,49 +1221,49 @@ function DashboardV33Inner() {
               <span aria-hidden="true">📋</span> Watchlist
             </button>
             {userRole === 'admin' && (
-              <button 
+            <button 
                 onClick={() => setShowAdmin(true)}
-                style={{ 
-                  padding: '8px 14px', 
-                  background: showAdmin ? '#333' : '#000', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: '8px',
-                  fontWeight: '700',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  outline: 'none'
-                }} 
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                aria-label="Admin paneline git"
-              >
-                <span aria-hidden="true">⚙️</span> Admin
-              </button>
+              style={{ 
+                padding: '8px 14px', 
+                background: showAdmin ? '#333' : '#000', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '11px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none'
+              }} 
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="Admin paneline git"
+            >
+              <span aria-hidden="true">⚙️</span> Admin
+            </button>
             )}
             {String(userPlan) === 'enterprise' && (
-              <button 
-                style={{ 
-                  padding: '8px 14px', 
-                  background: showV50Module ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: '10px',
-                  fontWeight: '700',
-                  fontSize: '11px',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  outline: 'none',
-                  boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
-                }} 
+            <button 
+              style={{ 
+                padding: '8px 14px', 
+                background: showV50Module ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
+                color: '#fff', 
+                border: 'none', 
+                borderRadius: '10px',
+                fontWeight: '700',
+                fontSize: '11px',
+                cursor: 'pointer',
+                transition: 'all 0.2s',
+                outline: 'none',
+                boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
+              }} 
                 onClick={() => setShowV50Module(true)}
-                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
-                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                aria-label="V5.0 Enterprise modülünü aç"
-              >
-                {showV50Module ? 'V5.0 ✨' : 'V5.0 Enterprise'}
-              </button>
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              aria-label="V5.0 Enterprise modülünü aç"
+            >
+              {showV50Module ? 'V5.0 ✨' : 'V5.0 Enterprise'}
+            </button>
             )}
         </div>
         </div>
@@ -1313,7 +1313,7 @@ function DashboardV33Inner() {
         </div>
         
         {/* Sektör Isı Haritası (Basit Heatmap) */}
-        <div style={{
+        <div style={{ 
           background: 'rgba(255,255,255,0.95)',
           borderRadius: '12px',
           border: '1px solid #e2e8f0',
@@ -1331,11 +1331,11 @@ function DashboardV33Inner() {
               const border = isUp ? '1px solid #10b98155' : '1px solid #ef444455';
               const text = isUp ? '#065f46' : '#7f1d1d';
               return (
-                <div key={idx} style={{
+              <div key={idx} style={{ 
                   background: bg,
                   border,
                   borderRadius: '10px',
-                  padding: '12px',
+                padding: '12px',
                   display: 'grid',
                   gap: '6px'
                 }}>
@@ -1348,11 +1348,11 @@ function DashboardV33Inner() {
                       height: '100%',
                       background: isUp ? '#10b981' : '#ef4444'
                     }} />
-                  </div>
+                </div>
                 </div>
               );
             })}
-          </div>
+      </div>
         </div>
 
         {/* Korelasyon Heatmap */}
@@ -1411,8 +1411,8 @@ function DashboardV33Inner() {
                         );
                       })}
                     </React.Fragment>
-                  ))}
-                </div>
+                    ))}
+                  </div>
               </div>
             );
           })()}
@@ -1452,9 +1452,9 @@ function DashboardV33Inner() {
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
-                  </div>
-                ))}
               </div>
+            ))}
+          </div>
             );
           })()}
         </div>
@@ -1568,7 +1568,7 @@ function DashboardV33Inner() {
             </div>
           );
         })()}
-      </div>
+        </div>
 
         {/* ALL FEATURES BY CATEGORY */}
         <div style={{ marginBottom: '16px' }}>
@@ -1684,8 +1684,8 @@ function DashboardV33Inner() {
                 }}>
                   <div style={{ fontWeight: 'bold', fontSize: '13px', color: '#0f172a', letterSpacing: '-0.2px' }}>{f}</div>
                 </div>
-              ))}
-            </div>
+        ))}
+      </div>
           </div>}
 
           {/* ANALIZ */}
@@ -2014,17 +2014,17 @@ function DashboardV33Inner() {
 
         {/* Realtime Alerts - Only show when connected */}
         {connected && (
-          <div style={{ 
-            marginTop: '16px',
-            padding: '12px',
-            background: 'rgba(255,255,255,0.8)',
-            backdropFilter: 'blur(20px)',
-            border: '1px solid rgba(6,182,212,0.3)',
-            borderRadius: '20px',
-            boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
-          }}>
-            <RealtimeAlerts />
-          </div>
+        <div style={{ 
+          marginTop: '16px',
+          padding: '12px',
+          background: 'rgba(255,255,255,0.8)',
+          backdropFilter: 'blur(20px)',
+          border: '1px solid rgba(6,182,212,0.3)',
+          borderRadius: '20px',
+          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
+        }}>
+          <RealtimeAlerts />
+        </div>
         )}
         
         {/* AI Prediction Chart */}
@@ -2050,10 +2050,10 @@ function DashboardV33Inner() {
                 <span>Canlı • Gerçek zamanlı veri akışı aktif</span>
               </div>
             ) : (
-              <div style={{ fontSize: '10px', color: '#f59e0b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>⚠️</span>
+            <div style={{ fontSize: '10px', color: '#f59e0b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span>⚠️</span>
                 <span>Son senkron: {new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})} (UTC+3) • Mock veri</span>
-              </div>
+            </div>
             )}
           </div>
           <div style={{ padding: '16px', aspectRatio: '16/9' }}>
@@ -2183,7 +2183,7 @@ function DashboardV33Inner() {
                       {factor.contribution > 0 ? '+' : ''}{factor.contribution}%
                     </div>
                   </div>
-                    <div style={{ width: '100%', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
+                  <div style={{ width: '100%', height: '8px', background: '#e0e0e0', borderRadius: '10px', overflow: 'hidden' }}>
                       <div style={{ height: '100%', background: (factor.positive ? 'linear-gradient(90deg, #10b981, #34d399)' : 'linear-gradient(90deg, #ef4444, #f87171)'), width: Math.abs(factor.contribution) + '%', transition: 'width 0.5s' }}></div>
                   </div>
                 </div>
@@ -2911,8 +2911,8 @@ function DashboardV33Inner() {
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
                   AI'ya feedback ver • Doğruluk skorunu artır • Ödüller kazan
-                </p>
-              </div>
+            </p>
+          </div>
               <button 
                 onClick={handleCloseAll}
                 style={{
@@ -2929,7 +2929,7 @@ function DashboardV33Inner() {
               >
                 ✕ Kapat
               </button>
-            </div>
+          </div>
 
             <div style={{
               background: 'rgba(255,255,255,0.95)',
@@ -2938,7 +2938,7 @@ function DashboardV33Inner() {
               border: '1px solid rgba(139,92,246,0.2)'
             }}>
               <FeedbackLoop />
-            </div>
+          </div>
           </div>
         )}
 
@@ -3007,8 +3007,8 @@ function DashboardV33Inner() {
                 </h2>
                 <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>
                   FinBERT + Llama3 + Mistral Ensemble • Ağırlıklı ortalama • %91.5 doğruluk
-                </p>
-              </div>
+            </p>
+          </div>
               <button 
                 onClick={handleCloseAll}
                 style={{
@@ -3025,7 +3025,7 @@ function DashboardV33Inner() {
               >
                 ✕ Kapat
               </button>
-            </div>
+          </div>
 
             <div style={{
               background: 'rgba(255,255,255,0.95)',
@@ -3034,7 +3034,7 @@ function DashboardV33Inner() {
               border: '1px solid rgba(236,72,153,0.2)'
             }}>
               <MetaModelEngine />
-            </div>
+          </div>
           </div>
         )}
 
@@ -3174,7 +3174,7 @@ function DashboardV33Inner() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-              <button 
+              <button
                 onClick={handleOpenLevel}
                 style={{
                   padding: '8px 16px',
@@ -3402,7 +3402,7 @@ function DashboardV33Inner() {
                   Sistem yönetimi ve ayarlar
                 </p>
               </div>
-              <button
+              <button 
                 onClick={handleCloseAll}
                 style={{
                   padding: '8px 16px',
@@ -3454,7 +3454,7 @@ function DashboardV33Inner() {
 
               <div style={{ marginTop: '24px', padding: '20px', background: 'rgba(255,255,255,0.95)', borderRadius: '20px', border: '1px solid rgba(0,0,0,0.1)' }}>
                 <h3 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '16px' }}>👥 Kullanıcı Yönetimi</h3>
-
+                
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                   <input 
                     type="text" 

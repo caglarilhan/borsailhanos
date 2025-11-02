@@ -41,6 +41,7 @@ import { Tabs } from '@/components/UI/Tabs';
 import { HoverCard } from '@/components/UI/HoverCard';
 import { normalizeRisk, getRiskLevel, getRiskColor, getRiskBgColor } from '@/lib/risk-normalize';
 import { syncConfidenceRiskColor } from '@/lib/confidence-risk-sync';
+import { setWithTTL, getWithTTL, cleanExpiredItems } from '@/lib/storage-ttl';
 
 // Simple seeded series for sparkline
 function seededSeries(key: string, len: number = 20): number[] {
@@ -156,17 +157,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     minAiConfidence: 60, // AI confidence < 60 for low confidence alert
   });
   
-  // Load alert settings from localStorage
+  // Load alert settings from localStorage with TTL (24 hours)
   useEffect(() => {
-    const stored = localStorage.getItem('alertSettings');
+    const stored = getWithTTL<typeof alertThresholds>('alertSettings');
     if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setAlertThresholds({ ...alertThresholds, ...parsed });
-      } catch (e) {
-        console.warn('Failed to parse alert settings:', e);
-      }
+      setAlertThresholds({ ...alertThresholds, ...stored });
     }
+    
+    // Clean expired items on mount (runs once per session)
+    cleanExpiredItems();
   }, []);
   // Lazy subcomponent: XAI + Analyst (memoized for performance)
   const XaiAnalyst: React.FC<{ symbol: string | null }> = React.memo(({ symbol }) => {
@@ -258,6 +257,7 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
   const backtestQ = useBacktestQuick(universe, backtestTcost, backtestRebDays, !!selectedSymbol);
   // TraderGPT conversational panel state
   const [gptOpen, setGptOpen] = useState<boolean>(false);
+  const [gptDebounceTimer, setGptDebounceTimer] = useState<NodeJS.Timeout | null>(null);
   // Header navigation active states
   const [aiOpen, setAiOpen] = useState<boolean>(false);
   const [riskOpen, setRiskOpen] = useState<boolean>(false);
@@ -290,29 +290,58 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
       (window as any).speechSynthesis.speak(u);
     } catch {}
   };
-  const handleGptAsk = async () => {
-    const q = gptInput.trim();
-    if (!q) return;
-    setGptMessages(prev => [...prev, { role: 'user', text: q }]);
-    setGptInput('');
-    setGptSpeaking(true);
-    try {
-      const context = {
-        selectedSymbol,
-        topSignals: rows.slice().sort((a,b)=> (b.confidence||0)-(a.confidence||0)).slice(0,5).map(r=>({symbol:r.symbol, confidence:Math.round(r.confidence*100), prediction:r.prediction}))
-      };
-      const resp = await Api.askTraderGPT(q, context);
-      const msg = resp.response || 'Yanıt hazırlanıyor...';
-      setGptMessages(prev => [...prev, { role: 'ai', text: msg }]);
-      speakText(msg);
-    } catch (e) {
-      const fallback = 'Analiz sırasında küçük bir gecikme oldu; lütfen tekrar dener misin?';
-      setGptMessages(prev => [...prev, { role: 'ai', text: fallback }]);
-      speakText(fallback);
-    } finally {
-      setGptSpeaking(false);
-    }
-  };
+  // Debounced TraderGPT handler - prevents duplicate triggers
+  const handleGptAsk = useMemo(() => {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let lastQuery = '';
+    let lastQueryTime = 0;
+    
+    return async () => {
+      const q = gptInput.trim();
+      if (!q) return;
+      
+      // Prevent duplicate triggers for same query within 2 seconds
+      const now = Date.now();
+      if (q === lastQuery && now - lastQueryTime < 2000) {
+        return; // Skip duplicate
+      }
+      
+      // Clear existing timeout
+      if (timeoutId) clearTimeout(timeoutId);
+      
+      lastQuery = q;
+      lastQueryTime = now;
+      
+      // Debounce: wait 500ms before executing
+      timeoutId = setTimeout(async () => {
+        // Prevent duplicate triggers for same symbol
+        const lastMessage = gptMessages[gptMessages.length - 1];
+        if (lastMessage && lastMessage.text === q && lastMessage.role === 'user') {
+          return; // Skip duplicate
+        }
+        
+        setGptMessages(prev => [...prev, { role: 'user', text: q }]);
+        setGptInput('');
+        setGptSpeaking(true);
+        try {
+          const context = {
+            selectedSymbol,
+            topSignals: rows.slice().sort((a,b)=> (b.confidence||0)-(a.confidence||0)).slice(0,5).map(r=>({symbol:r.symbol, confidence:Math.round(r.confidence*100), prediction:r.prediction}))
+          };
+          const resp = await Api.askTraderGPT(q, context);
+          const msg = resp.response || 'Yanıt hazırlanıyor...';
+          setGptMessages(prev => [...prev, { role: 'ai', text: msg }]);
+          speakText(msg);
+        } catch (e) {
+          const fallback = 'Analiz sırasında küçük bir gecikme oldu; lütfen tekrar dener misin?';
+          setGptMessages(prev => [...prev, { role: 'ai', text: fallback }]);
+          speakText(fallback);
+        } finally {
+          setGptSpeaking(false);
+        }
+      }, 500);
+    };
+  }, [gptInput, gptMessages, selectedSymbol, rows]);
 
   useEffect(() => { setIsHydrated(true); }, []);
 
@@ -1537,14 +1566,14 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
           {/* Uyarı eşikleri */}
           <div className="ml-2 hidden md:flex items-center gap-1 text-xs text-slate-700">
             <label htmlFor="alertDelta">Δ%</label>
-            <input id="alertDelta" name="alertDelta" type="number" value={alertThresholds.minPriceChange}
-              onChange={(e)=> { const val = Math.max(1, Math.min(20, parseInt(e.target.value)||5)); setAlertThresholds({ ...alertThresholds, minPriceChange: val }); localStorage.setItem('alertSettings', JSON.stringify({ ...alertThresholds, minPriceChange: val })); }}
+            <input id="alertDelta" name="alertDelta" type="number" value={alertThresholds.minPriceChange || 5} min={1} max={20}
+              onChange={(e)=> { const val = Math.max(1, Math.min(20, Number(e.target.value) || 5)); const updated = { ...alertThresholds, minPriceChange: val }; setAlertThresholds(updated); setWithTTL('alertSettings', updated); }}
               className="w-12 px-2 py-1 border rounded text-black bg-white" />
             <label htmlFor="alertConf">Conf%</label>
-            <input id="alertConf" name="alertConf" type="number" value={alertThresholds.minConfidence}
-              onChange={(e)=> { const val = Math.max(50, Math.min(99, parseInt(e.target.value)||70)); setAlertThresholds({ ...alertThresholds, minConfidence: val }); localStorage.setItem('alertSettings', JSON.stringify({ ...alertThresholds, minConfidence: val })); }}
+            <input id="alertConf" name="alertConf" type="number" value={alertThresholds.minConfidence || 70} min={50} max={99}
+              onChange={(e)=> { const val = Math.max(50, Math.min(99, Number(e.target.value) || 70)); const updated = { ...alertThresholds, minConfidence: val }; setAlertThresholds(updated); setWithTTL('alertSettings', updated); }}
               className="w-12 px-2 py-1 border rounded text-black bg-white" />
-            <select id="alertChannel" name="alertChannel" value={alertChannel} onChange={(e)=> setAlertChannel(e.target.value as any)} className="ml-2 px-2 py-1 border rounded text-black bg-white">
+            <select id="alertChannel" name="alertChannel" value={alertChannel || 'web'} defaultValue="web" onChange={(e)=> setAlertChannel(e.target.value as any)} className="ml-2 px-2 py-1 border rounded text-black bg-white">
               <option value="web">Web</option>
               <option value="telegram">Telegram</option>
             </select>
@@ -1661,7 +1690,8 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                     id="maxRows"
                     min={5}
                     max={30}
-                    value={maxRows}
+                    value={maxRows || 30}
+                    defaultValue={30}
                     onChange={(e)=>setMaxRows(Math.max(5, Math.min(30, parseInt(e.target.value) || 15)))}
                     className="ml-2 px-2 py-1 text-xs border rounded w-16 text-gray-900 caret-blue-500 bg-white placeholder-gray-400 dark:text-gray-100 dark:bg-gray-900"
                     placeholder="15"
@@ -3463,8 +3493,8 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                         }}
                         className={`px-3 py-1 rounded text-[10px] font-semibold transition-all ${
                           (regimeQ.data?.regime || 'risk-on') === 'risk-on' 
-                            ? 'bg-green-100 text-green-700 border border-green-200' 
-                            : 'bg-red-100 text-red-700 border border-red-200'
+                            ? 'bg-green-100 text-green-700 border border-green-200 hover:bg-green-200 hover:text-green-800 dark:bg-green-900 dark:text-green-100 dark:border-green-700 dark:hover:bg-green-800 dark:hover:text-green-200' 
+                            : 'bg-red-100 text-red-700 border border-red-200 hover:bg-red-200 hover:text-red-800 dark:bg-red-900 dark:text-red-100 dark:border-red-700 dark:hover:bg-red-800 dark:hover:text-red-200'
                         }`}
                         title={`Mevcut rejim: ${regimeQ.data?.regime || 'risk-on'}`}
                       >
@@ -4067,11 +4097,11 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                   <div className="grid grid-cols-3 gap-2 text-xs text-slate-700 mb-3">
                     <div>
                       <label htmlFor="btTcost" className="block text-[10px] font-semibold mb-1">Tcost (bps)</label>
-                      <input id="btTcost" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestTcost} onChange={(e)=> setBacktestTcost(Math.max(0, Math.min(50, parseInt(e.target.value)||8)))} />
+                      <input id="btTcost" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestTcost || 8} min={0} max={50} defaultValue={8} onChange={(e)=> setBacktestTcost(Math.max(0, Math.min(50, Number(e.target.value) || 8)))} />
                     </div>
                     <div>
                       <label htmlFor="btReb" className="block text-[10px] font-semibold mb-1">Rebalance (gün)</label>
-                      <input id="btReb" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestRebDays} onChange={(e)=> setBacktestRebDays(Math.max(1, Math.min(365, parseInt(e.target.value)||5)))} />
+                      <input id="btReb" type="number" className="w-full px-2 py-1 border-2 rounded text-black bg-white font-semibold" value={backtestRebDays || 30} min={1} max={365} defaultValue={30} onChange={(e)=> setBacktestRebDays(Math.max(1, Math.min(365, Number(e.target.value) || 30)))} />
                     </div>
                     <div>
                       <label htmlFor="btSlippage" className="block text-[10px] font-semibold mb-1">Slippage (%)</label>
@@ -5314,6 +5344,7 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
                 })()}
               </div>
             </div>
+            </div>
           </>
         )}
 
@@ -5385,12 +5416,10 @@ const DATA_SOURCE = typeof window !== 'undefined' && (window as any).wsConnected
           </div>
         )}
       </div>
+    </div>
       
       {/* Smart Alerts 2.0: Toast Notifications */}
       {toasts.length > 0 && <ToastManager toasts={toasts} onRemove={removeToast} />}
     </AIOrchestrator>
   );
 }
-
-
-
