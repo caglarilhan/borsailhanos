@@ -59,7 +59,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     environment:
-      name: staging
+      name: 'staging'
       url: ${{ steps.deploy.outputs.url }}
     
     steps:
@@ -83,7 +83,7 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'production'
     environment:
-      name: production
+      name: 'production'
       url: ${{ steps.deploy.outputs.url }}
     
     steps:
