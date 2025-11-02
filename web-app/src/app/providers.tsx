@@ -4,7 +4,9 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from 'next-themes';
-import ErrorBoundary from '@/components/ErrorBoundary';
+import dynamic from 'next/dynamic';
+
+const ErrorBoundary = dynamic(() => import('@/components/ErrorBoundary'), { ssr: false });
 
 const queryClient = new QueryClient();
 
