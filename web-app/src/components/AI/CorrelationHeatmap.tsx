@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 
 interface CorrelationPair {
   symbol1: string;
@@ -17,6 +17,7 @@ export function CorrelationHeatmap({
   pairs = [],
   threshold = 0.8
 }: CorrelationHeatmapProps) {
+  const [localThreshold, setLocalThreshold] = useState<number>(threshold);
   // Generate demo pairs if not provided - Minimum 3×3 matrix (ISCTR, GARAN, THYAO, EREGL, etc.)
   const defaultPairs: CorrelationPair[] = useMemo(() => {
     if (pairs.length > 0) return pairs;
@@ -39,12 +40,12 @@ export function CorrelationHeatmap({
 
   // Find pair trading opportunities
   const pairTrades = useMemo(() => {
-    return defaultPairs.filter(p => Math.abs(p.correlation) >= threshold);
-  }, [defaultPairs, threshold]);
+    return defaultPairs.filter(p => Math.abs(p.correlation) >= localThreshold);
+  }, [defaultPairs, localThreshold]);
 
   const getCorrelationColor = (corr: number) => {
     const abs = Math.abs(corr);
-    if (abs >= threshold) {
+    if (abs >= localThreshold) {
       return corr >= 0 
         ? { bg: '#10b981', text: '#ffffff', intensity: abs }
         : { bg: '#ef4444', text: '#ffffff', intensity: abs };
@@ -53,7 +54,7 @@ export function CorrelationHeatmap({
   };
 
   const getCorrelationLabel = (corr: number) => {
-    if (Math.abs(corr) >= threshold) {
+    if (Math.abs(corr) >= localThreshold) {
       return corr >= 0 ? 'Güçlü Pozitif' : 'Güçlü Negatif';
     }
     if (Math.abs(corr) >= 0.5) {
@@ -63,15 +64,28 @@ export function CorrelationHeatmap({
   };
 
   return (
-    <div className="bg-white rounded-lg p-4 border shadow-sm">
+    <div className="bg-white rounded-lg p-4 border shadow-sm overflow-x-auto">
       <div className="flex items-center justify-between mb-3">
         <div className="text-sm font-semibold text-gray-900">Korelasyon Heatmap</div>
-        <div className="text-xs text-slate-600">Eşik: |r| ≥ {threshold}</div>
+        <div className="flex items-center gap-3 text-xs text-slate-600">
+          <label className="flex items-center gap-2" title="Eşik (|ρ|)">
+            <span>Eşik:</span>
+            <input
+              type="range"
+              min={0.5}
+              max={0.95}
+              step={0.05}
+              value={localThreshold}
+              onChange={(e)=> setLocalThreshold(Number(e.target.value))}
+            />
+            <span className="font-semibold">{localThreshold.toFixed(2)}</span>
+          </label>
+        </div>
       </div>
 
       {/* P5.2: Korelasyon Heatmap - Eksen etiketleri tekilleştir, diagonal hücreyi — yap */}
       {/* Heatmap Grid - Minimum 3×3 matrix için grid yapısı */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 max-h-96 overflow-auto">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 max-h-96 min-w-[640px]">
         {defaultPairs.map((pair, idx) => {
           // P5.2: Self-correlation kontrolü - Aynı sembol çiftleri diagonal, "—" göster
           const isSelfCorrelation = pair.symbol1 === pair.symbol2;
@@ -95,7 +109,7 @@ export function CorrelationHeatmap({
           }
           const color = getCorrelationColor(pair.correlation);
           const label = getCorrelationLabel(pair.correlation);
-          const isPairTrade = Math.abs(pair.correlation) >= threshold;
+          const isPairTrade = Math.abs(pair.correlation) >= localThreshold;
           return (
             <div
               key={idx}
@@ -137,7 +151,7 @@ export function CorrelationHeatmap({
       {pairTrades.length > 0 && (
         <div className="mt-3 bg-purple-50 rounded p-3 border border-purple-200">
           <div className="text-xs font-semibold text-purple-900 mb-2">
-            🎯 Pair Trade Adayları (|ρ| ≥ {threshold})
+            🎯 Pair Trade Adayları (|ρ| ≥ {localThreshold.toFixed(2)})
           </div>
           <div className="space-y-1">
             {pairTrades.slice(0, 3).map((pair, idx) => (

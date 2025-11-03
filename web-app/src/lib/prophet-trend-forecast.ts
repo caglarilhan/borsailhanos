@@ -33,7 +33,25 @@ export function forecastProphetTrend(
     };
   }
 
-  // Simple trend calculation (linear regression)
+  // Volatility normalization: use log-returns + MinMax scaling for robustness
+  const logReturns: number[] = [];
+  for (let i = 1; i < prices.length; i++) {
+    const r = Math.log(Math.max(1e-9, prices[i])) - Math.log(Math.max(1e-9, prices[i - 1]));
+    logReturns.push(r);
+  }
+  const minR = Math.min(...logReturns);
+  const maxR = Math.max(...logReturns);
+  const scaled: number[] = logReturns.map(r => {
+    if (!isFinite(r) || !isFinite(minR) || !isFinite(maxR) || maxR === minR) return 0;
+    return (r - minR) / (maxR - minR); // 0..1
+  });
+  // Reconstruct a normalized price-like series for regression
+  const normSeries: number[] = [0.5];
+  for (let i = 0; i < scaled.length; i++) {
+    normSeries.push(Math.max(0, Math.min(1, normSeries[normSeries.length - 1] + (scaled[i] - 0.5) * 0.1)));
+  }
+
+  // Simple trend calculation (linear regression) over normalized series
   const n = prices.length;
   let sumX = 0;
   let sumY = 0;
@@ -42,8 +60,9 @@ export function forecastProphetTrend(
 
   for (let i = 0; i < n; i++) {
     sumX += i;
-    sumY += prices[i];
-    sumXY += i * prices[i];
+    const y = i < normSeries.length ? normSeries[i] : normSeries[normSeries.length - 1];
+    sumY += y;
+    sumXY += i * y;
     sumX2 += i * i;
   }
 
@@ -55,7 +74,11 @@ export function forecastProphetTrend(
   for (let i = 0; i < days; i++) {
     const futureIndex = n + i;
     const forecast = intercept + slope * futureIndex;
-    forecast7d.push(Math.max(0, forecast)); // Ensure non-negative
+    // Map back to price scale by applying normalized delta on last price
+    const lastPrice = prices[prices.length - 1];
+    const normDelta = Math.max(-0.2, Math.min(0.2, forecast - (normSeries[normSeries.length - 1] || 0.5)));
+    const mapped = lastPrice * (1 + normDelta);
+    forecast7d.push(Math.max(0, mapped));
   }
 
   // Determine trend
@@ -69,10 +92,8 @@ export function forecastProphetTrend(
   }
 
   // Calculate confidence (based on trend strength and data variance)
-  const variance = prices.reduce((sum, price, i) => {
-    const mean = sumY / n;
-    return sum + Math.pow(price - mean, 2);
-  }, 0) / n;
+  const meanNorm = sumY / n;
+  const variance = normSeries.reduce((sum, v) => sum + Math.pow(v - meanNorm, 2), 0) / Math.max(1, normSeries.length);
   
   const trendStrength = Math.abs(slope);
   const confidence = Math.min(0.95, 0.5 + (trendStrength * 10) - (variance / 100));

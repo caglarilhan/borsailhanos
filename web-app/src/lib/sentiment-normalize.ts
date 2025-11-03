@@ -1,3 +1,30 @@
+export interface SentimentLine {
+  positive?: number; // 0..1 or 0..100
+  negative?: number;
+  neutral?: number;
+  count?: number; // haber sayısı
+}
+
+// Returns values in 0..1 and totals to 1.0
+export function normalizeSentiment(line: SentimentLine) {
+  const p = toUnit(line.positive ?? 0);
+  const n = toUnit(line.negative ?? 0);
+  const u = toUnit(line.neutral ?? 0);
+  const s = p + n + u;
+  if (s <= 0) return { positive: 0, negative: 0, neutral: 0, count: line.count ?? 0 };
+  return {
+    positive: p / s,
+    negative: n / s,
+    neutral: u / s,
+    count: line.count ?? 0,
+  };
+}
+
+function toUnit(x: number): number {
+  if (!isFinite(x) || x < 0) return 0;
+  return x > 1 ? x / 100 : x;
+}
+
 /**
  * Sentiment normalization utilities
  * Ensures pos+neg+neu sums to 100 and clamps to [0,100]

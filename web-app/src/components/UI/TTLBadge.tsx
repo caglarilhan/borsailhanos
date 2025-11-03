@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+
 export function TTLBadge({ createdAtMs, ttlMs }: { createdAtMs: number; ttlMs: number }) {
   const remaining = Math.max(0, createdAtMs + ttlMs - Date.now());
   const mins = Math.ceil(remaining / 60000);

@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import { t } from '@/lib/i18n';
+
 interface RiskBadgeProps { score: number; windowLabel?: string; source?: string; }
 function level(score: number): 'low'|'medium'|'high' { if (score <= 2.5) return 'low'; if (score <= 4) return 'medium'; return 'high'; }
 export function RiskBadge({ score, windowLabel='24s', source='Vol Index' }: RiskBadgeProps) {

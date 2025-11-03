@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useTheme } from 'next-themes';
 import { Api } from '@/services/api';
@@ -27,7 +27,15 @@ import { AICorePanel } from '@/components/AI/AICorePanel';
 import { AIHealthPanel } from '@/components/AI/AIHealthPanel';
 import { MacroBridgeAI } from '@/components/MacroBridgeAI';
 import { DriftTracker } from '@/components/AI/DriftTracker';
-import { DriftGraph } from '@/components/AI/DriftGraph';
+import dynamic from 'next/dynamic';
+const DriftGraph = dynamic(() => import('@/components/AI/DriftGraph').then(m=>m.DriftGraph), { ssr: false });
+const AIInsightPanel = dynamic(() => import('@/components/AI/AIInsightPanel').then(m=>m.AIInsightPanel), { ssr: false });
+import { computeSortino, computeCalmar, computeMaxDrawdown } from '@/lib/metrics-extra';
+import { useFeedbackStore } from '@/lib/feedback-store';
+import { AIExplanationPanel } from '@/components/AI/AIExplanationPanel';
+import { LearningModePanel } from '@/components/AI/LearningModePanel';
+import { ModelVersionHistory } from '@/components/AI/ModelVersionHistory';
+import { SentimentTrend } from '@/components/AI/SentimentTrend';
 import { AIDailySummaryPlus } from '@/components/AI/AIDailySummaryPlus';
 import { AIExplanationModal } from '@/components/AI/AIExplanationModal';
 import { MetaModelRadar } from '@/components/AI/MetaModelRadar';
@@ -204,9 +212,18 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [alertChannel, setAlertChannel] = useState<'web'|'telegram'>('web');
   // Sprint 2: AI açıklama modal state
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  // removed: dismissed drift local state (banner always visible when >5pp)
   const [aiModalSymbol, setAiModalSymbol] = useState<string | null>(null);
   const [aiModalPrediction, setAiModalPrediction] = useState<number>(0);
   const [aiModalConfidence, setAiModalConfidence] = useState<number>(0);
+  // Confidence Smoothing (EMA)
+  const confidencePrevRef = useRef<Map<string, number>>(new Map());
+  const getSmoothedConfidence = useCallback((symbol: string, raw: number, alpha: number = 0.3): number => {
+    const prev = confidencePrevRef.current.get(symbol) ?? raw;
+    const smoothed = alpha * raw + (1 - alpha) * prev;
+    confidencePrevRef.current.set(symbol, smoothed);
+    return smoothed;
+  }, []);
   // P0-C3: Backtest Context SSOT - tek kaynaktan al
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const backtestConfig = useBacktestContextStore((state: any) => state.config);
@@ -224,6 +241,14 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [learningModeDays, setLearningModeDays] = useState<number>(30); // P2-14: AI Learning Mode grafik gün sayısı
   // P5.2: "Orta risk" varsayılan yap (çoğu kullanıcı düşük-riskte test ediyor)
   const [portfolioRiskLevel, setPortfolioRiskLevel] = useState<'low' | 'medium' | 'high'>('medium'); // P1-10: Portföy risk seviyesi - Default: medium
+  // Adaptive signal frequency & rebalance by risk mode
+  const riskModeConfig = {
+    low: { signalIntervalMin: 240, minConfidencePct: 85, rebalanceDays: 10, freqFactor: 0.6 },
+    medium: { signalIntervalMin: 60, minConfidencePct: 80, rebalanceDays: 5, freqFactor: 1.0 },
+    high: { signalIntervalMin: 15, minConfidencePct: 70, rebalanceDays: 2, freqFactor: 1.6 },
+  } as const;
+  const activeRiskCfg = riskModeConfig[portfolioRiskLevel] || riskModeConfig.medium;
+  const stopLossPctByRisk = portfolioRiskLevel === 'low' ? 0.03 : portfolioRiskLevel === 'medium' ? 0.05 : 0.08;
   const [metrics24s, setMetrics24s] = useState<{ 
     profitChange: number; 
     modelDrift: number; 
@@ -254,6 +279,15 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     rsiThreshold: 75, // RSI > 75 for overbought alert
     minAiConfidence: 60, // AI confidence < 60 for low confidence alert
   });
+  // Effective confidence threshold by risk mode
+  const effectiveMinConfidence = Math.max(alertThresholds.minConfidence, activeRiskCfg.minConfidencePct);
+
+  // Dynamic transaction cost/slippage by frequency
+  function computeTradeCosts(baseCommissionBps: number = 8, baseSlippagePct: number = 0.08) {
+    const commissionBps = Math.round(baseCommissionBps * activeRiskCfg.freqFactor);
+    const slippagePct = +(baseSlippagePct * activeRiskCfg.freqFactor).toFixed(2);
+    return { commissionBps, slippagePct };
+  }
   
   // Load alert settings from localStorage with TTL (24 hours)
   useEffect(() => {
@@ -309,6 +343,28 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
     const base = API_BASE_URL.replace('http://', 'ws://').replace('https://', 'wss://');
     return `${base}/ws`;
   }, []);
+  // Realtime Alerts via WebSocket
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    let ws: WebSocket | null = null;
+    try {
+      ws = new WebSocket(wsUrl);
+      ws.onopen = () => setWsConnected(true);
+      ws.onclose = () => setWsConnected(false);
+      ws.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data || '{}');
+          if (data?.type === 'alert' && data?.symbol) {
+            setToasts(prev => [
+              ...prev,
+              { id: `${Date.now()}`, message: `WS Uyarı: ${data.symbol} ${data.side || ''} conf=${Math.round((data.confidence||0)*100)}% Δ=${((data.delta||0)*100).toFixed(1)}%`, type: 'info', duration: 5000 }
+            ]);
+          }
+        } catch {}
+      };
+    } catch {}
+    return () => { try { ws?.close(); } catch {} };
+  }, [wsUrl]);
 
   // Tutarlılık Endeksi: 1H/4H/1D aynı yönde mi?
   const consistencyIndex = useMemo(() => {
@@ -325,17 +381,24 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   // Alert thresholds - now using user-defined settings from localStorage
   // alertDelta and alertMinConf are deprecated - use alertThresholds instead
   const alertDelta = alertThresholds.minPriceChange; // Backward compatibility
-  const alertMinConf = alertThresholds.minConfidence; // Backward compatibility
+  const alertMinConf = Math.max(alertThresholds.minConfidence, effectiveMinConfidence);
   const [strategyPreset, setStrategyPreset] = useState<'custom'|'momentum'|'meanrev'|'news'|'mixed'>('custom');
   const [bist30Overview, setBist30Overview] = useState<any>(null);
   const [bist30News, setBist30News] = useState<any[]>([]);
   const [sentimentSummary, setSentimentSummary] = useState<any>(null);
   const [isHydrated, setIsHydrated] = useState(false);
+  // Table ready: mount sonrası ilk data turunda gecikmeyi gider
+  const [tableReady, setTableReady] = useState<boolean>(false);
   const [sectorFilter, setSectorFilter] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
   // P5.2: Dynamic timestamp hook - periyodik güncelleme (her dakika)
   const dynamicTime = useDynamicTimestamp(lastUpdated, 60000);
+
+  // Sinyal tablosu boşluk (mount sonrası 1 cycle): data geldikçe hazır işaretle
+  useEffect(() => {
+    if ((rows?.length || 0) > 0) setTableReady(true);
+  }, [rows?.length]);
   // v4.7: Dinamik veri kaynağı - WebSocket durumuna göre güncellenecek
 // P0-C7: Model Config SSOT - tek kaynaktan al
 // P5.2: Mock API badge sadece admin görsün
@@ -366,6 +429,14 @@ const DATA_SOURCE = (() => {
   const boCalibrateQ = useBOCalibrate();
   const factorsQ = useFactors(selectedSymbol || undefined);
   const backtestQ = useBacktestQuick(universe, backtestTcost, backtestRebDays, !!selectedSymbol);
+  // Auto-adjust rebalance days by risk mode
+  useEffect(() => {
+    if (!backtestConfig) return;
+    const desired = activeRiskCfg.rebalanceDays;
+    if (backtestConfig.rebalanceDays !== desired) {
+      try { setBacktestRebDays(desired); } catch {}
+    }
+  }, [activeRiskCfg.rebalanceDays, backtestConfig]);
   // TraderGPT conversational panel state
   const [gptOpen, setGptOpen] = useState<boolean>(false);
   const [gptDebounceTimer, setGptDebounceTimer] = useState<NodeJS.Timeout | null>(null);
@@ -704,7 +775,7 @@ const DATA_SOURCE = (() => {
         const { symbol, confidence, priceChange, signal, message: alertMessage, rsi, aiConfidence } = alert;
         
         // v4.7: Enhanced threshold filtering - Multiple conditions
-        const meetsConfidenceThreshold = confidence >= alertThresholds.minConfidence;
+        const meetsConfidenceThreshold = confidence >= Math.max(alertThresholds.minConfidence, effectiveMinConfidence);
         const meetsPriceChangeThreshold = Math.abs(priceChange || 0) >= alertThresholds.minPriceChange;
         const meetsRsiThreshold = rsi !== undefined && rsi > alertThresholds.rsiThreshold;
         const meetsLowAiConfidenceThreshold = aiConfidence !== undefined && aiConfidence < alertThresholds.minAiConfidence;
@@ -841,7 +912,6 @@ const DATA_SOURCE = (() => {
       syncPredictionsToStore(rows as any, analysisHorizon);
     }
   }, [rows, analysisHorizon]);
-  
   // P5.2: Sync drift to metricsStore when drift data changes
   useEffect(() => {
     if (metrics24s.modelDrift !== 0) {
@@ -911,7 +981,7 @@ const DATA_SOURCE = (() => {
     };
 
     // Check every 5 minutes
-    const intervalId = setInterval(checkDrift, 5 * 60 * 1000);
+    const intervalId = setInterval(checkDrift, 60 * 1000);
     
     // Initial check
     checkDrift();
@@ -1176,9 +1246,12 @@ const DATA_SOURCE = (() => {
         generated_at: r.generated_at || new Date().toISOString()
       }));
   }, [rows, activeHorizons, maxRows]);
-
   return (
     <AIOrchestrator predictions={rows.map(r => ({ ...r, reason: [] }))} signals={aiSignals}>
+      {/* AI Insight Panel 2.0 */}
+      <div className="mb-4">
+        <AIInsightPanel />
+      </div>
       {/* P5.2: Demo/Live Watermark */}
       <DemoWatermark />
       {/* Fix: Responsive grid - mobil uyumluluk */}
@@ -1212,8 +1285,13 @@ const DATA_SOURCE = (() => {
                 <div className="text-[10px] text-white/70">MAE {formatNumber(calibrationQ.data?.mae || 0.021, 3)} • RMSE {formatNumber(calibrationQ.data?.rmse || 0.038, 3)}</div>
                 {/* Backtest bağlam rozeti */}
                 <div className="mt-1 text-[10px] text-white/70">
-                  Son 30 gün • Tcost 8bps • Slippage 0.1% • Benchmark: XU030
+                  <span title="Backtest varsayımları: Komisyon 0.1 bps, vergi dahil değil">Son 30 gün • Tcost 8bps • Slippage 0.1% • Benchmark: XU030</span>
                 </div>
+{Math.abs(metrics24s.modelDrift || 0) > 5 && (
+  <div className="mt-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[10px]">
+    <strong>Drift Uyarısı:</strong> 24s model drift {formatPercentagePoints(Math.abs(metrics24s.modelDrift))} &gt; 5pp. Lütfen kalibrasyonu kontrol edin.
+  </div>
+)}
                 {metrics24s.modelDrift !== 0 && (() => {
                   // P0-C2: Metrik Validasyonu - drift clamp + uyarı
                   // P5.2: Drift anomaly detector - ±10pp clamp ve anomaly flag
@@ -1344,11 +1422,11 @@ const DATA_SOURCE = (() => {
                       <span title="Portföyün toplam kâr/zarar durumu (simüle)" className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
                     </div>
                     <div className="text-2xl font-bold text-green-100 mb-1">
-                      ₺{mockTotalProfit.toLocaleString('tr-TR', { maximumFractionDigits: 0 })}
+                      {fmtTRY.format(mockTotalProfit)}
                     </div>
                     {/* P5.2: Portföy simulatörü tek çizgi özet - "Başlangıç ₺100.000 → Kâr ₺10.500" */}
                     <div className="text-[10px] text-white/70 mb-1">
-                      Başlangıç ₺100.000 → Kâr {formatCurrencyTRY(mockTotalProfit)}
+                      Başlangıç {fmtTRY.format(100000)} → Kâr {fmtTRY.format(mockTotalProfit)}
                     </div>
                     <div className={`text-[10px] ${profitPct >= 0 ? 'text-green-200' : 'text-red-200'} font-semibold`}>
                       {profitPct >= 0 ? '+' : ''}{profitPct.toFixed(1)}%
@@ -1411,11 +1489,11 @@ const DATA_SOURCE = (() => {
                   </div>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-[12px]">
                     <div className="bg-white/20 rounded p-2">
-                      <div className="flex justify-between"><span>Hisse</span><span className="font-semibold">%{Math.round(weights.equity*100)}</span></div>
+                      <div className="flex justify-between"><span>Hisse</span><span className="font-semibold">{fmtPct1.format(weights.equity)}</span></div>
                       <div className="h-1.5 bg-white/20 rounded mt-1"><div className="h-1.5 bg-emerald-300 rounded" style={{ width: (weights.equity*100)+'%' }}></div></div>
                     </div>
                     <div className="bg-white/20 rounded p-2">
-                      <div className="flex justify-between"><span>Nakit</span><span className="font-semibold">%{Math.round(weights.cash*100)}</span></div>
+                      <div className="flex justify-between"><span>Nakit</span><span className="font-semibold">{fmtPct1.format(weights.cash)}</span></div>
                       <div className="h-1.5 bg-white/20 rounded mt-1"><div className="h-1.5 bg-slate-200 rounded" style={{ width: (weights.cash*100)+'%' }}></div></div>
                     </div>
                   </div>
@@ -1635,7 +1713,6 @@ const DATA_SOURCE = (() => {
               side="bottom"
             />
           </div>
-
           {/* Kullanıcı Merkezi Grubu */}
           {/* Health Check Fix: Mobil overflow - flex-wrap ve gap-x-2 */}
           <div className="flex gap-2 gap-x-2 overflow-x-auto items-center bg-gradient-to-r from-slate-50 to-gray-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-slate-200">
@@ -3000,7 +3077,7 @@ const DATA_SOURCE = (() => {
                           onClick={async ()=>{ try { const mode = inWatch ? 'remove':'add'; await wlMut.mutateAsync({ symbols: r.symbol, mode }); } catch {} }}
                       className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-700'}`}
                         >{inWatch?'⭐ Takipte':'☆ Takibe Al'}</button>
-                        {confPct>=alertThresholds.minConfidence && Math.abs(r.prediction*100)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
+                        {confPct>=Math.max(alertThresholds.minConfidence, effectiveMinConfidence) && Math.abs(r.prediction*100)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
                           <button onClick={async ()=>{ try { 
                             if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertThresholds.minPriceChange, minConf: alertThresholds.minConfidence, source: 'AI v4.6 model BIST30 dataset' }); }
                             else { await Api.sendTelegramAlert(r.symbol, `AI uyarı: ${r.symbol} Δ>${alertThresholds.minPriceChange}%, Conf≥${alertThresholds.minConfidence}%`, 'demo'); }
@@ -3049,11 +3126,20 @@ const DATA_SOURCE = (() => {
                 (acc[p.symbol] = acc[p.symbol] || []).push(p);
                 return acc;
               }, {} as Record<string, Prediction[]>);
+            if (!tableReady) {
+              return (
+                <div key="table-skeleton" className="w-full grid grid-cols-1 gap-2">
+                  <div className="border rounded-xl p-4 bg-white shadow-sm"><Skeleton className="h-6 w-48 mb-2 rounded" /><Skeleton className="h-4 w-64 rounded" /></div>
+                  <div className="border rounded-xl p-4 bg-white shadow-sm"><Skeleton className="h-6 w-40 mb-2 rounded" /><Skeleton className="h-4 w-56 rounded" /></div>
+                </div>
+              );
+            }
             return Object.entries(groups).map(([sym, list]) => {
               const sorted = list.slice().sort((a,b)=> (b.confidence||0)-(a.confidence||0));
               const best = sorted[0];
               const up = best.prediction >= 0;
-              const confPct = Math.round(best.confidence*100);
+              const smoothedConf = getSmoothedConfidence(sym, best.confidence || 0, 0.3);
+              const confPct = Math.round(smoothedConf*100);
               const inWatch = watchlist.includes(sym);
               const currentPrice = seedPrice(sym);
               // P5.2: Best horizon SSOT - store'dan al, fallback hesaplama
@@ -3073,9 +3159,9 @@ const DATA_SOURCE = (() => {
               const targetPrice = forecast?.target || Math.round(currentPrice * (1 + (best.prediction||0)) * 100) / 100;
               // Fix: Sinyal Motoru - Confidence bazlı renk kodlaması
               const signalSide: 'BUY' | 'SELL' | 'HOLD' = forecast?.side || (best.prediction >= 0.02 ? 'BUY' : best.prediction <= -0.02 ? 'SELL' : 'HOLD');
-              const signalColorConfig = getSignalConfidenceColor(signalSide, best.confidence || 0);
-              const confidenceColorConfig = getConfidenceColor(best.confidence || 0);
-              const stopPrice = forecast?.stop || (signalSide === 'BUY' ? currentPrice * 0.9 : signalSide === 'SELL' ? currentPrice * 1.1 : null);
+              const signalColorConfig = getSignalConfidenceColor(signalSide, smoothedConf || 0);
+              const confidenceColorConfig = getConfidenceColor(smoothedConf || 0);
+              const stopPrice = forecast?.stop || (signalSide === 'BUY' ? currentPrice * (1 - stopLossPctByRisk) : signalSide === 'SELL' ? currentPrice * (1 + stopLossPctByRisk) : null);
               const stopTargetValidation = validateStopTarget(signalSide, currentPrice, stopPrice || currentPrice, targetPrice);
               
               // P5.2: Enhanced stop validation - min stop gap ve R:R kontrolü
@@ -3096,15 +3182,14 @@ const DATA_SOURCE = (() => {
                     key={sym}
                     symbol={sym}
                     forecast={forecast}
-                    confidence={forecast.confidence}
+                    confidence={smoothedConf}
                     currentPrice={currentPrice}
-                    comment={((best as any).reason?.join(', ')) || miniAnalysis(best.prediction||0, best.confidence||0, sym) || undefined}
+                    comment={((best as any).reason?.join(', ')) || miniAnalysis(best.prediction||0, smoothedConf||0, sym) || undefined}
                     validUntil={best.valid_until}
                     onSelect={() => setSelectedSymbol(sym)}
                   />
                 );
               }
-              
               // Fallback to legacy card if no forecast in store
               return (
                 <div key={sym} className={`border-2 rounded-xl p-4 shadow-md hover:shadow-xl transition-all cursor-pointer ${up ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-300 hover:border-green-400' : 'bg-gradient-to-br from-red-50 to-rose-50 border-red-300 hover:border-red-400'}`} onClick={() => { setSelectedSymbol(sym); }}>
@@ -3159,7 +3244,7 @@ const DATA_SOURCE = (() => {
                       {/* P5.2: Timeframe/target senkronizasyonu - priceTargetConsistency kontrolü */}
                       {/* P5.2: Enhanced stop validation - min stop gap ve R:R kontrolü */}
                       {(!stopTargetValidation.isValid || !priceTargetConsistency.isValid || (stopTargetValidationEnhanced && !stopTargetValidationEnhanced.isValid)) && 
-                       (stopTargetValidation.warning || priceTargetConsistency.warning || stopTargetValidationEnhanced?.warning) && (
+                       (stopTargetValidationEnhanced?.warning || stopTargetValidationEnhanced?.recommendation || priceTargetConsistency.explanation || stopTargetValidation.message) && (
                         <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-yellow-100 text-yellow-800 border border-yellow-300" title={stopTargetValidationEnhanced?.warning || stopTargetValidationEnhanced?.recommendation || priceTargetConsistency.explanation || stopTargetValidation.message}>
                           ⚠️
                         </span>
@@ -3264,7 +3349,7 @@ const DATA_SOURCE = (() => {
                   {/* Mini analiz cümlesi - Health Check Fix: AI Yorumu wrap - text-wrap break-words */}
                   <div className="mt-2 text-xs text-slate-700">
                     <p className="text-wrap break-words max-w-full overflow-hidden">
-                      {miniAnalysis(best.prediction||0, best.confidence||0, sym)}
+                      {miniAnalysis(best.prediction||0, smoothedConf||0, sym)}
                     </p>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-slate-700">
@@ -3284,7 +3369,11 @@ const DATA_SOURCE = (() => {
                   })()}
                   {/* Risk Skoru rozeti (24s, Vol Index) */}
                   <div className="mt-1">
-                    <RiskBadge score={3.2} windowLabel="24s" source="Vol Index" />
+                    {(() => {
+                      const risk0to100 = (metaEnsembleQ.data?.volatilityIndex ?? 64) as number;
+                      const risk0to5 = Math.max(0, Math.min(5, risk0to100 / 20));
+                      return <RiskBadge score={risk0to5} windowLabel="24s" source="Vol Index" />;
+                    })()}
                   </div>
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <button
@@ -3297,13 +3386,18 @@ const DATA_SOURCE = (() => {
                     >
                       {inWatch ? '★ Takipte' : '☆ Takibe Al'}
                     </button>
-                    {confPct>=alertThresholds.minConfidence && Math.abs(diffPct)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
+                    {confPct>=Math.max(alertThresholds.minConfidence, effectiveMinConfidence) && Math.abs(diffPct)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
                       <button
                         onClick={async (e)=>{ e.stopPropagation(); try { if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertThresholds.minPriceChange, minConf: alertThresholds.minConfidence, source: 'AI v4.6 model BIST30 dataset' }); } else { await Api.sendTelegramAlert(sym, `AI uyarı: ${sym} Δ>${alertThresholds.minPriceChange}%, Conf≥${alertThresholds.minConfidence}%`, 'demo'); } } catch {} }}
                         className="px-3 py-1.5 text-xs font-semibold rounded-lg border-2 bg-blue-600 text-white border-blue-700 shadow-md hover:shadow-lg transition-all"
                         title={`Alarm ayarla - ${sym} için fiyat değişimi ≥%${alertThresholds.minPriceChange} ve güven ≥%${alertThresholds.minConfidence} olduğunda bildirim al`}
                       >🔔 Bildirim</button>
                     )}
+                    <button
+                      onClick={async (e)=>{ e.stopPropagation(); try { useFeedbackStore.getState().addNegative(sym); } catch {} try { await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: sym, verdict: 'down' }) }); } catch {} }}
+                      className="px-3 py-1.5 text-xs font-semibold rounded-lg border-2 bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
+                      title="Yanlış sinyal bildir (model ağırlıkları kalibrasyonuna katkı)"
+                    >🙁 Yanlış Sinyal</button>
                     {/* P0: Order Preview Kartı */}
                     <div className="w-full md:w-auto md:min-w-[260px]">
                       <OrderPreviewCard
@@ -3478,7 +3572,7 @@ const DATA_SOURCE = (() => {
                           if (maxWeight > 0.35) {
                             return (
                               <div className="mt-2 text-[9px] text-amber-700 bg-amber-50 rounded p-1.5 border border-amber-200 text-center">
-                                ⚠️ {maxSymbol?.symbol} risk payı %{(maxWeight * 100).toFixed(1)} (Aşırı yoğunluk)
+                                ⚠️ {maxSymbol?.symbol} risk payı {fmtPct1.format(maxWeight)} (Aşırı yoğunluk)
                               </div>
                             );
                           }
@@ -3506,7 +3600,6 @@ const DATA_SOURCE = (() => {
               })()}
             </div>
           </div>
-
           {/* Portföy Performans Simülasyonu */}
           <div className="mb-4 bg-white rounded-lg p-3 border border-indigo-200">
             <div className="text-xs font-semibold text-gray-900 mb-2">📈 Simüle Edilmiş Performans (₺100.000 başlangıç)</div>
@@ -3532,18 +3625,18 @@ const DATA_SOURCE = (() => {
                   <>
                     <div className="flex justify-between">
                       <span>Başlangıç:</span>
-                      <span className="font-semibold">₺{startEquity.toLocaleString('tr-TR')}</span>
+                      <span className="font-semibold">{fmtTRY.format(startEquity)}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Bitiş (simüle):</span>
                       <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        ₺{endEquity.toLocaleString('tr-TR', {maximumFractionDigits: 0})}
+                        {fmtTRY.format(endEquity)}
                       </span>
                     </div>
                     <div className="flex justify-between border-t pt-1 mt-1">
                       <span>Net Kâr/Zarar:</span>
                       <span className={`font-bold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {profit >= 0 ? '+' : ''}{profit.toLocaleString('tr-TR', {maximumFractionDigits: 0})} ₺ ({simulatedReturn >= 0 ? '+' : ''}{(simulatedReturn * 100).toFixed(1)}%)
+                        {profit >= 0 ? '+' : ''}{fmtTRY.format(profit)} ({fmtPct1.format(simulatedReturn)})
                       </span>
                     </div>
                     {/* Beta ve Alpha Katkısı */}
@@ -3763,6 +3856,20 @@ const DATA_SOURCE = (() => {
         </div>
       )}
 
+      {!selectedSymbol && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+          <AIExplanationPanel
+            symbol={universe[0] || 'BIST'}
+            confidence={(calibrationQ.data?.accuracy || 0.78)}
+            factors={[{ name: 'RSI', weight: 0.25, contributionBp: 12.4 }, { name: 'Momentum', weight: 0.25, contributionBp: 8.1 }, { name: 'Sentiment', weight: 0.30, contributionBp: 6.7 }, { name: 'Volume', weight: 0.20, contributionBp: -2.3 }]}
+            comment={'Bu sinyal RSI + Momentum + Sentiment katkılarıyla üretildi.'}
+          />
+          <LearningModePanel />
+          <ModelVersionHistory />
+          <SentimentTrend />
+        </div>
+      )}
+
       {/* UX Yeniden Sıralama: Backtest ve Detaylı Analiz - Ana panele ekle (compact versiyon) */}
       {!selectedSymbol && (
         <div className="mb-4 bg-white rounded-xl p-4 border-2 border-blue-200 shadow-lg">
@@ -3962,7 +4069,7 @@ const DATA_SOURCE = (() => {
                       <span>Beklenen Getiri ({analysisHorizon}):</span>
                       <span className="font-medium">{(() => {
                         const horizonData = analysisData.predictions?.[analysisHorizon];
-                        return horizonData ? formatPercent(horizonData.expected_return || 0, true, 2) : '—';
+                        return horizonData ? fmtPct1.format(horizonData.expected_return || 0) : '—';
                       })()}</span>
                     </div>
                     {/* Rejim rozeti */}
@@ -4261,7 +4368,6 @@ const DATA_SOURCE = (() => {
                     );
                   })()}
                     </div>
-
                 {/* XAI Waterfall & Analyst Sentiment & Faktörler */}
                 <div className="grid grid-cols-1 gap-3">
                   {/* Multi-Timeframe Heatmap */}
@@ -4602,13 +4708,14 @@ const DATA_SOURCE = (() => {
                     if (!backtestQ.data) return <Skeleton className="h-10 w-full rounded" />;
       const aiReturn = validateNumber(backtestQ.data.total_return_pct, 0);
       const benchmarkReturn = 4.2; // BIST30
-      const slippage = validateNumber(backtestSlippage, 0.05); // v5.0: Kullanıcı tarafından ayarlanan slippage
+      const dynamicCosts = computeTradeCosts(8, 0.05);
+      const slippage = validateNumber(backtestSlippage, dynamicCosts.slippagePct); // risk moduna göre dinamik slippage
       const totalCost = validateNumber(backtestTcost, 8) / 10000; // bps to decimal
       const netReturn = aiReturn - totalCost - slippage;
                     return (
                       <div className="text-xs text-slate-700 space-y-1">
-                        <div className="flex justify-between"><span>Başlangıç</span><span className="font-medium text-[#111827]">₺{(backtestQ.data.start_equity||0).toLocaleString('tr-TR')}</span></div>
-                        <div className="flex justify-between"><span>Bitiş</span><span className="font-medium text-[#111827]">₺{(backtestQ.data.end_equity||0).toLocaleString('tr-TR')}</span></div>
+                        <div className="flex justify-between"><span>Başlangıç</span><span className="font-medium text-[#111827]">{fmtTRY.format(backtestQ.data.start_equity||0)}</span></div>
+                        <div className="flex justify-between"><span>Bitiş</span><span className="font-medium text-[#111827]">{fmtTRY.format(backtestQ.data.end_equity||0)}</span></div>
                         <div className="flex justify-between"><span>Brüt Getiri</span><span className={`font-semibold ${aiReturn>=0?'text-green-600':'text-red-600'}`}>{aiReturn >= 0 ? '+' : ''}{aiReturn.toFixed(2)}%</span></div>
                         <div className="flex justify-between"><span>Toplam Maliyet</span><span className="font-medium text-amber-600">{(totalCost + slippage).toFixed(2)}%</span></div>
                         <div className="flex justify-between border-t pt-1 mt-1"><span>Net Getiri</span><span className={`font-bold ${netReturn>=0?'text-green-600':'text-red-600'}`}>{netReturn >= 0 ? '+' : ''}{netReturn.toFixed(2)}%</span></div>
@@ -5363,7 +5470,6 @@ const DATA_SOURCE = (() => {
                     );
                   })()}
                 </div>
-                
             {/* P2-14: AI Learning Mode Grafik - 7/30 gün doğruluk eğrisi */}
             <div className="mt-4 bg-white rounded-lg p-4 border shadow-sm">
               <div className="text-sm font-semibold text-gray-900 mb-4">🧠 AI Learning Mode</div>
@@ -5768,7 +5874,6 @@ const DATA_SOURCE = (() => {
                 })()}
               />
             </div>
-            
             {/* P5.2: AI Güven Göstergesi - Dinamik hesaplama (ortalama sinyal confidence) */}
             {(() => {
               // P5.2: Ortalama AI confidence hesapla
@@ -6249,7 +6354,6 @@ const DATA_SOURCE = (() => {
                 )}
               </div>
             </div>
-
             {/* AI Confidence Board (with 24h trend) */}
             <div className="mt-4">
               <AIConfidenceBoard
