@@ -1,5 +1,5 @@
 'use client';
-import create from 'zustand';
+import { create } from 'zustand';
 export type Regime = 'risk-on' | 'risk-off' | 'neutral';
 export type Horizon = '5m' | '15m' | '30m' | '1h' | '4h' | '1d';
 interface AppSSOTState { regime: Regime; horizon: Horizon; tz: 'UTC+3'; accuracyWindow: '24h' | '7d' | '30d'; dataVersion: string; setRegime: (r: Regime) => void; setHorizon: (h: Horizon) => void; syncFromUrl: (url: URL) => void; }

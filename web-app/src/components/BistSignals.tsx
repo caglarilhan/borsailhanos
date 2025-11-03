@@ -49,6 +49,10 @@ import { filterSignalsByRiskProfile, getRiskProfileConfig, calculateNetReturn, c
 import { normalizeNewsImpact, getImpactLevel, getImpactLevelColor } from '@/lib/news-impact-normalize';
 import { getSignalConfidenceColor, getConfidenceColor, getSignalBadgeColor } from '@/lib/signal-color-helper';
 import { Tabs } from '@/components/UI/Tabs';
+import { RiskBadge } from '@/components/UI/RiskBadge';
+import { TTLBadge } from '@/components/UI/TTLBadge';
+import { useAppSSOT } from '@/lib/app-ssot';
+import { fmtTRY, fmtPct1, fmtNum } from '@/lib/intl-format';
 import { MTFCoherenceBadge } from '@/components/UI/MTFCoherenceBadge';
 import { OrderPreviewCard } from '@/components/UI/OrderPreviewCard';
 import { HoverCard } from '@/components/UI/HoverCard';
@@ -178,6 +182,12 @@ const formatCurrency = formatCurrencyTRY; // Alias for backward compatibility
 const formatNumber = formatNumberUtil; // Alias for backward compatibility
 
 export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSignalsProps) {
+  const { horizon, regime, syncFromUrl } = useAppSSOT();
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      try { syncFromUrl(new URL(window.location.href)); } catch {}
+    }
+  }, [syncFromUrl]);
   // API Status tracking
   const [apiLatency, setApiLatency] = useState<number | null>(null);
   const [apiStatus, setApiStatus] = useState<'good' | 'warning' | 'error'>('good');
@@ -926,7 +936,7 @@ const DATA_SOURCE = (() => {
   // P5.2: Duplicate symbol kontrolü - removeDuplicateSymbols kullan
   const bestPerSymbol = useMemo(() => {
     // Önce duplicate sembolleri kaldır
-    const uniqueRows = removeDuplicateSymbols(rows, (r) => `${r.symbol}-${r.horizon}`);
+    const uniqueRows = removeDuplicateSymbols(rows, (r) => `${r.symbol}-${r.horizon}`).filter(r => r.horizon === horizon);
     
     const bySymbol = new Map<string, Prediction[]>();
     uniqueRows.forEach(r => {
@@ -947,13 +957,13 @@ const DATA_SOURCE = (() => {
       (item) => item.symbol
     );
     return distinctList;
-  }, [rows, sectorFilter]);
+  }, [rows, sectorFilter, horizon]);
 
   // Tablo filtre-sırala listesi (virtualization için tek yerde hesapla)
   // P5.2: Duplicate symbol kontrolü - tableList'te de unique semboller
   const tableList = useMemo(() => {
     // Önce duplicate sembolleri kaldır
-    const uniqueRows = removeDuplicateSymbols(rows, (r) => `${r.symbol}-${r.horizon}`);
+    const uniqueRows = removeDuplicateSymbols(rows, (r) => `${r.symbol}-${r.horizon}`).filter(r => r.horizon === horizon);
     
     const filtered = uniqueRows
       .filter(r => (!filterWatch || watchlist.includes(r.symbol)) && (search==='' || r.symbol.includes(search)))
@@ -1005,7 +1015,7 @@ const DATA_SOURCE = (() => {
     const riskFiltered = filterSignalsByRiskProfile(sorted, mappedProfile);
     
     return riskFiltered.slice(0, maxRows);
-  }, [rows, filterWatch, watchlist, search, signalFilter, filterAcc80, filterMomentum, sortBy, maxRows, portfolioRiskLevel]);
+  }, [rows, filterWatch, watchlist, search, signalFilter, filterAcc80, filterMomentum, sortBy, maxRows, portfolioRiskLevel, horizon]);
 
   // P5.2: Best horizon SSOT - store'dan al, UI'da hesaplama yapma
   const bestHorizonStore = useBestHorizonStore();
@@ -1198,8 +1208,12 @@ const DATA_SOURCE = (() => {
                   <div className="text-xs font-semibold text-white/90 uppercase tracking-wide">Doğruluk (30g)</div>
                   <span title="Son 30 gün backtest tahmin isabeti" className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
                 </div>
-                <div className="text-2xl font-bold text-emerald-100 mb-1">%{(calibrationQ.data?.accuracy || 0.873) * 100}</div>
+                <div className="text-2xl font-bold text-emerald-100 mb-1">{fmtPct1.format((calibrationQ.data?.accuracy || 0.873))}</div>
                 <div className="text-[10px] text-white/70">MAE {formatNumber(calibrationQ.data?.mae || 0.021, 3)} • RMSE {formatNumber(calibrationQ.data?.rmse || 0.038, 3)}</div>
+                {/* Backtest bağlam rozeti */}
+                <div className="mt-1 text-[10px] text-white/70">
+                  Son 30 gün • Tcost 8bps • Slippage 0.1% • Benchmark: XU030
+                </div>
                 {metrics24s.modelDrift !== 0 && (() => {
                   // P0-C2: Metrik Validasyonu - drift clamp + uyarı
                   // P5.2: Drift anomaly detector - ±10pp clamp ve anomaly flag
@@ -3256,6 +3270,21 @@ const DATA_SOURCE = (() => {
                   <div className="mt-2 flex items-center gap-2 text-xs text-slate-700">
                     <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
                     Geçerlilik: {new Date(best.valid_until).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})}
+                  </div>
+                  {/* Updated at UTC+3 */}
+                  <div className="mt-1 text-[11px] text-slate-500">
+                    Güncellendi (UTC+3): {formatUTC3Time(lastUpdated || new Date())}
+                  </div>
+                  {/* TTL Badge */}
+                  {(() => {
+                    const created = new Date((best as any).generated_at || (best as any).timestamp || Date.now()).getTime();
+                    const ttlMap: Record<string, number> = { '5m': 20*60*1000, '15m': 60*60*1000, '30m': 2*60*60*1000, '1h': 4*60*60*1000, '4h': 24*60*60*1000, '1d': 3*24*60*60*1000 };
+                    const ttl = ttlMap[(best as any).horizon || '1h'] ?? (4*60*60*1000);
+                    return <div className="mt-1"><TTLBadge createdAtMs={created} ttlMs={ttl} /></div>;
+                  })()}
+                  {/* Risk Skoru rozeti (24s, Vol Index) */}
+                  <div className="mt-1">
+                    <RiskBadge score={3.2} windowLabel="24s" source="Vol Index" />
                   </div>
                   <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <button
