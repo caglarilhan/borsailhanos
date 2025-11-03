@@ -2654,8 +2654,8 @@ const DATA_SOURCE = (() => {
 
       {/* Table - sticky head, scrollable body with virtual scrolling for large datasets */}
       {view==='table' && (
-      {/* Health Check Fix: Mobil overflow düzeltmesi - Tailwind grid overflow ve flex-wrap */}
-      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-260px)]" style={{ maxHeight: 'calc(100vh - 260px)' }}>
+        /* Health Check Fix: Mobil overflow düzeltmesi - Tailwind grid overflow ve flex-wrap */
+        <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-260px)]" style={{ maxHeight: 'calc(100vh - 260px)' }}>
         <table className="min-w-full text-sm" style={{ tableLayout: 'fixed', width: '100%' }}>
           <colgroup>
             <col style={{ width: '10%' }} />
@@ -3186,37 +3186,38 @@ const DATA_SOURCE = (() => {
                       >
                         🧠 Detaylı AI Açıklaması
                       </button>
-                      {/* P1-03: Sinyal açıklamaları kullanıcı dostu - Teknik metrikler tooltip içinde */}
-                      <div className="mt-1 pl-4 text-[10px] text-slate-600">
-                        {(() => {
-                          const mockRSI = getMockRSI(best.prediction || 0, sym);
-                          const rsiState = mapRSIToState(mockRSI);
-                          const rsiStateLabel = getRSIStateLabel(mockRSI);
-                          return (
-                            <>
-                              <div className="font-semibold mb-1">📊 Teknik Detaylar (Hover için):</div>
-                              <ul className="list-disc pl-4 space-y-0.5">
-                                <li title={`RSI: ${mockRSI} — ${rsiStateLabel} (14 periyot)`}>
-                                  RSI: {mockRSI} — {rsiStateLabel} ({Math.round(0.25 * 100)}% ağırlık)
-                                </li>
-                                <li title="MACD: Trend yönünü teyit eder, histogram momentum gösterir">
-                                  MACD: Trend onayı ({Math.round(0.25 * 100)}% ağırlık)
-                                </li>
-                                <li title="Sentiment: FinBERT-TR Türkçe NLP analizi">
-                                  Sentiment: FinBERT analizi ({Math.round(0.30 * 100)}% ağırlık)
-                                </li>
-                                <li title="Volume: Hacim artışı/azalışı momentumu etkiler">
-                                  Volume: Hacim momentumu ({Math.round(0.20 * 100)}% ağırlık)
-                                </li>
-                              </ul>
-                              <div className="mt-2 pt-2 border-t border-slate-200 text-[9px] text-slate-500">
-                                Kalibrasyon: Platt scaling • Toplam ağırlık: 100%
-                              </div>
-                            </>
-                          );
-                        })()}
-                      </div>
                     </details>
+                    {/* P1-03: Sinyal açıklamaları kullanıcı dostu - Teknik metrikler tooltip içinde */}
+                    <div className="mt-1 pl-4 text-[10px] text-slate-600">
+                      {(() => {
+                        const mockRSI = getMockRSI(best.prediction || 0, sym);
+                        const rsiState = mapRSIToState(mockRSI);
+                        const rsiStateLabel = getRSIStateLabel(mockRSI);
+                        return (
+                          <>
+                            <div className="font-semibold mb-1">📊 Teknik Detaylar (Hover için):</div>
+                            <ul className="list-disc pl-4 space-y-0.5">
+                              <li title={`RSI: ${mockRSI} — ${rsiStateLabel} (14 periyot)`}>
+                                RSI: {mockRSI} — {rsiStateLabel} ({Math.round(0.25 * 100)}% ağırlık)
+                              </li>
+                              <li title="MACD: Trend yönünü teyit eder, histogram momentum gösterir">
+                                MACD: Trend onayı ({Math.round(0.25 * 100)}% ağırlık)
+                              </li>
+                              <li title="Sentiment: FinBERT-TR Türkçe NLP analizi">
+                                Sentiment: FinBERT analizi ({Math.round(0.30 * 100)}% ağırlık)
+                              </li>
+                              <li title="Volume: Hacim artışı/azalışı momentumu etkiler">
+                                Volume: Hacim momentumu ({Math.round(0.20 * 100)}% ağırlık)
+                              </li>
+                            </ul>
+                            <div className="mt-2 pt-2 border-t border-slate-200 text-[9px] text-slate-500">
+                              Kalibrasyon: Platt scaling • Toplam ağırlık: 100%
+                            </div>
+                          </>
+                        );
+                      })()}
+                    </div>
+                    </div>
                     <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${formatCurrency(targetPrice)} (${formatNumber(diffPct)}%), Stop loss: ${formatCurrency(currentPrice*0.9)}. Formül: Dinamik ağırlıklar (RSI, MACD, Sentiment, Volume)`}>
                       🤖 Hedef {formatCurrency(Number(targetPrice))} • Stop {formatCurrency(currentPrice*0.9)}
                     </span>
