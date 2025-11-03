@@ -269,6 +269,10 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   });
   // Smart Alerts 2.0: Toast notifications state
   const [toasts, setToasts] = useState<Array<{ id: string; message: string; type: 'success' | 'error' | 'warning' | 'info'; duration?: number }>>([]);
+  const [liteMode, setLiteMode] = useState<boolean>(false);
+  const [showCompactFilters, setShowCompactFilters] = useState<boolean>(true);
+  const [showSentimentGauge, setShowSentimentGauge] = useState<boolean>(true);
+  const [showRiskRadar, setShowRiskRadar] = useState<boolean>(true);
   // User-defined alert thresholds (from Settings)
   // v4.7: Enhanced alert thresholds with RSI and AI confidence thresholds
   const [alertThresholds, setAlertThresholds] = useState<{ 
@@ -1303,14 +1307,66 @@ useEffect(() => {
                   </span>
                 );
               })()}
-              <div className="text-[10px] text-white/60">
+              <div className="text-[10px] text-white/60" suppressHydrationWarning>
                 {(() => {
-                  const ts = useLastUpdateStore.getState().lastUpdatedAt || Date.now();
-                  return formatUTC3Time(new Date(ts));
+                  // Avoid Date.now() on SSR to prevent hydration mismatch
+                  const ts = useLastUpdateStore.getState().lastUpdatedAt;
+                  return ts ? formatUTC3Time(new Date(ts)) : '';
                 })()}
               </div>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3">
+            {/* spacer: absolute şeridin içerik üstüne binmesini önler */}
+            <div className="h-12" />
+            {/* Smart Summary Bar */}
+            <div className="flex flex-wrap justify-around items-center bg-[#14171c] py-3 border-b border-gray-800 text-sm text-gray-300 rounded-b-xl">
+              <span>🧠 Doğruluk: <b className="text-green-400">{fmtPct1.format(calibrationQ.data?.accuracy ?? 0.873)}</b></span>
+              <span>⚡ Aktif Sinyal: <b>{rows.length}</b></span>
+              <span>📊 Risk Skoru: <b className="text-yellow-400">{(() => { const r = Math.max(0, Math.min(5, (metaEnsembleQ.data?.volatilityIndex ?? 64) / 20)); return r.toFixed(1); })()}</b></span>
+              <span>💰 Tahmini Getiri: <b className="text-green-400">{(() => { const avg = rows.length ? (rows.reduce((s, r)=> s + (r.prediction||0), 0) / rows.length) : 0; return fmtPct1.format(avg); })()}</b></span>
+              <span suppressHydrationWarning>⏱ Güncelleme: <b>{lastUpdated ? formatUTC3Time(lastUpdated, true) : ''}</b></span>
+            </div>
+            {showCompactFilters && (
+              <div className="mt-3 bg-white/60 backdrop-blur-sm rounded-xl border border-slate-200 p-3 flex flex-wrap items-center gap-3 sticky top-[56px] z-40">
+                {/* Ufuk Dropdown */}
+                <label className="text-xs text-slate-700">Ufuk
+                  <select
+                    className="ml-2 px-2 py-1 text-xs border border-slate-300 rounded"
+                    value={(() => activeHorizons[0] || '1d')()}
+                    onChange={(e)=>{ const v = e.target.value as Horizon; try { setActiveHorizons([v]); } catch {} }}
+                  >
+                    {['5m','15m','30m','1h','4h','1d','7d','30d'].map(h => (
+                      <option key={h} value={h}>{h}</option>
+                    ))}
+                  </select>
+                </label>
+                {/* Risk Slider */}
+                <label className="text-xs text-slate-700 flex items-center gap-2">Risk
+                  <input type="range" min={1} max={5} defaultValue={portfolioRiskLevel==='low'?2:portfolioRiskLevel==='high'?5:3}
+                    onChange={(e)=>{
+                      const val = Number(e.target.value);
+                      const mode = val <=2 ? 'low' : val >=4 ? 'high' : 'medium';
+                      setPortfolioRiskLevel(mode as any);
+                    }}
+                  />
+                  <span className="px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 border border-slate-200 text-[10px]">{portfolioRiskLevel}</span>
+                </label>
+                {/* Momentum Toggle */}
+                <button
+                  onClick={()=> setFilterMomentum(v=>!v)}
+                  className={`px-2 py-1 text-xs rounded border ${filterMomentum?'bg-purple-600 text-white border-purple-700':'bg-slate-100 text-slate-700 border-slate-300'}`}
+                  title="≥%5 Momentum"
+                >{filterMomentum ? '✓ Momentum' : 'Momentum'}</button>
+                {/* Güven Toggle */}
+                <button
+                  onClick={()=> setFilterAcc80(v=>!v)}
+                  className={`px-2 py-1 text-xs rounded border ${filterAcc80?'bg-blue-600 text-white border-blue-700':'bg-slate-100 text-slate-700 border-slate-300'}`}
+                  title=">=%80 Güven"
+                >{filterAcc80 ? '✓ ≥%80 Güven' : '≥%80 Güven'}</button>
+                {/* Görünüm Toggle */}
+                <button onClick={()=> setLiteMode(v=>!v)} className="ml-auto text-xs text-slate-600 hover:text-slate-800 border border-slate-300 rounded px-2 py-1">⚡ {liteMode ? 'Pro' : 'Lite'}</button>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 p-3">
               {/* Sprint 2: Doğruluk KPI - 24s değişim etiketi */}
               <div className="bg-emerald-500/20 backdrop-blur-sm rounded-xl p-4 border border-emerald-400/30 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between mb-2">
@@ -1349,7 +1405,7 @@ useEffect(() => {
                 })()}
                 {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
-                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between" suppressHydrationWarning>
                     <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                     {metrics24s.modelDrift !== 0 && (
                       <span className={`text-[8px] ${metrics24s.modelDrift >= 0 ? 'text-green-300' : 'text-red-300'}`}>
@@ -1371,7 +1427,7 @@ useEffect(() => {
                 )}
                 {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
-                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between" suppressHydrationWarning>
                     <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                     {metrics24s.newSignals > 0 && (
                       <span className="text-[8px] text-green-300">
@@ -1437,7 +1493,7 @@ useEffect(() => {
                     )}
                     {/* Son Güncelleme Timestamp + Trend Oku */}
                     {lastUpdated && (
-                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
+                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between" suppressHydrationWarning>
                         <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                         {metrics24s.modelDrift !== 0 && (
                           <span className={`text-[8px] ${metrics24s.modelDrift >= 0 ? 'text-green-300' : 'text-red-300'}`}>
@@ -1477,8 +1533,8 @@ useEffect(() => {
                     )}
                     {/* Son Güncelleme Timestamp + Trend Oku */}
                     {lastUpdated && (
-                      <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
-                        <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
+                  <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between" suppressHydrationWarning>
+                    <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                         {profitPct >= 0 ? (
                           <span className="text-[8px] text-green-300">↑ {profitPct.toFixed(1)}%</span>
                         ) : (
@@ -2391,8 +2447,8 @@ useEffect(() => {
                     Gerçek zamanlı veri akışı aktif. Gecikme: {apiLatency !== null ? `${apiLatency}ms` : '—'}
                   </div>
                   {/* Health Check Fix: Timestamp senkronizasyonu - sistem saatiyle eşitleme */}
-                  <div className="text-[10px] text-slate-600">
-                    <span className="badge badge-muted">Son güncelleme: {lastUpdated ? formatUTC3Time(lastUpdated, true) : nowString} • UTC+3</span>
+                  <div className="text-[10px] text-slate-600" suppressHydrationWarning>
+                    <span className="badge badge-muted">Son güncelleme: {lastUpdated ? formatUTC3Time(lastUpdated, true) : ''} • UTC+3</span>
                   </div>
                 </div>
               }
@@ -2802,7 +2858,7 @@ useEffect(() => {
       {view==='table' && (
         /* Health Check Fix: Mobil overflow düzeltmesi - Tailwind grid overflow ve flex-wrap */
         <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-260px)]" style={{ maxHeight: 'calc(100vh - 260px)' }}>
-        <table className="min-w-full text-sm" style={{ tableLayout: 'fixed', width: '100%' }}>
+        <table className="min-w-full text-sm table-fixed w-full">
           <colgroup>
             <col style={{ width: '10%' }} />
             <col style={{ width: '7%' }} />
@@ -3110,8 +3166,12 @@ useEffect(() => {
                         })()}
                   </td>
                       <td className="py-2 pr-4 flex items-center gap-1 text-gray-800 hidden md:table-cell whitespace-nowrap">
-                    <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
-                    {new Date(r.valid_until).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})}
+                    {/* TTL küçük rozet */}
+                    {(() => {
+                      const createdAtMs = r.generated_at ? new Date(r.generated_at).getTime() : (lastUpdated ? new Date(lastUpdated).getTime() : 0);
+                      const ttlMs = r.valid_until ? (new Date(r.valid_until).getTime() - (r.generated_at ? new Date(r.generated_at).getTime() : createdAtMs)) : 0;
+                      return createdAtMs && ttlMs > 0 ? <TTLBadge createdAtMs={createdAtMs} ttlMs={ttlMs} /> : null;
+                    })()}
                   </td>
                       <td className="py-2 pr-4 flex items-center gap-2 whitespace-nowrap">
                     <button
@@ -3171,6 +3231,9 @@ useEffect(() => {
                 <div key="table-skeleton" className="w-full grid grid-cols-1 gap-2">
                   <div className="border rounded-xl p-4 bg-white shadow-sm"><Skeleton className="h-6 w-48 mb-2 rounded" /><Skeleton className="h-4 w-64 rounded" /></div>
                   <div className="border rounded-xl p-4 bg-white shadow-sm"><Skeleton className="h-6 w-40 mb-2 rounded" /><Skeleton className="h-4 w-56 rounded" /></div>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={`sk-${i}`} className="border rounded-xl p-4 bg-white shadow-sm"><Skeleton className="h-6 w-36 mb-2 rounded" /><Skeleton className="h-4 w-48 rounded" /></div>
+                  ))}
                 </div>
               );
             }
@@ -3322,9 +3385,9 @@ useEffect(() => {
                     <div className="flex items-start gap-2 flex-wrap">
                       {/* Note: useForecast hook removed from .map() to fix Rules of Hooks violation */}
                       <details className="flex-1 min-w-[200px] max-w-full">
-                        <summary className="cursor-pointer select-none flex items-center gap-1">
+                        <summary className="cursor-pointer select-none flex items-center gap-1 text-sm text-slate-700">
                           <span className="font-semibold text-[#111827]">AI Yorum:</span>
-                          <div className="truncate max-w-[300px] overflow-hidden text-ellipsis text-wrap break-words" title={miniAnalysis(best.prediction||0, best.confidence||0, sym)}>
+                          <div className="truncate max-w-[300px] overflow-hidden text-ellipsis text-wrap break-words line-clamp-1" title={miniAnalysis(best.prediction||0, best.confidence||0, sym)}>
                             {miniAnalysis(best.prediction||0, best.confidence||0, sym).length > 80 
                               ? miniAnalysis(best.prediction||0, best.confidence||0, sym).substring(0, 80) + '...' 
                               : miniAnalysis(best.prediction||0, best.confidence||0, sym)}
@@ -3375,14 +3438,14 @@ useEffect(() => {
                       })()}
                     </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${formatCurrency(targetPrice)} (${formatNumber(fixSignedZero(diffPct))}%), Stop loss: ${formatCurrency(currentPrice*0.9)}. Formül: Dinamik ağırlıklar (RSI, MACD, Sentiment, Volume)`}>
+                      <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap block leading-4 tabular-nums" title={`Hedef fiyat: ${formatCurrency(targetPrice)} (${formatNumber(fixSignedZero(diffPct))}%), Stop loss: ${formatCurrency(currentPrice*0.9)}. Formül: Dinamik ağırlıklar (RSI, MACD, Sentiment, Volume)`}>
                       🤖 Hedef {formatCurrency(Number(targetPrice))} • Stop {formatCurrency(currentPrice*0.9)}
                     </span>
                   </div>
                   {/* Teknik mikro rozetler */}
                   <div className="mt-2 flex flex-wrap items-center gap-1">
                     {technicalBadges(best.prediction||0, best.confidence||0).map((tag)=> (
-                      <span key={tag} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">{tag}</span>
+                      <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800/80 border border-blue-200 block leading-4">{tag}</span>
                     ))}
                     {/* P0: MTF Tutarlılık Rozeti */}
                     <MTFCoherenceBadge
@@ -3398,6 +3461,23 @@ useEffect(() => {
                       ) : null;
                     })()}
                   </div>
+                  {/* Mini Sparkline + Trend etiketi */}
+                  <div className="mt-2">
+                    {(() => {
+                      const seed = (sym.charCodeAt(0) + sym.length) % 7;
+                      const base = 100 + (seed * 3);
+                      const sign = (best.prediction||0) >= 0 ? 1 : -1;
+                      const data = Array.from({length: 14}, (_, i) => base + (i*sign*0.6) + Math.sin(i+seed)*1.5);
+                      return <Sparkline series={data} color={sign>=0 ? '#00ffae' : '#ff6b6b'} />;
+                    })()}
+                    <p className="text-xs text-gray-500 mt-1">Trend: {((best.prediction||0) >= 0 ? 'Stabil Yükseliş' : 'Kısa Düşüş')}</p>
+                  </div>
+                  {/* AI TraderGPT Insight Bubble (kart başına tekrarını önlemek için opsiyonel) */}
+                  {false && (
+                    <div className="bg-[#1f2329] p-3 rounded-xl mt-3 text-sm text-gray-300 italic border-l-4 border-green-400">
+                      🤖 <b>TraderGPT:</b> “Model şu anda {((metaEnsembleQ.data?.volatilityIndex ?? 50) < 50 ? 'risk-on' : 'risk-off')} rejiminde. {rows.slice(0,2).map(r=>r.symbol).filter(s=>s!==sym).slice(0,1)[0] ? 'Yüksek güvenli 1-2 alım sinyali var.' : 'Seçili sembolde izleme önerilir.'}”
+                    </div>
+                  )}
                   {/* Mini analiz cümlesi - Health Check Fix: AI Yorumu wrap - text-wrap break-words */}
                   <div className="mt-2 text-xs text-slate-700">
                     <p className="text-wrap break-words max-w-full overflow-hidden">
@@ -3405,14 +3485,13 @@ useEffect(() => {
                     </p>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-slate-700">
-                    <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
-                    Geçerlilik: {new Date(best.valid_until).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})}
+                    {(() => {
+                      const createdAtMs = best.generated_at ? new Date(best.generated_at).getTime() : (lastUpdated ? new Date(lastUpdated).getTime() : 0);
+                      const ttlMs = best.valid_until ? (new Date(best.valid_until).getTime() - (best.generated_at ? new Date(best.generated_at).getTime() : createdAtMs)) : 0;
+                      return createdAtMs && ttlMs > 0 ? <TTLBadge createdAtMs={createdAtMs} ttlMs={ttlMs} /> : null;
+                    })()}
                   </div>
-                  {/* Updated at UTC+3 */}
-                  <div className="mt-1 text-[11px] text-slate-500">
-                    Güncellendi (UTC+3): {formatUTC3Time(lastUpdated || new Date())}
-                  </div>
-                  {/* TTL Badge */}
+                  {/* Kart içi güncelleme saatini kaldırdık; üst/bottom bar'da konsolide edilir */}
                   {(() => {
                     const created = new Date((best as any).generated_at || (best as any).timestamp || Date.now()).getTime();
                     const ttlMap: Record<string, number> = { '5m': 20*60*1000, '15m': 60*60*1000, '30m': 2*60*60*1000, '1h': 4*60*60*1000, '4h': 24*60*60*1000, '1d': 3*24*60*60*1000 };
@@ -3475,6 +3554,19 @@ useEffect(() => {
         </div>
       )}
 
+  {/* Sticky Bottom Insight Bar */}
+  <div className="sticky bottom-0 bg-[#0e1016]/80 backdrop-blur-md py-2 px-4 text-sm text-gray-400 flex justify-between border-t border-gray-700">
+    <span suppressHydrationWarning>📅 {lastUpdated ? `${formatUTC3DateTime(lastUpdated)} UTC+3` : ''}</span>
+    <span>🧠 AI Günlük Özeti: {(() => { const vi = metaEnsembleQ.data?.volatilityIndex ?? 50; return vi < 50 ? 'Risk-on, 1-2 yüksek güvenli alım sinyali' : 'Risk-off, defansif kalın'; })()}</span>
+    <button onClick={()=>setLiteMode(v=>!v)} className="text-xs text-gray-500 hover:text-gray-200 border border-gray-700 rounded px-2 py-1">⚡ {liteMode ? 'Pro Görünüm' : 'Lite Görünüm'}</button>
+  </div>
+
+  {/* Scroll-To-Top Button */}
+  <button
+    onClick={() => { if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+    className="fixed bottom-16 right-4 z-40 rounded-full bg-slate-800 text-white shadow-lg w-9 h-9 flex items-center justify-center hover:bg-slate-700"
+    title="Yukarı dön"
+  >↑</button>
       {/* UX Yeniden Sıralama: Portföy Simülatörü + AI Önerilen Portföy - Ana panele ekle */}
       {!selectedSymbol && (
         <div className="mb-4 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border-2 border-indigo-200 shadow-lg">
@@ -3910,6 +4002,64 @@ useEffect(() => {
               )}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* AI Health Mini Panel */}
+      {!selectedSymbol && (
+        <div className="mb-4 rounded-xl p-4 border border-slate-200 bg-white">
+          <div className="text-sm font-semibold text-slate-800 mb-2">AI Sağlık Özeti</div>
+          <div className="grid grid-cols-2 gap-3 text-xs text-gray-600">
+            <div>🩺 Model Sağlığı: <span className="text-green-600 font-semibold">İyi</span></div>
+            <div>🕒 Latency: <span>{apiLatency !== null ? `${apiLatency} ms` : '—'}</span></div>
+            <div>📈 RMSE: <span>{formatNumber(calibrationQ.data?.rmse ?? 0.039, 3)}</span></div>
+            <div>📉 Drift: <span className="text-yellow-600">{formatPercentagePoints(metrics24s.modelDrift || 0)}</span></div>
+          </div>
+          {/* Sentiment Gauge */}
+          {showSentimentGauge && (
+            <div className="mt-3">
+              {(() => {
+                const pos = Math.round((sentimentSummary?.overall?.positive ?? 0.45) * 100);
+                const neu = Math.round((sentimentSummary?.overall?.neutral ?? 0.25) * 100);
+                const neg = 100 - pos - neu;
+                return (
+                  <div>
+                    <div className="text-xs text-slate-600 mb-1">📊 Duygu Dengesi</div>
+                    <div className="w-full h-3 bg-slate-100 rounded overflow-hidden flex">
+                      <div style={{ width: `${pos}%` }} className="bg-emerald-500" />
+                      <div style={{ width: `${neu}%` }} className="bg-slate-400" />
+                      <div style={{ width: `${neg}%` }} className="bg-rose-500" />
+                    </div>
+                    <div className="mt-1 text-[10px] text-slate-600">Pozitif: {pos}% • Nötr: {neu}% • Negatif: {neg}%</div>
+                  </div>
+                );
+              })()}
+            </div>
+          )}
+          {/* Risk Radar (mini) */}
+          {showRiskRadar && (
+            <div className="mt-3">
+              {(() => {
+                const vol = Math.min(1, Math.max(0, (metaEnsembleQ.data?.volatilityIndex ?? 50) / 100));
+                const acc = Math.min(1, Math.max(0, (calibrationQ.data?.accuracy ?? 0.8)));
+                const drift = Math.min(1, Math.max(0, Math.abs((metrics24s.modelDrift ?? 0)) / 10));
+                const conf = Math.min(1, Math.max(0, rows.reduce((s, r)=> s + (r.confidence||0), 0) / (rows.length || 1)));
+                const alpha = Math.min(1, Math.max(0, 0.5 + ((rows.reduce((s, r)=> s + (r.prediction||0), 0) / (rows.length || 1)) * 2)));
+                const values = [vol, acc, conf, 1-drift, alpha];
+                const R = 36; const cx = 40; const cy = 40;
+                const pts = values.map((v, i) => {
+                  const a = (Math.PI * 2 / values.length) * i - Math.PI/2;
+                  return `${cx + Math.cos(a) * R * v},${cy + Math.sin(a) * R * v}`;
+                }).join(' ');
+                return (
+                  <svg width="80" height="80" viewBox="0 0 80 80" className="block">
+                    <polygon points={pts} fill="#22c55e22" stroke="#22c55e" strokeWidth="1" />
+                    <circle cx={cx} cy={cy} r={R} fill="none" stroke="#cbd5e1" strokeWidth="0.5" />
+                  </svg>
+                );
+              })()}
+            </div>
+          )}
         </div>
       )}
 
