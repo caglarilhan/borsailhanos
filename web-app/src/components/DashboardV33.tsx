@@ -3697,11 +3697,18 @@ function DashboardV33Inner() {
 }
 
 // Outer component with Suspense wrapper
+// P5.2: Legal Disclaimer Banner
+import { LegalDisclaimer } from '@/components/LegalDisclaimer';
+import ErrorBoundary from '@/components/ErrorBoundary';
+
 function DashboardV33() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="text-slate-600">Yükleniyor...</div></div>}>
-      <DashboardV33Inner />
-    </Suspense>
+    <ErrorBoundary>
+      <LegalDisclaimer />
+      <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="text-slate-600">Yükleniyor...</div></div>}>
+        <DashboardV33Inner />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 

@@ -69,30 +69,26 @@ export function CorrelationHeatmap({
         <div className="text-xs text-slate-600">Eşik: |r| ≥ {threshold}</div>
       </div>
 
-      {/* P0-03: Korelasyon Heatmap - Minimum 3×3 matrix (ISCTR, GARAN, THYAO, EREGL vb.) */}
+      {/* P5.2: Korelasyon Heatmap - Eksen etiketleri tekilleştir, diagonal hücreyi — yap */}
       {/* Heatmap Grid - Minimum 3×3 matrix için grid yapısı */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 max-h-96 overflow-auto">
         {defaultPairs.map((pair, idx) => {
-          // P0-03: Self-correlation kontrolü - Aynı sembol çiftleri gri ve "1.00" göster
+          // P5.2: Self-correlation kontrolü - Aynı sembol çiftleri diagonal, "—" göster
           const isSelfCorrelation = pair.symbol1 === pair.symbol2;
           if (isSelfCorrelation) {
             return (
               <div
                 key={idx}
                 className="p-2 rounded border-2 border-slate-300 bg-slate-100 opacity-60"
-                title={`${pair.symbol1} ↔ ${pair.symbol2}: Self-korelasyon (her zaman 1.00) — Pair Trade için kullanılamaz`}
+                title={`${pair.symbol1} ↔ ${pair.symbol2}: Diagonal (self-korelasyon) — Pair Trade için kullanılamaz`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <div className="text-xs font-semibold text-slate-600">
-                    {pair.symbol1} ↔ {pair.symbol2}
+                    {pair.symbol1}
                   </div>
-                  <span className="px-1.5 py-0.5 text-[9px] rounded-full bg-slate-400 text-white font-bold">
-                    Self
-                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="text-sm font-bold text-slate-500">1.00</div>
-                  <div className="text-[9px] text-slate-500">—</div>
+                  <div className="text-sm font-bold text-slate-500">—</div>
                 </div>
               </div>
             );

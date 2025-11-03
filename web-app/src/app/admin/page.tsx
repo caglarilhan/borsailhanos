@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { isAdmin } from '@/lib/featureFlags';
+import { getCurrentUser, isAdminUser } from '@/lib/admin-guard';
 
 export default function AdminPage() {
   const router = useRouter();
@@ -18,7 +19,9 @@ export default function AdminPage() {
         const storedRole = localStorage.getItem('userRole') || 'user';
         setUserRole(storedRole);
         
-        if (isAdmin(storedRole)) {
+        // v4.6.1: Use admin guard for consistency
+        const user = getCurrentUser();
+        if (isAdminUser(user) || isAdmin(storedRole)) {
           setIsAuthorized(true);
         } else {
           // Unauthorized: redirect to home

@@ -7,13 +7,15 @@ export type RSIState = 'overbought' | 'oversold' | 'neutral';
 
 /**
  * Map RSI value to state
+ * P5.2 Fix: ≤30 oversold, ≥70 overbought (eşik sözlüğü düzeltildi)
  * @param rsi - RSI value (0-100)
- * @returns RSI state: overbought (>70), oversold (<30), neutral (30-70)
+ * @returns RSI state: overbought (≥70), oversold (≤30), neutral (30-70)
  */
 export function mapRSIToState(rsi: number): RSIState {
-  if (rsi > 70) return 'overbought';
-  if (rsi < 30) return 'oversold';
-  return 'neutral';
+  // P5.2: Kritik düzeltme - eşik sözlüğü: ≥70 overbought, ≤30 oversold
+  if (rsi >= 70) return 'overbought'; // ≥70 aşırı alım (overbought)
+  if (rsi <= 30) return 'oversold'; // ≤30 aşırı satım (oversold)
+  return 'neutral'; // 30-70 arası nötr
 }
 
 /**

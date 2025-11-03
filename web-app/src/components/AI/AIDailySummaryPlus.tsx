@@ -366,7 +366,7 @@ export function AIDailySummaryPlus({
               <span className="text-xs text-slate-700">Model Drift (24s):</span>
               <div className="flex items-center gap-1">
                 <span className={`text-sm font-bold ${(modelDrift24h !== undefined ? modelDrift24h : -0.3) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                  {modelDrift24h !== undefined ? modelDrift24h.toFixed(1) : '-0.3'}%
+                  {modelDrift24h !== undefined ? `${modelDrift24h >= 0 ? '+' : ''}${modelDrift24h.toFixed(1)}%` : '-0.3%'}
                 </span>
                 {modelDrift24h !== undefined && (
                   <span className={`text-xs font-bold ${modelDrift24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -380,7 +380,7 @@ export function AIDailySummaryPlus({
               <span className="text-xs text-slate-700">Confidence Δ (24h):</span>
               <div className="flex items-center gap-1">
                 <span className={`text-sm font-bold ${(confidenceChange24h !== undefined ? confidenceChange24h : 1.5) >= 0 ? 'text-green-700' : 'text-red-700'}`}>
-                  {confidenceChange24h !== undefined ? (confidenceChange24h >= 0 ? '+' : '') + confidenceChange24h.toFixed(1) : '+1.5'}pp
+                  {confidenceChange24h !== undefined ? (confidenceChange24h >= 0 ? '+' : '') + confidenceChange24h.toFixed(1) + 'pp' : '+1.5pp'}
                 </span>
                 {confidenceChange24h !== undefined && (
                   <span className={`text-xs font-bold ${confidenceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>

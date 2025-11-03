@@ -5,14 +5,32 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from 'next-themes';
 
-const queryClient = new QueryClient();
+// P2-1: API latency - Optimize TanStack Query cache (staleTime + gcTime)
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30000, // 30 seconds - data is fresh for 30s
+      gcTime: 5 * 60 * 1000, // 5 minutes - keep in cache for 5min (formerly cacheTime)
+      refetchOnWindowFocus: false, // Don't refetch on window focus
+      refetchOnReconnect: true, // Refetch on reconnect
+      retry: 1, // Retry once on failure
+      retryDelay: 1000, // 1 second delay between retries
+    },
+  },
+});
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   // ErrorBoundary SSR'de sorun yaratıyor, runtime'da aktif olacak
   // Production'da client-side'da ErrorBoundary eklenebilir
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+      <ThemeProvider 
+        attribute="class" 
+        defaultTheme="light" 
+        enableSystem={false}
+        storageKey="bistai-theme"
+        disableTransitionOnChange={false}
+      >
         {children}
         <ReactQueryDevtools initialOpen={false} />
       </ThemeProvider>

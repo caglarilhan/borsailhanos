@@ -182,6 +182,32 @@ const config: Config = {
           900: '#0f172a',
           950: '#0A0A0F', // Deep graphite background
         },
+        // P1-4: Carbon Matte + Soft Blue Contrast Palette
+        'carbon-matte': {
+          50: '#f8f9fa',
+          100: '#f1f3f4',
+          200: '#e5e7eb',
+          300: '#d1d5db',
+          400: '#9ca3af',
+          500: '#6b7280',
+          600: '#4b5563',
+          700: '#374151',
+          800: '#252a34', // Surface
+          900: '#1a1d24', // Base
+          950: '#0f1115', // Deepest
+        },
+        'soft-blue': {
+          50: '#eff6ff',
+          100: '#dbeafe',
+          200: '#bfdbfe',
+          300: '#93c5fd',
+          400: '#60a5fa', // Light
+          500: '#4a9eff', // Primary accent
+          600: '#2563eb', // Dark
+          700: '#1d4ed8',
+          800: '#1e40af',
+          900: '#1e3a8a',
+        },
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

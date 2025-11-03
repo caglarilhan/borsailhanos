@@ -13,6 +13,20 @@
   --warning: #FFA62B;
 }
 
+/* P1-4: Carbon Matte + Soft Blue Contrast Palette */
+:root {
+  --carbon-matte-bg: #1a1d24; /* Deep matte charcoal */
+  --carbon-matte-surface: #252a34; /* Slightly lighter matte surface */
+  --carbon-matte-elevated: #2f3542; /* Elevated elements */
+  --soft-blue-accent: #4a9eff; /* Soft blue accent (#2563eb variant) */
+  --soft-blue-light: #60a5fa; /* Lighter soft blue */
+  --soft-blue-dark: #2563eb; /* Darker soft blue for contrast */
+  --soft-blue-glow: rgba(74, 158, 255, 0.15); /* Soft blue glow */
+  --text-carbon-primary: #e5e7eb; /* Light text on carbon */
+  --text-carbon-secondary: #9ca3af; /* Secondary text */
+  --text-carbon-tertiary: #6b7280; /* Tertiary text */
+}
+
 /* Global Reset */
 html {
   color-scheme: dark;
@@ -199,6 +213,40 @@ section {
 ::selection {
   background: rgba(14, 165, 233, 0.2);
   color: rgba(14, 165, 233, 1);
+}
+
+/* P1-4: Carbon Matte Theme Classes */
+.carbon-matte {
+  background-color: var(--carbon-matte-bg);
+  color: var(--text-carbon-primary);
+}
+
+.carbon-matte-surface {
+  background-color: var(--carbon-matte-surface);
+  border: 1px solid rgba(74, 158, 255, 0.1);
+}
+
+.carbon-matte-elevated {
+  background-color: var(--carbon-matte-elevated);
+  border: 1px solid rgba(74, 158, 255, 0.15);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(74, 158, 255, 0.1);
+}
+
+.text-soft-blue {
+  color: var(--soft-blue-accent);
+}
+
+.text-soft-blue-light {
+  color: var(--soft-blue-light);
+}
+
+.bg-soft-blue-glow {
+  background-color: var(--soft-blue-glow);
+  border: 1px solid rgba(74, 158, 255, 0.2);
+}
+
+.border-soft-blue {
+  border-color: var(--soft-blue-accent);
 }
 
 /* --- HIGH-CONTRAST CLEAN MODE (soft dark on white) --- */

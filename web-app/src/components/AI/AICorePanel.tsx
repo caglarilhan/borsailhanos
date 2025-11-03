@@ -58,7 +58,7 @@ export function AICorePanel() {
         <div className="bg-slate-50 rounded p-2 border border-slate-100">
           <div className="text-[10px] text-slate-600 mb-1">Drift (24s)</div>
           <div className={`text-sm font-semibold ${drift >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-            {drift >= 0 ? '+' : ''}{drift.toFixed(1)} pp
+            {drift >= 0 ? '+' : ''}{drift.toFixed(1)}pp
           </div>
           <div className="text-[9px] text-slate-500 mt-0.5">Güven değişimi</div>
         </div>

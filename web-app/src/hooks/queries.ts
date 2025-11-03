@@ -10,6 +10,10 @@ export function useBistPredictions(universe: string, horizons: string[], all: bo
     refetchInterval: useWebSocket ? false : 60000, // WebSocket varsa polling kapalı, yoksa 60s (eskiden 30s)
     enabled: universe !== 'ALL',
     staleTime: useWebSocket ? 0 : 30000, // WebSocket varsa staleTime yok, yoksa 30s
+    // P2-1: API latency - Optimize cache
+    gcTime: 5 * 60 * 1000, // 5 minutes cache time (formerly cacheTime)
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 }
 
@@ -37,6 +41,10 @@ export function useBistAllPredictions(horizons: string[], useWebSocket: boolean 
     },
     refetchInterval: useWebSocket ? false : 60000, // WebSocket varsa polling kapalı, yoksa 60s
     staleTime: useWebSocket ? 0 : 30000,
+    // P2-1: API latency - Optimize cache
+    gcTime: 5 * 60 * 1000, // 5 minutes cache time
+    refetchOnWindowFocus: false,
+    refetchOnMount: true,
   });
 }
 

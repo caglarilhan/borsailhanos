@@ -19,7 +19,12 @@ export function DriftTracker({ series }: DriftTrackerProps) {
     <div className="bg-slate-50 rounded p-3">
       <div className="flex items-center justify-between mb-1">
         <div className="text-xs text-slate-600 font-semibold">Confidence Drift Tracker</div>
-        <div className={`text-xs ${delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{delta >= 0 ? '↑' : '↓'} {Math.abs(delta)} puan</div>
+        {/* P5.2: Confidence trend yön oku - trend yönü net göster */}
+        <div className={`text-xs font-bold flex items-center gap-1 ${delta >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+          <span>{delta >= 0 ? '↑' : delta < 0 ? '↓' : '→'}</span>
+          <span>{Math.abs(delta)} puan</span>
+          <span className="text-[10px] text-slate-500">({delta >= 0 ? 'yükseliş' : delta < 0 ? 'düşüş' : 'stabil'})</span>
+        </div>
       </div>
       <div className="h-12">
         <Sparkline series={pct} width={300} height={48} color={color} />

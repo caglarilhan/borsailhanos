@@ -1,13 +1,14 @@
 /**
  * Model Drift Tracking
  * Rolling window-based drift metrics (7-day)
+ * P0-4: Drift clamp (-5pp ile +5pp arası)
  */
 
 export interface DriftMetric {
   date: string;
   accuracy: number;
   confidence: number;
-  drift: number; // Difference from baseline
+  drift: number; // Difference from baseline (clamped to -5pp .. +5pp)
 }
 
 export interface RollingDriftStats {
@@ -56,9 +57,10 @@ export function calculateRollingDrift(
     ? recentMetrics.slice(0, baselineLength).reduce((sum, m) => sum + m.accuracy, 0) / baselineLength
     : recentMetrics[0]?.accuracy || 0;
   
-  // Current drift
+  // Current drift (clamped to -5pp .. +5pp)
   const current = recentMetrics[recentMetrics.length - 1];
-  const currentDrift = current.accuracy - baseline;
+  const rawDrift = current.accuracy - baseline;
+  const currentDrift = Math.max(-0.05, Math.min(0.05, rawDrift)); // Clamp to ±5pp
   
   // Average drift over window
   const averageDrift = recentMetrics.reduce((sum, m) => sum + m.drift, 0) / recentMetrics.length;
@@ -92,11 +94,23 @@ export function calculateRollingDrift(
 
 /**
  * Detect significant drift (threshold-based)
+ * P0-4: Threshold clamped to max ±5pp
  */
 export function detectSignificantDrift(
   stats: RollingDriftStats,
-  threshold: number = 0.05 // 5% drift threshold
+  threshold: number = 0.02 // 2% drift threshold (default, clamped to max ±5pp)
 ): boolean {
-  return Math.abs(stats.currentDrift) > threshold;
+  const clampedThreshold = Math.min(0.05, Math.max(0.01, threshold)); // 1-5pp arası
+  return Math.abs(stats.currentDrift) > clampedThreshold;
+}
+
+/**
+ * Clamp drift value to -5pp .. +5pp
+ * P0-4: Drift değerlerini matematiksel olarak doğru aralıkta tut
+ */
+export function clampDriftValue(drift: number): number {
+  // Drift değeri 0-1 arası accuracy farkı olarak geliyor, pp'ye çevir ve clamp et
+  const driftPP = drift * 100; // Convert to percentage points
+  return Math.max(-5, Math.min(5, driftPP)) / 100; // Clamp to ±5pp, convert back to 0-1 scale
 }
 

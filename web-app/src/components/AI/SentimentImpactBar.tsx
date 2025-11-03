@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { fixSentimentSum } from '@/lib/sentiment-normalize-fix';
 
 interface SentimentImpactBarProps {
   positive?: number;
@@ -15,11 +16,16 @@ export function SentimentImpactBar({
   neutral = 0.10,
   impactLevel = 'High'
 }: SentimentImpactBarProps) {
-  // Normalize to ensure total = 1
-  const total = positive + negative + neutral;
-  const posNorm = total > 0 ? positive / total : 0;
-  const negNorm = total > 0 ? negative / total : 0;
-  const neuNorm = total > 0 ? neutral / total : 0;
+  // P5.2: Normalize sentiment to ensure sum = 100%
+  const normalized = fixSentimentSum(
+    { positive, negative, neutral },
+    positive <= 1 && negative <= 1 && neutral <= 1 // If values are 0-1 scale, isDecimal=true
+  );
+  
+  // Use normalized values (0-100 percentage scale, convert to 0-1 for display)
+  const posNorm = normalized.positive / 100;
+  const negNorm = normalized.negative / 100;
+  const neuNorm = normalized.neutral / 100;
 
   const getImpactColor = (level: string) => {
     if (level === 'High') return '#10b981'; // green

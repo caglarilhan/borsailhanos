@@ -151,3 +151,5 @@
 
 **Not:** Bazı özellikler (WebSocket, Zustand, React Query, etc.) zaten mevcut olduğu için sadece entegrasyon ve iyileştirmeler yapıldı.
 
+
+

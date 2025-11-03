@@ -10,9 +10,12 @@ export interface PortfolioWeight {
 
 export interface OptimizeParams {
   symbols: string[];
-  riskLevel: 'low' | 'medium' | 'high';
+  riskLevel: 'low' | 'medium' | 'high'; // Legacy support
   targetReturn?: number;
 }
+
+// Sprint 4: Risk profile support
+export type RiskProfile = 'conservative' | 'balanced' | 'aggressive';
 
 export interface PortfolioMetrics {
   expectedReturn: number;
