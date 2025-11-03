@@ -32,7 +32,10 @@ export function Footer() {
             </div>
           </div>
           <div className="text-slate-500">
-            ⚠️ Yatırım Tavsiyesi Değildir • Analiz ve eğitim amaçlıdır
+            ⚠️ Yatırım Tavsiyesi Değildir • Analiz ve eğitim amaçlıdır •
+            <a href="/legal/kvkk" className="underline ml-1">KVKK</a> •
+            <a href="/legal/risk-disclaimer" className="underline ml-1">Risk Bildirimi</a> •
+            <a href="/legal/privacy" className="underline ml-1">Gizlilik</a>
           </div>
         </div>
       </div>

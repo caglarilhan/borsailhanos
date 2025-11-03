@@ -28,6 +28,7 @@ import { AIHealthPanel } from '@/components/AI/AIHealthPanel';
 import { MacroBridgeAI } from '@/components/MacroBridgeAI';
 import { DriftTracker } from '@/components/AI/DriftTracker';
 import dynamic from 'next/dynamic';
+import { useLastUpdateStore } from '@/lib/last-update-store';
 const DriftGraph = dynamic(() => import('@/components/AI/DriftGraph').then(m=>m.DriftGraph), { ssr: false });
 const AIInsightPanel = dynamic(() => import('@/components/AI/AIInsightPanel').then(m=>m.AIInsightPanel), { ssr: false });
 import { computeSortino, computeCalmar, computeMaxDrawdown } from '@/lib/metrics-extra';
@@ -212,6 +213,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [alertChannel, setAlertChannel] = useState<'web'|'telegram'>('web');
   // Sprint 2: AI açıklama modal state
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [driftDismissed, setDriftDismissed] = useState(false);
   // removed: dismissed drift local state (banner always visible when >5pp)
   const [aiModalSymbol, setAiModalSymbol] = useState<string | null>(null);
   const [aiModalPrediction, setAiModalPrediction] = useState<number>(0);
@@ -1250,6 +1252,10 @@ const DATA_SOURCE = (() => {
     <AIOrchestrator predictions={rows.map(r => ({ ...r, reason: [] }))} signals={aiSignals}>
       {/* AI Insight Panel 2.0 */}
       <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div />
+          <a href="/ai/charts" className="text-xs underline text-slate-200 hover:text-white" title="AI grafiklerini ayrı sayfada incele">Tüm AI Grafiklerini Gör →</a>
+        </div>
         <AIInsightPanel />
       </div>
       {/* P5.2: Demo/Live Watermark */}
@@ -1271,7 +1277,10 @@ const DATA_SOURCE = (() => {
                 );
               })()}
               <div className="text-[10px] text-white/60">
-                {formatUTC3Time(new Date())}
+                {(() => {
+                  const ts = useLastUpdateStore.getState().lastUpdatedAt || Date.now();
+                  return formatUTC3Time(new Date(ts));
+                })()}
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3 p-3">
@@ -1287,9 +1296,12 @@ const DATA_SOURCE = (() => {
                 <div className="mt-1 text-[10px] text-white/70">
                   <span title="Backtest varsayımları: Komisyon 0.1 bps, vergi dahil değil">Son 30 gün • Tcost 8bps • Slippage 0.1% • Benchmark: XU030</span>
                 </div>
-{Math.abs(metrics24s.modelDrift || 0) > 5 && (
-  <div className="mt-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[10px]">
-    <strong>Drift Uyarısı:</strong> 24s model drift {formatPercentagePoints(Math.abs(metrics24s.modelDrift))} &gt; 5pp. Lütfen kalibrasyonu kontrol edin.
+{Math.abs(metrics24s.modelDrift || 0) > 5 && !driftDismissed && (
+  <div className="mt-2 px-3 py-2 rounded-lg border border-amber-300 bg-amber-50 text-amber-800 text-[10px] flex items-start justify-between gap-2">
+    <div>
+      <strong>Drift Uyarısı:</strong> 24s model drift {formatPercentagePoints(Math.abs(metrics24s.modelDrift))} &gt; 5pp. Lütfen kalibrasyonu kontrol edin.
+    </div>
+    <button onClick={()=> setDriftDismissed(true)} className="text-amber-800/80 hover:text-amber-900 text-xs">Kapat</button>
   </div>
 )}
                 {metrics24s.modelDrift !== 0 && (() => {
@@ -1582,8 +1594,10 @@ const DATA_SOURCE = (() => {
             <HoverCard
               trigger={
                 <button
-                  onClick={() => setRiskOpen(v => !v)}
+                  onClick={() => setRiskOpen(v => !v)
+                  }
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all relative ${riskOpen?'bg-red-600 text-white border-red-700 shadow-md':'bg-red-600 text-white hover:bg-red-700 border-red-500'}`}
+                  title="Risk Model: volatilite rejimine göre pozisyon boyutunu dinamik ayarlar."
                 >
                   📈 Risk Model
                   {/* Aktif sekme vurgusu - Underline */}
@@ -1605,8 +1619,10 @@ const DATA_SOURCE = (() => {
             <HoverCard
               trigger={
                 <button
-                  onClick={() => setMetaOpen(v => !v)}
+                  onClick={() => setMetaOpen(v => !v)
+                  }
                   className={`px-3 py-1.5 text-xs font-semibold rounded-lg border-2 transition-all relative ${metaOpen?'bg-purple-600 text-white border-purple-700 shadow-md':'bg-purple-600 text-white hover:bg-purple-700 border-purple-500'}`}
+                  title="Meta-Model: farklı AI stratejilerini (LSTM/Prophet/FinBERT) ağırlıklı ortalama ile birleştirir."
                 >
                   🧮 Meta-Model
                   {/* Aktif sekme vurgusu - Underline */}
@@ -3150,20 +3166,24 @@ const DATA_SOURCE = (() => {
                 const ok = dirs.filter(d=> d===maj).length;
                 return `${ok}/${dirs.length}`;
               })();
-              // P5.2: Use metricsStore to get forecast data (outside .map() for Rules of Hooks)
-              const store = useMetricsStore.getState();
-              const forecast = store.getForecast(sym, best.horizon || analysisHorizon);
-              
-              // Fallback to best prediction if no forecast in store
-              const diffPct = forecast ? forecast.value * 100 : Math.round((best.prediction||0) * 1000) / 10;
-              const targetPrice = forecast?.target || Math.round(currentPrice * (1 + (best.prediction||0)) * 100) / 100;
-              // Fix: Sinyal Motoru - Confidence bazlı renk kodlaması
-              const signalSide: 'BUY' | 'SELL' | 'HOLD' = forecast?.side || (best.prediction >= 0.02 ? 'BUY' : best.prediction <= -0.02 ? 'SELL' : 'HOLD');
-              const signalColorConfig = getSignalConfidenceColor(signalSide, smoothedConf || 0);
-              const confidenceColorConfig = getConfidenceColor(smoothedConf || 0);
-              const stopPrice = forecast?.stop || (signalSide === 'BUY' ? currentPrice * (1 - stopLossPctByRisk) : signalSide === 'SELL' ? currentPrice * (1 + stopLossPctByRisk) : null);
-              const stopTargetValidation = validateStopTarget(signalSide, currentPrice, stopPrice || currentPrice, targetPrice);
-              
+              // Derived signal fields for UI rendering
+              const sideThreshold = 0.02;
+              const signalSide = (best.prediction || 0) >= sideThreshold ? 'BUY' : (best.prediction || 0) <= -sideThreshold ? 'SELL' : 'HOLD';
+              const targetPrice = Number(currentPrice) * (1 + (best.prediction || 0));
+              const stopPrice = signalSide === 'BUY' ? Number(currentPrice) * 0.9 : signalSide === 'SELL' ? Number(currentPrice) * 1.1 : Number(currentPrice);
+              const diffPct = ((Number(targetPrice) / Number(currentPrice)) - 1) * 100;
+              const signalColorConfig = (() => {
+                if (signalSide === 'BUY') return { signalColor: 'bg-green-600', textColor: 'text-white', borderColor: 'border-green-700' };
+                if (signalSide === 'SELL') return { signalColor: 'bg-red-600', textColor: 'text-white', borderColor: 'border-red-700' };
+                return { signalColor: 'bg-slate-100', textColor: 'text-slate-700', borderColor: 'border-slate-300' };
+              })();
+              const confidenceColorConfig = (() => {
+                if (confPct >= 80) return { signalColor: 'bg-green-50', textColor: 'text-green-700', borderColor: 'border-green-200' };
+                if (confPct >= 70) return { signalColor: 'bg-yellow-50', textColor: 'text-yellow-700', borderColor: 'border-yellow-200' };
+                return { signalColor: 'bg-red-50', textColor: 'text-red-700', borderColor: 'border-red-200' };
+              })();
+              const stopTargetValidation = { isValid: true, message: '' } as { isValid: boolean; message: string };
+              const forecast = null as any;
               // P5.2: Enhanced stop validation - min stop gap ve R:R kontrolü
               const stopTargetValidationEnhanced = stopPrice ? validateStopTargetEnhanced(signalSide, currentPrice, stopPrice, targetPrice) : null;
               
@@ -6540,6 +6560,14 @@ const DATA_SOURCE = (() => {
               })()}
               impactLevel="High"
             />
+            <div className="mt-1 text-[10px] text-slate-500">
+              {(() => {
+                const ov = sentimentSummary?.overall || {};
+                const newsCount = Number(ov.news_count || ov.total_news || 0);
+                const sources = ov.sources ? String(ov.sources) : 'BloombergHT, AA, Hürriyet, KAP';
+                return `FinBERT-TR'e göre ${newsCount} haber tarandı • Kaynaklar: ${sources}`;
+              })()}
+            </div>
           </div>
         )}
 

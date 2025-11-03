@@ -15,7 +15,7 @@ interface CorrelationHeatmapProps {
 
 export function CorrelationHeatmap({ 
   pairs = [],
-  threshold = 0.8
+  threshold = 0.7
 }: CorrelationHeatmapProps) {
   const [localThreshold, setLocalThreshold] = useState<number>(threshold);
   // Generate demo pairs if not provided - Minimum 3×3 matrix (ISCTR, GARAN, THYAO, EREGL, etc.)
