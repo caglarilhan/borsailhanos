@@ -106,7 +106,7 @@ export function CorrelationHeatmap({
                 backgroundColor: isPairTrade ? color.bg + '20' : color.bg + '10',
                 borderColor: color.bg
               }}
-              title={`${pair.symbol1} ↔ ${pair.symbol2}: 30g korelasyon ρ = ${pair.correlation.toFixed(2)} (${pair.correlation >= 0 ? '+' : ''}${(pair.correlation * 100).toFixed(0)}%) — normalize edilmiş: ρ ∈ [-1.00, +1.00]`}
+              title={`${pair.symbol1} ↔ ${pair.symbol2}: Pearson korelasyon katsayısı (son 30 işlem gününün ortalaması). ρ = ${pair.correlation.toFixed(2)} (${pair.correlation >= 0 ? '+' : ''}${(pair.correlation * 100).toFixed(0)}%) — normalize aralığı: ρ ∈ [-1.00, +1.00]`}
             >
               <div className="flex items-center justify-between mb-1">
                 <div className="text-xs font-semibold text-slate-900">
@@ -119,12 +119,8 @@ export function CorrelationHeatmap({
                 )}
               </div>
               <div className="flex items-center justify-between">
-                <div 
-                  className="text-sm font-bold"
-                  style={{ color: color.bg }}
-                  title={`Korelasyon değeri (ρ): ${pair.correlation.toFixed(2)} (normalize edilmiş: ρ ∈ [-1.00, +1.00])`}
-                >
-                  ρ {pair.correlation.toFixed(2)}
+                <div className="text-sm font-bold" style={{ color: color.bg }} title={`Negatif/pozitif korelasyon gücü (ρ)`}>
+                  {(pair.correlation * 100).toFixed(0)}% {pair.correlation < 0 ? '(Negatif)' : '(Pozitif)'}
                 </div>
                 <div className="text-[10px] text-slate-600">{label}</div>
               </div>
