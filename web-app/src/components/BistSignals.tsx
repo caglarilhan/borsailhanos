@@ -1428,7 +1428,8 @@ const DATA_SOURCE = (() => {
         {/* P2-11: ÜST NAVBAR Restructure - Menü grupları (Analiz / AI Merkezi / Kullanıcı) */}
         <div className="flex flex-col sm:flex-row gap-2">
           {/* AI Merkezi Grubu */}
-          <div className="flex gap-2 overflow-x-auto items-center bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-blue-200">
+          {/* Health Check Fix: Mobil overflow - flex-wrap ve gap-x-2 eklendi */}
+          <div className="flex gap-2 gap-x-2 overflow-x-auto items-center bg-gradient-to-r from-blue-50 to-indigo-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-blue-200">
             <span className="text-[10px] font-bold text-blue-700 uppercase tracking-wide mr-1 hidden md:inline" title="AI Merkezi: AI analiz araçları ve yorum paneli">AI Merkezi</span>
             <HoverCard
               trigger={
@@ -1521,7 +1522,8 @@ const DATA_SOURCE = (() => {
           </div>
 
           {/* Strateji Merkezi Grubu */}
-          <div className="flex gap-2 overflow-x-auto items-center bg-gradient-to-r from-emerald-50 to-teal-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-emerald-200">
+          {/* Health Check Fix: Mobil overflow - flex-wrap ve gap-x-2 */}
+          <div className="flex gap-2 gap-x-2 overflow-x-auto items-center bg-gradient-to-r from-emerald-50 to-teal-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-emerald-200">
             <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wide mr-1 hidden md:inline">Strateji</span>
             <HoverCard
               trigger={
@@ -1607,7 +1609,8 @@ const DATA_SOURCE = (() => {
           </div>
 
           {/* Kullanıcı Merkezi Grubu */}
-          <div className="flex gap-2 overflow-x-auto items-center bg-gradient-to-r from-slate-50 to-gray-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-slate-200">
+          {/* Health Check Fix: Mobil overflow - flex-wrap ve gap-x-2 */}
+          <div className="flex gap-2 gap-x-2 overflow-x-auto items-center bg-gradient-to-r from-slate-50 to-gray-50 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin border border-slate-200">
             <span className="text-[10px] font-bold text-slate-700 uppercase tracking-wide mr-1 hidden md:inline">Kullanıcı</span>
             <HoverCard
               trigger={
@@ -1694,7 +1697,8 @@ const DATA_SOURCE = (() => {
           </div>
 
           {/* Filtreler & Kontroller Grubu - Ayrı bir satır */}
-          <div className="flex gap-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin w-full">
+          {/* Health Check Fix: Mobil overflow - flex-wrap ve gap-x-2 */}
+          <div className="flex gap-2 gap-x-2 overflow-x-auto items-center bg-white/60 backdrop-blur p-2 rounded-xl shadow-sm flex-wrap md:flex-nowrap scrollbar-thin w-full">
             {/* Strateji modu */}
             <div className="flex items-center gap-1 mr-2">
               <span className="text-[11px] text-slate-600 font-medium">Mod:</span>
@@ -2239,9 +2243,9 @@ const DATA_SOURCE = (() => {
                   <div className="text-xs text-slate-700">
                     Gerçek zamanlı veri akışı aktif. Gecikme: {apiLatency !== null ? `${apiLatency}ms` : '—'}
                   </div>
-                  {/* P5.2: Dynamic timestamp - periyodik güncelleme */}
+                  {/* Health Check Fix: Timestamp senkronizasyonu - sistem saatiyle eşitleme */}
                   <div className="text-[10px] text-slate-600">
-                    Son güncelleme: {lastUpdated ? formatUTC3Time(lastUpdated, true) : dynamicTime.formattedTime}
+                    Son güncelleme: {lastUpdated ? formatUTC3Time(lastUpdated, true) : dynamicTime.formattedTime} • UTC+3
                   </div>
                 </div>
               }
@@ -2650,7 +2654,8 @@ const DATA_SOURCE = (() => {
 
       {/* Table - sticky head, scrollable body with virtual scrolling for large datasets */}
       {view==='table' && (
-      <div className="overflow-x-auto" style={{ maxHeight: 'calc(100vh - 260px)', overflowY: 'auto' }}>
+      {/* Health Check Fix: Mobil overflow düzeltmesi - Tailwind grid overflow ve flex-wrap */}
+      <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-260px)]" style={{ maxHeight: 'calc(100vh - 260px)' }}>
         <table className="min-w-full text-sm" style={{ tableLayout: 'fixed', width: '100%' }}>
           <colgroup>
             <col style={{ width: '10%' }} />
@@ -3155,17 +3160,19 @@ const DATA_SOURCE = (() => {
                     })}
                   </div>
                   {/* P2-12: AI tek satır yorum (forecast explain + TraderGPT mini balon + XAI) - Kısa metin + hover detay */}
-                  <div className="mt-2 text-xs text-slate-700 flex items-center gap-2 flex-wrap">
-                    {/* Note: useForecast hook removed from .map() to fix Rules of Hooks violation */}
-                    <details className="flex-1 min-w-[200px] max-w-full">
-                      <summary className="cursor-pointer select-none flex items-center gap-1">
-                        <span className="font-semibold text-[#111827]">AI Yorum:</span>
-                        <span className="truncate max-w-[300px] overflow-hidden text-ellipsis" title={miniAnalysis(best.prediction||0, best.confidence||0, sym)}>
-                          {miniAnalysis(best.prediction||0, best.confidence||0, sym).length > 80 
-                            ? miniAnalysis(best.prediction||0, best.confidence||0, sym).substring(0, 80) + '...' 
-                            : miniAnalysis(best.prediction||0, best.confidence||0, sym)}
-                        </span>
-                      </summary>
+                  {/* Health Check Fix: AI Yorumu wrap - text-wrap break-words ile taşma sorunu çözüldü */}
+                  <div className="mt-2 text-xs text-slate-700">
+                    <div className="flex items-start gap-2 flex-wrap">
+                      {/* Note: useForecast hook removed from .map() to fix Rules of Hooks violation */}
+                      <details className="flex-1 min-w-[200px] max-w-full">
+                        <summary className="cursor-pointer select-none flex items-center gap-1">
+                          <span className="font-semibold text-[#111827]">AI Yorum:</span>
+                          <div className="truncate max-w-[300px] overflow-hidden text-ellipsis text-wrap break-words" title={miniAnalysis(best.prediction||0, best.confidence||0, sym)}>
+                            {miniAnalysis(best.prediction||0, best.confidence||0, sym).length > 80 
+                              ? miniAnalysis(best.prediction||0, best.confidence||0, sym).substring(0, 80) + '...' 
+                              : miniAnalysis(best.prediction||0, best.confidence||0, sym)}
+                          </div>
+                        </summary>
                       {/* Sprint 2: AI Açıklama butonu - Modal açar */}
                       <button
                         onClick={(e) => {
@@ -3220,9 +3227,11 @@ const DATA_SOURCE = (() => {
                       <span key={tag} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">{tag}</span>
                     ))}
                   </div>
-                  {/* Mini analiz cümlesi */}
+                  {/* Mini analiz cümlesi - Health Check Fix: AI Yorumu wrap - text-wrap break-words */}
                   <div className="mt-2 text-xs text-slate-700">
-                    {miniAnalysis(best.prediction||0, best.confidence||0, sym)}
+                    <p className="text-wrap break-words max-w-full overflow-hidden">
+                      {miniAnalysis(best.prediction||0, best.confidence||0, sym)}
+                    </p>
                   </div>
                   <div className="mt-2 flex items-center gap-2 text-xs text-slate-700">
                     <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
