@@ -20,12 +20,25 @@ export function middleware(request: NextRequest) {
     }
   }
 
+  // P0: Auth guard for feature & settings routes
+  if (pathname.startsWith('/feature') || pathname.startsWith('/settings')) {
+    const session = request.cookies.get('session_id')?.value;
+    if (!session) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      url.searchParams.set('next', pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/feature/:path*',
+    '/settings',
   ],
 };
 

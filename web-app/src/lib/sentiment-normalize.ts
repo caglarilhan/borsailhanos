@@ -1,4 +1,45 @@
 /**
+ * Sentiment normalization utilities
+ * Ensures pos+neg+neu sums to 100 and clamps to [0,100]
+ */
+
+export interface RawSentiment {
+  positive?: number | null; // 0..100 or 0..1
+  negative?: number | null;
+  neutral?: number | null;
+}
+
+export interface NormalizedSentiment {
+  positive: number; // 0..100
+  negative: number; // 0..100
+  neutral: number;  // 0..100
+  isValid: boolean; // false if all missing
+}
+
+export function normalizeSentimentPercent(input: RawSentiment): NormalizedSentiment {
+  const toPct = (v: number | null | undefined) => {
+    if (v == null || isNaN(v as any)) return 0;
+    // if given as 0..1 convert to 0..100
+    return v <= 1 ? v * 100 : v;
+  };
+
+  let p = Math.max(0, Math.min(100, toPct(input.positive)));
+  let n = Math.max(0, Math.min(100, toPct(input.negative)));
+  let u = Math.max(0, Math.min(100, toPct(input.neutral)));
+
+  const sum = p + n + u;
+  if (sum === 0) return { positive: 0, negative: 0, neutral: 0, isValid: false };
+
+  // Normalize to 100
+  const k = 100 / sum;
+  p = Math.round(p * k);
+  n = Math.round(n * k);
+  u = Math.max(0, 100 - p - n); // ensure sum exactly 100
+
+  return { positive: p, negative: n, neutral: u, isValid: true };
+}
+
+/**
  * P0-6: FinBERT Çıktısı Normalizasyonu
  * Sentiment toplamını 100%'e normalize etme
  */

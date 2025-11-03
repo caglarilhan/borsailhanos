@@ -34,7 +34,7 @@ export function LegalDisclaimer() {
   if (!isVisible) return null;
 
   return (
-    <div className="bg-yellow-50 border-b-2 border-yellow-400 px-4 py-2">
+    <div className="bg-yellow-50 border-b-2 border-yellow-400 px-4 py-2 fixed top-0 left-0 right-0 z-50">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         <div className="flex items-center gap-2 text-sm text-yellow-800">
           <span className="font-bold">⚠️ Yatırım Tavsiyesi Değildir</span>

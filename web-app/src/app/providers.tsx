@@ -4,6 +4,7 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ThemeProvider } from 'next-themes';
+import { AuthProvider } from '@/components/auth/AuthProvider';
 
 // P2-1: API latency - Optimize TanStack Query cache (staleTime + gcTime)
 const queryClient = new QueryClient({
@@ -31,7 +32,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         storageKey="bistai-theme"
         disableTransitionOnChange={false}
       >
-        {children}
+        <AuthProvider>
+          {children}
+        </AuthProvider>
         <ReactQueryDevtools initialOpen={false} />
       </ThemeProvider>
     </QueryClientProvider>

@@ -38,6 +38,8 @@ import { MTFHeatmap } from '@/components/AI/MTFHeatmap';
 import { CorrelationHeatmap } from '@/components/AI/CorrelationHeatmap';
 import { mapRSIToState, getRSIStateLabel, getRSIStateColor } from '@/lib/rsi';
 import { normalizeSentiment } from '@/lib/format';
+import { normalizeSentimentPercent } from '@/lib/sentiment-normalize';
+import { toCanonicalSymbol } from '@/lib/symbol-canonical';
 import { isAdmin } from '@/lib/featureFlags';
 import { formatPercentagePoints, formatUTC3Time, formatUTC3DateTime, formatCurrencyTRY, formatPercent, formatNumber as formatNumberUtil } from '@/lib/formatters';
 import { formatRelativeTimeWithUTC3, getLastUpdateTimestamp } from '@/lib/timestamp-utils';

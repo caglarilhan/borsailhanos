@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/components/auth/AuthProvider';
 
 interface AlertSettings {
   minConfidence: number;
@@ -11,12 +12,20 @@ interface AlertSettings {
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [settings, setSettings] = useState<AlertSettings>({
     minConfidence: 70,
     minPriceChange: 5,
     enabled: true,
   });
   const [saved, setSaved] = useState(false);
+
+  // Guard: if not authenticated, redirect to login
+  useEffect(() => {
+    if (isAuthenticated === false) {
+      router.replace('/login?next=/settings');
+    }
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     // Load from localStorage
