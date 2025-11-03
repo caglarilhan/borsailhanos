@@ -1,7 +1,4 @@
-/**
- * Minimal i18n helper (tr-TR)
- */
-
+/** Minimal i18n helper (tr-TR) */
 const tr: Record<string, string> = {
   'ai.dailySummary': 'AI Günlük Özeti+',
   'risk.score': 'Risk Skoru',
@@ -14,9 +11,6 @@ const tr: Record<string, string> = {
   'sell': 'SAT',
   'hold': 'TUT',
 };
-
-export function t(key: string, fallback?: string): string {
-  return tr[key] ?? fallback ?? key;
-}
+export function t(key: string, fallback?: string): string { return tr[key] ?? fallback ?? key; }
 
 
