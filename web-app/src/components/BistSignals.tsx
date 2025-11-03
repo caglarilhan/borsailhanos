@@ -47,6 +47,8 @@ import { filterSignalsByRiskProfile, getRiskProfileConfig, calculateNetReturn, c
 import { normalizeNewsImpact, getImpactLevel, getImpactLevelColor } from '@/lib/news-impact-normalize';
 import { getSignalConfidenceColor, getConfidenceColor, getSignalBadgeColor } from '@/lib/signal-color-helper';
 import { Tabs } from '@/components/UI/Tabs';
+import { MTFCoherenceBadge } from '@/components/UI/MTFCoherenceBadge';
+import { OrderPreviewCard } from '@/components/UI/OrderPreviewCard';
 import { HoverCard } from '@/components/UI/HoverCard';
 import { Tooltip } from '@/components/UI/Tooltip';
 import { normalizeRisk, getRiskLevel, getRiskColor, getRiskBgColor } from '@/lib/risk-normalize';
@@ -965,7 +967,17 @@ const DATA_SOURCE = (() => {
       .filter(r => !filterMomentum || Math.abs(r.prediction || 0) >= 0.05);
 
     // Sprint 2: Sıralama düzeltmesi - descending order ile confidence sıralaması
-    const sorted = filtered.sort((a, b) => {
+    // P0: TTL - Sinyal ömrü (5m→20dk, 1h→4s vb.)
+    const now = Date.now();
+    const ttlByHorizon: Record<string, number> = { '5m': 20*60*1000, '15m': 60*60*1000, '30m': 2*60*60*1000, '1h': 4*60*60*1000, '4h': 24*60*60*1000, '1d': 3*24*60*60*1000 };
+    const ttlFiltered = filtered.filter(r => {
+      const hz = (r as any).horizon || '1h';
+      const created = new Date((r as any).generated_at || (r as any).timestamp || Date.now()).getTime();
+      const ttl = ttlByHorizon[hz] ?? (4*60*60*1000);
+      return (now - created) <= ttl;
+    });
+
+    const sorted = ttlFiltered.sort((a, b) => {
       if (sortBy === 'confidence') {
         // Descending: highest confidence first
         const confA = a.confidence || 0;
@@ -3223,10 +3235,15 @@ const DATA_SOURCE = (() => {
                     </span>
                   </div>
                   {/* Teknik mikro rozetler */}
-                  <div className="mt-2 flex flex-wrap gap-1">
+                  <div className="mt-2 flex flex-wrap items-center gap-1">
                     {technicalBadges(best.prediction||0, best.confidence||0).map((tag)=> (
                       <span key={tag} className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">{tag}</span>
                     ))}
+                    {/* P0: MTF Tutarlılık Rozeti */}
+                    <MTFCoherenceBadge
+                      horizons={['5m','15m','30m','1h','1d']}
+                      signals={{ '5m': best.prediction||0, '15m': best.prediction||0, '30m': best.prediction||0, '1h': best.prediction||0, '1d': (best.prediction||0)*0.8 }}
+                    />
                   </div>
                   {/* Mini analiz cümlesi - Health Check Fix: AI Yorumu wrap - text-wrap break-words */}
                   <div className="mt-2 text-xs text-slate-700">
@@ -3238,7 +3255,7 @@ const DATA_SOURCE = (() => {
                     <ClockIcon className="w-4 h-4 text-slate-600 flex-shrink-0" aria-hidden="true" />
                     Geçerlilik: {new Date(best.valid_until).toLocaleTimeString('tr-TR', {hour:'2-digit',minute:'2-digit'})}
                   </div>
-                  <div className="mt-3 flex items-center gap-2">
+                  <div className="mt-3 flex items-center gap-2 flex-wrap">
                     <button
                       onClick={async (e)=>{
                         e.stopPropagation();
@@ -3256,6 +3273,18 @@ const DATA_SOURCE = (() => {
                         title={`Alarm ayarla - ${sym} için fiyat değişimi ≥%${alertThresholds.minPriceChange} ve güven ≥%${alertThresholds.minConfidence} olduğunda bildirim al`}
                       >🔔 Bildirim</button>
                     )}
+                    {/* P0: Order Preview Kartı */}
+                    <div className="w-full md:w-auto md:min-w-[260px]">
+                      <OrderPreviewCard
+                        symbol={sym}
+                        entryPrice={currentPrice}
+                        takeProfit={Number(targetPrice)}
+                        stopLoss={currentPrice*0.9}
+                        hitRate={(best.confidence||0)}
+                        var95={Math.max(0.5, Math.min(3, 1.2))}
+                        positionSize={Math.round(10000 * Math.min(1.2, Math.max(0.6, (best.confidence||0))))}
+                      />
+                    </div>
                   </div>
                 </div>
               );

@@ -13,6 +13,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline';
 
 interface LoginFormState {
@@ -30,6 +31,7 @@ interface LoginFormState {
 }
 
 export function LoginForm() {
+  const router = useRouter();
   const [state, setState] = useState<LoginFormState>({
     username: '',
     password: '',
@@ -197,12 +199,10 @@ export function LoginForm() {
         return;
       }
 
-      // Success: redirect to dashboard
-      if (data.redirect) {
-        window.location.href = data.redirect;
-      } else {
-        window.location.href = '/';
-      }
+      // Success: redirect
+      const target = data.redirect || '/';
+      // Prefer client router to avoid full reload
+      router.push(target);
     } catch (error) {
       console.error('Login error:', error);
       setState(prev => ({

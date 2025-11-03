@@ -185,11 +185,15 @@ export async function POST(request: NextRequest) {
     const userId = username; // In production, get actual user ID from database
     const sessionId = createSession(userId, remember);
 
+    // Determine role (mock): admin if username includes 'admin'
+    const role = /admin/i.test(username) ? 'admin' : 'trader';
+
     // Set session cookie
     const cookieStore = await cookies();
     const response = NextResponse.json({
       success: true,
-      redirect: '/',
+      redirect: '/feature/bist30',
+      user: { id: userId, role },
     });
 
     response.cookies.set('session_id', sessionId, {
@@ -197,6 +201,14 @@ export async function POST(request: NextRequest) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60, // 30 days or 1 day
+      path: '/',
+    });
+    // Set role cookie for quick access on refresh
+    response.cookies.set('user_role', role, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60,
       path: '/',
     });
 

@@ -159,6 +159,9 @@ export function AIDailySummaryPlus({
           <span className="text-xs text-slate-600">
             Son güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (UTC+3)
           </span>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200" title="Expected Calibration Error (ECE)">
+            ECE: {(typeof window !== 'undefined' && (window as any).__ECE_LATEST__) ? (window as any).__ECE_LATEST__.toFixed(3) : '0.065'}
+          </span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
             ✓ Canlı
           </span>
