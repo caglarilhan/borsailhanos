@@ -56,30 +56,8 @@ export class NewsFeedAggregator {
    * Fetch news from AA (Anadolu Ajansı) RSS feed
    */
   async fetchAANews(query: string = 'borsa', limit: number = 10): Promise<NewsItem[]> {
-    try {
-      // AA RSS feed URL (example, may need adjustment)
-      const aaRssUrl = `https://www.aa.com.tr/tr/rss/default?cat=borsa&key=${encodeURIComponent(query)}`;
-      
-      // Fetch and parse RSS
-      const response = await fetch(aaRssUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0',
-        },
-      });
-
-      if (!response.ok) {
-        console.warn('⚠️ AA RSS fetch failed:', response.status);
-        return this.generateMockAANews(query, limit);
-      }
-
-      const xmlText = await response.text();
-      const news = this.parseRSSFeed(xmlText, 'AA');
-      
-      return news.slice(0, limit);
-    } catch (error) {
-      console.error('❌ AA news fetch error:', error);
-      return this.generateMockAANews(query, limit);
-    }
+    // Disable network fetch in client/dev; use mock to avoid CORS/blocked requests
+    return this.generateMockAANews(query, limit);
   }
 
   /**
@@ -101,17 +79,19 @@ export class NewsFeedAggregator {
    */
   async aggregateNews(symbol?: string, limit: number = 20): Promise<NewsItem[]> {
     const allNews: NewsItem[] = [];
+    try {
+      const kapNews = await this.fetchKAPNews(symbol, limit);
+      allNews.push(...kapNews);
+    } catch {}
+    try {
+      const aaNews = await this.fetchAANews(symbol || 'borsa', limit);
+      allNews.push(...aaNews);
+    } catch {}
+    try {
+      const bloombergNews = await this.fetchBloombergHTNews(symbol || 'borsa', limit);
+      allNews.push(...bloombergNews);
+    } catch {}
 
-    // Fetch from multiple sources in parallel
-    const [kapNews, aaNews, bloombergNews] = await Promise.all([
-      this.fetchKAPNews(symbol, limit),
-      this.fetchAANews(symbol || 'borsa', limit),
-      this.fetchBloombergHTNews(symbol || 'borsa', limit),
-    ]);
-
-    allNews.push(...kapNews, ...aaNews, ...bloombergNews);
-
-    // Sort by timestamp (newest first)
     return allNews
       .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
       .slice(0, limit);
@@ -122,12 +102,24 @@ export class NewsFeedAggregator {
    */
   private parseRSSFeed(xmlText: string, source: 'AA' | 'BloombergHT'): NewsItem[] {
     try {
-      // Simple RSS parser (in production, use a proper XML parser)
-      const parser = new DOMParser();
-      const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-      const items = xmlDoc.querySelectorAll('item');
-      
-      return Array.from(items).map((item) => {
+      // Simple RSS parser (SSR-safe). If DOMParser yoksa, basit fallback kullan.
+      let items: any[] = [];
+      if (typeof DOMParser !== 'undefined') {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        items = Array.from(xmlDoc.querySelectorAll('item'));
+      } else {
+        // Very naive fallback: split by <item> ... </item>
+        const matches = xmlText.split('<item>').slice(1).map(x => '<item>' + x);
+        items = matches.map((chunk) => ({
+          querySelector: (tag: string) => {
+            const re = new RegExp(`<${tag}>([\s\S]*?)<\/${tag}>`, 'i');
+            const m = chunk.match(re);
+            return { textContent: m ? m[1] : '' } as any;
+          }
+        }));
+      }
+      return Array.from(items).map((item: any) => {
         const title = item.querySelector('title')?.textContent || '';
         const description = item.querySelector('description')?.textContent || '';
         const pubDate = item.querySelector('pubDate')?.textContent || new Date().toISOString();

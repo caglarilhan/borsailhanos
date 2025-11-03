@@ -1572,7 +1572,7 @@ function DashboardV33Inner() {
 
         {/* ALL FEATURES BY CATEGORY */}
         <div style={{ marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>Tüm Özellikler</h2>
+          <h2 id="all-features" style={{ fontSize: '16px', fontWeight: 'bold', marginBottom: '12px', color: '#0f172a', letterSpacing: '-0.5px' }}>Tüm Özellikler</h2>
           
           {/* TAB MENÜSÜ */}
           <div role="tablist" style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>

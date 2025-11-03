@@ -6,11 +6,14 @@
 'use client';
 
 import React from 'react';
-import { useDynamicTimestamp } from '@/hooks/useDynamicTimestamp';
 import { formatUTC3DateTime } from '@/lib/formatters';
 
 export function Footer() {
-  const dynamicTime = useDynamicTimestamp(new Date(), 60000); // Update every minute
+  const [now, setNow] = React.useState<Date>(new Date());
+  React.useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 60000);
+    return () => clearInterval(id);
+  }, []);
 
   return (
     <footer className="mt-8 pt-4 pb-6 border-t border-slate-200 bg-slate-50">
@@ -24,7 +27,7 @@ export function Footer() {
             <div className="hidden sm:inline">•</div>
             {/* Sprint 7: Güvenlik - Güncelleme damgası */}
             <div>
-              <strong>Son güncelleme:</strong> {dynamicTime.formattedDateTime} • UTC+3
+              <strong>Son güncelleme:</strong> {formatUTC3DateTime(now)} • UTC+3
             </div>
             <div className="hidden sm:inline">•</div>
             <div>

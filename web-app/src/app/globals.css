@@ -29,7 +29,7 @@
 
 /* Global Reset */
 html {
-  color-scheme: dark;
+  color-scheme: light;
   font-size: 14px; /* 16px → 14px for compact view */
 }
 
@@ -295,6 +295,32 @@ textarea:focus-visible {
   outline: 2px solid #2563eb !important;
   outline-offset: 2px !important;
   box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2) !important;
+}
+
+/* --- Minimal UI helpers (non-breaking) --- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 10px;
+  border: 1px solid rgba(0,0,0,0.08);
+}
+.badge-muted {
+  background: #f1f5f9; /* slate-100 */
+  color: #475569;      /* slate-600 */
+  border-color: #e2e8f0;
+}
+.section-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb; /* gray-200 */
+  border-radius: 12px;
+  padding: 12px;
+}
+.subtle-time {
+  font-size: 10px;
+  color: #64748b; /* slate-500 */
 }
 
 /* Interactive elements focus */

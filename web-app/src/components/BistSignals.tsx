@@ -37,7 +37,7 @@ import { AIExplanationPanel } from '@/components/AI/AIExplanationPanel';
 import { LearningModePanel } from '@/components/AI/LearningModePanel';
 import { ModelVersionHistory } from '@/components/AI/ModelVersionHistory';
 import { SentimentTrend } from '@/components/AI/SentimentTrend';
-import { AIDailySummaryPlus } from '@/components/AI/AIDailySummaryPlus';
+const AIDailySummaryPlus = dynamic(() => import('@/components/AI/AIDailySummaryPlus').then(m=>m.AIDailySummaryPlus), { ssr: false });
 import { AIExplanationModal } from '@/components/AI/AIExplanationModal';
 import { MetaModelRadar } from '@/components/AI/MetaModelRadar';
 import { AIConfidenceBoard } from '@/components/AI/AIConfidenceBoard';
@@ -60,6 +60,8 @@ import { getSignalConfidenceColor, getConfidenceColor, getSignalBadgeColor } fro
 import { Tabs } from '@/components/UI/Tabs';
 import { RiskBadge } from '@/components/UI/RiskBadge';
 import { TTLBadge } from '@/components/UI/TTLBadge';
+import { UpdateBadge } from '@/components/UI/UpdateBadge';
+import { ConfidenceBar } from '@/components/UI/ConfidenceBar';
 import { useAppSSOT } from '@/lib/app-ssot';
 import { fmtTRY, fmtPct1, fmtNum } from '@/lib/intl-format';
 import { MTFCoherenceBadge } from '@/components/UI/MTFCoherenceBadge';
@@ -87,6 +89,7 @@ import { useMarketRegimeStore } from '@/lib/market-regime-ssot';
 import { validateDrift, validateConfidence, validateSentimentPercentage, validateAllMetrics } from '@/lib/metrics-validator';
 import { useBacktestContextStore } from '@/lib/backtest-context-ssot';
 import { getDistinctTopN } from '@/lib/distinct-topn';
+import { sanitizePredictions, normalizeSentimentTriple, clampPP, fixSignedZero } from '@/lib/ui-sanity-guard';
 import { getModelConfig, getModelBadge } from '@/lib/model-config-ssot';
 import { validateStopTarget } from '@/lib/stop-target-validation';
 // P5.2: Metrics Schema, Store, Hook, Components
@@ -107,7 +110,6 @@ import { validateStopTargetEnhanced } from '@/lib/stop-validation-enhanced';
 // P5.2: Drift anomaly detector
 import { detectDriftAnomaly } from '@/lib/drift-anomaly-detector';
 // P5.2: Dynamic timestamp and AI confidence
-import { useDynamicTimestamp } from '@/hooks/useDynamicTimestamp';
 import { calculateAverageAIConfidence, getAIConfidenceLevel, calculateConfidenceTrend } from '@/lib/ai-confidence-calculator';
 import { getRSIBuyZone, validateRSISignalConsistency } from '@/lib/rsi-buy-zone';
 import { calculateVolatilityTrend, formatVolatilityChange } from '@/lib/volatility-trend';
@@ -213,6 +215,7 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [alertChannel, setAlertChannel] = useState<'web'|'telegram'>('web');
   // Sprint 2: AI açıklama modal state
   const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [feedbackToast, setFeedbackToast] = useState<{ symbol: string; ts: number } | null>(null);
   const [driftDismissed, setDriftDismissed] = useState(false);
   // removed: dismissed drift local state (banner always visible when >5pp)
   const [aiModalSymbol, setAiModalSymbol] = useState<string | null>(null);
@@ -394,26 +397,30 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [sectorFilter, setSectorFilter] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   
-  // P5.2: Dynamic timestamp hook - periyodik güncelleme (her dakika)
-  const dynamicTime = useDynamicTimestamp(lastUpdated, 60000);
+  // P5.2: Dynamic timestamp (her dakika)
+  const [nowString, setNowString] = useState<string>('');
+  useEffect(() => {
+    const update = () => setNowString(new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+    update();
+    const id = setInterval(update, 60000);
+    return () => clearInterval(id);
+  }, []);
 
   // Sinyal tablosu boşluk (mount sonrası 1 cycle): data geldikçe hazır işaretle
   useEffect(() => {
     if ((rows?.length || 0) > 0) setTableReady(true);
   }, [rows?.length]);
   // v4.7: Dinamik veri kaynağı - WebSocket durumuna göre güncellenecek
-// P0-C7: Model Config SSOT - tek kaynaktan al
-// P5.2: Mock API badge sadece admin görsün
-const DATA_SOURCE = (() => {
-  if (typeof window === 'undefined') return '';
-  // Sadece admin veya dev modunda göster
-  if (!shouldShowDebugInfo()) {
-    return ''; // Canlı kullanıcı için gizle
-  }
-  const config = getModelConfig();
-  const badge = getModelBadge();
-  return badge.label;
-})();
+// P0-C7: Model Config SSOT - Hydration-safe data source label
+// SSR'da placeholder, mount sonrası doldurulur
+const [dataSourceLabel, setDataSourceLabel] = useState<string>('—');
+useEffect(() => {
+  try {
+    if (!shouldShowDebugInfo()) return;
+    const badge = getModelBadge();
+    if (badge?.label) setDataSourceLabel(badge.label);
+  } catch {}
+}, []);
   const [strategyMode, setStrategyMode] = useState<'scalper'|'swing'|'auto'>('auto');
   // P2-07: Backtest Tab - Tab state for Analysis Panel
   const [analysisTab, setAnalysisTab] = useState<'forecast' | 'factors' | 'performance'>('forecast');
@@ -679,14 +686,23 @@ const DATA_SOURCE = (() => {
     }
     
     if (arr.length > 0) {
-      setRows(arr.map((r: any) => ({
+      const mapped = arr.map((r: any) => ({
         symbol: r.symbol,
         prediction: r.prediction,
         confidence: r.confidence,
         horizon: r.horizon || '1d',
         valid_until: r.valid_until || new Date(Date.now() + 86400000).toISOString(),
         generated_at: r.generated_at || new Date().toISOString(),
-      })));
+      }));
+      const sanitized = sanitizePredictions(mapped).map((r:any)=> ({
+        symbol: r.symbol,
+        prediction: r.prediction,
+        confidence: r.confidence,
+        horizon: (r.horizon as any) || '1d',
+        valid_until: r.valid_until,
+        generated_at: r.generated_at,
+      }));
+      setRows(sanitized as any);
       setLastUpdated(new Date());
     } else if (!predQ.isLoading && !predQ.isFetching) {
       setRows(generateDemoRows());
@@ -1030,7 +1046,6 @@ const DATA_SOURCE = (() => {
     );
     return distinctList;
   }, [rows, sectorFilter, horizon]);
-
   // Tablo filtre-sırala listesi (virtualization için tek yerde hesapla)
   // P5.2: Duplicate symbol kontrolü - tableList'te de unique semboller
   const tableList = useMemo(() => {
@@ -1258,6 +1273,18 @@ const DATA_SOURCE = (() => {
         </div>
         <AIInsightPanel />
       </div>
+      {/* Top Summary Bar + Hızlı gezinme */}
+      <div className="mb-3 flex items-center gap-2 text-xs">
+        <a href="/feature/bist30" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">BIST 30</a>
+        <a href="/feature/bist100" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">BIST 100</a>
+        <a href="/#all-features" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">Tüm Özellikler</a>
+        <span className="ml-auto flex items-center gap-2">
+          <span className="badge badge-muted">🧠 {fmtPct1.format(calibrationQ.data?.accuracy ?? 0.873)}</span>
+          <span className="badge badge-muted">⚠️ {Math.max(0, Math.min(5, (metaEnsembleQ.data?.volatilityIndex ?? 64) / 20)).toFixed(1)}</span>
+          <span className="badge badge-muted">🔔 {(rows?.length || 0)}</span>
+          <UpdateBadge time={lastUpdated ? formatUTC3Time(lastUpdated, true) : nowString} />
+        </span>
+      </div>
       {/* P5.2: Demo/Live Watermark */}
       <DemoWatermark />
       {/* Fix: Responsive grid - mobil uyumluluk */}
@@ -1323,7 +1350,7 @@ const DATA_SOURCE = (() => {
                 {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
                   <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
-                    <span>Güncellenme: {formatUTC3Time(lastUpdated)}</span>
+                    <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                     {metrics24s.modelDrift !== 0 && (
                       <span className={`text-[8px] ${metrics24s.modelDrift >= 0 ? 'text-green-300' : 'text-red-300'}`}>
                         {metrics24s.modelDrift >= 0 ? '↑' : '↓'} {formatPercentagePoints(Math.abs(metrics24s.modelDrift))}
@@ -1345,7 +1372,7 @@ const DATA_SOURCE = (() => {
                 {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
                   <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
-                    <span>Güncellenme: {formatUTC3Time(lastUpdated)}</span>
+                    <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                     {metrics24s.newSignals > 0 && (
                       <span className="text-[8px] text-green-300">
                         ↑ +{metrics24s.newSignals} yeni
@@ -1361,7 +1388,7 @@ const DATA_SOURCE = (() => {
                 const store = useMetricsStore.getState();
                 // İlk sembol için risk skoru al (veya genel risk)
                 const firstSymbol = rows[0]?.symbol;
-                const riskMetric = firstSymbol ? store.getRisk(firstSymbol) : null;
+                const riskMetric = firstSymbol && typeof (store as any)?.getRisk === 'function' ? (store as any).getRisk(firstSymbol) : null;
                 
                 // Fallback to accuracy-based risk if no metric in store
                 const accuracy = calibrationQ.data?.accuracy || 0.873;
@@ -1401,7 +1428,7 @@ const DATA_SOURCE = (() => {
                       />
                     </div>
                     <div className={`text-2xl font-bold ${riskColor.replace('text-', 'text-').replace('-600', '-100')}`}>{riskNormalized.toFixed(1)}</div>
-                    <div className="text-[10px] text-white/70 mt-1">{riskLevel} risk • AI Güven: {(accuracy * 100).toFixed(1)}%</div>
+                    <div className="text-[10px] text-white/70 mt-1">{riskLevel} risk</div>
                     {/* 24s drift ikonu */}
                     {Math.abs(riskChange24s) > 0.1 && (
                       <div className={`text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block ${riskChange24s >= 0 ? 'bg-green-500/30 text-green-100' : 'bg-red-500/30 text-red-100'}`}>
@@ -1411,7 +1438,7 @@ const DATA_SOURCE = (() => {
                     {/* Son Güncelleme Timestamp + Trend Oku */}
                     {lastUpdated && (
                       <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
-                        <span>Güncellenme: {formatUTC3Time(lastUpdated)}</span>
+                        <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                         {metrics24s.modelDrift !== 0 && (
                           <span className={`text-[8px] ${metrics24s.modelDrift >= 0 ? 'text-green-300' : 'text-red-300'}`}>
                             {metrics24s.modelDrift >= 0 ? '↑' : '↓'} {formatPercentagePoints(Math.abs(metrics24s.modelDrift))}
@@ -1451,7 +1478,7 @@ const DATA_SOURCE = (() => {
                     {/* Son Güncelleme Timestamp + Trend Oku */}
                     {lastUpdated && (
                       <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
-                        <span>Güncellenme: {formatUTC3Time(lastUpdated)}</span>
+                        <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                         {profitPct >= 0 ? (
                           <span className="text-[8px] text-green-300">↑ {profitPct.toFixed(1)}%</span>
                         ) : (
@@ -1470,7 +1497,7 @@ const DATA_SOURCE = (() => {
                 {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
                   <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
-                    <span>Güncellenme: {formatUTC3Time(lastUpdated)}</span>
+                    <span className="hidden md:inline">Güncellenme: {formatUTC3Time(lastUpdated)}</span>
                     <span className="text-[8px] text-purple-300">→ {rows.length} sinyal</span>
                   </div>
                 )}
@@ -2011,7 +2038,7 @@ const DATA_SOURCE = (() => {
             <input id="alertConf" name="alertConf" type="number" value={alertThresholds.minConfidence || 70} min={50} max={99}
               onChange={(e)=> { const val = Math.max(50, Math.min(99, Number(e.target.value) || 70)); const updated = { ...alertThresholds, minConfidence: val }; setAlertThresholds(updated); setWithTTL('alertSettings', updated); }}
               className="w-12 px-2 py-1 border rounded text-black bg-white" />
-            <select id="alertChannel" name="alertChannel" value={alertChannel || 'web'} defaultValue="web" onChange={(e)=> setAlertChannel(e.target.value as any)} className="ml-2 px-2 py-1 border rounded text-black bg-white">
+            <select id="alertChannel" name="alertChannel" value={alertChannel || 'web'} onChange={(e)=> setAlertChannel(e.target.value as any)} className="ml-2 px-2 py-1 border rounded text-black bg-white">
               <option value="web">Web</option>
               <option value="telegram">Telegram</option>
             </select>
@@ -2130,8 +2157,7 @@ const DATA_SOURCE = (() => {
                     id="maxRows"
                     min={5}
                     max={30}
-                    value={maxRows || 30}
-                    defaultValue={30}
+                  value={maxRows || 30}
                     onChange={(e)=>setMaxRows(Math.max(5, Math.min(30, parseInt(e.target.value) || 15)))}
                     className="ml-2 px-2 py-1 text-xs border rounded w-16 text-gray-900 caret-blue-500 bg-white placeholder-gray-400 dark:text-gray-100 dark:bg-gray-900"
                     placeholder="15"
@@ -2366,7 +2392,7 @@ const DATA_SOURCE = (() => {
                   </div>
                   {/* Health Check Fix: Timestamp senkronizasyonu - sistem saatiyle eşitleme */}
                   <div className="text-[10px] text-slate-600">
-                    Son güncelleme: {lastUpdated ? formatUTC3Time(lastUpdated, true) : dynamicTime.formattedTime} • UTC+3
+                    <span className="badge badge-muted">Son güncelleme: {lastUpdated ? formatUTC3Time(lastUpdated, true) : nowString} • UTC+3</span>
                   </div>
                 </div>
               }
@@ -2397,7 +2423,7 @@ const DATA_SOURCE = (() => {
               side="bottom"
             />
             <span className="hidden sm:inline">•</span>
-            <span>Kaynak: {DATA_SOURCE}</span>
+            <span suppressHydrationWarning>Kaynak: {dataSourceLabel}</span>
           </>
         )}
         {apiLatency !== null && (
@@ -2656,7 +2682,7 @@ const DATA_SOURCE = (() => {
                     </div>
                     {/* Zaman Etiketi */}
                     <div className="text-[9px] text-slate-500 text-center mt-1 pt-1 border-t border-slate-200">
-                      Güncellenme: {formatUTC3DateTime(lastUpdated)}
+                      <span className="hidden md:inline">Güncellenme: {formatUTC3DateTime(lastUpdated)}</span>
                     </div>
                     {/* P0-01: FinBERT confidence ± tooltip */}
                     <div className="text-[10px] text-slate-500 mb-1 flex items-center justify-between">
@@ -2715,7 +2741,7 @@ const DATA_SOURCE = (() => {
                   })()}
                 </div>
                 <div className="text-[9px] text-slate-500 text-center mt-2 pt-2 border-t border-slate-200">
-                  Güncellenme: {formatUTC3DateTime(lastUpdated)}
+                  <span className="hidden md:inline">Güncellenme: {formatUTC3DateTime(lastUpdated)}</span>
                 </div>
               </div>
               <div className="mt-1">
@@ -2772,7 +2798,6 @@ const DATA_SOURCE = (() => {
           ]}
         />
       ))}
-
       {/* Table - sticky head, scrollable body with virtual scrolling for large datasets */}
       {view==='table' && (
         /* Health Check Fix: Mobil overflow düzeltmesi - Tailwind grid overflow ve flex-wrap */
@@ -3109,7 +3134,6 @@ const DATA_SOURCE = (() => {
         </table>
       </div>
       )}
-
       {/* Cards */}
       {view==='cards' && (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -3258,7 +3282,7 @@ const DATA_SOURCE = (() => {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-slate-600 font-medium">AI Hedef:</span>
                       <span title={`${best.horizon || analysisHorizon} tahmini değişim`} className={`text-base font-extrabold ${up?'text-green-700':'text-red-700'}`}>
-                        {formatCurrency(Number(targetPrice))} <span className="text-sm">({diffPct >= 0 ? '+' : ''}{formatNumber(diffPct, 1)}%)</span>
+                        {formatCurrency(Number(targetPrice))} <span className="text-sm">({fixSignedZero(diffPct) >= 0 ? '+' : ''}{formatNumber(fixSignedZero(diffPct), 1)}%)</span>
                       </span>
                       {/* P1-M1: Stop/Target Validation - ihlalde sarı uyarı */}
                       {/* P5.2: Timeframe/target senkronizasyonu - priceTargetConsistency kontrolü */}
@@ -3286,7 +3310,7 @@ const DATA_SOURCE = (() => {
                             <span>{upx?'Yükseliş':'Düşüş'} {pct}%</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span>Güven {confc}%</span>
+                            <div className="w-24"><ConfidenceBar value={confc} color={confc>=85?'emerald':confc>=70?'yellow':'red'} /></div>
                           </div>
                         </div>
                       );
@@ -3351,7 +3375,7 @@ const DATA_SOURCE = (() => {
                       })()}
                     </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${formatCurrency(targetPrice)} (${formatNumber(diffPct)}%), Stop loss: ${formatCurrency(currentPrice*0.9)}. Formül: Dinamik ağırlıklar (RSI, MACD, Sentiment, Volume)`}>
+                    <span className="px-2 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 whitespace-nowrap" title={`Hedef fiyat: ${formatCurrency(targetPrice)} (${formatNumber(fixSignedZero(diffPct))}%), Stop loss: ${formatCurrency(currentPrice*0.9)}. Formül: Dinamik ağırlıklar (RSI, MACD, Sentiment, Volume)`}>
                       🤖 Hedef {formatCurrency(Number(targetPrice))} • Stop {formatCurrency(currentPrice*0.9)}
                     </span>
                   </div>
@@ -3365,6 +3389,14 @@ const DATA_SOURCE = (() => {
                       horizons={['5m','15m','30m','1h','1d']}
                       signals={{ '5m': best.prediction||0, '15m': best.prediction||0, '30m': best.prediction||0, '1h': best.prediction||0, '1d': (best.prediction||0)*0.8 }}
                     />
+                    {(() => {
+                      const dir1h = (best.prediction||0) >= 0 ? 1 : -1;
+                      const dir1d = ((best.prediction||0)*0.8) >= 0 ? 1 : -1;
+                      const mixed = dir1h !== dir1d;
+                      return mixed ? (
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200" title="1H ve 1D farklı yönlerde → Karışık sinyal">Karışık</span>
+                      ) : null;
+                    })()}
                   </div>
                   {/* Mini analiz cümlesi - Health Check Fix: AI Yorumu wrap - text-wrap break-words */}
                   <div className="mt-2 text-xs text-slate-700">
@@ -3414,10 +3446,15 @@ const DATA_SOURCE = (() => {
                       >🔔 Bildirim</button>
                     )}
                     <button
-                      onClick={async (e)=>{ e.stopPropagation(); try { useFeedbackStore.getState().addNegative(sym); } catch {} try { await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: sym, verdict: 'down' }) }); } catch {} }}
+                      onClick={async (e)=>{ e.stopPropagation(); try { useFeedbackStore.getState().addNegative(sym); } catch {} try { await fetch('/api/feedback', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ symbol: sym, verdict: 'down' }) }); setFeedbackToast({ symbol: sym, ts: Date.now() }); setTimeout(()=> setFeedbackToast(null), 2000); } catch {} }}
                       className="px-3 py-1.5 text-xs font-semibold rounded-lg border-2 bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100"
                       title="Yanlış sinyal bildir (model ağırlıkları kalibrasyonuna katkı)"
                     >🙁 Yanlış Sinyal</button>
+                    {feedbackToast && feedbackToast.symbol === sym && (
+                      <span className="px-2 py-1 text-[10px] rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        Kaydedildi ✓
+                      </span>
+                    )}
                     {/* P0: Order Preview Kartı */}
                     <div className="w-full md:w-auto md:min-w-[260px]">
                       <OrderPreviewCard
@@ -5255,7 +5292,6 @@ const DATA_SOURCE = (() => {
                             </div>
                           </div>
                         </div>
-
                         {/* Backtest Pro: PDF & CSV Export Butonları */}
                         <div className="mt-3 pt-3 border-t border-slate-200">
                           <div className="flex gap-2">
@@ -5995,526 +6031,6 @@ const DATA_SOURCE = (() => {
                 </div>
               );
             })()}
-          </>
-        )}
-        {!selectedSymbol && (
-          <>
-            {/* AI Analyst Card */}
-            <div className="mt-4">
-              <AIAnalystCard
-                version="MetaLSTM v5.1"
-                totalSignals={rows.length}
-                accuracy={calibrationQ.data?.accuracy || 0.873}
-                topSymbol={rows.length > 0 ? rows.sort((a, b) => (b.confidence || 0) - (a.confidence || 0))[0]?.symbol || 'THYAO' : 'THYAO'}
-              />
-            </div>
-
-            {/* P2-14: AI Learning Mode Grafik - 7/30 gün doğruluk eğrisi */}
-            <div className="mt-4 bg-white rounded-lg p-4 border shadow-sm">
-              <div className="text-sm font-semibold text-gray-900 mb-4">🧠 AI Learning Mode</div>
-              
-              {/* Doğruluk Grafiği */}
-              <div className="mb-4">
-                <div className="text-xs text-slate-600 mb-2 flex items-center justify-between">
-                  <span>Son 30 Gün Doğruluk Trendi</span>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setLearningModeDays(7)}
-                      className={`px-2 py-1 text-[10px] rounded ${learningModeDays === 7 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
-                    >
-                      7g
-                    </button>
-                    <button
-                      onClick={() => setLearningModeDays(30)}
-                      className={`px-2 py-1 text-[10px] rounded ${learningModeDays === 30 ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'}`}
-                    >
-                      30g
-                    </button>
-                  </div>
-                </div>
-                <div className="h-24 w-full">
-                  <Sparkline 
-                    series={(() => {
-                      const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-                      let r = seed;
-                      const seededRandom = () => {
-                        r = (r * 1103515245 + 12345) >>> 0;
-                        return (r / 0xFFFFFFFF);
-                      };
-                      const baseAccuracy = calibrationQ.data?.accuracy || 0.87;
-                      return Array.from({ length: learningModeDays }, (_, i) => {
-                        const trend = (i / learningModeDays) * 0.03; // +3% trend
-                        const noise = (seededRandom() - 0.5) * 0.05;
-                        return Math.max(0.75, Math.min(0.95, baseAccuracy + trend + noise)) * 100;
-                      });
-                    })()}
-                    width={600}
-                    height={96}
-                    color="#2563eb"
-                  />
-                </div>
-                <div className="text-[10px] text-slate-500 mt-1">
-                  Ortalama doğruluk: {((calibrationQ.data?.accuracy || 0.87) * 100).toFixed(1)}%
-                  {(() => {
-                    const accuracy = calibrationQ.data?.accuracy || 0.87;
-                    const trend = accuracy > 0.85 ? '↑ Artıyor' : accuracy < 0.80 ? '↓ Düşüyor' : '→ Stabil';
-                    return ` • Trend: ${trend}`;
-                  })()}
-                </div>
-              </div>
-              
-              {/* Model Drift & Retrain Sayacı */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <div className="bg-blue-50 rounded p-2 border border-blue-200">
-                  <div className="text-[10px] text-blue-700 mb-1">Model Drift</div>
-                  <div className="text-sm font-bold text-blue-900">
-                    {(() => {
-                      const drift = (calibrationQ.data?.accuracy || 0.87) - 0.85;
-                      return formatPercentagePoints(drift);
-                    })()}
-                  </div>
-                  <div className="text-[9px] text-blue-600 mt-1">
-                    {(() => {
-                      const drift = (calibrationQ.data?.accuracy || 0.87) - 0.85;
-                      if (Math.abs(drift) > 0.05) return '⚠️ Yüksek drift';
-                      if (Math.abs(drift) > 0.02) return '⚡ Orta drift';
-                      return '✓ Düşük drift';
-                    })()}
-                  </div>
-                </div>
-                <div className="bg-purple-50 rounded p-2 border border-purple-200">
-                  <div className="text-[10px] text-purple-700 mb-1">Retrain Durumu</div>
-                  <div className="text-sm font-bold text-purple-900">2 gün kaldı</div>
-                  <div className="text-[9px] text-purple-600">Son retrain: 28g önce</div>
-                </div>
-              </div>
-              
-              {/* Retrain Butonu & Feedback Loop */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <button
-                  onClick={async () => {
-                    try {
-                      // v4.7: Dinamik retrain - WebSocket bağlıysa Firestore'a log yazılır
-                      console.log('🔄 Model retrain başlatılıyor...');
-                      const drift = (calibrationQ.data?.accuracy || 0.87) - 0.85;
-                      
-                      if (wsConnected) {
-                        // Gerçek implementasyonda: await Api.retrainModel({ universe, drift_threshold: 0.02, include_feedback: true });
-                        addToast('Model retrain başlatıldı (Gerçek API). Tahmini süre: 2-3 dakika...', 'info', 5000);
-                      } else {
-                        // Mock: Retrain işlemi simülasyonu (test modu)
-                        addToast('Model retrain başlatıldı (Test modu). Tahmini süre: 2-3 dakika...', 'info', 5000);
-                      }
-                      
-                      setTimeout(() => {
-                        addToast('Model retrain tamamlandı! Yeni accuracy: ' + ((calibrationQ.data?.accuracy || 0.87) + 0.01).toFixed(3), 'success', 8000);
-                      }, 3000);
-                    } catch (e) {
-                      console.error('Retrain error:', e);
-                      addToast('Retrain hatası: ' + (e instanceof Error ? e.message : 'Bilinmeyen hata'), 'error', 5000);
-                    }
-                  }}
-                  className="px-3 py-2 text-xs font-semibold rounded-lg bg-purple-600 text-white hover:bg-purple-700 transition-all border-2 border-purple-700 hover:shadow-md flex items-center justify-center gap-2"
-                  title="Model'i yeniden eğit (drift düzeltme + feedback loop)"
-                >
-                  🔄 Model Retrain
-                </button>
-                <button
-                  onClick={async () => {
-                    try {
-                      // v4.7: Dinamik feedback logging - WebSocket bağlıysa Firestore'a yazılır
-                      console.log('📝 Feedback logging başlatılıyor...');
-                      const feedback = {
-                        symbol: selectedSymbol || 'THYAO',
-                        prediction: rows.find(r => r.symbol === (selectedSymbol || 'THYAO'))?.prediction || 0.05,
-                        actual: 0.03, // Mock - gerçekte kullanıcıdan gelecek
-                        timestamp: new Date().toISOString(),
-                        feedback_type: 'correct' // 'correct' | 'incorrect' | 'partial'
-                      };
-                      
-                      if (wsConnected) {
-                        // Gerçek implementasyonda: await Api.logFeedback(feedback);
-                        addToast('Feedback kaydedildi (Gerçek API). Model bu bilgiyi öğrenmeye devam edecek.', 'success', 5000);
-                      } else {
-                        // Mock feedback logging (test modu)
-                        addToast('Feedback kaydedildi (Test modu). Model bu bilgiyi öğrenmeye devam edecek.', 'success', 5000);
-                      }
-                    } catch (e) {
-                      console.error('Feedback error:', e);
-                      addToast('Feedback hatası: ' + (e instanceof Error ? e.message : 'Bilinmeyen hata'), 'error', 5000);
-                    }
-                  }}
-                  className="px-3 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-all border-2 border-blue-700 hover:shadow-md flex items-center justify-center gap-2"
-                  title="Sinyal doğruluğu hakkında feedback ver (AI öğrenmesi için)"
-                >
-                  💬 Feedback Ver
-                </button>
-              </div>
-              
-              {/* Sprint 3: Model Drift Graph (24h/7d) */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
-                {/* Sprint 3: Drift Graph - 7 Gün */}
-                {(() => {
-                  // 7 günlük drift serisi oluştur
-                  const driftData7d = Array.from({ length: 7 }, (_, i) => {
-                    const base = calibrationQ.data?.accuracy || 0.873;
-                    const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24)) + i;
-                    let r = seed;
-                    const seededRandom = () => {
-                      r = (r * 1103515245 + 12345) >>> 0;
-                      return (r / 0xFFFFFFFF);
-                    };
-                    const day = i / 7;
-                    const trend = day * 0.01; // +1% trend over 7 days
-                    const noise = (seededRandom() - 0.5) * 0.02;
-                    const accuracy = Math.max(0.80, Math.min(0.95, base + trend + noise));
-                    const confidence = accuracy;
-                    const drift = accuracy - base;
-                    return {
-                      date: new Date(Date.now() - (7 - i) * 86400000).toISOString(),
-                      confidence,
-                      accuracy,
-                      drift,
-                    };
-                  });
-                  
-                  return (
-                    <DriftGraph data={driftData7d} period="7d" />
-                  );
-                })()}
-                
-                {/* Sprint 3: Drift Graph - 24 Saat */}
-                {(() => {
-                  // 24 saatlik drift serisi oluştur
-                  const driftData24h = Array.from({ length: 24 }, (_, i) => {
-                    const base = calibrationQ.data?.accuracy || 0.873;
-                    const seed = Math.floor(Date.now() / (1000 * 60 * 60)) + i;
-                    let r = seed;
-                    const seededRandom = () => {
-                      r = (r * 1103515245 + 12345) >>> 0;
-                      return (r / 0xFFFFFFFF);
-                    };
-                    const hour = i / 24;
-                    const trend = hour * 0.002; // +0.2% trend over 24h
-                    const noise = (seededRandom() - 0.5) * 0.01;
-                    const accuracy = Math.max(0.80, Math.min(0.95, base + trend + noise));
-                    const confidence = accuracy;
-                    const drift = accuracy - base;
-                    return {
-                      date: new Date(Date.now() - (24 - i) * 3600000).toISOString(),
-                      confidence,
-                      accuracy,
-                      drift,
-                    };
-                  });
-                  
-                  return (
-                    <DriftGraph data={driftData24h} period="24h" />
-                  );
-                })()}
-                
-                {/* v4.7: Confidence Decay Graph */}
-                <div className="bg-white rounded p-2 border border-slate-200">
-                  <div className="text-[10px] text-slate-600 mb-2 font-semibold">📊 Confidence Decay Graph (30g)</div>
-                  <div className="h-24 w-full">
-                    {(() => {
-                      // v4.7: 30 günlük confidence decay trendi (mock - gerçek implementasyonda Firestore'dan gelecek)
-                      const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-                      let r = seed;
-                      const seededRandom = () => {
-                        r = (r * 1103515245 + 12345) >>> 0;
-                        return (r / 0xFFFFFFFF);
-                      };
-                      const confidenceSeries = Array.from({ length: 30 }, (_, i) => {
-                        const base = calibrationQ.data?.accuracy || 0.873;
-                        const day = i / 30;
-                        const decay = -day * 0.01; // -1% decay over 30 days (model aging)
-                        const noise = (seededRandom() - 0.5) * 0.02;
-                        return Math.max(0.75, Math.min(0.95, base + decay + noise));
-                      });
-                      
-                      return (
-                        <svg width="100%" height="96" viewBox="0 0 300 96" className="overflow-visible">
-                          <defs>
-                            <linearGradient id="confidenceDecayGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-                              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.3" />
-                              <stop offset="100%" stopColor="#2563eb" stopOpacity="0" />
-                            </linearGradient>
-                          </defs>
-                          {/* Grid lines */}
-                          {[0, 0.25, 0.5, 0.75, 1].map((percent) => {
-                            const value = Math.min(...confidenceSeries) + (Math.max(...confidenceSeries) - Math.min(...confidenceSeries)) * percent;
-                            const y = 96 - ((value - Math.min(...confidenceSeries)) / (Math.max(...confidenceSeries) - Math.min(...confidenceSeries) || 0.1)) * 96;
-                            return (
-                              <line key={percent} x1="0" y1={y} x2="300" y2={y} stroke="#e5e7eb" strokeWidth="1" strokeDasharray="2 2" opacity="0.5" />
-                            );
-                          })}
-                          {/* Confidence path */}
-                          {(() => {
-                            const minY = Math.min(...confidenceSeries);
-                            const maxY = Math.max(...confidenceSeries);
-                            const range = maxY - minY || 0.1;
-                            const scaleX = (i: number) => (i / (confidenceSeries.length - 1)) * 300;
-                            const scaleY = (v: number) => 96 - ((v - minY) / range) * 96;
-                            let path = '';
-                            confidenceSeries.forEach((v, i) => {
-                              const x = scaleX(i);
-                              const y = scaleY(v);
-                              path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
-                            });
-                            const fillPath = path + ` L 300 ${scaleY(confidenceSeries[confidenceSeries.length - 1])} L 300 96 L 0 96 Z`;
-                            return (
-                              <>
-                                <path d={fillPath} fill="url(#confidenceDecayGradient)" />
-                                <path d={path} fill="none" stroke="#2563eb" strokeWidth="2" strokeLinecap="round" />
-                                <circle cx={scaleX(confidenceSeries.length - 1)} cy={scaleY(confidenceSeries[confidenceSeries.length - 1])} r="3" fill="#2563eb" stroke="white" strokeWidth="1.5" />
-                              </>
-                            );
-                          })()}
-                          {/* Eksen etiketleri */}
-                          <text x={150} y={110} textAnchor="middle" fontSize="8" fill="#64748b">Gün</text>
-                          <text x={-20} y={48} textAnchor="middle" fontSize="8" fill="#64748b" transform="rotate(-90, -20, 48)">Confidence</text>
-                        </svg>
-                      );
-                    })()}
-                  </div>
-                  <div className="flex items-center justify-between mt-1 text-[9px] text-slate-600">
-                    <span>Decay Rate: -1.0%/30g</span>
-                    <span>Current: {((calibrationQ.data?.accuracy || 0.873) * 100).toFixed(1)}%</span>
-                  </div>
-                </div>
-              </div>
-              
-              {/* v4.7: AI Öğrenme Geçmişi Tablosu */}
-              <div className="bg-slate-50 rounded p-2 border border-slate-200 mb-2">
-                <div className="text-[10px] text-slate-600 mb-1 font-semibold">📚 AI Öğrenme Geçmişi (Model Versiyonları)</div>
-                <div className="max-h-32 overflow-y-auto">
-                  <table className="w-full text-[9px] border-collapse">
-                    <thead className="bg-slate-100 sticky top-0">
-                      <tr>
-                        <th className="border border-slate-300 px-1 py-0.5 text-left">Tarih</th>
-                        <th className="border border-slate-300 px-1 py-0.5 text-left">Model</th>
-                        <th className="border border-slate-300 px-1 py-0.5 text-right">Accuracy</th>
-                        <th className="border border-slate-300 px-1 py-0.5 text-right">Drift</th>
-                        <th className="border border-slate-300 px-1 py-0.5 text-center">Değişiklik</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {(() => {
-                        // v4.7: Mock öğrenme geçmişi (gerçek implementasyonda Firestore'dan gelecek)
-                        const learningHistory = [
-                          { date: '2024-01-20', model: 'v4.7', accuracy: 0.883, drift: +0.010, change: '↑' },
-                          { date: '2024-01-15', model: 'v4.6', accuracy: 0.873, drift: -0.005, change: '→' },
-                          { date: '2024-01-10', model: 'v4.5', accuracy: 0.878, drift: +0.008, change: '↑' },
-                          { date: '2024-01-05', model: 'v4.4', accuracy: 0.870, drift: -0.003, change: '→' },
-                          { date: '2024-01-01', model: 'v4.3', accuracy: 0.873, drift: +0.002, change: '→' }
-                        ];
-                        return learningHistory.map((entry, idx) => (
-                          <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                            <td className="border border-slate-300 px-1 py-0.5 text-slate-700">{entry.date}</td>
-                            <td className="border border-slate-300 px-1 py-0.5 font-semibold text-slate-900">{entry.model}</td>
-                            <td className="border border-slate-300 px-1 py-0.5 text-right font-semibold text-blue-700">{(entry.accuracy * 100).toFixed(1)}%</td>
-                            <td className={`border border-slate-300 px-1 py-0.5 text-right font-semibold ${entry.drift >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              {formatPercentagePoints(entry.drift)}
-                            </td>
-                            <td className="border border-slate-300 px-1 py-0.5 text-center">
-                              <span className={`font-bold ${entry.change === '↑' ? 'text-green-600' : entry.change === '↓' ? 'text-red-600' : 'text-slate-500'}`}>
-                                {entry.change}
-                              </span>
-                            </td>
-                          </tr>
-                        ));
-                      })()}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-              
-              {/* Drift Tracking Log */}
-              <div className="bg-slate-50 rounded p-2 border border-slate-200 mb-2">
-                <div className="text-[10px] text-slate-600 mb-1 font-semibold">Drift Tracking (Son 7 Gün)</div>
-                <div className="space-y-1">
-                  {(() => {
-                    // Mock drift log - Gerçek implementasyonda Firestore'dan gelecek
-                    const driftLog = [
-                      { date: '2024-01-20', drift: -0.003, status: 'low' },
-                      { date: '2024-01-19', drift: +0.001, status: 'low' },
-                      { date: '2024-01-18', drift: -0.005, status: 'medium' },
-                      { date: '2024-01-17', drift: +0.002, status: 'low' },
-                      { date: '2024-01-16', drift: -0.008, status: 'medium' },
-                      { date: '2024-01-15', drift: +0.004, status: 'low' },
-                      { date: '2024-01-14', drift: -0.006, status: 'medium' }
-                    ];
-                    return driftLog.slice(0, 5).map((entry, idx) => (
-                      <div key={idx} className="flex items-center justify-between text-[9px]">
-                        <span className="text-slate-700">{entry.date}</span>
-                        <span className={`font-semibold ${entry.status === 'low' ? 'text-green-600' : entry.status === 'medium' ? 'text-yellow-600' : 'text-red-600'}`}>
-                          {entry.drift >= 0 ? '+' : ''}{(entry.drift * 100).toFixed(2)}pp
-                        </span>
-                        <span className={`px-1 py-0.5 rounded text-[8px] ${
-                          entry.status === 'low' ? 'bg-green-100 text-green-700' :
-                          entry.status === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                          'bg-red-100 text-red-700'
-                        }`}>
-                          {entry.status === 'low' ? '✓' : entry.status === 'medium' ? '⚡' : '⚠️'}
-                        </span>
-                      </div>
-                    ));
-                  })()}
-                </div>
-                {/* v4.7: Dinamik veri kaynağı göstergesi */}
-                {wsConnected ? (
-                  <div className="text-[9px] text-green-600 mt-2 pt-2 border-t border-slate-200 text-center font-semibold">
-                    ✓ Canlı veri akışı aktif (Firestore)
-                  </div>
-                ) : (
-                  <div className="text-[9px] text-amber-600 mt-2 pt-2 border-t border-slate-200 text-center">
-                    ⚠️ Test modu - Gerçek Firestore logging için WebSocket bağlantısı gerekiyor
-                  </div>
-                )}
-              </div>
-            </div>
-            {/* AI Confidence Board (with 24h trend) */}
-            <div className="mt-4">
-              <AIConfidenceBoard
-                aiConfidence={calibrationQ.data?.accuracy || 0.87}
-                riskExposure={0.65}
-                signalStability={metaEnsembleQ.data?.meta_confidence ? metaEnsembleQ.data.meta_confidence / 100 : 0.82}
-                trend24h={(() => {
-                  // 24-hour confidence trend (hourly data)
-                  const baseConfidence = calibrationQ.data?.accuracy || 0.87;
-                  const seed = Math.floor(Date.now() / (1000 * 60 * 60));
-                  let r = seed;
-                  const seededRandom = () => {
-                    r = (r * 1103515245 + 12345) >>> 0;
-                    return (r / 0xFFFFFFFF);
-                  };
-                  return Array.from({ length: 24 }, (_, i) => {
-                    const hour = i / 24;
-                    const dailyCycle = Math.sin(hour * Math.PI * 2) * 0.03; // Daily confidence cycle
-                    const noise = (seededRandom() - 0.5) * 0.02;
-                    return Math.max(0.70, Math.min(0.95, baseConfidence + dailyCycle + noise));
-                  });
-                })()}
-                trend7d={(() => {
-                  const seed = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
-                  let r = seed;
-                  const seededRandom = () => {
-                    r = (r * 1103515245 + 12345) >>> 0;
-                    return (r / 0xFFFFFFFF);
-                  };
-                  return Array.from({ length: 7 }, (_, i) => {
-                    const base = 0.75;
-                    const trend = (i / 7) * 0.05;
-                    const noise = (seededRandom() - 0.5) * 0.1;
-                    return Math.max(0.65, Math.min(0.95, base + trend + noise));
-                  });
-                })()}
-              />
-            </div>
-            
-            {/* P5.2: AI Güven Göstergesi - Dinamik hesaplama (ortalama sinyal confidence) */}
-            {(() => {
-              // P5.2: Ortalama AI confidence hesapla
-              const avgConfidence = calculateAverageAIConfidence(
-                rows.map(r => ({ symbol: r.symbol, confidence: r.confidence || 0 }))
-              );
-              const confidenceLevel = getAIConfidenceLevel(avgConfidence);
-              const confidencePct = Math.round(avgConfidence * 100);
-              
-              return (
-                <div key="ai-confidence-indicator" className="mt-4 bg-white rounded-lg p-4 border shadow-sm">
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="text-sm font-semibold text-gray-900">🎯 AI Güven Göstergesi</div>
-                    <div className={`text-xs font-bold px-3 py-1.5 rounded ${confidencePct >= 85 ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : confidencePct >= 70 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-red-100 text-red-800 border border-red-300'}`}>
-                      {confidenceLevel.level} ({confidencePct}%)
-                    </div>
-                  </div>
-                  <div className="text-xs text-slate-600 mb-3">{confidenceLevel.description}</div>
-                  
-                  {/* Sembol Bazlı Liste */}
-                  <div className="text-xs font-semibold text-gray-700 mb-2">Sembol Bazlı Detaylar:</div>
-                  <div className="space-y-2">
-                    {(() => {
-                      // Top 4 sembol confidence gösterimi (sparkline ile)
-                      const topSymbols = removeDuplicateSymbols(rows, (r) => r.symbol).sort((a, b) => (b.confidence || 0) - (a.confidence || 0)).slice(0, 4);
-                      return topSymbols.map((r, idx) => {
-                        const confPct = Math.round((r.confidence || 0) * 100);
-                        const signal = (r.prediction || 0) >= 0.02 ? 'BUY' : (r.prediction || 0) <= -0.02 ? 'SELL' : 'HOLD';
-                        const signalColor = signal === 'BUY' ? 'bg-green-100 text-green-700 border-green-200' : signal === 'SELL' ? 'bg-red-100 text-red-700 border-red-200' : 'bg-yellow-100 text-yellow-700 border-yellow-200';
-                        // Mock 24s confidence trend (gerçek implementasyonda backend'den gelecek)
-                        const seed = r.symbol.charCodeAt(0);
-                        let rnd = seed;
-                        const seededRandom = () => {
-                          rnd = (rnd * 1103515245 + 12345) >>> 0;
-                          return (rnd / 0xFFFFFFFF);
-                        };
-                        const trend24h = Array.from({ length: 24 }, (_, i) => {
-                          const base = r.confidence || 0.75;
-                          const hour = i / 24;
-                          const cycle = Math.sin(hour * Math.PI * 2) * 0.03;
-                          const noise = (seededRandom() - 0.5) * 0.02;
-                          return Math.max(0.60, Math.min(0.95, base + cycle + noise));
-                        });
-                        const trendChange = ((trend24h[trend24h.length - 1] - trend24h[0]) * 100).toFixed(1);
-                        const trendDirection = Number(trendChange) >= 0 ? '↑' : '↓';
-                        return (
-                          <div key={r.symbol} className="flex items-center justify-between p-2 bg-slate-50 rounded border border-slate-200 hover:bg-slate-100 transition-colors">
-                            <div className="flex items-center gap-2 flex-1">
-                              <span className="font-bold text-slate-900 text-sm">{r.symbol}</span>
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${signalColor}`}>
-                                {signal}
-                              </span>
-                              <span className={`text-sm font-bold ${confPct >= 85 ? 'text-green-600' : confPct >= 70 ? 'text-yellow-600' : 'text-red-600'}`}>
-                                {confPct}%
-                              </span>
-                            </div>
-                            {/* Mini sparkline grafiği */}
-                            <div className="h-8 w-24 flex items-center gap-2">
-                              <svg width="96" height="32" viewBox="0 0 96 32" className="overflow-visible">
-                                <defs>
-                                  <linearGradient id={`symbolSparkline-${r.symbol}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stopColor={confPct >= 85 ? '#22c55e' : confPct >= 70 ? '#fbbf24' : '#ef4444'} stopOpacity="0.3" />
-                                    <stop offset="100%" stopColor={confPct >= 85 ? '#22c55e' : confPct >= 70 ? '#fbbf24' : '#ef4444'} stopOpacity="0" />
-                                  </linearGradient>
-                                </defs>
-                                {(() => {
-                                  const minY = Math.min(...trend24h);
-                                  const maxY = Math.max(...trend24h);
-                                  const range = maxY - minY || 0.1;
-                                  const scaleX = (i: number) => (i / (trend24h.length - 1)) * 96;
-                                  const scaleY = (v: number) => 32 - ((v - minY) / range) * 32;
-                                  let path = '';
-                                  trend24h.forEach((v, i) => {
-                                    const x = scaleX(i);
-                                    const y = scaleY(v);
-                                    path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
-                                  });
-                                  const fillPath = path + ` L 96 ${scaleY(trend24h[trend24h.length - 1])} L 96 32 L 0 32 Z`;
-                                  const color = confPct >= 85 ? '#22c55e' : confPct >= 70 ? '#fbbf24' : '#ef4444';
-                                  return (
-                                    <>
-                                      <path d={fillPath} fill={`url(#symbolSparkline-${r.symbol})`} />
-                                      <path d={path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-                                      <circle cx={scaleX(trend24h.length - 1)} cy={scaleY(trend24h[trend24h.length - 1])} r="1.5" fill={color} stroke="white" strokeWidth="0.5" />
-                                    </>
-                                  );
-                                })()}
-                              </svg>
-                              {/* 24s trend oku */}
-                              <span className={`text-[9px] font-semibold ${Number(trendChange) >= 0 ? 'text-green-600' : 'text-red-600'}`} title="24s confidence değişimi">
-                                {trendDirection} {Math.abs(Number(trendChange)).toFixed(1)}pp
-                              </span>
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </div>
-              );
-            })()}
-
         {/* Sentiment Impact Bar */}
         {!selectedSymbol && sentimentSummary && (
           <div className="mt-4">

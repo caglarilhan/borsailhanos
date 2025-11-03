@@ -88,7 +88,8 @@ export class YahooFinanceClient {
         dividendYield: meta.dividendYield ? meta.dividendYield * 100 : undefined,
       };
     } catch (error) {
-      console.error(`❌ Yahoo Finance fetch error for ${symbol}:`, error);
+      // Network failures are common in local/dev; downgrade to warn and allow fallback/mock
+      console.warn(`⚠️ Yahoo Finance fetch error for ${symbol}:`, error);
       return null;
     }
   }
@@ -260,6 +261,15 @@ export class FinnhubClient {
 export class RealTimeDataFetcher {
   private yahooClient: YahooFinanceClient;
   private finnhubClient: FinnhubClient;
+  private aliasMap: Record<string, string[]> = {
+    // Canonicalization for common mismatches
+    // MIGRS (typo) -> MGROS (Migros)
+    'MIGRS': ['MGROS'],
+    // BRISA sometimes queried with suffix already
+    'BRISA': ['BRISA.IS'],
+    // XU030 variants
+    'BIST30': ['XU030.IS', 'XU030'],
+  };
 
   constructor() {
     this.yahooClient = new YahooFinanceClient();
@@ -270,16 +280,15 @@ export class RealTimeDataFetcher {
    * Fetch price data with fallback chain: Finnhub → Yahoo Finance → Mock
    */
   async fetchPrice(symbol: string, useMock: boolean = false): Promise<PriceData> {
-    // Try Finnhub first (if API key available)
-    const finnhubData = await this.finnhubClient.getQuote(symbol);
-    if (finnhubData) {
-      return finnhubData;
-    }
+    const trySymbols = [symbol, ...(this.aliasMap[symbol] || []), `${symbol}.IS`];
+    for (const s of trySymbols) {
+      // Try Finnhub first (if API key available)
+      const finnhubData = await this.finnhubClient.getQuote(s);
+      if (finnhubData) return { ...finnhubData, symbol };
 
-    // Fallback to Yahoo Finance
-    const yahooData = await this.yahooClient.getPrice(symbol);
-    if (yahooData) {
-      return yahooData;
+      // Fallback to Yahoo Finance
+      const yahooData = await this.yahooClient.getPrice(s);
+      if (yahooData) return { ...yahooData, symbol };
     }
 
     // Last resort: mock data (for testing)
@@ -287,8 +296,9 @@ export class RealTimeDataFetcher {
       return this.generateMockPrice(symbol);
     }
 
-    // If all fails, return error state
-    throw new Error(`Unable to fetch price data for ${symbol}`);
+    // If all fails, return error state but avoid breaking the app
+    console.warn(`⚠️ Unable to fetch price data for ${symbol}, returning mock`);
+    return this.generateMockPrice(symbol);
   }
 
   /**

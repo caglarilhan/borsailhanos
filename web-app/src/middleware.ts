@@ -7,7 +7,7 @@ export function middleware(request: NextRequest) {
   // v4.6.1: Admin route guard - Enhanced security
   if (pathname.startsWith('/admin')) {
     // Gerçek implementasyonda: cookie veya JWT token'den role al
-    const userRole = request.cookies.get('userRole')?.value || request.headers.get('x-user-role') || 'user';
+    const userRole = request.cookies.get('user_role')?.value || request.headers.get('x-user-role') || 'user';
     
     // Mock: admin role check (gerçek implementasyonda backend auth service kullanılmalı)
     if (userRole !== 'admin' && userRole !== 'Admin') {
@@ -25,7 +25,7 @@ export function middleware(request: NextRequest) {
     const session = request.cookies.get('session_id')?.value;
     if (!session) {
       const url = request.nextUrl.clone();
-      url.pathname = '/login';
+      url.pathname = '/api/auth/guest';
       url.searchParams.set('next', pathname);
       return NextResponse.redirect(url);
     }

@@ -10,11 +10,6 @@ export function useDynamicTimestamp(initialTimestamp?: Date | null, updateInterv
   const [displayTime, setDisplayTime] = useState<string>('');
 
   useEffect(() => {
-    // Set initial time
-    if (initialTimestamp) {
-      setCurrentTime(initialTimestamp);
-    }
-
     // Update every minute (or specified interval)
     const interval = setInterval(() => {
       const now = new Date();
@@ -26,7 +21,7 @@ export function useDynamicTimestamp(initialTimestamp?: Date | null, updateInterv
     setDisplayTime(currentTime.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
     return () => clearInterval(interval);
-  }, [initialTimestamp, updateInterval]);
+  }, [updateInterval]);
 
   return {
     currentTime,

@@ -156,9 +156,18 @@ export function AIDailySummaryPlus({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-600">
-            Son güncelleme: {new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })} (UTC+3)
-          </span>
+          {(() => {
+            const [t, setT] = React.useState<string>('');
+            React.useEffect(() => {
+              const up = () => setT(new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+              up();
+              const id = setInterval(up, 60000);
+              return () => clearInterval(id);
+            }, []);
+            return (
+              <span className="subtle-time badge badge-muted">{t || '--:--'} • UTC+3</span>
+            );
+          })()}
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200" title="Expected Calibration Error (ECE)">
             ECE: {(typeof window !== 'undefined' && (window as any).__ECE_LATEST__) ? (window as any).__ECE_LATEST__.toFixed(3) : '0.065'}
           </span>

@@ -157,7 +157,7 @@ export function useWebSocket({
           );
           reconnectTimeout.current = setTimeout(connect, delay);
       } else {
-        console.error("❌ [WS] Max reconnect attempts reached");
+        console.warn("⚠️ [WS] Max reconnect attempts reached");
         updateState({
           reconnecting: false,
           error: "Bağlantı başarısız, sayfayı yenileyin.",
