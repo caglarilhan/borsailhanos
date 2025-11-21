@@ -19,6 +19,8 @@
     "@tanstack/react-virtual": "^3.13.12",
     "axios": "^1.12.2",
     "clsx": "^2.1.1",
+    "echarts": "^6.0.0",
+    "echarts-for-react": "^3.0.5",
     "framer-motion": "^12.23.24",
     "lucide-react": "^0.545.0",
     "next": "^16.0.0",
@@ -26,6 +28,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "recharts": "^3.2.1",
+    "sparkline": "^0.2.0",
     "tailwind-merge": "^3.3.1",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"

@@ -55,6 +55,19 @@ class RealtimeServer:
         self.app.get("/api/signals")(self.get_signals)
         self.app.get("/api/prices")(self.get_prices)
         
+        # Lifecycle events
+        @self.app.on_event("startup")
+        async def startup_event():
+            self.is_running = True
+            self.start_time = time.time()
+            asyncio.create_task(self.start_data_simulation())
+            logger.info("🚀 Realtime Server startup tasks scheduled")
+
+        @self.app.on_event("shutdown")
+        async def shutdown_event():
+            self.is_running = False
+            logger.info("🛑 Realtime Server shutdown complete")
+        
         logger.info("🚀 Realtime Server initialized")
 
     async def websocket_endpoint(self, websocket: WebSocket):
@@ -230,11 +243,10 @@ class RealtimeServer:
 
     def start(self):
         """Start the realtime server"""
-        self.is_running = True
-        self.start_time = time.time()
-        
-        # Start data simulation in background
-        asyncio.create_task(self.start_data_simulation())
+        # flag is managed by lifecycle hooks, still ensure defaults when standalone run
+        if not hasattr(self, "start_time"):
+            self.is_running = True
+            self.start_time = time.time()
         
         logger.info("🚀 Starting Realtime Server on port 8081")
         

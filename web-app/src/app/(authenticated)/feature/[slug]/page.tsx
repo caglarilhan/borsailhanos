@@ -1,5 +1,48 @@
 'use client';
 
+import { notFound } from 'next/navigation';
+import { Suspense } from 'react';
+import SignalBoardMini from '@/components/feature/SignalBoardMini';
+import { SentimentPanel } from '@/components/sentiment/SentimentPanel';
+import TrendModule from '@/components/feature/TrendModule';
+import CorrelationHeatmap from '@/components/feature/CorrelationHeatmap';
+import PortfolioMini from '@/components/feature/PortfolioMini';
+import PlaceholderCard from '@/components/shared/PlaceholderCard';
+
+const featureModules: Record<string, JSX.Element> = {
+  signals: <SignalBoardMini />,
+  sentiment: <SentimentPanel />,
+  trend: <TrendModule />,
+  correlation: <CorrelationHeatmap />,
+  portfolio: <PortfolioMini />,
+};
+
+export default function FeaturePage({ params }: { params: { slug: string } }) {
+  const slug = params.slug?.toLowerCase();
+  const module = featureModules[slug];
+
+  if (!module) {
+    return notFound();
+  }
+
+  return (
+    <div className="col-span-12 space-y-4">
+      <Suspense
+        fallback={
+          <PlaceholderCard
+            title="Modül yükleniyor"
+            description="AI modül verileri getiriliyor..."
+            badge={{ text: 'Loading', color: 'blue' }}
+          />
+        }
+      >
+        {module}
+      </Suspense>
+    </div>
+  );
+}
+'use client';
+
 import React, { useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import BistSignals from '@/components/BistSignals';
@@ -373,7 +416,8 @@ export default function FeaturePage() {
   }, [slug, activeTab, router]);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(to bottom, #ffffff, #f0f9ff, #e0f2fe)', padding: '24px' }}>
+    <div className="col-span-12">
+      <div style={{ minHeight: '100vh', background: 'linear-gradient(to bottom, #ffffff, #f0f9ff, #e0f2fe)', padding: '24px' }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Header with back button */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px', padding: '16px 0', borderBottom: '2px solid #e2e8f0' }}>
@@ -526,6 +570,7 @@ export default function FeaturePage() {
           </>
         )}
       </div>
+    </div>
     </div>
   );
 }

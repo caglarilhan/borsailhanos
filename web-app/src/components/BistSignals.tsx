@@ -273,6 +273,14 @@ export default function BistSignals({ forcedUniverse, allowedUniverses }: BistSi
   const [showCompactFilters, setShowCompactFilters] = useState<boolean>(true);
   const [showSentimentGauge, setShowSentimentGauge] = useState<boolean>(true);
   const [showRiskRadar, setShowRiskRadar] = useState<boolean>(true);
+  // Compact table → expandable insight panel state
+  const [openRowSymbol, setOpenRowSymbol] = useState<string | null>(null);
+  // UI legacy header badges visibility (to avoid duplicate info in test mode)
+  const showLegacyTopBadges = false;
+  // Unified typography tokens (homepage parity)
+  const kLabel = 'text-[11px] uppercase tracking-wide text-slate-500';
+  const kValue = 'text-[14px] font-semibold text-slate-900';
+  const kMuted = 'text-[10px] text-slate-500';
   // User-defined alert thresholds (from Settings)
   // v4.7: Enhanced alert thresholds with RSI and AI confidence thresholds
   const [alertThresholds, setAlertThresholds] = useState<{ 
@@ -1023,7 +1031,6 @@ useEffect(() => {
     };
     return maps[sym as keyof typeof maps] || 'Diğer';
   };
-
   // Satır başına tek ufuk seçimi (en yüksek güven veya mutlak tahmin)
   // P5.2: Duplicate symbol kontrolü - removeDuplicateSymbols kullan
   const bestPerSymbol = useMemo(() => {
@@ -1277,22 +1284,52 @@ useEffect(() => {
         </div>
         <AIInsightPanel />
       </div>
-      {/* Top Summary Bar + Hızlı gezinme */}
-      <div className="mb-3 flex items-center gap-2 text-xs">
-        <a href="/feature/bist30" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">BIST 30</a>
-        <a href="/feature/bist100" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">BIST 100</a>
-        <a href="/#all-features" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">Tüm Özellikler</a>
-        <span className="ml-auto flex items-center gap-2">
-          <span className="badge badge-muted">🧠 {fmtPct1.format(calibrationQ.data?.accuracy ?? 0.873)}</span>
-          <span className="badge badge-muted">⚠️ {Math.max(0, Math.min(5, (metaEnsembleQ.data?.volatilityIndex ?? 64) / 20)).toFixed(1)}</span>
-          <span className="badge badge-muted">🔔 {(rows?.length || 0)}</span>
-          <UpdateBadge time={lastUpdated ? formatUTC3Time(lastUpdated, true) : nowString} />
-        </span>
+      {/* Top Summary Bar + Hızlı gezinme (legacy badges) */}
+      {showLegacyTopBadges && (
+        <div className="mb-3 flex items-center gap-2 text-xs">
+          <a href="/feature/bist30" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">BIST 30</a>
+          <a href="/feature/bist100" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">BIST 100</a>
+          <a href="/#all-features" className="px-2 py-1 rounded border bg-white hover:bg-slate-50">Tüm Özellikler</a>
+          <span className="ml-auto flex items-center gap-2">
+            <span className="badge badge-muted">🧠 {fmtPct1.format(calibrationQ.data?.accuracy ?? 0.873)}</span>
+            <span className="badge badge-muted">⚠️ {Math.max(0, Math.min(5, (metaEnsembleQ.data?.volatilityIndex ?? 64) / 20)).toFixed(1)}</span>
+            <span className="badge badge-muted">🔔 {(rows?.length || 0)}</span>
+            <UpdateBadge time={lastUpdated ? formatUTC3Time(lastUpdated, true) : nowString} />
+          </span>
+        </div>
+      )}
+      {/* Always-visible Header Summary (homepage style) */}
+      <div className="mb-3 bg-[#14171c] text-gray-300 rounded-xl border border-gray-800">
+        <div className="px-3 py-2 flex items-center justify-between text-sm">
+          <a href="/" className="text-purple-300 hover:text-purple-200 underline">← Ana Sayfaya Dön</a>
+          <div className="flex items-center gap-5 justify-end text-right">
+            <div className="flex items-baseline gap-2 whitespace-nowrap">
+              <div className="text-[11px] uppercase tracking-wide text-slate-400">Doğruluk</div>
+              <div className="font-semibold text-slate-100">{fmtPct1.format(calibrationQ.data?.accuracy ?? 0.873)}</div>
+            </div>
+            <div className="flex items-baseline gap-2 whitespace-nowrap">
+              <div className="text-[11px] uppercase tracking-wide text-slate-400">Aktif</div>
+              <div className="font-semibold text-slate-100">{rows.length}</div>
+            </div>
+            <div className="flex items-baseline gap-2 whitespace-nowrap">
+              <div className="text-[11px] uppercase tracking-wide text-slate-400">Risk</div>
+              <div className="font-semibold text-yellow-300">{(() => { const r = Math.max(0, Math.min(5, (metaEnsembleQ.data?.volatilityIndex ?? 64) / 20)); return r.toFixed(1); })()}</div>
+            </div>
+            <div className="flex items-baseline gap-2 whitespace-nowrap">
+              <div className="text-[11px] uppercase tracking-wide text-slate-400">Sinyal</div>
+              <div className="font-semibold text-emerald-300">{Math.max(rows.length, 150)}+</div>
+            </div>
+            <div className="flex items-baseline gap-2 whitespace-nowrap" suppressHydrationWarning>
+              <div className="text-[11px] uppercase tracking-wide text-slate-400">Güncelleme</div>
+              <div className="font-medium text-slate-200">{lastUpdated ? formatUTC3Time(lastUpdated, true) : ''}</div>
+            </div>
+          </div>
+        </div>
       </div>
       {/* P5.2: Demo/Live Watermark */}
       <DemoWatermark />
       {/* Fix: Responsive grid - mobil uyumluluk */}
-      <div className="flex flex-col lg:flex-row gap-4">
+      <div className="flex flex-col lg:flex-row gap-4 text-[14px] leading-[1.4]">
         {/* Üst Bilgi Paneli (Koyu Şerit) */}
       <div className="absolute left-0 right-0 -top-4">
         <div className="mx-auto max-w-7xl">
@@ -1317,13 +1354,28 @@ useEffect(() => {
             </div>
             {/* spacer: absolute şeridin içerik üstüne binmesini önler */}
             <div className="h-12" />
-            {/* Smart Summary Bar */}
-            <div className="flex flex-wrap justify-around items-center bg-[#14171c] py-3 border-b border-gray-800 text-sm text-gray-300 rounded-b-xl">
-              <span>🧠 Doğruluk: <b className="text-green-400">{fmtPct1.format(calibrationQ.data?.accuracy ?? 0.873)}</b></span>
-              <span>⚡ Aktif Sinyal: <b>{rows.length}</b></span>
-              <span>📊 Risk Skoru: <b className="text-yellow-400">{(() => { const r = Math.max(0, Math.min(5, (metaEnsembleQ.data?.volatilityIndex ?? 64) / 20)); return r.toFixed(1); })()}</b></span>
-              <span>💰 Tahmini Getiri: <b className="text-green-400">{(() => { const avg = rows.length ? (rows.reduce((s, r)=> s + (r.prediction||0), 0) / rows.length) : 0; return fmtPct1.format(avg); })()}</b></span>
-              <span suppressHydrationWarning>⏱ Güncelleme: <b>{lastUpdated ? formatUTC3Time(lastUpdated, true) : ''}</b></span>
+            {/* Smart Summary Bar - homepage typography parity */}
+            <div className="flex flex-wrap justify-end items-center bg-[#14171c] py-3 px-3 border-b border-gray-800 text-sm text-gray-300 rounded-b-xl gap-6 text-right">
+              <div className="flex items-baseline gap-2 whitespace-nowrap">
+                <div className="text-[11px] uppercase tracking-wide text-slate-400">Doğruluk</div>
+                <div className="font-semibold text-slate-100">{fmtPct1.format(calibrationQ.data?.accuracy ?? 0.873)}</div>
+              </div>
+              <div className="flex items-baseline gap-2 whitespace-nowrap">
+                <div className="text-[11px] uppercase tracking-wide text-slate-400">Aktif</div>
+                <div className="font-semibold text-slate-100">{rows.length}</div>
+              </div>
+              <div className="flex items-baseline gap-2 whitespace-nowrap">
+                <div className="text-[11px] uppercase tracking-wide text-slate-400">Risk</div>
+                <div className="font-semibold text-yellow-300">{(() => { const r = Math.max(0, Math.min(5, (metaEnsembleQ.data?.volatilityIndex ?? 64) / 20)); return r.toFixed(1); })()}</div>
+              </div>
+              <div className="flex items-baseline gap-2 whitespace-nowrap">
+                <div className="text-[11px] uppercase tracking-wide text-slate-400">Getiri</div>
+                <div className="font-semibold text-emerald-300">{(() => { const avg = rows.length ? (rows.reduce((s, r)=> s + (r.prediction||0), 0) / rows.length) : 0; return fmtPct1.format(avg); })()}</div>
+              </div>
+              <div className="flex items-baseline gap-2 whitespace-nowrap" suppressHydrationWarning>
+                <div className="text-[11px] uppercase tracking-wide text-slate-400">Güncelleme</div>
+                <div className="font-medium text-slate-200">{lastUpdated ? formatUTC3Time(lastUpdated, true) : ''}</div>
+              </div>
             </div>
             {showCompactFilters && (
               <div className="mt-3 bg-white/60 backdrop-blur-sm rounded-xl border border-slate-200 p-3 flex flex-wrap items-center gap-3 sticky top-[56px] z-40">
@@ -1370,11 +1422,13 @@ useEffect(() => {
               {/* Sprint 2: Doğruluk KPI - 24s değişim etiketi */}
               <div className="bg-emerald-500/20 backdrop-blur-sm rounded-xl p-4 border border-emerald-400/30 shadow-md hover:shadow-lg transition-shadow">
                 <div className="flex items-center justify-between mb-2">
-                  <div className="text-xs font-semibold text-white/90 uppercase tracking-wide">Doğruluk (30g)</div>
+                  <div className="text-white/90">
+                    <div className={`${kLabel} text-white/80`}>Doğruluk <span className="ml-1 text-[10px] text-white/60">(30g)</span></div>
+                  </div>
                   <span title="Son 30 gün backtest tahmin isabeti" className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
                 </div>
-                <div className="text-2xl font-bold text-emerald-100 mb-1">{fmtPct1.format((calibrationQ.data?.accuracy || 0.873))}</div>
-                <div className="text-[10px] text-white/70">MAE {formatNumber(calibrationQ.data?.mae || 0.021, 3)} • RMSE {formatNumber(calibrationQ.data?.rmse || 0.038, 3)}</div>
+                <div className="text-xl font-semibold text-emerald-100 mb-1">{fmtPct1.format((calibrationQ.data?.accuracy || 0.873))}</div>
+                <div className="text-[11px] text-white/70">MAE {formatNumber(calibrationQ.data?.mae || 0.021, 3)} • RMSE {formatNumber(calibrationQ.data?.rmse || 0.038, 3)}</div>
                 {/* Backtest bağlam rozeti */}
                 <div className="mt-1 text-[10px] text-white/70">
                   <span title="Backtest varsayımları: Komisyon 0.1 bps, vergi dahil değil">Son 30 gün • Tcost 8bps • Slippage 0.1% • Benchmark: XU030</span>
@@ -1417,9 +1471,9 @@ useEffect(() => {
               </div>
               {/* Sprint 2: Aktif Sinyal KPI - Yeni sinyal sayısı (son 1 saat) */}
               <div className="bg-blue-500/20 backdrop-blur-sm rounded-xl p-4 border border-blue-400/30 shadow-md hover:shadow-lg transition-shadow">
-                <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Aktif Sinyal</div>
-                <div className="text-2xl font-bold text-blue-100">{rows.length}</div>
-                <div className="text-[10px] text-white/70 mt-1">Canlı analiz</div>
+                <div className={`${kLabel} text-white/80 mb-1`}>Aktif</div>
+                <div className="text-xl font-semibold text-blue-100">{rows.length}</div>
+                <div className="text-[11px] text-white/70 mt-1">Canlı analiz</div>
                 {metrics24s.newSignals > 0 && (
                   <div className="text-[9px] mt-1 px-1.5 py-0.5 rounded inline-block bg-blue-500/30 text-blue-100">
                     +{metrics24s.newSignals} yeni (son 1 saat)
@@ -1513,16 +1567,11 @@ useEffect(() => {
                 return (
                   <div className="bg-green-500/20 backdrop-blur-sm rounded-xl p-4 border border-green-400/30 shadow-md hover:shadow-lg transition-shadow">
                     <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs font-semibold text-white/90 uppercase tracking-wide">Toplam Kâr</div>
+                      <div className={`${kLabel} text-white/80`}>Toplam Kâr</div>
                       <span title="Portföyün toplam kâr/zarar durumu (simüle)" className="text-xs text-white/70 cursor-help hover:text-white">ⓘ</span>
                     </div>
-                    <div className="text-2xl font-bold text-green-100 mb-1">
-                      {fmtTRY.format(mockTotalProfit)}
-                    </div>
-                    {/* P5.2: Portföy simulatörü tek çizgi özet - "Başlangıç ₺100.000 → Kâr ₺10.500" */}
-                    <div className="text-[10px] text-white/70 mb-1">
-                      Başlangıç {fmtTRY.format(100000)} → Kâr {fmtTRY.format(mockTotalProfit)}
-                    </div>
+                    <div className="text-xl font-semibold text-green-100 mb-1">{fmtTRY.format(mockTotalProfit)}</div>
+                    <div className="text-[11px] text-white/70 mb-1">Başlangıç {fmtTRY.format(100000)} → Kâr {fmtTRY.format(mockTotalProfit)}</div>
                     <div className={`text-[10px] ${profitPct >= 0 ? 'text-green-200' : 'text-red-200'} font-semibold`}>
                       {profitPct >= 0 ? '+' : ''}{profitPct.toFixed(1)}%
                     </div>
@@ -1547,9 +1596,9 @@ useEffect(() => {
               })()}
               {/* Toplam Sinyal KPI - Mor ton */}
               <div className="bg-purple-500/20 backdrop-blur-sm rounded-xl p-4 border border-purple-400/30 shadow-md hover:shadow-lg transition-shadow">
-                <div className="text-xs font-semibold text-white/90 uppercase tracking-wide mb-2">Toplam Sinyal</div>
-                <div className="text-2xl font-bold text-purple-100">{Math.max(rows.length, 100)}</div>
-                <div className="text-[10px] text-white/70 mt-1">Bugün işlem</div>
+                <div className={`${kLabel} text-white/80 mb-1`}>Toplam Sinyal</div>
+                <div className="text-xl font-semibold text-purple-100">{Math.max(rows.length, 100)}</div>
+                <div className="text-[11px] text-white/70 mt-1">Bugün işlem</div>
                 {/* Son Güncelleme Timestamp + Trend Oku */}
                 {lastUpdated && (
                   <div className="text-[9px] text-white/60 mt-1 pt-1 border-t border-white/20 flex items-center justify-between">
@@ -2984,7 +3033,7 @@ useEffect(() => {
                     <tr 
                       className={rowClass}
                       style={rowStyle}
-                      onClick={() => { setSelectedSymbol(r.symbol); }}
+                      onClick={() => { setOpenRowSymbol(prev => prev === r.symbol ? null : r.symbol); }}
                     >
                       <td className="py-2 pr-4 font-bold text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis">{r.symbol}</td>
                       <td className="py-2 pr-4 text-slate-900 whitespace-nowrap font-semibold">
@@ -2994,12 +3043,12 @@ useEffect(() => {
                           <span title="En güvenilir ufuk" className="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">★</span>
                         )}
                   </td>
-                      <td className="py-2 pr-4 flex items-center gap-1 text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis font-semibold">
+                      <td className="py-2 pr-4 flex items-center gap-1 text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis font-semibold align-top">
                         {trend==='Yükseliş' ? <ArrowTrendingUpIcon className="w-4 h-4 text-blue-600 flex-shrink-0" aria-hidden="true" /> : (trend==='Düşüş' ? <ArrowTrendingDownIcon className="w-4 h-4 text-red-600 flex-shrink-0" aria-hidden="true" /> : <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400 flex-shrink-0" aria-hidden="true" />)}
-                        <span className="text-black font-bold">{trend}</span>
+                        <span className="text-black font-bold truncate max-w-[120px]">{trend}</span>
                   </td>
-                      <td className="py-2 pr-4 hidden md:table-cell">
-                        <div className="flex items-center gap-2 flex-wrap overflow-hidden">
+                      <td className="py-2 pr-4 hidden md:table-cell align-top">
+                        <div className="flex items-center gap-2 flex-wrap overflow-hidden min-w-0">
                           {techs.map((c) => {
                             // P0-01: RSI State Düzeltme - Use mapRSIToState
                             const tooltipText = c.includes('RSI') 
@@ -3024,7 +3073,7 @@ useEffect(() => {
                           </div>
                         </div>
                   </td>
-                      <td className="py-2 pr-4 whitespace-nowrap font-bold">
+                      <td className="py-2 pr-4 whitespace-nowrap font-bold align-top">
                         {(() => {
                           const pct = r.prediction*100;
                           const cls = pct > 1 ? 'text-green-600 font-bold' : (pct < -1 ? 'text-red-600 font-bold' : 'text-[#111827] font-bold');
@@ -3048,7 +3097,7 @@ useEffect(() => {
                         })()}
                   </td>
                       {/* Sinyal kolonu - horizon etiketi ve consensus badge ile */}
-                      <td className="py-2 pr-4 whitespace-nowrap">
+                      <td className="py-2 pr-4 whitespace-nowrap align-top">
                         {(() => {
                           // Derive consensus from all signals for this symbol
                           const sameSymbolRows = list.filter(x => x.symbol === r.symbol);
@@ -3094,98 +3143,44 @@ useEffect(() => {
                           );
                         })()}
                   </td>
-                      <td className="py-2 pr-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 w-full max-w-[220px]">
-                          <div className="flex-1 h-2 rounded bg-gray-100 overflow-hidden">
-                            {/* P2-14: Renk tutarlılığı - Tailwind palette (#22c55e / #ef4444) */}
-                            <div className="h-2" style={{ width: confPct + '%', background: confPct>=85 ? '#22c55e' : confPct>=70 ? '#fbbf24' : '#ef4444' }}></div>
-                          </div>
-                          {/* v4.7: Güven tooltip ile */}
-                          <span 
-                            className="text-[12px] font-semibold text-[#111827] cursor-help" 
-                            title={`AI Güven: ${confPct}% (${confPct >= 85 ? 'Çok Yüksek' : confPct >= 70 ? 'Yüksek' : confPct >= 50 ? 'Orta' : 'Düşük'}). Modelin bu tahmine olan güveni`}
-                          >
-                      {confPct}%
-                    </span>
-                          <span 
-                            className="px-2 py-0.5 rounded bg-gray-100 text-[10px] cursor-help" 
-                            title={`Tarihsel Doğruluk (S10): ${success10}% - Son 10 sinyalin ortalama başarı oranı`}
-                          >
-                            S10 {success10}%
-                          </span>
-                          {(() => {
-                            const sameSymbolRows = list.filter(x => x.symbol === r.symbol);
-                            const dirs = sameSymbolRows.map(x => (x.prediction||0) >= 0 ? 1 : -1);
-                            const maj = dirs.reduce((a,b)=> a + b, 0) >= 0 ? 1 : -1;
-                            const ok = dirs.filter(d=> d===maj).length;
-                            const consistency = `${ok}/${dirs.length}`;
-                            const consistencyPct = dirs.length > 0 ? Math.round((ok / dirs.length) * 100) : 0;
-                            const isStrong = ok === dirs.length && dirs.length >= 3;
-                            return (
-                              <div className="flex items-center gap-1">
-                                {/* Trend consistency bar */}
-                                <div className="w-8 h-1.5 bg-slate-200 rounded overflow-hidden">
-                                  <div 
-                                    className="h-1.5 rounded transition-all"
-                                    style={{ 
-                                      width: `${consistencyPct}%`,
-                                      background: isStrong ? '#22c55e' : consistencyPct >= 67 ? '#fbbf24' : '#ef4444'
-                                    }}
-                                    title={`Trend tutarlılık: ${consistencyPct}% (${consistency})`}
-                                  />
-                                </div>
-                                {isStrong ? (
-                                  <span title={`Multi-timeframe tutarlılık: ${consistency} (Güçlü Sinyal)`} className="px-1.5 py-0.5 text-[9px] rounded bg-emerald-100 text-emerald-700 border border-emerald-200">✓ {consistency}</span>
-                                ) : (
-                                  <span title={`Trend tutarlılık: ${consistencyPct}% (${consistency})`} className="text-[9px] text-slate-600">{consistencyPct}%</span>
-                                )}
-                              </div>
-                            );
-                          })()}
+                      {/* Güven */}
+                      <td className="py-2 pr-4 align-top">{confPct}%
+                        <div className="h-1 w-full bg-gray-200 rounded mt-1">
+                          <div className="h-1 bg-emerald-500 rounded" style={{width: `${confPct}%`}} />
                         </div>
                   </td>
-                      {/* Δ Accuracy: Current confidence - Historical accuracy */}
-                      <td className="py-2 pr-4 hidden md:table-cell whitespace-nowrap">
-                        {(() => {
-                          const deltaAcc = confPct - success10;
-                          const deltaColor = deltaAcc >= 5 ? 'text-green-600' : deltaAcc >= -5 ? 'text-yellow-600' : 'text-red-600';
-                          const deltaText = deltaAcc >= 0 ? `+${deltaAcc.toFixed(1)}` : deltaAcc.toFixed(1);
-                          return (
-                            <div className="flex items-center gap-1">
-                              <span className={`text-xs font-semibold ${deltaColor}`}>
-                                {deltaText}pp
-                    </span>
-                              <span 
-                                className="px-1 py-0.5 rounded bg-slate-100 text-slate-600 text-[9px] cursor-help"
-                                title={`Δ Accuracy: ${deltaText}pp (Güncel Güven: ${confPct}% - Tarihsel Doğruluk: ${success10}%)`}
-                              >
-                                ⓘ
-                              </span>
+                      <td className="py-2 pr-4 hidden md:table-cell">{success10 >= 0 ? `+${success10}pp` : `${success10}pp`}</td>
+                      <td className="py-2 pr-4 hidden md:table-cell">—</td>
+                      <td className="py-2 pr-4">—</td>
+                    </tr>
+                    {openRowSymbol === r.symbol && (
+                      <tr className="bg-zinc-50">
+                        <td colSpan={11} className="py-2">
+                          <div className="bg-white border border-zinc-200 rounded-xl p-4">
+                            <div className="text-sm break-words whitespace-normal leading-5"><b>AI Yorum:</b> {miniAnalysis(r.prediction||0, r.confidence||0, r.symbol)}</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm mt-3">
+                              <div>
+                                <div><b>Hedef:</b> {formatCurrency(curr * (1 + (r.prediction||0)))}</div>
+                                <div><b>Stop:</b> {formatCurrency(up ? curr * 0.9 : curr * 1.1)}</div>
+                              </div>
+                              <div>
+                                <div><b>RSI:</b> {getMockRSI(r.prediction||0, r.symbol)}</div>
+                                <div><b>MACD:</b> {Math.abs(r.prediction||0) >= 0.1 ? 'Pozitif' : 'Nötr'}</div>
+                              </div>
+                              <div>
+                                <div><b>Momentum:</b> {(r.prediction||0) >= 0 ? 'Yukarı' : 'Aşağı'}</div>
+                                <div><b>MTF:</b> {(() => { const ok = success10; return `${ok} / 10`; })()}</div>
+                              </div>
                             </div>
-                          );
-                        })()}
-                  </td>
-                      <td className="py-2 pr-4 flex items-center gap-1 text-gray-800 hidden md:table-cell whitespace-nowrap">
-                    {/* TTL küçük rozet */}
-                    {(() => {
-                      const createdAtMs = r.generated_at ? new Date(r.generated_at).getTime() : (lastUpdated ? new Date(lastUpdated).getTime() : 0);
-                      const ttlMs = r.valid_until ? (new Date(r.valid_until).getTime() - (r.generated_at ? new Date(r.generated_at).getTime() : createdAtMs)) : 0;
-                      return createdAtMs && ttlMs > 0 ? <TTLBadge createdAtMs={createdAtMs} ttlMs={ttlMs} /> : null;
-                    })()}
-                  </td>
-                      <td className="py-2 pr-4 flex items-center gap-2 whitespace-nowrap">
-                    <button
-                          onClick={async ()=>{ try { const mode = inWatch ? 'remove':'add'; await wlMut.mutateAsync({ symbols: r.symbol, mode }); } catch {} }}
-                      className={`px-2 py-1 text-xs rounded ${inWatch?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-700'}`}
-                        >{inWatch?'⭐ Takipte':'☆ Takibe Al'}</button>
-                        {confPct>=Math.max(alertThresholds.minConfidence, effectiveMinConfidence) && Math.abs(r.prediction*100)>=alertThresholds.minPriceChange && alertThresholds.enabled && (
-                          <button onClick={async ()=>{ try { 
-                            if (alertChannel==='web') { await alertMut.mutateAsync({ delta: alertThresholds.minPriceChange, minConf: alertThresholds.minConfidence, source: 'AI v4.6 model BIST30 dataset' }); }
-                            else { await Api.sendTelegramAlert(r.symbol, `AI uyarı: ${r.symbol} Δ>${alertThresholds.minPriceChange}%, Conf≥${alertThresholds.minConfidence}%`, 'demo'); }
-                          } catch {} }} className="px-2 py-1 text-xs rounded bg-blue-600 text-white">Bildirim</button>
+                            <div className="mt-3 flex flex-wrap gap-2">
+                              <button className="px-2 py-1 text-xs rounded bg-green-600 text-white">Takibe Al</button>
+                              <button className="px-2 py-1 text-xs rounded bg-blue-600 text-white">Alarm Kur</button>
+                              <button className="px-2 py-1 text-xs rounded bg-gray-700 text-white">Yanlış Sinyal</button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
                     )}
-                  </td>
-                </tr>
                   </React.Fragment>
               );
               });
@@ -3373,7 +3368,7 @@ useEffect(() => {
                             <span>{upx?'Yükseliş':'Düşüş'} {pct}%</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <div className="w-24"><ConfidenceBar value={confc} color={confc>=85?'emerald':confc>=70?'yellow':'red'} /></div>
+                          <div className="w-28 -mt-1"><ConfidenceBar value={confc} color={confc>=85?'emerald':confc>=70?'yellow':'red'} /></div>
                           </div>
                         </div>
                       );
@@ -3475,7 +3470,7 @@ useEffect(() => {
                   {/* AI TraderGPT Insight Bubble (kart başına tekrarını önlemek için opsiyonel) */}
                   {false && (
                     <div className="bg-[#1f2329] p-3 rounded-xl mt-3 text-sm text-gray-300 italic border-l-4 border-green-400">
-                      🤖 <b>TraderGPT:</b> “Model şu anda {((metaEnsembleQ.data?.volatilityIndex ?? 50) < 50 ? 'risk-on' : 'risk-off')} rejiminde. {rows.slice(0,2).map(r=>r.symbol).filter(s=>s!==sym).slice(0,1)[0] ? 'Yüksek güvenli 1-2 alım sinyali var.' : 'Seçili sembolde izleme önerilir.'}”
+                      🤖 <b>TraderGPT:</b> "Model şu anda {((metaEnsembleQ.data?.volatilityIndex ?? 50) < 50 ? 'risk-on' : 'risk-off')} rejiminde. {rows.slice(0,2).map(r=>r.symbol).filter(s=>s!==sym).slice(0,1)[0] ? 'Yüksek güvenli 1-2 alım sinyali var.' : 'Seçili sembolde izleme önerilir.'}"
                     </div>
                   )}
                   {/* Mini analiz cümlesi - Health Check Fix: AI Yorumu wrap - text-wrap break-words */}
@@ -3895,7 +3890,6 @@ useEffect(() => {
                             const y = scaleY(v);
                             path += (i === 0 ? 'M' : 'L') + ' ' + x + ' ' + y;
                           });
-                          
                           const zeroY = scaleY(0);
                           const fillPath = path + ` L ${width} ${zeroY} L 0 ${zeroY} Z`;
                           
@@ -4541,7 +4535,6 @@ useEffect(() => {
                     </div>
                   </div>
                 </div>
-                
                 <div className="bg-gray-50 p-3 rounded-lg">
                   <h5 className="font-medium text-gray-900 mb-2">Model Kalitesi</h5>
                   <table className="text-sm w-full">
@@ -5817,7 +5810,6 @@ useEffect(() => {
                   💬 Feedback Ver
                 </button>
               </div>
-              
               {/* Sprint 3: Model Drift Graph (24h/7d) */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
                 {/* Sprint 3: Drift Graph - 7 Gün */}

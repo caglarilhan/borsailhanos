@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo } from 'react';
-import { Sparkline } from '@/components/Charts/Sparkline';
+import { Sparkline } from '@/components/charts/Sparkline';
 
 interface Row {
   label: string; // 1H / 4H / 1D
