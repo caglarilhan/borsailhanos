@@ -27,10 +27,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           if (!mounted) return;
           setValue({ role: (data?.user?.role || 'trader') as any, isAuthenticated: true });
         } else if (res.status === 401) {
+          // 401 = no valid session = not authenticated
+          // Guest login may create a session for middleware, but user is still not authenticated
           if (!mounted) return;
           setValue({ role: 'trader', isAuthenticated: false });
         }
-      } catch {}
+      } catch {
+        // Silent fail - don't spam logs
+      }
     };
     // initial & interval
     refresh();

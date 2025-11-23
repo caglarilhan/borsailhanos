@@ -3,7 +3,6 @@
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ThemeProvider } from 'next-themes';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 
 // P2-1: API latency - Optimize TanStack Query cache (staleTime + gcTime)
@@ -23,20 +22,13 @@ const queryClient = new QueryClient({
 export default function Providers({ children }: { children: React.ReactNode }) {
   // ErrorBoundary SSR'de sorun yaratıyor, runtime'da aktif olacak
   // Production'da client-side'da ErrorBoundary eklenebilir
+  // Dark mode kaldırıldı - sadece light theme
   return (
     <QueryClientProvider client={queryClient}>
-      <ThemeProvider 
-        attribute="class" 
-        defaultTheme="light" 
-        enableSystem={false}
-        storageKey="bistai-theme"
-        disableTransitionOnChange={false}
-      >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
-        <ReactQueryDevtools initialOpen={false} />
-      </ThemeProvider>
+      <AuthProvider>
+        {children}
+      </AuthProvider>
+      <ReactQueryDevtools initialOpen={false} />
     </QueryClientProvider>
   );
 }

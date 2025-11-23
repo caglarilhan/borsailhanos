@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, Suspense } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 // Force dynamic rendering - disables SSR to prevent hydration mismatches
@@ -46,10 +46,10 @@ function DashboardV33Inner() {
   const searchParams = useSearchParams();
   
   // Get initial tab from URL or default to 'signals'
-  const [activeFeaturesTab, setActiveFeaturesTab] = useState<'signals' | 'analysis' | 'operations' | 'advanced'>(() => {
+  const [activeFeaturesTab, setActiveFeaturesTab] = useState<'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis'>(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['signals', 'analysis', 'operations', 'advanced'].includes(tab)) {
-      return tab as 'signals' | 'analysis' | 'operations' | 'advanced';
+    if (tab && ['signals', 'analysis', 'operations', 'advanced', 'ai-analysis'].includes(tab)) {
+      return tab as 'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis';
     }
     return 'signals';
   });
@@ -63,7 +63,7 @@ function DashboardV33Inner() {
   const [portfolioData, setPortfolioData] = useState<any[]>([]);
   
   // Sync tab with URL
-  const handleTabChange = (tab: 'signals' | 'analysis' | 'operations' | 'advanced') => {
+  const handleTabChange = (tab: 'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis') => {
     console.log('📑 Tab changing to:', tab);
     setActiveFeaturesTab(tab);
     // URL güncellemesini devre dışı bırak: bazı ortamlarda gereksiz fetch tetikliyor
@@ -86,6 +86,7 @@ function DashboardV33Inner() {
       openAnalysis: () => handleTabChange('analysis' as const),
       openOperations: () => handleTabChange('operations' as const),
       openAdvanced: () => handleTabChange('advanced' as const),
+      openAIAnalysis: () => handleTabChange('ai-analysis' as const),
     };
   })();
   
@@ -807,19 +808,26 @@ function DashboardV33Inner() {
   };
   
   // ✅ DYNAMIC SIGNALS: WebSocket'ten gelirse kullan, yoksa fallback
-  const rawSignals = dynamicSignals.length > 0 ? dynamicSignals : marketSignals[selectedMarket];
+  // 🚀 SPRINT 3: Memoize signals calculation
+  const signals = useMemo(() => {
+    const rawSignals = dynamicSignals.length > 0 ? dynamicSignals : marketSignals[selectedMarket];
+    const marketFiltered = rawSignals.filter(s => isWithinMarketScope(s.symbol, selectedMarket));
+    return deduplicateBySymbol(marketFiltered);
+  }, [dynamicSignals, selectedMarket]);
 
-  // Filter by market scope and deduplicate
-  const marketFiltered = rawSignals.filter(s => isWithinMarketScope(s.symbol, selectedMarket));
-  const signals = deduplicateBySymbol(marketFiltered);
-
-  // Format metrics with consistent Turkish locale
-  const metrics = [
+  // 🚀 SPRINT 3: Memoize metrics calculation
+  const metrics = useMemo(() => [
     { label: 'Toplam Kâr', value: formatCurrency(125000), change: formatPercent(12.5), color: '#10b981', icon: '💰', pulse: true, percent: 72 },
-    { label: 'Aktif Sinyaller', value: '15', change: '+3 yeni', color: '#3b82f6', icon: '🎯', pulse: true, percent: 60 },
+    { label: 'Aktif Sinyaller', value: String(signals.length), change: '+3 yeni', color: '#3b82f6', icon: '🎯', pulse: true, percent: 60 },
     { label: 'Doğruluk Oranı', value: formatPercent(87.3), change: formatPercent(2.1), color: '#10b981', icon: '📊', pulse: false, percent: 87 },
     { label: 'Risk Skoru', value: '3.2', change: '▼ Düşük', color: '#10b981', icon: '⚠️', pulse: false, percent: 32 },
-  ];
+  ], [signals.length]);
+
+  // 🚀 SPRINT 3: Memoize signal click handler
+  const handleSignalClick = useCallback((symbol: string) => {
+    console.log('Signal clicked:', symbol);
+    router.push(`/feature/bist30?symbol=${symbol}`);
+  }, [router]);
 
   return (
     <div>
@@ -893,29 +901,57 @@ function DashboardV33Inner() {
                 console.log('🔐 Login attempt:', username);
                 if (username && password) {
                   try {
-                    console.log('📡 Backend istegi gonderiliyor...');
-                    const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085') + '/api/auth/login', {
+                    console.log('📡 Login istegi gonderiliyor...');
+                    
+                    // 1. CSRF token al
+                    const csrfRes = await fetch('/api/auth/csrf');
+                    if (!csrfRes.ok) {
+                      throw new Error('CSRF token alınamadı');
+                    }
+                    const csrfData = await csrfRes.json();
+                    const csrfToken = csrfData.token;
+                    
+                    if (!csrfToken) {
+                      throw new Error('CSRF token alınamadı');
+                    }
+                    
+                    // 2. Login isteği gönder
+                    const res = await fetch('/api/auth/login', {
                       method: 'POST',
-                      headers: {'Content-Type': 'application/json'},
-                      body: JSON.stringify({username, password})
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-Token': csrfToken
+                      },
+                      body: JSON.stringify({username, password, remember: false})
                     });
-                    console.log('📥 Backend response status:', res.status);
+                    
+                    console.log('📥 Login response status:', res.status);
+                    
+                    if (!res.ok) {
+                      const errorData = await res.json().catch(() => ({ error: 'Bilinmeyen hata' }));
+                      throw new Error(errorData.error || `HTTP ${res.status}`);
+                    }
+                    
                     const data = await res.json();
-                    console.log('📥 Backend response data:', data);
-                    if (data.status === 'success') {
+                    console.log('📥 Login response data:', data);
+                    
+                    if (data.status === 'success' || res.status === 200) {
                       console.log('✅ Login basarili!');
                       setIsLoggedIn(true);
                       setShowLogin(false);
                       setCurrentUser(username);
                       localStorage.setItem('bistai_user', username);
                       alert('Giris basarili!');
+                      // Sayfayı yenile
+                      window.location.reload();
                     } else {
-                      console.error('❌ Login failed:', data.message);
-                      alert(data.message || 'Giris basarisiz');
+                      console.error('❌ Login failed:', data.error || data.message);
+                      alert(data.error || data.message || 'Giris basarisiz');
                     }
-                  } catch (e) {
-                    console.error('❌ Network error:', e);
-                    alert('Baglanti hatasi: ' + e);
+                  } catch (e: any) {
+                    console.error('❌ Login error:', e);
+                    const errorMsg = e?.message || String(e) || 'Baglanti hatasi';
+                    alert('Giris hatasi: ' + errorMsg);
                   }
                 } else {
                   alert('Lutfen kullanici adi ve sifre girin');
@@ -1299,7 +1335,133 @@ function DashboardV33Inner() {
           ))}
         </div>
 
-        {/* AI Insight Summary - Metrics altına eklendi */}
+        {/* 🎯 SPRINT 1: AI TAHMİNLERİ - EN ÜSTE (Öncelik 1) */}
+        <div style={{ 
+          marginBottom: '16px',
+          background: 'rgba(255,255,255,0.95)',
+          borderRadius: '16px',
+          border: '2px solid rgba(6,182,212,0.3)',
+          padding: '20px',
+          boxShadow: '0 8px 32px rgba(6,182,212,0.15)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: '800', color: '#0f172a', margin: 0, marginBottom: '4px' }}>
+                🤖 AI Tahminleri & Sinyaller
+              </h2>
+              <div style={{ fontSize: '12px', color: '#64748b' }}>
+                Gerçek zamanlı AI analizi • {signals.length} aktif sinyal • {selectedMarket} piyasası
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <select
+                style={{ padding: '6px 12px', fontSize: '12px', border: '1px solid #e2e8f0', borderRadius: '8px', background: '#ffffff', cursor: 'pointer' }}
+                value={selectedMarket}
+                onChange={(e) => setSelectedMarket(e.target.value as 'BIST' | 'NYSE' | 'NASDAQ')}
+              >
+                <option value="BIST">BIST</option>
+                <option value="NYSE">NYSE</option>
+                <option value="NASDAQ">NASDAQ</option>
+              </select>
+            </div>
+          </div>
+          
+          {/* Signals Table */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Sembol</th>
+                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Sinyal</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Fiyat</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Hedef</th>
+                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Değişim</th>
+                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Doğruluk</th>
+                </tr>
+              </thead>
+              <tbody>
+                {signals.slice(0, 10).map((s: any, idx: number) => {
+                  const isBuy = s.signal === 'BUY';
+                  const signalColor = isBuy ? '#10b981' : s.signal === 'SELL' ? '#ef4444' : '#64748b';
+                  const changeColor = (s.change || 0) >= 0 ? '#10b981' : '#ef4444';
+                  return (
+                    <tr 
+                      key={idx} 
+                      style={{ 
+                        borderBottom: '1px solid #f1f5f9',
+                        cursor: 'pointer',
+                        transition: 'background 0.2s'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                      onClick={() => handleSignalClick(s.symbol)}
+                    >
+                      <td style={{ padding: '12px', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{s.symbol}</td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <span style={{ 
+                          padding: '4px 12px', 
+                          borderRadius: '6px', 
+                          fontSize: '11px', 
+                          fontWeight: '700',
+                          background: signalColor + '15',
+                          color: signalColor,
+                          border: '1px solid ' + signalColor + '40'
+                        }}>
+                          {s.signal}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
+                        {formatCurrency(s.price || 0)}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
+                        {formatCurrency(s.target || 0)}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: changeColor }}>
+                        {(s.change || 0) >= 0 ? '+' : ''}{formatPercent(s.change || 0)}
+                      </td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <div style={{ 
+                          display: 'inline-block',
+                          padding: '4px 8px', 
+                          borderRadius: '6px', 
+                          fontSize: '11px', 
+                          fontWeight: '700',
+                          background: s.accuracy >= 85 ? '#10b98115' : s.accuracy >= 75 ? '#f59e0b15' : '#ef444415',
+                          color: s.accuracy >= 85 ? '#10b981' : s.accuracy >= 75 ? '#f59e0b' : '#ef4444'
+                        }}>
+                          {s.accuracy?.toFixed(1) || '--'}%
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          
+          {signals.length > 10 && (
+            <div style={{ marginTop: '12px', textAlign: 'center' }}>
+              <button
+                onClick={() => router.push('/feature/bist30')}
+                style={{
+                  padding: '8px 16px',
+                  background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: '700',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(6,182,212,0.3)'
+                }}
+              >
+                Tüm Sinyalleri Gör ({signals.length} toplam) →
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* AI Insight Summary - Öncelik 2 */}
         <div style={{ 
           marginBottom: '16px',
           padding: '12px',
@@ -1312,7 +1474,7 @@ function DashboardV33Inner() {
           <AIInsightSummary />
         </div>
         
-        {/* Sektör Isı Haritası (Basit Heatmap) */}
+        {/* Sektör Isı Haritası (Basit Heatmap) - Öncelik 3 */}
         <div style={{ 
           background: 'rgba(255,255,255,0.95)',
           borderRadius: '12px',
@@ -1354,168 +1516,6 @@ function DashboardV33Inner() {
             })}
       </div>
         </div>
-
-        {/* Korelasyon Heatmap */}
-        <div style={{
-          background: 'rgba(255,255,255,0.95)',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          padding: '16px',
-          marginBottom: '16px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>🔗 Korelasyon Heatmap</div>
-            <div style={{ fontSize: '11px', color: '#64748b' }}>Yeşil: + korelasyon · Kırmızı: - korelasyon</div>
-          </div>
-          {(() => {
-            // Derive symbol list from signals or fallback
-            const symbols = (signals && signals.length > 0 ? signals.map((s:any)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
-            const n = symbols.length;
-            // P0-02: Korelasyon Heatmap Simetrik Kontrolü (ρ = ρᵀ)
-            const corr: number[][] = [];
-            for (let i=0;i<n;i++){ 
-              corr[i]=[]; 
-              for(let j=0;j<n;j++){ 
-                if(i===j){
-                  corr[i][j]=1; // Self-correlation always 1
-                } else if(i<j){
-                  // Upper triangle: generate once
-                  const key = symbols[i] + '-' + symbols[j];
-                  let h=0; for (let k=0;k<key.length;k++) h=(h*31+key.charCodeAt(k))>>>0;
-                  const v = ((h % 161) - 80) / 100; // -0.8..+0.8
-                  const normalized = parseFloat(v.toFixed(2));
-                  corr[i][j]=normalized;
-                } else {
-                  // Lower triangle: mirror upper (ρ = ρᵀ)
-                  corr[i][j]=corr[j][i];
-                }
-              } 
-            }
-            return (
-              <div style={{ overflowX: 'auto' }}>
-                <div style={{ display: 'inline-grid', gridTemplateColumns: '80px repeat(' + n + ', 40px)' }}>
-                  <div />
-                  {symbols.map((s:string)=>(<div key={'col-'+s} style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: '10px', color: '#475569', textAlign: 'center' }}>{s}</div>))}
-                  {symbols.map((row:string, i:number)=> (
-                    <React.Fragment key={'row-'+row}>
-                      <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a', padding: '6px 8px' }}>{row}</div>
-                      {symbols.map((col:string, j:number)=>{
-                        const val = corr[i][j];
-                        const isPos = val >= 0;
-                        const alpha = Math.min(1, Math.abs(val));
-                        const bg = isPos ? 'rgba(16,185,129,' + (0.1 + alpha*0.6) + ')' : 'rgba(239,68,68,' + (0.1 + alpha*0.6) + ')';
-                        return (
-                          <div key={'cell-'+i+'-'+j} style={{ width: 40, height: 28, background: bg, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#0f172a' }}>
-                            {i===j ? '—' : Math.round(val*100)}
-                          </div>
-                        );
-                      })}
-                    </React.Fragment>
-                    ))}
-                  </div>
-              </div>
-            );
-          })()}
-        </div>
-
-        {/* Backtest Horizons */}
-        <div style={{
-          background: 'rgba(255,255,255,0.95)',
-          borderRadius: '12px',
-          border: '1px solid #e2e8f0',
-          padding: '16px',
-          marginBottom: '16px'
-        }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>📈 Backtest (3/6/12 Ay)</div>
-          </div>
-          {(() => {
-            const makeSeries = (len:number, drift:number)=> Array.from({length: len}, (_,i)=> ({ day: 'Gün ' + (i+1), value: Math.round(100 + i*drift + Math.sin(i/3)*3 + Math.random()*2) }));
-            const [s3, s6, s12] = [makeSeries(60, 0.3), makeSeries(120, 0.25), makeSeries(240, 0.2)];
-            const blocks = [
-              { label: '3 Ay', data: s3, color: '#10b981' },
-              { label: '6 Ay', data: s6, color: '#3b82f6' },
-              { label: '12 Ay', data: s12, color: '#8b5cf6' },
-            ];
-            return (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
-                {blocks.map((blk, idx)=> (
-                  <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>{blk.label}</div>
-                    <div style={{ width: '100%', height: 140 }}>
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={blk.data}>
-                          <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                          <XAxis dataKey="day" hide={true} />
-                          <YAxis hide={true} />
-                          <Line type="monotone" dataKey="value" stroke={blk.color} strokeWidth={2} dot={false} />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    </div>
-              </div>
-            ))}
-          </div>
-            );
-          })()}
-        </div>
-
-      {/* Detaylı Backtest - Günlük P&L, Drawdown, Sharpe */}
-      <div style={{
-        background: 'rgba(255,255,255,0.95)',
-        borderRadius: '12px',
-        border: '1px solid #e2e8f0',
-        padding: '16px',
-        marginBottom: '16px'
-      }}>
-        <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginBottom: '12px' }}>📉 Detaylı Backtest Analizi</div>
-        {(() => {
-          const makePnL = (len: number) => Array.from({length: len}, (_,i)=> ({ day: (i+1), pnl: Math.round(100 + i*0.3 + Math.sin(i/5)*10 + (Math.random()*5-2.5)), drawdown: Math.max(0, 5 - Math.sin(i/7)*3) }));
-          const daily = makePnL(60);
-          const sharpe = Array.from({length: 10}, (_,i)=> ({ period: (i+1) + 'H', value: 1.2 + (i*0.05) + (Math.random()*0.2-0.1) }));
-          return (
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
-              <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
-                <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Günlük P&L (60 Gün)</div>
-                <div style={{ width: '100%', height: 200 }}>
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={daily}>
-                      <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                      <XAxis dataKey="day" tick={{ fontSize: 10 }} />
-                      <YAxis tick={{ fontSize: 10 }} />
-                      <Tooltip />
-                      <Line type="monotone" dataKey="pnl" stroke="#10b981" strokeWidth={2} dot={false} />
-                      <Line type="monotone" dataKey="drawdown" stroke="#ef4444" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div style={{ display: 'grid', gap: '10px' }}>
-                <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Sharpe Dağılımı</div>
-                  <div style={{ width: '100%', height: 140 }}>
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={sharpe}>
-                        <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                        <XAxis dataKey="period" tick={{ fontSize: 10 }} />
-                        <YAxis tick={{ fontSize: 10 }} />
-                        <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </div>
-                <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Ortalama Getiri</div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#10b981' }}>%8.6</div>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: '4px' }}>Kazanma Oranı</div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#3b82f6' }}>%72.5</div>
-                  <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: '4px' }}>Sharpe Ratio</div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>1.85</div>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
-      </div>
 
       {/* Risk Dağılımı (Kullanıcı Profili Bazlı) */}
       <div style={{
@@ -1647,6 +1647,24 @@ function DashboardV33Inner() {
                 transition: 'all 0.2s'
               }}>
               ⚡ GELİŞMİŞ
+            </button>
+            <button 
+              role="tab"
+              aria-selected={activeFeaturesTab === 'ai-analysis'}
+              onClick={() => handleTabChange('ai-analysis')} 
+              style={{ 
+                padding: '8px 16px', 
+                background: activeFeaturesTab === 'ai-analysis' ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'rgba(255,255,255,0.8)', 
+                color: activeFeaturesTab === 'ai-analysis' ? '#fff' : '#0f172a',
+                border: 'none',
+                borderRadius: '8px',
+                fontWeight: '700',
+                fontSize: '12px',
+                cursor: 'pointer',
+                boxShadow: activeFeaturesTab === 'ai-analysis' ? '0 4px 12px rgba(245,158,11,0.3)' : 'none',
+                transition: 'all 0.2s'
+              }}>
+              🤖 AI ANALİZLERİ
             </button>
           </div>
           
@@ -1800,6 +1818,236 @@ function DashboardV33Inner() {
                 </div>
               ))}
             </div>
+          </div>}
+
+          {/* 🤖 AI ANALİZLERİ - YENİ SEKME */}
+          {activeFeaturesTab === 'ai-analysis' && <div role="tabpanel" style={{ marginBottom: '16px' }}>
+            <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #f59e0b', color: '#0f172a', letterSpacing: '-0.3px' }}>
+              🤖 AI ANALİZLERİ <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>Derin analiz araçları</span>
+            </div>
+
+            {/* 1. Backtest (3/6/12 Ay) */}
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>📈 Backtest (3/6/12 Ay)</div>
+              </div>
+              {(() => {
+                const makeSeries = (len:number, drift:number)=> Array.from({length: len}, (_,i)=> ({ day: 'Gün ' + (i+1), value: Math.round(100 + i*drift + Math.sin(i/3)*3 + Math.random()*2) }));
+                const [s3, s6, s12] = [makeSeries(60, 0.3), makeSeries(120, 0.25), makeSeries(240, 0.2)];
+                const blocks = [
+                  { label: '3 Ay', data: s3, color: '#10b981' },
+                  { label: '6 Ay', data: s6, color: '#3b82f6' },
+                  { label: '12 Ay', data: s12, color: '#8b5cf6' },
+                ];
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                    {blocks.map((blk, idx)=> (
+                      <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>{blk.label}</div>
+                        <div style={{ width: '100%', height: 140 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={blk.data}>
+                              <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                              <XAxis dataKey="day" hide={true} />
+                              <YAxis hide={true} />
+                              <Line type="monotone" dataKey="value" stroke={blk.color} strokeWidth={2} dot={false} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 2. Detaylı Backtest - Günlük P&L, Drawdown, Sharpe */}
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a', marginBottom: '12px' }}>📉 Detaylı Backtest Analizi</div>
+              {(() => {
+                const makePnL = (len: number) => Array.from({length: len}, (_,i)=> ({ day: (i+1), pnl: Math.round(100 + i*0.3 + Math.sin(i/5)*10 + (Math.random()*5-2.5)), drawdown: Math.max(0, 5 - Math.sin(i/7)*3) }));
+                const daily = makePnL(60);
+                const sharpe = Array.from({length: 10}, (_,i)=> ({ period: (i+1) + 'H', value: 1.2 + (i*0.05) + (Math.random()*0.2-0.1) }));
+                return (
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px' }}>
+                    <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Günlük P&L (60 Gün)</div>
+                      <div style={{ width: '100%', height: 200 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <LineChart data={daily}>
+                            <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                            <XAxis dataKey="day" tick={{ fontSize: 10 }} />
+                            <YAxis tick={{ fontSize: 10 }} />
+                            <Tooltip />
+                            <Line type="monotone" dataKey="pnl" stroke="#10b981" strokeWidth={2} dot={false} />
+                            <Line type="monotone" dataKey="drawdown" stroke="#ef4444" strokeWidth={2} dot={false} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gap: '10px' }}>
+                      <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Sharpe Dağılımı</div>
+                        <div style={{ width: '100%', height: 140 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <LineChart data={sharpe}>
+                              <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
+                              <XAxis dataKey="period" tick={{ fontSize: 10 }} />
+                              <YAxis tick={{ fontSize: 10 }} />
+                              <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} />
+                            </LineChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </div>
+                      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Ortalama Getiri</div>
+                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#10b981' }}>%8.6</div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: '4px' }}>Kazanma Oranı</div>
+                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#3b82f6' }}>%72.5</div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', marginBottom: '4px' }}>Sharpe Ratio</div>
+                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#8b5cf6' }}>1.85</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 3. AI Fiyat Tahmin Grafiği */}
+            <div style={{ 
+              background: 'rgba(255,255,255,0.8)', 
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(6,182,212,0.3)', 
+              borderRadius: '20px', 
+              overflow: 'hidden',
+              boxShadow: '0 10px 50px rgba(6,182,212,0.15)',
+              marginBottom: '16px'
+            }}>
+              <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
+                <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>📊 AI Fiyat Tahmin Grafiği</h2>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span>Gerçek zamanlı teknik analiz ve trend tahmini</span>
+                  <span style={{ padding: '6px 14px', background: 'rgba(6,182,212,0.15)', borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: '#06b6d4' }}>THYAO - 30 Günlük Trend</span>
+                </div>
+              </div>
+              <div style={{ padding: '16px', aspectRatio: '16/9' }}>
+                {chartData && chartData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                      <XAxis dataKey="day" stroke="#64748b" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={80} />
+                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={['auto', 'auto']} label={{ value: 'Fiyat (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '11px', fontWeight: '600' } }} />
+                      <Tooltip contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '12px', padding: '12px', boxShadow: '0 10px 40px rgba(6,182,212,0.2)' }} />
+                      <Area type="monotone" dataKey="predicted_upper" stroke="none" fill="#06b6d4" fillOpacity={0.15} name="±1σ Güven Aralığı" />
+                      <Area type="monotone" dataKey="predicted_lower" stroke="none" fill="#06b6d4" fillOpacity={0.15} />
+                      <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }} name="Gerçek Fiyat" />
+                      <Line type="monotone" dataKey="predicted" stroke="#06b6d4" strokeWidth={3} strokeDasharray="5 5" dot={{ fill: '#06b6d4', strokeWidth: 2, r: 5 }} name="AI Tahmini" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: '13px' }}>📊 Grafik yükleniyor...</div>
+                )}
+              </div>
+            </div>
+
+            {/* 4. Korelasyon Heatmap */}
+            <div style={{
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '12px',
+              border: '1px solid #e2e8f0',
+              padding: '16px',
+              marginBottom: '16px'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>🔗 Korelasyon Heatmap</div>
+                <div style={{ fontSize: '11px', color: '#64748b' }}>Yeşil: + korelasyon · Kırmızı: - korelasyon</div>
+              </div>
+              {(() => {
+                const symbols = (signals && signals.length > 0 ? signals.map((s:any)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
+                const n = symbols.length;
+                const corr: number[][] = [];
+                for (let i=0;i<n;i++){ 
+                  corr[i]=[]; 
+                  for(let j=0;j<n;j++){ 
+                    if(i===j){
+                      corr[i][j]=1;
+                    } else if(i<j){
+                      const key = symbols[i] + '-' + symbols[j];
+                      let h=0; for (let k=0;k<key.length;k++) h=(h*31+key.charCodeAt(k))>>>0;
+                      const v = ((h % 161) - 80) / 100;
+                      const normalized = parseFloat(v.toFixed(2));
+                      corr[i][j]=normalized;
+                    } else {
+                      corr[i][j]=corr[j][i];
+                    }
+                  } 
+                }
+                return (
+                  <div style={{ overflowX: 'auto' }}>
+                    <div style={{ display: 'inline-grid', gridTemplateColumns: '80px repeat(' + n + ', 40px)' }}>
+                      <div />
+                      {symbols.map((s:string)=>(<div key={'col-'+s} style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)', fontSize: '10px', color: '#475569', textAlign: 'center' }}>{s}</div>))}
+                      {symbols.map((row:string, i:number)=> (
+                        <React.Fragment key={'row-'+row}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: '#0f172a', padding: '6px 8px' }}>{row}</div>
+                          {symbols.map((col:string, j:number)=>{
+                            const val = corr[i][j];
+                            const isPos = val >= 0;
+                            const alpha = Math.min(1, Math.abs(val));
+                            const bg = isPos ? 'rgba(16,185,129,' + (0.1 + alpha*0.6) + ')' : 'rgba(239,68,68,' + (0.1 + alpha*0.6) + ')';
+                            return (
+                              <div key={'cell-'+i+'-'+j} style={{ width: 40, height: 28, background: bg, border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: '#0f172a' }}>
+                                {i===j ? '—' : Math.round(val*100)}
+                              </div>
+                            );
+                          })}
+                        </React.Fragment>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* 5. Multi-Timeframe Analyzer */}
+            <div style={{ 
+              padding: '12px',
+              background: 'rgba(255,255,255,0.8)',
+              backdropFilter: 'blur(20px)',
+              border: '1px solid rgba(6,182,212,0.3)',
+              borderRadius: '20px',
+              boxShadow: '0 10px 50px rgba(6,182,212,0.15)',
+              marginBottom: '16px'
+            }}>
+              <MultiTimeframeAnalyzer />
+            </div>
+
+            {/* 6. Volatilite Modeli */}
+            {showVolatilityModel && (
+              <div style={{ 
+                padding: '12px',
+                background: 'rgba(255,255,255,0.8)',
+                backdropFilter: 'blur(20px)',
+                border: '1px solid rgba(6,182,212,0.3)',
+                borderRadius: '20px',
+                boxShadow: '0 10px 50px rgba(6,182,212,0.15)',
+                marginBottom: '16px'
+              }}>
+                <VolatilityModel />
+              </div>
+            )}
           </div>}
           </div>
 
@@ -2026,133 +2274,6 @@ function DashboardV33Inner() {
           <RealtimeAlerts />
         </div>
         )}
-        
-        {/* AI Prediction Chart */}
-        <div style={{ 
-          marginTop: '60px',
-          background: 'rgba(255,255,255,0.8)', 
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(6,182,212,0.3)', 
-          borderRadius: '20px', 
-          overflow: 'hidden',
-          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
-        }}>
-          <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>📊 AI Fiyat Tahmin Grafiği</h2>
-            <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span>Gerçek zamanlı teknik analiz ve trend tahmini</span>
-              <span style={{ padding: '6px 14px', background: 'rgba(6,182,212,0.15)', borderRadius: '20px', fontSize: '11px', fontWeight: '700', color: '#06b6d4' }}>THYAO - 30 Günlük Trend</span>
-            </div>
-            {/* v4.7: Dinamik veri kaynağı göstergesi - WebSocket durumuna göre */}
-            {connected ? (
-              <div style={{ fontSize: '10px', color: '#10b981', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>🟢</span>
-                <span>Canlı • Gerçek zamanlı veri akışı aktif</span>
-              </div>
-            ) : (
-            <div style={{ fontSize: '10px', color: '#f59e0b', marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>⚠️</span>
-                <span>Son senkron: {new Date().toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'})} (UTC+3) • Mock veri</span>
-            </div>
-            )}
-          </div>
-          <div style={{ padding: '16px', aspectRatio: '16/9' }}>
-            {chartData && chartData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis 
-                  dataKey="day" 
-                  stroke="#64748b" 
-                  tick={{ fontSize: 10 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis 
-                  stroke="#64748b" 
-                  tick={{ fontSize: 10 }}
-                  domain={['auto', 'auto']}
-                  label={{ value: 'Fiyat (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '11px', fontWeight: '600' } }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: 'rgba(255,255,255,0.95)', 
-                    border: '1px solid rgba(6,182,212,0.3)', 
-                    borderRadius: '12px',
-                    padding: '12px',
-                    boxShadow: '0 10px 40px rgba(6,182,212,0.2)'
-                  }}
-                  labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}
-                  itemStyle={{ fontSize: '11px', color: '#64748b' }}
-                />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }}
-                  iconType="line"
-                />
-                {/* ±σ Güven Aralığı Bandı */}
-                <Area 
-                  type="monotone"
-                  dataKey="predicted_upper"
-                  stroke="none"
-                  fill="#06b6d4"
-                  fillOpacity={0.15}
-                  name="±1σ Güven Aralığı"
-                />
-                <Area 
-                  type="monotone"
-                  dataKey="predicted_lower"
-                  stroke="none"
-                  fill="#06b6d4"
-                  fillOpacity={0.15}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="actual" 
-                  stroke="#3b82f6" 
-                  strokeWidth={3}
-                  dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }}
-                  name="Gerçek Fiyat"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="predicted" 
-                  stroke="#06b6d4" 
-                  strokeWidth={3}
-                  strokeDasharray="5 5"
-                  dot={{ fill: '#06b6d4', strokeWidth: 2, r: 5 }}
-                  name="AI Tahmini"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: '13px' }}>
-                📊 Grafik yükleniyor...
-              </div>
-            )}
-          </div>
-          <div style={{ padding: '20px 40px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(6,182,212,0.03)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              <span style={{ fontWeight: '700', color: '#06b6d4' }}>Ortalama Doğruluk:</span> %87,3
-            </div>
-            <div style={{ fontSize: '13px', color: '#64748b' }}>
-              <span style={{ fontWeight: '700', color: '#10b981' }}>Son Tahmin:</span> ₺268,30 <span style={{ color: '#10b981' }}>(+%9,3)</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Multi-Timeframe Analyzer - AI Chart altına eklendi */}
-        <div style={{ 
-          marginTop: '16px',
-          padding: '12px',
-          background: 'rgba(255,255,255,0.8)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(6,182,212,0.3)',
-          borderRadius: '20px',
-          boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
-        }}>
-          <MultiTimeframeAnalyzer />
-        </div>
         
         {/* XAI Explainability Panel */}
         {selectedForXAI && aiConfidence[selectedForXAI as keyof typeof aiConfidence] && (
@@ -3486,21 +3607,40 @@ function DashboardV33Inner() {
                     const password = (document.getElementById('new-password') as HTMLInputElement)?.value;
                     if (username && password) {
                       try {
-                        const res = await fetch((process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:18085') + '/api/auth/register', {
+                        // CSRF token al
+                        const csrfRes = await fetch('/api/auth/csrf');
+                        if (!csrfRes.ok) {
+                          throw new Error('CSRF token alınamadı');
+                        }
+                        const csrfData = await csrfRes.json();
+                        const csrfToken = csrfData.token;
+                        
+                        const res = await fetch('/api/auth/register', {
                           method: 'POST',
-                          headers: {'Content-Type': 'application/json'},
+                          headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-Token': csrfToken || ''
+                          },
                           body: JSON.stringify({username, password})
                         });
+                        
+                        if (!res.ok) {
+                          const errorData = await res.json().catch(() => ({ error: 'Bilinmeyen hata' }));
+                          throw new Error(errorData.error || `HTTP ${res.status}`);
+                        }
+                        
                         const data = await res.json();
-                        if (data.status === 'success') {
+                        if (data.status === 'success' || res.status === 200) {
                           alert('Kullanıcı eklendi: ' + username);
                           (document.getElementById('new-username') as HTMLInputElement).value = '';
                           (document.getElementById('new-password') as HTMLInputElement).value = '';
                         } else {
-                          alert(data.message);
+                          alert(data.error || data.message || 'Kullanıcı eklenemedi');
                         }
-                      } catch (e) {
-                        alert('Kullanıcı eklenemedi');
+                      } catch (e: any) {
+                        console.error('❌ Register error:', e);
+                        const errorMsg = e?.message || String(e) || 'Kullanıcı eklenemedi';
+                        alert('Kayıt hatası: ' + errorMsg);
                       }
                     }
                   }}

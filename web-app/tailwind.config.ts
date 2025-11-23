@@ -3,13 +3,12 @@ import type { Config } from 'tailwindcss'
 
 const config: Config = {
   content: [
-    './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
-    './src/**/*.{js,ts,jsx,tsx,mdx}',
-    './app/**/*.{js,ts,jsx,tsx,mdx}',
-    './components/**/*.{js,ts,jsx,tsx,mdx}',
-    './pages/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/components/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/contexts/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/layouts/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/hooks/**/*.{js,ts,jsx,tsx,mdx}',
+    './src/lib/**/*.{js,ts,jsx,tsx,mdx}',
   ],
   theme: {
     extend: {
@@ -486,7 +485,7 @@ const config: Config = {
           '@apply bg-neon-600 hover:bg-neon-700 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-neon-500 focus:ring-offset-2 hover:shadow-glow-neon': {},
         },
         '.btn-glass': {
-          '@apply glass-electric text-electric-100 font-medium py-2 px-4 rounded-lg transition-all duration-200 hover:bg-electric-500/20 hover:shadow-glow-electric': {},
+          '@apply glass-electric text-electric-100 font-medium py-2 px-4 rounded-lg transition-all duration-200 hover:bg-electric-500/20': {},
         },
         '.card': {
           '@apply bg-white rounded-lg shadow-md border border-gray-200 p-6': {},
@@ -594,7 +593,7 @@ const config: Config = {
     'shadow-glow-cyan',
     'shadow-glow-neon',
   ],
-  darkMode: 'class',
+  // Dark mode kaldırıldı - sadece light theme
 }
 
 export default config
