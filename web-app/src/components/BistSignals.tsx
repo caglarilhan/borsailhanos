@@ -441,6 +441,9 @@ useEffect(() => {
   // Regime, PI, Macro, Calibration, Ranker, Reasoning, MetaEnsemble, BOCalibrate, Factors, Backtest hooks (must be at top level - Rules of Hooks)
   const { useRegime, usePI, useMacro, useCalibration, useRanker, useReasoning, useMetaEnsemble, useBOCalibrate, useFactors, useBacktestQuick } = require('@/hooks/queries');
   const regimeQ = useRegime();
+  const marketRegimeState = useMarketRegimeStore((state: any) => state.state);
+  const marketRegimeLabel = useMarketRegimeStore((state: any) => state.getRegimeLabel());
+  const marketRegimeColor = useMarketRegimeStore((state: any) => state.getRegimeColor());
   const piQ = usePI(selectedSymbol || undefined, analysisHorizon, !!selectedSymbol);
   const macroQ = useMacro();
   const calibrationQ = useCalibration();
@@ -666,7 +669,9 @@ useEffect(() => {
   };
   // react-query: tahminler (WebSocket-aware)
   const horizonsEff = activeHorizons.length === 0 ? ['1d'] : activeHorizons;
-  const predQ = universe === 'ALL' ? useBistAllPredictions(horizonsEff, wsConnected) : useBistPredictions(universe, horizonsEff, true, wsConnected);
+  const predQAll = useBistAllPredictions(horizonsEff, wsConnected, universe === 'ALL');
+  const predQSingle = useBistPredictions(universe, horizonsEff, true, wsConnected);
+  const predQ = universe === 'ALL' ? predQAll : predQSingle;
   
   // API latency tracking (moved after predQ definition)
   useEffect(() => {
@@ -1251,15 +1256,6 @@ useEffect(() => {
     }
   }, [analysisQ.data]);
 
-  // BIST100 için Top30 analiz göster
-  if (universe === 'BIST100') {
-  return (
-      <div style={{ width: '100%' }}>
-        <Top30Analysis />
-      </div>
-    );
-  }
-
   // Prepare signals for AI Orchestrator
   const aiSignals = useMemo(() => {
     return rows
@@ -1611,26 +1607,21 @@ useEffect(() => {
               <div className="col-span-2 md:col-span-5">
                 <AICorePanel />
               </div>
-              {(() => {
-                // P0-C1: Market Regime SSOT - tek kaynaktan al
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const regimeState = useMarketRegimeStore((state: any) => state.state);
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const regimeLabel = useMarketRegimeStore((state: any) => state.getRegimeLabel());
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                const regimeColor = useMarketRegimeStore((state: any) => state.getRegimeColor());
-                const weights = (()=>{ 
-                  if (regimeState.regime === 'risk_on') return { equity: 0.8, cash: 0.2 };
-                  if (regimeState.regime === 'neutral') return { equity: 0.6, cash: 0.4 };
-                  if (regimeState.regime === 'risk_off') return { equity: 0.4, cash: 0.6 };
-                  return { equity: 0.6, cash: 0.4 };
-                })();
-                return (
-                <div className="col-span-2 md:col-span-5 bg-white/10 rounded-lg p-3">
-      <div className="flex items-center justify-between">
-                    <div className="text-xs opacity-80">Rejim • Ağırlıklar</div>
-                    <div className={`text-xs px-2 py-1 rounded border ${regimeColor}`}>{regimeLabel}</div>
-                  </div>
+      {(() => {
+        const regime = marketRegimeState?.regime;
+        const weights = regime === 'risk_on'
+          ? { equity: 0.8, cash: 0.2 }
+          : regime === 'risk_off'
+            ? { equity: 0.4, cash: 0.6 }
+            : regime === 'neutral'
+              ? { equity: 0.6, cash: 0.4 }
+              : { equity: 0.6, cash: 0.4 };
+        return (
+        <div className="col-span-2 md:col-span-5 bg-white/10 rounded-lg p-3">
+  <div className="flex items-center justify-between">
+            <div className="text-xs opacity-80">Rejim • Ağırlıklar</div>
+            <div className={`text-xs px-2 py-1 rounded border ${marketRegimeColor}`}>{marketRegimeLabel}</div>
+</div>
                   <div className="mt-2 grid grid-cols-2 gap-2 text-[12px]">
                     <div className="bg-white/20 rounded p-2">
                       <div className="flex justify-between"><span>Hisse</span><span className="font-semibold">{fmtPct1.format(weights.equity)}</span></div>
@@ -1653,6 +1644,13 @@ useEffect(() => {
           </div>
         </div>
       </div>
+      {/* BIST100 durumunda Top30 analizi */}
+      {universe === 'BIST100' && (
+        <div className="mb-4">
+          <Top30Analysis />
+        </div>
+      )}
+
       {/* Sol Panel - Tahminler */}
       <div className="flex-1 bg-white rounded-lg shadow-sm p-4 space-y-4" style={{ minHeight: 0 }}>
         {/* Meta-Model Heatmap */}

@@ -17,7 +17,7 @@ export function useBistPredictions(universe: string, horizons: string[], all: bo
   });
 }
 
-export function useBistAllPredictions(horizons: string[], useWebSocket: boolean = false) {
+export function useBistAllPredictions(horizons: string[], useWebSocket: boolean = false, enabled: boolean = true) {
   return useQuery({
     queryKey: ['bistPredictionsAll', horizons.join(',')],
     queryFn: async () => {
@@ -45,6 +45,7 @@ export function useBistAllPredictions(horizons: string[], useWebSocket: boolean 
     gcTime: 5 * 60 * 1000, // 5 minutes cache time
     refetchOnWindowFocus: false,
     refetchOnMount: true,
+    enabled,
   });
 }
 
