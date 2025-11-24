@@ -117,7 +117,7 @@ class ErrorBoundary extends Component<Props, State> {
               </h3>
               
               <p className="text-sm text-gray-600 mb-4">
-                BIST AI Smart Trader'da beklenmeyen bir hata oluştu. 
+                Borsailhanos AI Smart Trader'da beklenmeyen bir hata oluştu. 
                 Lütfen sayfayı yenilemeyi deneyin.
               </p>
 

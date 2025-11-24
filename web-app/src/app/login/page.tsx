@@ -7,7 +7,7 @@ import { LoginForm } from '@/components/auth/LoginForm';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Giriş Yap • BIST AI Smart Trader',
+  title: 'Giriş Yap • Borsailhanos AI Smart Trader',
   description: 'E-postanızla veya kullanıcı adınızla giriş yapın',
   robots: 'noindex, nofollow', // Login pages shouldn't be indexed
 };

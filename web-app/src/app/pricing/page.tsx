@@ -65,7 +65,7 @@ export default function PricingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <Link href="/" className="text-xl font-bold text-slate-900">
-              BIST AI Smart Trader
+              Borsailhanos AI Smart Trader
             </Link>
             <div className="flex items-center gap-4">
               <Link href="/" className="text-sm text-slate-600 hover:text-slate-900">Ana Sayfa</Link>
@@ -192,7 +192,7 @@ export default function PricingPage() {
       <footer className="bg-slate-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-slate-400 text-sm">
-            © 2025 BIST AI Smart Trader. Tüm hakları saklıdır.
+            © 2025 Borsailhanos AI Smart Trader. Tüm hakları saklıdır.
           </p>
           <p className="text-slate-500 text-xs mt-2">
             ⚠️ Yatırım Tavsiyesi Değildir • Analiz ve eğitim amaçlıdır

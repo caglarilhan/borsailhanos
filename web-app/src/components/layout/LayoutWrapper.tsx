@@ -77,7 +77,7 @@ const LayoutWrapper: React.FC<LayoutWrapperProps> = ({ children }) => {
 
       {/* Footer */}
       <footer className="mt-auto py-6 text-center text-text/50 text-sm">
-        <p>BIST AI Smart Trader v3.4 Hybrid Fix Edition • Production Ready</p>
+        <p>Borsailhanos AI Smart Trader v3.4 Hybrid Fix Edition • Production Ready</p>
       </footer>
     </div>
   );

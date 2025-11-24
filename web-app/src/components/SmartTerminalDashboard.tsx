@@ -185,7 +185,7 @@ export default function SmartTerminalDashboard() {
       <div className="text-center mb-8">
         <h1 className="text-4xl font-bold text-accent mb-2 flex items-center justify-center gap-3">
           <SparklesIcon className="w-10 h-10" />
-          BIST AI Smart Trader v5.1
+          Borsailhanos AI Smart Trader v5.1
         </h1>
         <p className="text-text/70 text-lg">
           Kurumsal Seviye AI Trading Terminali

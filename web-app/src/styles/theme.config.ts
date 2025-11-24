@@ -1,5 +1,5 @@
 /**
- * BIST AI Smart Trader - Institutional Theme v3.3
+ * Borsailhanos AI Smart Trader - Institutional Theme v3.3
  * Kurumsal seviye görsel kimlik
  */
 

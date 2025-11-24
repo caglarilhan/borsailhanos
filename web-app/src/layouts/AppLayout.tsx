@@ -9,7 +9,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <html lang="tr" className="dark">
       <head>
-        <title>BIST AI Smart Trader</title>
+        <title>Borsailhanos AI Smart Trader</title>
         <meta name="description" content="AI-powered Turkish stock trading platform" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
@@ -39,7 +39,7 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
             <div className="max-w-7xl mx-auto px-6 py-4">
               <div className="flex items-center justify-between text-sm text-gray-400">
                 <div className="flex items-center space-x-4">
-                  <span>BIST AI Smart Trader v3.7</span>
+                  <span>Borsailhanos AI Smart Trader v3.7</span>
                   <span className="flex items-center space-x-1">
                     <div className="h-1.5 w-1.5 rounded-full bg-[#00FFC6] animate-pulse"></div>
                     <span>System Online</span>

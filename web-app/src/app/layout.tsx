@@ -11,7 +11,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "BIST AI Smart Trader",
+  title: "Borsailhanos AI Smart Trader",
   description: "AI-powered quantitative trading dashboard",
 };
 

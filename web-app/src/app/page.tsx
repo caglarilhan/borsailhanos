@@ -26,7 +26,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white text-slate-900">
       <header className="border-b border-slate-200">
         <div className="max-w-5xl mx-auto px-4 py-6 flex items-center justify-between">
-          <div className="text-lg font-semibold">BIST AI Smart Trader</div>
+          <div className="text-lg font-semibold">Borsailhanos AI Smart Trader</div>
           <div className="flex gap-4 text-sm">
             <button
               onClick={() => router.push('/pricing')}

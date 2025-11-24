@@ -1,5 +1,5 @@
 /**
- * 🚀 BIST AI Smart Trader - Scenario Simulator UI
+ * 🚀 Borsailhanos AI Smart Trader - Scenario Simulator UI
  * ==============================================
  * 
  * Kullanıcının değişkenleri girip senaryoyu görselleştirmesi için React komponenti.

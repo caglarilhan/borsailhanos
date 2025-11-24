@@ -1,4 +1,4 @@
-// BIST AI Smart Trader - Configuration
+// Borsailhanos AI Smart Trader - Configuration
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 export const REALTIME_URL = process.env.NEXT_PUBLIC_REALTIME_URL || "ws://localhost:8081";
 
@@ -27,7 +27,7 @@ export const WS_CONFIG = {
 
 // Application configuration
 export const APP_CONFIG = {
-  NAME: "BIST AI Smart Trader",
+  NAME: "Borsailhanos AI Smart Trader",
   VERSION: "3.5.0",
   DESCRIPTION: "Yapay zeka destekli BIST hisse senedi analiz ve tahmin platformu",
   AUTHOR: "Çağlar İlhan",

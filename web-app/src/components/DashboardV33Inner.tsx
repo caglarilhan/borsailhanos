@@ -219,6 +219,10 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
       const next = { ...prev, [id]: nextValue };
       if (nextValue) {
         setActivePanel(id);
+        setTimeout(() => {
+          const panelEl = document.getElementById('panel-' + id);
+          panelEl?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 120);
       } else if (activePanel === id) {
         setActivePanel(null);
       }
@@ -417,7 +421,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   
   const handleShare = async () => {
     const data = {
-      title: 'BIST AI Smart Trader',
+      title: 'Borsailhanos AI Smart Trader',
       text: 'AI doğruluk: ' + metrics[0].value,
       url: window.location.href
     };
@@ -907,7 +911,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
             width: '90%'
           }}>
             <h1 style={{ fontSize: '28px', fontWeight: 'bold', marginBottom: '8px', textAlign: 'center' }}>
-              💹 BIST AI Smart Trader
+              💹 Borsailhanos AI Smart Trader
             </h1>
             <p style={{ fontSize: '14px', color: '#64748b', textAlign: 'center', marginBottom: '32px' }}>
               Giriş Yap
@@ -1049,7 +1053,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
             <div style={{ width: '40px', height: '40px', background: 'linear-gradient(135deg, #06b6d4, #3b82f6)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 'bold', fontSize: '16px', boxShadow: '0 4px 20px rgba(6,182,212,0.3)' }}>AI</div>
             <div>
               <h1 style={{ fontSize: '16px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.3px', lineHeight: '1.2' }}>
-                BIST AI Smart Trader <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>v4.6 Pro</span>
+                Borsailhanos AI Smart Trader <span style={{ fontSize: '13px', color: '#64748b', fontWeight: '500' }}>v4.6 Pro</span>
               </h1>
               <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px' }}>
                 {isRefreshing ? (
@@ -3126,7 +3130,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
 
         {/* Gamification System */}
         {aiModules.gamification && (
-          <div style={{ 
+          <div id="panel-gamification" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(251,191,36,0.1), rgba(249,115,22,0.1))',
@@ -3318,7 +3322,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
 
         {/* Feedback Loop */}
         {aiModules.feedback && (
-          <div style={{ 
+          <div id="panel-feedback" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',
@@ -3462,7 +3466,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
 
         {/* Subscription Tiers */}
         {aiModules.subscription && (
-          <div style={{ 
+          <div id="panel-subscription" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(251,191,36,0.1), rgba(245,158,11,0.1))',
@@ -3510,7 +3514,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
 
         {/* Investor Panel - V6.0 */}
         {aiModules.investor && (
-          <div style={{ 
+          <div id="panel-investor" style={{ 
             margin: '16px 0',
             padding: '16px',
             background: 'rgba(255,255,255,0.95)',
@@ -3523,7 +3527,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
 
         {/* Strategy Builder */}
         {aiModules.strategy && (
-          <div style={{ 
+          <div id="panel-strategy" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(6,182,212,0.1))',
@@ -3638,7 +3642,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
                 🔄 Feedback
               </button>
               <div style={{ fontSize: '11px', color: '#94a3b8' }}>
-                BIST AI Smart Trader v4.6 Professional Edition {isLoggedIn && ('| ' + currentUser)}
+                Borsailhanos AI Smart Trader v4.6 Professional Edition {isLoggedIn && ('| ' + currentUser)}
               </div>
               {isLoggedIn && (
                 <button
@@ -3663,7 +3667,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
 
         {/* V5.0 Enterprise Module */}
         {aiModules.enterprise && (
-          <div style={{ 
+          <div id="panel-enterprise" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1))',

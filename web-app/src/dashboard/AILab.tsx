@@ -1,5 +1,5 @@
 /*
-  🚀 BIST AI Smart Trader - AI Lab Dashboard
+  🚀 Borsailhanos AI Smart Trader - AI Lab Dashboard
   RL, Bayesian, ve Strategy metriklerini tek panelde gösteren dashboard.
   AI'nin öğrenme sürecini canlı izleme.
 */

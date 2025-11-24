@@ -28,7 +28,7 @@ const GRID_BASE = 'grid grid-cols-12 gap-4 md:gap-6';
  * - useAutoRefresh ile varsayılan 15sn'de bir refresh tetikleme
  */
 export function AppShell({
-  title = 'BIST AI Smart Trader',
+  title = 'Borsailhanos AI Smart Trader',
   description = 'AI destekli sinyal ve risk kontrol paneli',
   lastUpdated,
   onRefresh,

@@ -29,7 +29,7 @@ const NavigationBar: React.FC = () => {
           <div className="flex items-center gap-3">
             <SparklesIcon className="w-8 h-8 text-accent" />
             <h1 className="text-2xl font-bold text-accent">
-              BIST AI Smart Trader
+              Borsailhanos AI Smart Trader
             </h1>
             <span className="text-sm text-text/60">v3.4 Hybrid</span>
           </div>

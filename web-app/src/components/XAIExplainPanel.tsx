@@ -1,5 +1,5 @@
 /*
-  🚀 BIST AI Smart Trader - XAI Explain Panel
+  🚀 Borsailhanos AI Smart Trader - XAI Explain Panel
   Her hisse için "AI neden böyle dedi?" açıklamasını gösteren React komponenti.
   SHAP ve LIME açıklamalarını görselleştirir.
 */

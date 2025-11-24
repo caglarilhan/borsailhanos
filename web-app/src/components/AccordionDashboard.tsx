@@ -301,7 +301,7 @@ export default function AccordionDashboard() {
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-4xl font-bold text-accent flex items-center gap-3">
               <SparklesIcon className="w-10 h-10" />
-              BIST AI Smart Trader v3.2
+              Borsailhanos AI Smart Trader v3.2
             </h1>
             <div className="flex items-center gap-2">
               <button className="px-3 py-1 bg-success/10 text-success rounded-lg text-sm hover:bg-success/20 transition-colors">
