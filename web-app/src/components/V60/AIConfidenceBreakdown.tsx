@@ -107,10 +107,10 @@ export default function AIConfidenceBreakdown() {
           <button
             key={symbol}
             onClick={() => setSelectedSymbol(symbol)}
-            className={`px-6 py-3 rounded-lg font-bold transition-all ${
+            className={`px-6 py-3 rounded-lg font-bold transition-all border ${
               selectedSymbol === symbol
-                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white scale-105'
-                : 'bg-slate-800 text-gray-400 hover:bg-slate-700'
+                ? 'bg-gradient-to-r from-purple-500 to-cyan-500 text-white shadow-lg scale-105 border-transparent'
+                : 'bg-white text-slate-600 hover:bg-slate-50 border-slate-200'
             }`}
           >
             {symbol}
@@ -119,24 +119,24 @@ export default function AIConfidenceBreakdown() {
       </div>
 
       {/* Overall Confidence */}
-      <div className={`rounded-lg p-6 border-2 ${getConfidenceBg(data.overall)}`}>
+      <div className={`rounded-2xl p-6 border ${getConfidenceBg(data.overall)} bg-white shadow-lg`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${getConfidenceColor(data.overall)}`}>
+            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-2xl font-bold ${getConfidenceColor(data.overall)} bg-slate-100`}>
               {data.overall}%
             </div>
             <div>
-              <h3 className="text-2xl font-bold text-white">{data.symbol}</h3>
-              <p className="text-sm text-gray-400">AI Güven Skoru</p>
+              <h3 className="text-2xl font-bold text-slate-900">{data.symbol}</h3>
+              <p className="text-sm text-slate-500">AI Güven Skoru</p>
             </div>
           </div>
-          <div className={`px-4 py-2 rounded-lg ${getSignalColor(data.signal)} text-white font-bold`}>
+          <div className={`px-4 py-2 rounded-lg ${getSignalColor(data.signal)} text-white font-bold shadow`}>
             {data.signal}
           </div>
         </div>
 
         {/* Confidence Progress */}
-        <div className="relative h-6 bg-slate-800 rounded-full overflow-hidden">
+        <div className="relative h-4 bg-slate-100 rounded-full overflow-hidden">
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${data.overall}%` }}
@@ -148,8 +148,8 @@ export default function AIConfidenceBreakdown() {
 
       {/* Factor Breakdown */}
       <div className="space-y-3">
-        <h4 className="text-lg font-bold text-white flex items-center gap-2">
-          <BarChart3 className="w-6 h-6 text-purple-400" />
+        <h4 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+          <BarChart3 className="w-6 h-6 text-purple-500" />
           Faktör Katkı Analizi (SHAP)
         </h4>
 
@@ -163,19 +163,19 @@ export default function AIConfidenceBreakdown() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: idx * 0.1 }}
-              className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/30"
+              className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm"
             >
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-3">
                   {isPositive ? (
-                    <TrendingUp className="w-5 h-5 text-emerald-400" />
+                    <TrendingUp className="w-5 h-5 text-emerald-500" />
                   ) : (
-                    <TrendingDown className="w-5 h-5 text-red-400" />
+                    <TrendingDown className="w-5 h-5 text-red-500" />
                   )}
                   <div>
-                    <div className="font-bold text-white">{factor.name}</div>
+                    <div className="font-bold text-slate-900">{factor.name}</div>
                     {factor.description && (
-                      <div className="text-xs text-gray-400">{factor.description}</div>
+                      <div className="text-xs text-slate-500">{factor.description}</div>
                     )}
                   </div>
                 </div>
@@ -187,7 +187,7 @@ export default function AIConfidenceBreakdown() {
               </div>
 
               {/* Contribution Bar */}
-              <div className="relative h-3 bg-slate-700 rounded-full overflow-hidden">
+              <div className="relative h-2.5 bg-slate-100 rounded-full overflow-hidden mt-3">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${absContribution}%` }}
@@ -203,19 +203,19 @@ export default function AIConfidenceBreakdown() {
       </div>
 
       {/* Summary Insights */}
-      <div className="bg-gradient-to-r from-purple-500/20 to-cyan-500/20 rounded-lg p-6 border border-purple-500/30">
-        <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-          <Zap className="w-6 h-6 text-yellow-400" />
+      <div className="bg-gradient-to-r from-purple-50 to-cyan-50 rounded-2xl p-6 border border-purple-100">
+        <h4 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <Zap className="w-6 h-6 text-amber-500" />
           AI Özet Yorumu
         </h4>
         
         {data.signal === 'BUY' && (
-          <div className="bg-emerald-500/10 border border-emerald-500/30 rounded-lg p-4">
+          <div className="bg-emerald-50 border border-emerald-100 rounded-2xl p-4">
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-6 h-6 text-emerald-400 flex-shrink-0 mt-1" />
+              <CheckCircle className="w-6 h-6 text-emerald-500 flex-shrink-0 mt-1" />
               <div>
-                <div className="font-bold text-emerald-400 mb-2">Alım Önerisi (AI Güven: {data.overall}%)</div>
-                <p className="text-sm text-gray-300">
+                <div className="font-bold text-emerald-700 mb-2">Alım Önerisi (AI Güven: {data.overall}%)</div>
+                <p className="text-sm text-slate-600">
                   {data.symbol} için AI algoritmaları güçlü alım sinyali tespit etti. 
                   En önemli faktörler: {data.factors.filter(f => f.positive).map(f => f.name).join(', ')}. 
                   Risk düzeyi düşük, momentum güçlü.
@@ -226,12 +226,12 @@ export default function AIConfidenceBreakdown() {
         )}
 
         {data.signal === 'HOLD' && (
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4">
+          <div className="bg-amber-50 border border-amber-100 rounded-2xl p-4">
             <div className="flex items-start gap-3">
-              <AlertCircle className="w-6 h-6 text-amber-400 flex-shrink-0 mt-1" />
+              <AlertCircle className="w-6 h-6 text-amber-500 flex-shrink-0 mt-1" />
               <div>
-                <div className="font-bold text-amber-400 mb-2">Bekleme Önerisi</div>
-                <p className="text-sm text-gray-300">
+                <div className="font-bold text-amber-700 mb-2">Bekleme Önerisi</div>
+                <p className="text-sm text-slate-600">
                   {data.symbol} için mevcut durum belirsiz. Teknik göstergeler karışık sinyal veriyor. 
                   Temel göstergeler güçlü ancak momentum zayıf. Yeni pozisyon açmak yerine mevcut pozisyonları izleyin.
                 </p>
@@ -241,12 +241,12 @@ export default function AIConfidenceBreakdown() {
         )}
 
         {data.signal === 'SELL' && (
-          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+          <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
             <div className="flex items-start gap-3">
-              <TrendingDown className="w-6 h-6 text-red-400 flex-shrink-0 mt-1" />
+              <TrendingDown className="w-6 h-6 text-red-500 flex-shrink-0 mt-1" />
               <div>
-                <div className="font-bold text-red-400 mb-2">Satış Önerisi (AI Güven: {data.overall}%)</div>
-                <p className="text-sm text-gray-300">
+                <div className="font-bold text-red-600 mb-2">Satış Önerisi (AI Güven: {data.overall}%)</div>
+                <p className="text-sm text-slate-600">
                   {data.symbol} için AI algoritmaları satış sinyali tespit etti. 
                   Risk faktörleri: {data.factors.filter(f => !f.positive).map(f => f.name).join(', ')}. 
                   Direnç seviyelerine yaklaşım var. Stop-loss ayarlayın.
@@ -258,17 +258,17 @@ export default function AIConfidenceBreakdown() {
 
         {/* Action Recommendations */}
         <div className="mt-4 grid grid-cols-2 gap-3">
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/30">
-            <div className="text-xs text-gray-400 mb-1">Hedef</div>
-            <div className="text-lg font-bold text-white">
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+            <div className="text-xs text-slate-500 mb-1">Hedef</div>
+            <div className="text-lg font-bold text-slate-900">
               {data.signal === 'BUY' && '255 ₺'}
               {data.signal === 'HOLD' && 'Konsolide'}
               {data.signal === 'SELL' && '48 ₺'}
             </div>
           </div>
-          <div className="bg-slate-800/50 rounded-lg p-4 border border-slate-700/30">
-            <div className="text-xs text-gray-400 mb-1">Stop-Loss</div>
-            <div className="text-lg font-bold text-white">
+          <div className="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+            <div className="text-xs text-slate-500 mb-1">Stop-Loss</div>
+            <div className="text-lg font-bold text-slate-900">
               {data.signal === 'BUY' && '240 ₺'}
               {data.signal === 'HOLD' && 'N/A'}
               {data.signal === 'SELL' && '52 ₺'}
