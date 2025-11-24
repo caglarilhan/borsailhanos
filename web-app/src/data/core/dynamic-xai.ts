@@ -190,13 +190,13 @@ export class DynamicXAI {
 }
 
 // Singleton instance
-export const dynamicXAI = new DynamicXAI();
+export const xaiEngine = new DynamicXAI();
 
 /**
  * Generate XAI explanation
  */
 export function generateXAIExplanation(context: SignalContext): XAIExplanation {
-  return dynamicXAI.generateExplanation(context);
+  return xaiEngine.generateExplanation(context);
 }
 
 /**
@@ -206,7 +206,7 @@ export function generatePersonalizedXAIExplanation(
   context: SignalContext,
   userMode: 'aggressive' | 'passive' | 'balanced'
 ): XAIExplanation {
-  return dynamicXAI.generatePersonalizedExplanation(context, userMode);
+  return xaiEngine.generatePersonalizedExplanation(context, userMode);
 }
 
 

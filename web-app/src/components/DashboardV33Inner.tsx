@@ -1,17 +1,21 @@
-"use client";
+'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-
-// Force dynamic rendering - disables SSR to prevent hydration mismatches
-export const dynamic = 'force-dynamic';
-import { LineChart, Line, Area, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { normalizeSentiment } from '@/lib/format';
 import { formatPercent, formatCurrency, formatDate, formatTime } from '@/lib/format';
 import { filterStale, isWithinMarketScope, deduplicateBySymbol } from '@/lib/guards';
 import { getSectorForSymbol } from '@/lib/sectorMap';
 import { createActions, actions } from '@/lib/actions';
+import { buildPolylinePoints, buildBandPolygon, DEFAULT_CHART_DIMENSIONS } from '@/lib/svgChart';
+
+export type DashboardTab = 'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis';
+const DASHBOARD_TABS: DashboardTab[] = ['signals', 'analysis', 'operations', 'advanced', 'ai-analysis'];
+const DASHBOARD_TAB_SET = new Set<DashboardTab>(DASHBOARD_TABS);
+export function isDashboardTab(value: string | null): value is DashboardTab {
+  return !!value && DASHBOARD_TAB_SET.has(value as DashboardTab);
+}
 
 // V5.0 Enterprise Components
 import RiskManagementPanel from './V50/RiskManagementPanel';
@@ -38,21 +42,24 @@ import MetaModelEngine from './V60/MetaModelEngine';
 import SubscriptionTiers from './V60/SubscriptionTiers';
 import StrategyBuilder from './V60/StrategyBuilder';
 import InvestorPanel from './V60/InvestorPanel';
+import { LegalDisclaimer } from '@/components/LegalDisclaimer';
+import ErrorBoundary from '@/components/ErrorBoundary';
 
-// Inner component that uses useSearchParams (must be wrapped in Suspense)
-function DashboardV33Inner() {
+// Inner component rendering main dashboard content
+function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   // URL sync for tab navigation
   const router = useRouter();
-  const searchParams = useSearchParams();
   
   // Get initial tab from URL or default to 'signals'
-  const [activeFeaturesTab, setActiveFeaturesTab] = useState<'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis'>(() => {
-    const tab = searchParams.get('tab');
-    if (tab && ['signals', 'analysis', 'operations', 'advanced', 'ai-analysis'].includes(tab)) {
-      return tab as 'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis';
+  const [activeFeaturesTab, setActiveFeaturesTab] = useState<DashboardTab>(
+    initialTab && DASHBOARD_TAB_SET.has(initialTab) ? initialTab : 'signals'
+  );
+
+  useEffect(() => {
+    if (initialTab && DASHBOARD_TAB_SET.has(initialTab)) {
+      setActiveFeaturesTab(initialTab);
     }
-    return 'signals';
-  });
+  }, [initialTab]);
 
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
   const [visibleSignals, setVisibleSignals] = useState(5);
@@ -63,7 +70,7 @@ function DashboardV33Inner() {
   const [portfolioData, setPortfolioData] = useState<any[]>([]);
   
   // Sync tab with URL
-  const handleTabChange = (tab: 'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis') => {
+  const handleTabChange = (tab: DashboardTab) => {
     console.log('📑 Tab changing to:', tab);
     setActiveFeaturesTab(tab);
     // URL güncellemesini devre dışı bırak: bazı ortamlarda gereksiz fetch tetikliyor
@@ -145,19 +152,96 @@ function DashboardV33Inner() {
       setTimeString(lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
     }
   }, [mounted, lastUpdate]);
-  const [showV50Module, setShowV50Module] = useState(false);
+  const AI_MODULE_IDS = [
+    'tradergpt',
+    'gamification',
+    'viz',
+    'aiconf',
+    'cognitive',
+    'riskguard',
+    'meta',
+    'enterprise',
+    'subscription',
+    'strategy',
+    'investor',
+    'feedback',
+  ] as const;
+  type AiModuleId = typeof AI_MODULE_IDS[number];
+  const AI_MODULE_DEFAULT_STATE: Record<AiModuleId, boolean> = {
+    tradergpt: true,
+    gamification: false,
+    viz: true,
+    aiconf: true,
+    cognitive: false,
+    riskguard: true,
+    meta: false,
+    enterprise: false,
+    subscription: false,
+    strategy: false,
+    investor: false,
+    feedback: false,
+  };
+  const [aiModules, setAiModules] = useState<Record<AiModuleId, boolean>>(AI_MODULE_DEFAULT_STATE);
   const [v50ActiveTab, setV50ActiveTab] = useState<'risk' | 'portfolio' | 'backtest'>('risk');
-  const [showTraderGPT, setShowTraderGPT] = useState(false);
-  const [showGamification, setShowGamification] = useState(false);
-  const [showAdvancedViz, setShowAdvancedViz] = useState(false);
-  const [showAIConfidence, setShowAIConfidence] = useState(false);
-  const [showCognitiveAI, setShowCognitiveAI] = useState(false);
-  const [showFeedbackLoop, setShowFeedbackLoop] = useState(false);
-  const [showVolatilityModel, setShowVolatilityModel] = useState(false);
-  const [showMetaModel, setShowMetaModel] = useState(false);
-  const [showSubscription, setShowSubscription] = useState(false);
-  const [showStrategyBuilder, setShowStrategyBuilder] = useState(false);
-  const [showInvestorPanel, setShowInvestorPanel] = useState(false);
+  const [activePanel, setActivePanel] = useState<string | null>(null);
+  const isAiModuleId = useCallback(
+    (value: string): value is AiModuleId => (AI_MODULE_IDS as readonly string[]).includes(value as AiModuleId),
+    []
+  );
+  const setModuleEnabled = useCallback((id: AiModuleId, value: boolean) => {
+    setAiModules((prev) => ({ ...prev, [id]: value }));
+  }, []);
+  const toggleModule = useCallback((id: AiModuleId) => {
+    setAiModules((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
+  const enableAllModules = useCallback(() => {
+    setAiModules((prev) => {
+      const next = { ...prev };
+      AI_MODULE_IDS.forEach((id) => {
+        next[id] = true;
+      });
+      return next;
+    });
+  }, []);
+  const disableAllModules = useCallback(() => {
+    setAiModules((prev) => {
+      const next = { ...prev };
+      AI_MODULE_IDS.forEach((id) => {
+        next[id] = false;
+      });
+      return next;
+    });
+    setActivePanel(null);
+  }, []);
+  const handleModuleToggleUI = useCallback((id: AiModuleId) => {
+    setAiModules((prev) => {
+      const nextValue = !prev[id];
+      const next = { ...prev, [id]: nextValue };
+      if (nextValue) {
+        setActivePanel(id);
+      } else if (activePanel === id) {
+        setActivePanel(null);
+      }
+      return next;
+    });
+  }, [activePanel]);
+  const moduleControls = useMemo(() => {
+    const base: Array<{ id: AiModuleId; title: string; description: string; icon: string; gradient: string }> = [
+      { id: 'tradergpt', title: 'TraderGPT Asistanı', description: 'LLM tabanlı doğal dil trade danışmanı', icon: '🤖', gradient: 'linear-gradient(135deg, #f97316, #f59e0b)' },
+      { id: 'viz', title: 'Viz Hub', description: 'Gelişmiş korelasyon ve heatmap görselleri', icon: '📊', gradient: 'linear-gradient(135deg, #8b5cf6, #06b6d4)' },
+      { id: 'aiconf', title: 'AI Confidence', description: 'SHAP benzeri açıklanabilirlik paneli', icon: '🧠', gradient: 'linear-gradient(135deg, #ec4899, #a855f7)' },
+      { id: 'cognitive', title: 'Cognitive Insights', description: 'Doğal dil AI yorumları', icon: '💬', gradient: 'linear-gradient(135deg, #06b6d4, #0ea5e9)' },
+      { id: 'riskguard', title: 'Risk Guard', description: 'Volatilite ve ATR bazlı risk laboratuvarı', icon: '⚠️', gradient: 'linear-gradient(135deg, #f97316, #ef4444)' },
+      { id: 'meta', title: 'Meta-Model Engine', description: 'FinBERT + Llama3 ensemble çıktıları', icon: '🧬', gradient: 'linear-gradient(135deg, #ec4899, #8b5cf6)' },
+      { id: 'enterprise', title: 'V5 Enterprise', description: 'Risk, portföy ve backtest süitini aç', icon: '🚀', gradient: 'linear-gradient(135deg, #3b82f6, #9333ea)' },
+      { id: 'gamification', title: 'Gamification', description: 'Trader seviye ve ödül sistemi', icon: '🏆', gradient: 'linear-gradient(135deg, #fbbf24, #f59e0b)' },
+      { id: 'subscription', title: 'Planlar', description: 'Abonelik paketleri ve fiyatlama', icon: '💎', gradient: 'linear-gradient(135deg, #fde047, #f97316)' },
+      { id: 'strategy', title: 'Strategy Builder', description: '5 adımda AI destekli strateji kurgusu', icon: '🎯', gradient: 'linear-gradient(135deg, #10b981, #14b8a6)' },
+      { id: 'investor', title: 'Investor Panel', description: 'Kurumsal raporlar ve KPI özeti', icon: '📈', gradient: 'linear-gradient(135deg, #8b5cf6, #06b6d4)' },
+      { id: 'feedback', title: 'Feedback Loop', description: 'Model geri besleme ve öğrenim döngüsü', icon: '🔄', gradient: 'linear-gradient(135deg, #a855f7, #6366f1)' },
+    ];
+    return base.map((item) => ({ ...item, enabled: aiModules[item.id] }));
+  }, [aiModules]);
   const [showWatchlist, setShowWatchlist] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
@@ -176,35 +260,12 @@ function DashboardV33Inner() {
   const userRole = isLoggedIn && currentUser === 'admin' ? 'admin' : 'user';
   const userPlan: 'basic' | 'pro' | 'enterprise' = 'basic';
   
-  // ✅ UNIFIED PANEL CONTROL: Tek state ile tüm panel kontrolü
-  const [activePanel, setActivePanel] = useState<string | null>(null);
-  
   const openPanel = (panel: string) => {
     console.log('📂 Panel açılıyor: ' + panel);
     console.log('🔍 Önceki activePanel: ' + activePanel);
     setActivePanel(panel);
-    // Panel açıldığında ilgili showXXX state'lerini de set et
-    switch (panel) {
-      case 'tradergpt':
-        setShowTraderGPT(true);
-        break;
-      case 'viz':
-        setShowAdvancedViz(true);
-        break;
-      case 'aiconf':
-        setShowAIConfidence(true);
-        break;
-      case 'cognitive':
-        setShowCognitiveAI(true);
-        break;
-      case 'risk':
-        setShowVolatilityModel(true);
-        break;
-      case 'meta':
-        setShowMetaModel(true);
-        break;
-      default:
-        break;
+    if (isAiModuleId(panel)) {
+      setModuleEnabled(panel, true);
     }
     console.log('🔍 Yeni activePanel: ' + panel);
     
@@ -339,7 +400,8 @@ function DashboardV33Inner() {
   };
   
   const handleOpenLevel = () => {
-    setShowGamification(true);
+    setModuleEnabled('gamification', true);
+    setActivePanel('gamification');
   };
   
   const handleCloseNotification = (id: string) => {
@@ -375,22 +437,13 @@ function DashboardV33Inner() {
   // Global close handler for all panels/modals
   const handleCloseAll = () => {
     setActivePanel(null);
-    setShowTraderGPT(false);
-    setShowGamification(false);
-    setShowAdvancedViz(false);
-    setShowAIConfidence(false);
-    setShowCognitiveAI(false);
-    setShowFeedbackLoop(false);
-    setShowVolatilityModel(false);
-    setShowMetaModel(false);
-    setShowSubscription(false);
-    setShowStrategyBuilder(false);
-    setShowInvestorPanel(false);
+    disableAllModules();
     setShowWatchlist(false);
     setShowAdmin(false);
     setShowFilter(false);
     setSelectedForXAI(null);
   };
+
 
   // Feature cards click handler for "Tüm Özellikler"
   const handleFeatureCardClick = (section: 'signals' | 'analysis' | 'operations' | 'advanced', name: string) => {
@@ -1023,7 +1076,7 @@ function DashboardV33Inner() {
               onClick={() => openPanel('tradergpt')}
               style={{ 
                 padding: '8px 16px', 
-                background: activePanel === 'tradergpt' ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
+                background: aiModules.tradergpt ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '8px',
@@ -1047,7 +1100,7 @@ function DashboardV33Inner() {
               onClick={() => openPanel('viz')}
               style={{ 
                 padding: '8px 16px', 
-                background: activePanel === 'viz' ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
+                background: aiModules.viz ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '8px',
@@ -1071,7 +1124,7 @@ function DashboardV33Inner() {
               onClick={() => openPanel('aiconf')}
               style={{ 
                 padding: '8px 14px', 
-                background: activePanel === 'aiconf' ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
+                background: aiModules.aiconf ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '8px',
@@ -1095,7 +1148,7 @@ function DashboardV33Inner() {
               onClick={() => openPanel('cognitive')}
               style={{ 
                 padding: '8px 14px', 
-                background: activePanel === 'cognitive' ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
+                background: aiModules.cognitive ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1116,10 +1169,10 @@ function DashboardV33Inner() {
               💬 AI Yorum
             </button>
             <button 
-              onClick={() => openPanel('risk')}
+              onClick={() => openPanel('riskguard')}
               style={{ 
                 padding: '8px 14px', 
-                background: activePanel === 'risk' ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'linear-gradient(135deg, #f97316, #f59e0b)', 
+                background: aiModules.riskguard ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'linear-gradient(135deg, #f97316, #f59e0b)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1143,7 +1196,7 @@ function DashboardV33Inner() {
               onClick={() => openPanel('meta')}
               style={{ 
                 padding: '8px 14px', 
-                background: activePanel === 'meta' ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
+                background: aiModules.meta ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1164,10 +1217,13 @@ function DashboardV33Inner() {
               🧠 Meta-Model
             </button>
             <button 
-              onClick={() => setShowSubscription(true)}
+              onClick={() => {
+                setModuleEnabled('subscription', true);
+                setActivePanel('subscription');
+              }}
               style={{ 
                 padding: '8px 14px', 
-                background: showSubscription ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : 'linear-gradient(135deg, #fbbf24, #d97706)', 
+                background: aiModules.subscription ? 'linear-gradient(135deg, #fbbf24, #f59e0b)' : 'linear-gradient(135deg, #fbbf24, #d97706)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1188,10 +1244,13 @@ function DashboardV33Inner() {
               💎 Planlar
             </button>
             <button 
-              onClick={() => setShowStrategyBuilder(true)}
+              onClick={() => {
+                setModuleEnabled('strategy', true);
+                setActivePanel('strategy');
+              }}
               style={{ 
                 padding: '8px 14px', 
-                background: showStrategyBuilder ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #059669)', 
+                background: aiModules.strategy ? 'linear-gradient(135deg, #10b981, #06b6d4)' : 'linear-gradient(135deg, #10b981, #059669)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1212,10 +1271,13 @@ function DashboardV33Inner() {
               🎯 Strateji Oluştur
             </button>
             <button 
-              onClick={() => setShowInvestorPanel(true)}
+              onClick={() => {
+                setModuleEnabled('investor', true);
+                setActivePanel('investor');
+              }}
               style={{ 
                 padding: '8px 14px', 
-                background: showInvestorPanel ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
+                background: aiModules.investor ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1282,7 +1344,7 @@ function DashboardV33Inner() {
             <button 
               style={{ 
                 padding: '8px 14px', 
-                background: showV50Module ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
+                background: aiModules.enterprise ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #8b5cf6, #7c3aed)', 
                 color: '#fff', 
                 border: 'none', 
                 borderRadius: '10px',
@@ -1293,12 +1355,15 @@ function DashboardV33Inner() {
                 outline: 'none',
                 boxShadow: '0 2px 8px rgba(139,92,246,0.4)',
               }} 
-                onClick={() => setShowV50Module(true)}
+                onClick={() => {
+                  setModuleEnabled('enterprise', true);
+                  setActivePanel('enterprise');
+                }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'} 
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
               aria-label="V5.0 Enterprise modülünü aç"
             >
-              {showV50Module ? 'V5.0 ✨' : 'V5.0 Enterprise'}
+              {aiModules.enterprise ? 'V5.0 ✨' : 'V5.0 Enterprise'}
             </button>
             )}
         </div>
@@ -1334,6 +1399,121 @@ function DashboardV33Inner() {
             </div>
           ))}
         </div>
+        
+        {/* AI Module Control Center */}
+        <section style={{ marginBottom: '24px' }}>
+          <div style={{ 
+            display: 'flex', 
+            flexWrap: 'wrap', 
+            justifyContent: 'space-between', 
+            alignItems: 'center', 
+            gap: '12px',
+            marginBottom: '12px'
+          }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>AI Modül Kontrol Merkezi</h2>
+              <p style={{ fontSize: '12px', color: '#64748b', margin: '4px 0 0' }}>
+                Hangi AI bileşenlerinin görünür olacağını seç, deneyimi kişiselleştir.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                onClick={enableAllModules}
+                style={{
+                  padding: '8px 14px',
+                  background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(59,130,246,0.3)'
+                }}
+              >
+                Hepsini Aç
+              </button>
+              <button
+                onClick={disableAllModules}
+                style={{
+                  padding: '8px 14px',
+                  background: 'rgba(15,23,42,0.85)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontWeight: '700',
+                  fontSize: '11px',
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(15,23,42,0.3)'
+                }}
+              >
+                Hepsini Kapat
+              </button>
+            </div>
+          </div>
+
+          <div style={{ 
+            display: 'grid', 
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            gap: '12px' 
+          }}>
+            {moduleControls.map((module) => (
+              <button
+                key={module.id}
+                onClick={() => handleModuleToggleUI(module.id)}
+                style={{
+                  border: module.enabled ? 'none' : '1px solid rgba(148,163,184,0.4)',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  textAlign: 'left',
+                  cursor: 'pointer',
+                  background: module.enabled ? module.gradient : 'linear-gradient(135deg, #f8fafc, #e2e8f0)',
+                  color: module.enabled ? '#fff' : '#0f172a',
+                  boxShadow: module.enabled ? '0 12px 35px rgba(15,23,42,0.18)' : '0 2px 12px rgba(15,23,42,0.08)',
+                  transition: 'all 0.2s',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                  minHeight: '140px'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = module.enabled 
+                    ? '0 16px 40px rgba(15,23,42,0.22)'
+                    : '0 4px 18px rgba(15,23,42,0.12)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = module.enabled 
+                    ? '0 12px 35px rgba(15,23,42,0.18)'
+                    : '0 2px 12px rgba(15,23,42,0.08)';
+                }}
+              >
+                <span style={{ fontSize: '24px' }}>{module.icon}</span>
+                <div>
+                  <div style={{ fontWeight: '700', fontSize: '14px', marginBottom: '4px' }}>
+                    {module.title}
+                  </div>
+                  <p style={{ fontSize: '12px', margin: 0, opacity: module.enabled ? 0.95 : 0.7 }}>
+                    {module.description}
+                  </p>
+                </div>
+                <span style={{
+                  marginTop: 'auto',
+                  padding: '6px 10px',
+                  borderRadius: '999px',
+                  fontSize: '10px',
+                  fontWeight: '700',
+                  alignSelf: 'flex-start',
+                  background: module.enabled ? 'rgba(255,255,255,0.2)' : 'rgba(15,23,42,0.1)',
+                  color: module.enabled ? '#fff' : '#0f172a'
+                }}>
+                  {module.enabled ? 'AKTİF' : 'KAPALI'}
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
 
         {/* 🎯 SPRINT 1: AI TAHMİNLERİ - EN ÜSTE (Öncelik 1) */}
         <div style={{ 
@@ -1851,14 +2031,43 @@ function DashboardV33Inner() {
                       <div key={idx} style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '10px' }}>
                         <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '6px' }}>{blk.label}</div>
                         <div style={{ width: '100%', height: 140 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={blk.data}>
-                              <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                              <XAxis dataKey="day" hide={true} />
-                              <YAxis hide={true} />
-                              <Line type="monotone" dataKey="value" stroke={blk.color} strokeWidth={2} dot={false} />
-                            </LineChart>
-                          </ResponsiveContainer>
+                          {(() => {
+                            const width = 220;
+                            const height = 120;
+                            const points = buildPolylinePoints(blk.data, 'value', { width, height, padding: 12 });
+                            if (!points) {
+                              return (
+                                <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px' }}>
+                                  Veri yok
+                                </div>
+                              );
+                            }
+                            return (
+                              <svg
+                                width="100%"
+                                height="100%"
+                                viewBox={`0 0 ${width} ${height}`}
+                                preserveAspectRatio="none"
+                              >
+                                <rect
+                                  x="0"
+                                  y="0"
+                                  width={width}
+                                  height={height}
+                                  fill="transparent"
+                                  stroke="none"
+                                />
+                                <polyline
+                                  points={points}
+                                  fill="none"
+                                  stroke={blk.color}
+                                  strokeWidth={3}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                />
+                              </svg>
+                            );
+                          })()}
                         </div>
                       </div>
                     ))}
@@ -1885,31 +2094,87 @@ function DashboardV33Inner() {
                     <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
                       <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Günlük P&L (60 Gün)</div>
                       <div style={{ width: '100%', height: 200 }}>
-                        <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={daily}>
-                            <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                            <XAxis dataKey="day" tick={{ fontSize: 10 }} />
-                            <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <Line type="monotone" dataKey="pnl" stroke="#10b981" strokeWidth={2} dot={false} />
-                            <Line type="monotone" dataKey="drawdown" stroke="#ef4444" strokeWidth={2} dot={false} />
-                          </LineChart>
-                        </ResponsiveContainer>
+                        {(() => {
+                          const width = 360;
+                          const height = 200;
+                          const pnlPoints = buildPolylinePoints(daily, 'pnl', { width, height, padding: 18 });
+                          const ddPoints = buildPolylinePoints(daily, 'drawdown', { width, height, padding: 18 });
+                          if (!pnlPoints) {
+                            return (
+                              <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '12px' }}>
+                                Veri yok
+                              </div>
+                            );
+                          }
+                          return (
+                            <svg
+                              width="100%"
+                              height="100%"
+                              viewBox={`0 0 ${width} ${height}`}
+                              preserveAspectRatio="none"
+                            >
+                              {[0.25, 0.5, 0.75].map((ratio) => (
+                                <line
+                                  key={ratio}
+                                  x1={18}
+                                  x2={width - 18}
+                                  y1={ratio * height}
+                                  y2={ratio * height}
+                                  stroke="#e2e8f0"
+                                  strokeDasharray="4 4"
+                                />
+                              ))}
+                              <polyline
+                                points={pnlPoints}
+                                fill="none"
+                                stroke="#10b981"
+                                strokeWidth={3}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                              {ddPoints && (
+                                <polyline
+                                  points={ddPoints}
+                                  fill="none"
+                                  stroke="#ef4444"
+                                  strokeWidth={2}
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  opacity={0.8}
+                                />
+                              )}
+                            </svg>
+                          );
+                        })()}
                       </div>
                     </div>
                     <div style={{ display: 'grid', gap: '10px' }}>
                       <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Sharpe Dağılımı</div>
-                        <div style={{ width: '100%', height: 140 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <LineChart data={sharpe}>
-                              <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" />
-                              <XAxis dataKey="period" tick={{ fontSize: 10 }} />
-                              <YAxis tick={{ fontSize: 10 }} />
-                              <Line type="monotone" dataKey="value" stroke="#8b5cf6" strokeWidth={2} />
-                            </LineChart>
-                          </ResponsiveContainer>
-                        </div>
+                      <div style={{ fontSize: '12px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>Sharpe Dağılımı</div>
+                      <div style={{ width: '100%', height: 140 }}>
+                        {(() => {
+                          const width = 220;
+                          const height = 140;
+                          const points = buildPolylinePoints(sharpe, 'value', { width, height, padding: 14 });
+                          return (
+                            <svg
+                              width="100%"
+                              height="100%"
+                              viewBox={`0 0 ${width} ${height}`}
+                              preserveAspectRatio="none"
+                            >
+                              <polyline
+                                points={points}
+                                fill="none"
+                                stroke="#8b5cf6"
+                                strokeWidth={3}
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          );
+                        })()}
+                      </div>
                       </div>
                       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '10px', padding: '12px' }}>
                         <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Ortalama Getiri</div>
@@ -1944,18 +2209,59 @@ function DashboardV33Inner() {
               </div>
               <div style={{ padding: '16px', aspectRatio: '16/9' }}>
                 {chartData && chartData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={chartData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                      <XAxis dataKey="day" stroke="#64748b" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" height={80} />
-                      <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={['auto', 'auto']} label={{ value: 'Fiyat (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '11px', fontWeight: '600' } }} />
-                      <Tooltip contentStyle={{ background: 'rgba(255,255,255,0.95)', border: '1px solid rgba(6,182,212,0.3)', borderRadius: '12px', padding: '12px', boxShadow: '0 10px 40px rgba(6,182,212,0.2)' }} />
-                      <Area type="monotone" dataKey="predicted_upper" stroke="none" fill="#06b6d4" fillOpacity={0.15} name="±1σ Güven Aralığı" />
-                      <Area type="monotone" dataKey="predicted_lower" stroke="none" fill="#06b6d4" fillOpacity={0.15} />
-                      <Line type="monotone" dataKey="actual" stroke="#3b82f6" strokeWidth={3} dot={{ fill: '#3b82f6', strokeWidth: 2, r: 5 }} name="Gerçek Fiyat" />
-                      <Line type="monotone" dataKey="predicted" stroke="#06b6d4" strokeWidth={3} strokeDasharray="5 5" dot={{ fill: '#06b6d4', strokeWidth: 2, r: 5 }} name="AI Tahmini" />
-                    </LineChart>
-                  </ResponsiveContainer>
+                  (() => {
+                    const width = 640;
+                    const height = 320;
+                    const dims = { width, height, padding: 30 };
+                    const predictedPoints = buildPolylinePoints(chartData, 'predicted', dims);
+                    const actualPoints = buildPolylinePoints(chartData, 'actual', dims);
+                    const areaPolygon = buildBandPolygon(chartData, 'predicted_upper', 'predicted_lower', dims);
+                    return (
+                      <svg
+                        width="100%"
+                        height="100%"
+                        viewBox={`0 0 ${width} ${height}`}
+                        preserveAspectRatio="none"
+                      >
+                        <rect
+                          x="0"
+                          y="0"
+                          width={width}
+                          height={height}
+                          fill="transparent"
+                          stroke="none"
+                        />
+                        {areaPolygon && (
+                          <polygon
+                            points={areaPolygon}
+                            fill="#06b6d4"
+                            opacity={0.15}
+                          />
+                        )}
+                        {predictedPoints && (
+                          <polyline
+                            points={predictedPoints}
+                            fill="none"
+                            stroke="#06b6d4"
+                            strokeWidth={3}
+                            strokeDasharray="8 6"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        )}
+                        {actualPoints && (
+                          <polyline
+                            points={actualPoints}
+                            fill="none"
+                            stroke="#3b82f6"
+                            strokeWidth={3}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        )}
+                      </svg>
+                    );
+                  })()
                 ) : (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: '13px' }}>📊 Grafik yükleniyor...</div>
                 )}
@@ -2035,7 +2341,7 @@ function DashboardV33Inner() {
             </div>
 
             {/* 6. Volatilite Modeli */}
-            {showVolatilityModel && (
+        {aiModules.riskguard && (
               <div style={{ 
                 padding: '12px',
                 background: 'rgba(255,255,255,0.8)',
@@ -2375,8 +2681,9 @@ function DashboardV33Inner() {
               </div>
               <button
                 onClick={() => {
-                  setShowV50Module(true);
+                  setModuleEnabled('enterprise', true);
                   setV50ActiveTab('portfolio');
+                  setActivePanel('enterprise');
                 }}
                 style={{
                   padding: '10px 20px',
@@ -2450,50 +2757,44 @@ function DashboardV33Inner() {
             </div>
           </div>
           <div style={{ padding: '16px', aspectRatio: '16/9' }}>
-            {portfolioData && portfolioData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={portfolioData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                <XAxis 
-                  dataKey="day" 
-                  stroke="#64748b" 
-                  tick={{ fontSize: 10 }}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
-                />
-                <YAxis 
-                  stroke="#64748b" 
-                  tick={{ fontSize: 10 }}
-                  domain={['auto', 'auto']}
-                  label={{ value: 'Portföy Değeri (₺)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fill: '#64748b', fontSize: '11px', fontWeight: '600' } }}
-                />
-                <Tooltip 
-                  contentStyle={{ 
-                    background: 'rgba(255,255,255,0.95)', 
-                    border: '1px solid rgba(6,182,212,0.3)', 
-                    borderRadius: '12px',
-                    padding: '12px',
-                    boxShadow: '0 10px 40px rgba(6,182,212,0.2)'
-                  }}
-                  labelStyle={{ fontWeight: 'bold', color: '#0f172a', marginBottom: '8px' }}
-                  formatter={(value: any) => ['₺' + value.toLocaleString('tr-TR'), 'Portföy Değeri']}
-                />
-                <Legend 
-                  wrapperStyle={{ paddingTop: '20px', fontSize: '13px' }}
-                  iconType="line"
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="#10b981" 
-                  strokeWidth={3}
-                  dot={{ fill: '#10b981', strokeWidth: 2, r: 4 }}
-                  name="Portföy Değeri"
-                />
-              </LineChart>
-            </ResponsiveContainer>
-            ) : (
+          {portfolioData && portfolioData.length > 0 ? (
+            (() => {
+              const width = 640;
+              const height = 320;
+              const points = buildPolylinePoints(portfolioData, 'value', { width, height, padding: 28 });
+              return (
+                <svg
+                  width="100%"
+                  height="100%"
+                  viewBox={`0 0 ${width} ${height}`}
+                  preserveAspectRatio="none"
+                >
+                  <defs>
+                    <linearGradient id="portfolioLineFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.25" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  {points && (
+                    <>
+                      <polyline
+                        points={points}
+                        fill="none"
+                        stroke="#10b981"
+                        strokeWidth={3}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <polygon
+                        points={`28,${height - 28} ${points} ${width - 28},${height - 28}`}
+                        fill="url(#portfolioLineFill)"
+                      />
+                    </>
+                  )}
+                </svg>
+              );
+            })()
+          ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#64748b', fontSize: '13px' }}>
                 📊 Grafik yükleniyor...
               </div>
@@ -2775,7 +3076,7 @@ function DashboardV33Inner() {
         )}
 
         {/* TraderGPT Chat Assistant */}
-        {activePanel === 'tradergpt' && (
+        {aiModules.tradergpt && (
           <div id="panel-tradergpt" style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -2824,7 +3125,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Gamification System */}
-        {showGamification && (
+        {aiModules.gamification && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -2872,7 +3173,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Advanced Visualization Hub */}
-        {activePanel === 'viz' && (
+        {aiModules.viz && (
           <div id="panel-viz" style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -2920,7 +3221,7 @@ function DashboardV33Inner() {
         )}
 
         {/* AI Confidence Breakdown */}
-        {activePanel === 'aiconf' && (
+        {aiModules.aiconf && (
           <div id="panel-aiconf" style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -2968,7 +3269,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Cognitive AI Comments */}
-        {activePanel === 'cognitive' && (
+        {aiModules.cognitive && (
           <div id="panel-cognitive" style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -3016,7 +3317,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Feedback Loop */}
-        {showFeedbackLoop && (
+        {aiModules.feedback && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -3064,8 +3365,8 @@ function DashboardV33Inner() {
         )}
 
         {/* Adaptive Volatility Model */}
-        {activePanel === 'risk' && (
-          <div id="panel-risk" style={{ 
+        {aiModules.riskguard && (
+          <div id="panel-riskguard" style={{ 
             margin: '48px 0',
             padding: '16px',
             background: 'linear-gradient(135deg, rgba(249,115,22,0.1), rgba(239,68,68,0.1))',
@@ -3112,7 +3413,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Meta-Model Engine */}
-        {activePanel === 'meta' && (
+        {aiModules.meta && (
           <div id="panel-meta" style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -3160,7 +3461,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Subscription Tiers */}
-        {showSubscription && (
+        {aiModules.subscription && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -3208,7 +3509,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Investor Panel - V6.0 */}
-        {showInvestorPanel && (
+        {aiModules.investor && (
           <div style={{ 
             margin: '16px 0',
             padding: '16px',
@@ -3221,7 +3522,7 @@ function DashboardV33Inner() {
         )}
 
         {/* Strategy Builder */}
-        {showStrategyBuilder && (
+        {aiModules.strategy && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -3315,7 +3616,10 @@ function DashboardV33Inner() {
                 🏆 Seviye 5
               </button>
               <button
-                onClick={() => setShowFeedbackLoop(true)}
+                onClick={() => {
+                  setModuleEnabled('feedback', true);
+                  setActivePanel('feedback');
+                }}
                 style={{
                   padding: '8px 16px',
                   background: 'linear-gradient(135deg, #8b5cf6, #a855f7)',
@@ -3358,7 +3662,7 @@ function DashboardV33Inner() {
         </div>
 
         {/* V5.0 Enterprise Module */}
-        {showV50Module && (
+        {aiModules.enterprise && (
           <div style={{ 
             margin: '48px 0',
             padding: '16px',
@@ -3831,25 +4135,18 @@ function DashboardV33Inner() {
 
       </main>
     </div>
-      )}
+    )}
   </div>
   );
 }
 
-// Outer component with Suspense wrapper
-// P5.2: Legal Disclaimer Banner
-import { LegalDisclaimer } from '@/components/LegalDisclaimer';
-import ErrorBoundary from '@/components/ErrorBoundary';
-
-function DashboardV33() {
+function DashboardV33Inner({ initialTab }: { initialTab?: DashboardTab }) {
   return (
     <ErrorBoundary>
       <LegalDisclaimer />
-      <Suspense fallback={<div className="min-h-screen bg-white flex items-center justify-center"><div className="text-slate-600">Yükleniyor...</div></div>}>
-        <DashboardV33Inner />
-      </Suspense>
+      <DashboardV33Content initialTab={initialTab} />
     </ErrorBoundary>
   );
 }
 
-export default DashboardV33;
+export default DashboardV33Inner;

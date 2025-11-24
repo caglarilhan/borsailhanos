@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { 
   ChartBarIcon,
   CalculatorIcon,
@@ -11,7 +11,7 @@ import {
   ClockIcon,
   CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { buildPolylinePoints } from '@/lib/svgChart';
 
 interface OptionChain {
   symbol: string;
@@ -124,6 +124,11 @@ export default function OptionsAnalysis({ isLoading }: OptionsAnalysisProps) {
   };
 
   const formatGreek = (value: number, type: string) => {
+  const pnlPath = useMemo(() => {
+    if (!strategyAnalysis || !strategyAnalysis.profit_loss?.length) return '';
+    return buildPolylinePoints(strategyAnalysis.profit_loss, 'pnl', { width: 600, height: 240, padding: 30 });
+  }, [strategyAnalysis]);
+
     if (type === 'gamma') {
       return value.toFixed(6);
     }
@@ -442,28 +447,33 @@ export default function OptionsAnalysis({ isLoading }: OptionsAnalysisProps) {
               {/* Profit/Loss Chart */}
               <div>
                 <h4 className="text-md font-semibold text-gray-900 mb-3">Kar/Zarar Grafiği</h4>
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={strategyAnalysis.profit_loss}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                      <XAxis 
-                        dataKey="price" 
-                        stroke="#6b7280"
-                        fontSize={12}
-                        tickFormatter={(value) => `₺${value.toFixed(0)}`}
+                <div className="h-64 bg-slate-50 rounded-lg p-3">
+                  {pnlPath ? (
+                    <svg width="100%" height="100%" viewBox="0 0 600 240" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="pnlFill" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2" />
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                        </linearGradient>
+                      </defs>
+                      <polygon
+                        points={`30,210 ${pnlPath} 570,210`}
+                        fill="url(#pnlFill)"
                       />
-                      <YAxis 
-                        stroke="#6b7280"
-                        fontSize={12}
-                        tickFormatter={(value) => `₺${value.toFixed(0)}`}
+                      <polyline
+                        points={pnlPath}
+                        fill="none"
+                        stroke="#3b82f6"
+                        strokeWidth={3}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       />
-                      <Tooltip 
-                        formatter={(value: number) => [('₺' + (value as number).toFixed(2)) as unknown as React.ReactNode, 'P&L']}
-                        labelFormatter={(label) => 'Fiyat: ₺' + String(label)}
-                      />
-                      <Line type="monotone" dataKey="pnl" stroke="#3b82f6" strokeWidth={2} dot={false} />
-                    </LineChart>
-                  </ResponsiveContainer>
+                    </svg>
+                  ) : (
+                    <div className="h-full flex items-center justify-center text-xs text-slate-500">
+                      P&L verisi yok
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

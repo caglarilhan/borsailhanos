@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { buildPolylinePoints } from '@/lib/svgChart';
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 export default function CrossMarketArbitrage() {
@@ -69,6 +69,11 @@ export default function CrossMarketArbitrage() {
       } catch {}
     })();
   },[]);
+
+  const historyPath = useMemo(() => {
+    if (!history || history.length === 0) return '';
+    return buildPolylinePoints(history, 'corr', { width: 600, height: 120, padding: 12 });
+  }, [history]);
 
   return (
     <div className="bg-white rounded-lg shadow-sm">
@@ -159,15 +164,23 @@ export default function CrossMarketArbitrage() {
         ) : (
           <div className="text-gray-500">Sonuç yok</div>
         )}
-        <div className="mt-4 h-32">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={history} margin={{ left: 8, right: 8, top: 8, bottom: 0 }}>
-              <XAxis dataKey="t" hide />
-              <YAxis domain={[0,1]} hide />
-              <Tooltip formatter={(v)=>String(v)} labelFormatter={(l)=>`t=${l}`} />
-              <Line type="monotone" dataKey="corr" stroke="#2563eb" dot={false} strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="mt-4 h-32 bg-slate-50 rounded-lg p-2">
+          {historyPath ? (
+            <svg width="100%" height="100%" viewBox="0 0 600 120" preserveAspectRatio="none">
+              <polyline
+                points={historyPath}
+                fill="none"
+                stroke="#2563eb"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <div className="h-full flex items-center justify-center text-xs text-slate-500">
+              Korelasyon geçmişi yok
+            </div>
+          )}
         </div>
       </div>
     </div>

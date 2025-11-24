@@ -183,13 +183,13 @@ export class DynamicRiskRebalancer {
 }
 
 // Singleton instance
-export const dynamicRiskRebalancer = new DynamicRiskRebalancer();
+export const riskRebalancer = new DynamicRiskRebalancer();
 
 /**
  * Check if rebalance is needed
  */
 export function checkRebalanceNeeded(metrics: PortfolioMetrics): RebalanceTrigger {
-  return dynamicRiskRebalancer.checkRebalanceNeeded(metrics);
+  return riskRebalancer.checkRebalanceNeeded(metrics);
 }
 
 /**
@@ -201,7 +201,7 @@ export function calculateRebalance(
   metrics: PortfolioMetrics,
   targetWeights?: Map<string, number>
 ): PositionSize[] {
-  return dynamicRiskRebalancer.calculateRebalance(symbols, currentWeights, metrics, targetWeights);
+  return riskRebalancer.calculateRebalance(symbols, currentWeights, metrics, targetWeights);
 }
 
 

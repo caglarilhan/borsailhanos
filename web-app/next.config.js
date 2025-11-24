@@ -75,11 +75,7 @@ const nextConfig = {
   // Redirects
   async redirects() {
     return [
-      {
-        source: '/dashboard',
-        destination: '/',
-        permanent: true,
-      },
+      // Dashboard redirect kaldırıldı - artık /dashboard route'u çalışıyor
     ];
   },
 

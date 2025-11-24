@@ -5,8 +5,8 @@
 
 'use client';
 
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ScatterChart, Scatter } from 'recharts';
+import React, { useMemo } from 'react';
+import { buildPolylinePoints } from '@/lib/svgChart';
 
 export interface CalibrationData {
   bin: number; // Confidence bin (0-1)
@@ -36,6 +36,10 @@ export function CalibrationChart({
     count: Math.floor(Math.random() * 100) + 20,
   }));
 
+  const dims = { width: 520, height: 260, padding: 30 };
+  const expectedPath = useMemo(() => buildPolylinePoints(chartData, 'expected', dims), [chartData]);
+  const observedPath = useMemo(() => buildPolylinePoints(chartData, 'observed', dims), [chartData]);
+
   return (
     <div className={`bg-white rounded-lg shadow-sm p-4 border border-slate-200 ${className}`}>
       <div className="flex items-center justify-between mb-4">
@@ -57,45 +61,23 @@ export function CalibrationChart({
         </div>
       </div>
       
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={chartData}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis 
-            dataKey="bin" 
-            label={{ value: 'Confidence (Expected)', position: 'insideBottom', offset: -5 }}
-            tickFormatter={(value) => (value * 100).toFixed(0) + '%'}
-          />
-          <YAxis 
-            label={{ value: 'Frequency (Observed)', angle: -90, position: 'insideLeft' }}
-            tickFormatter={(value) => (value * 100).toFixed(0) + '%'}
-            domain={[0, 1]}
-          />
-          <Tooltip 
-            formatter={(value: number) => [(value * 100).toFixed(1) + '%', '']}
-            labelFormatter={(label) => `Confidence: ${(label * 100).toFixed(0)}%`}
-          />
-          <Legend />
-          {/* Perfect calibration line (diagonal) */}
-          <Line 
-            type="monotone" 
-            dataKey="expected" 
-            stroke="#94a3b8" 
-            strokeWidth={2} 
-            strokeDasharray="5 5"
-            name="Perfect Calibration"
-            dot={false}
-          />
-          {/* Observed frequency */}
-          <Line 
-            type="monotone" 
-            dataKey="observed" 
-            stroke="#3b82f6" 
-            strokeWidth={2}
-            name="Observed"
-            dot={{ r: 4, fill: '#3b82f6' }}
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      <svg width="100%" height="260" viewBox={`0 0 ${dims.width} ${dims.height}`} preserveAspectRatio="none">
+        <polyline
+          points={expectedPath}
+          fill="none"
+          stroke="#94a3b8"
+          strokeDasharray="6 6"
+          strokeWidth={3}
+        />
+        <polyline
+          points={observedPath}
+          fill="none"
+          stroke="#3b82f6"
+          strokeWidth={3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
       
       <div className="mt-3 text-xs text-gray-600">
         <p>Grafik: X ekseni = Model güven oranı (beklenen), Y ekseni = Gerçekleşen frekans (gözlemlenen)</p>

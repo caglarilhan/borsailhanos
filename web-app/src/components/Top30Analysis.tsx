@@ -1,9 +1,9 @@
 'use client';
 
-import React from 'react';
-import { LineChart, Line, ResponsiveContainer, Tooltip } from 'recharts';
 import { useTop30Analysis } from '@/hooks/queries';
 import { Skeleton } from '@/components/UI/Skeleton';
+import React from 'react';
+import { buildPolylinePoints } from '@/lib/svgChart';
 
 interface AISummary {
   rsi: number;
@@ -138,11 +138,6 @@ export default function Top30Analysis() {
       </div>
     );
   }
-
-  // Sparkline grafik için data format
-  const prepareSparklineData = (sparkline: number[]) => {
-    return sparkline.map((price, idx) => ({ day: idx + 1, price }));
-  };
 
   return (
     <div style={{ padding: '0' }}>
@@ -576,27 +571,22 @@ export default function Top30Analysis() {
               borderRadius: '8px',
               padding: '8px'
             }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={prepareSparklineData(stock.sparkline)}>
-                  <Tooltip 
-                    contentStyle={{ 
-                      background: 'rgba(15,23,42,0.95)', 
-                      border: 'none', 
-                      borderRadius: '6px',
-                      padding: '6px 10px',
-                      fontSize: '11px'
-                    }}
-                    labelStyle={{ color: '#fff' }}
-                  />
-                  <Line 
-                    type="monotone" 
-                    dataKey="price" 
-                    stroke={getSignalColor(stock.signal)} 
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
+              {(() => {
+                const sparkData = stock.sparkline.map((value, idx) => ({ value, idx }));
+                const points = buildPolylinePoints(sparkData, 'value', { width: 260, height: 44, padding: 12 });
+                return (
+                  <svg width="100%" height="100%" viewBox="0 0 260 44" preserveAspectRatio="none">
+                    <polyline
+                      points={points}
+                      fill="none"
+                      stroke={getSignalColor(stock.signal)}
+                      strokeWidth={2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                );
+              })()}
             </div>
 
             {/* 📊 Derin AI Özeti */}

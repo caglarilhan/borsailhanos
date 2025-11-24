@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
+import { buildPolylinePoints } from '@/lib/svgChart';
 
 interface StrategyResult {
   strategy: string;
@@ -58,6 +58,11 @@ export function StrategyLab() {
     });
   }, [selectedStrategy, period]);
 
+  const equityPoints = useMemo(
+    () => buildPolylinePoints(equityCurve, 'equity', { width: 520, height: 140, padding: 18 }),
+    [equityCurve]
+  );
+
   return (
     <div className="bg-white rounded-lg p-4 border border-slate-200">
       <div className="mb-4">
@@ -87,17 +92,27 @@ export function StrategyLab() {
       {/* Strategy Comparison */}
       <div className="mb-4">
         <h4 className="text-xs font-semibold text-slate-700 mb-2">Strateji Karşılaştırması</h4>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={strategyResults}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="strategy" stroke="#64748b" fontSize={10} />
-            <YAxis stroke="#64748b" fontSize={10} />
-            <Tooltip contentStyle={{ fontSize: '11px' }} />
-            <Legend wrapperStyle={{ fontSize: '11px' }} />
-            <Bar dataKey="totalReturn" fill="#10b981" name="Getiri (%)" />
-            <Bar dataKey="sharpeRatio" fill="#8b5cf6" name="Sharpe" />
-          </BarChart>
-        </ResponsiveContainer>
+        <div className="space-y-3">
+          {strategyResults.map((result) => (
+            <div key={result.strategy} className="bg-slate-50 rounded-lg p-3">
+              <div className="flex justify-between text-xs font-semibold text-slate-600">
+                <span>{result.strategy}</span>
+                <span>{result.totalReturn.toFixed(1)}%</span>
+              </div>
+              <div className="h-2 bg-slate-200 rounded mt-2">
+                <div
+                  className="h-full rounded bg-gradient-to-r from-emerald-400 to-emerald-600"
+                  style={{ width: `${Math.min(Math.max(result.totalReturn, 0), 20) * 5}%` }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-[10px] text-slate-500">
+                <span>Sharpe {result.sharpeRatio.toFixed(2)}</span>
+                <span>Win Rate {result.winRate.toFixed(1)}%</span>
+                <span>Max DD {result.maxDrawdown.toFixed(1)}%</span>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Equity Curve */}
@@ -105,15 +120,24 @@ export function StrategyLab() {
         <h4 className="text-xs font-semibold text-slate-700 mb-2">
           Equity Curve ({selectedStrategy} - {period})
         </h4>
-        <ResponsiveContainer width="100%" height={150}>
-          <LineChart data={equityCurve}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-            <XAxis dataKey="day" stroke="#64748b" fontSize={10} />
-            <YAxis stroke="#64748b" fontSize={10} />
-            <Tooltip contentStyle={{ fontSize: '11px' }} />
-            <Line type="monotone" dataKey="equity" stroke="#10b981" strokeWidth={2} dot={false} />
-          </LineChart>
-        </ResponsiveContainer>
+        <div className="h-40 bg-slate-50 rounded-lg p-2">
+          {equityPoints ? (
+            <svg width="100%" height="100%" viewBox="0 0 520 140" preserveAspectRatio="none">
+              <polyline
+                points={equityPoints}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <div className="h-full flex items-center justify-center text-xs text-slate-500">
+              Veri yok
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Metrics Table */}

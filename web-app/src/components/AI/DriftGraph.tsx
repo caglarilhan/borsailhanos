@@ -6,8 +6,8 @@
 
 'use client';
 
-import React from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
+import React, { useMemo } from 'react';
+import { buildPolylinePoints } from '@/lib/svgChart';
 
 interface DriftDataPoint {
   date: string;
@@ -43,10 +43,20 @@ export function DriftGraph({ data, period, className = '' }: DriftGraphProps) {
     name: period === '24h' 
       ? new Date(d.date).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
       : new Date(d.date).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit' }),
-    confidence: (d.confidence * 100).toFixed(1),
-    accuracy: (d.accuracy * 100).toFixed(1),
-    drift: (d.drift * 100).toFixed(2),
+    confidence: d.confidence * 100,
+    accuracy: d.accuracy * 100,
+    drift: d.drift * 100,
   }));
+
+  const dims = { width: 520, height: 180, padding: 24 };
+  const confidencePath = useMemo(
+    () => buildPolylinePoints(chartData, 'confidence', dims),
+    [chartData]
+  );
+  const accuracyPath = useMemo(
+    () => buildPolylinePoints(chartData, 'accuracy', dims),
+    [chartData]
+  );
 
   const driftColor = drift >= 0 ? '#10b981' : '#ef4444';
   const driftIcon = drift >= 0 ? '↑' : drift < 0 ? '↓' : '→';
@@ -75,58 +85,29 @@ export function DriftGraph({ data, period, className = '' }: DriftGraphProps) {
 
       {/* Chart */}
       <div className="h-48 w-full">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData}>
-            <defs>
-              <linearGradient id="confidenceGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={driftColor} stopOpacity={0.3}/>
-                <stop offset="95%" stopColor={driftColor} stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis 
-              dataKey="name" 
-              tick={{ fontSize: 10, fill: '#64748b' }}
-              interval={period === '24h' ? Math.ceil(data.length / 6) : 'preserveStartEnd'}
-            />
-            <YAxis 
-              domain={[0, 100]}
-              tick={{ fontSize: 10, fill: '#64748b' }}
-              label={{ value: 'Confidence %', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle', fontSize: 11 } }}
-            />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#fff', 
-                border: '1px solid #e2e8f0', 
-                borderRadius: '8px',
-                fontSize: '12px'
-              }}
-              formatter={(value: any, name: string) => {
-                if (name === 'confidence') return [`${value}%`, 'Confidence'];
-                if (name === 'accuracy') return [`${value}%`, 'Accuracy'];
-                if (name === 'drift') return [`${value}pp`, 'Drift'];
-                return [value, name];
-              }}
-            />
-            <Area
-              type="monotone"
-              dataKey="confidence"
-              stroke={driftColor}
-              strokeWidth={2}
-              fill="url(#confidenceGradient)"
-              dot={{ r: 3, fill: driftColor }}
-              activeDot={{ r: 5 }}
-            />
-            <Line
-              type="monotone"
-              dataKey="accuracy"
-              stroke="#8b5cf6"
-              strokeWidth={1.5}
-              strokeDasharray="5 5"
-              dot={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
+        <svg width="100%" height="100%" viewBox={`0 0 ${dims.width} ${dims.height}`} preserveAspectRatio="none">
+          <polygon
+            points={`${dims.padding},${dims.height - dims.padding} ${confidencePath} ${dims.width - dims.padding},${dims.height - dims.padding}`}
+            fill={driftColor === '#10b981' ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}
+          />
+          <polyline
+            points={confidencePath}
+            fill="none"
+            stroke={driftColor}
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <polyline
+            points={accuracyPath}
+            fill="none"
+            stroke="#8b5cf6"
+            strokeDasharray="6 6"
+            strokeWidth={2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </div>
 
       {/* Statistics */}

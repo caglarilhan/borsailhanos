@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useMemo } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { buildPolylinePoints } from '@/lib/svgChart';
 
 interface SentimentCorrelationGraphProps {
   symbol: string;
@@ -46,37 +46,32 @@ export function SentimentCorrelationGraph({ symbol, sentimentHistory }: Sentimen
           </span>
         </div>
       </div>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-          <XAxis dataKey="date" stroke="#64748b" fontSize={10} />
-          <YAxis yAxisId="left" stroke="#64748b" fontSize={10} />
-          <YAxis yAxisId="right" orientation="right" stroke="#64748b" fontSize={10} />
-          <Tooltip
-            contentStyle={{ backgroundColor: '#fff', border: '1px solid #e5e7eb', borderRadius: '8px', fontSize: '12px' }}
-            labelStyle={{ fontWeight: 'bold' }}
-          />
-          <Legend wrapperStyle={{ fontSize: '11px' }} />
-          <Line
-            yAxisId="left"
-            type="monotone"
-            dataKey="sentiment"
-            stroke="#8b5cf6"
-            strokeWidth={2}
-            dot={false}
-            name="Sentiment (%)"
-          />
-          <Line
-            yAxisId="right"
-            type="monotone"
-            dataKey="priceNormalized"
-            stroke="#10b981"
-            strokeWidth={2}
-            dot={false}
-            name="Fiyat (normalize)"
-          />
-        </LineChart>
-      </ResponsiveContainer>
+      {(() => {
+        const dims = { width: 520, height: 200, padding: 24 };
+        const sentimentPath = buildPolylinePoints(data, (d) => Number(d.sentiment), dims);
+        const pricePath = buildPolylinePoints(data, (d) => Number(d.priceNormalized), dims);
+        return (
+          <svg width="100%" height="100%" viewBox={`0 0 ${dims.width} ${dims.height}`} preserveAspectRatio="none">
+            <polyline
+              points={sentimentPath}
+              fill="none"
+              stroke="#8b5cf6"
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <polyline
+              points={pricePath}
+              fill="none"
+              stroke="#10b981"
+              strokeWidth={3}
+              strokeDasharray="6 6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        );
+      })()}
     </div>
   );
 }

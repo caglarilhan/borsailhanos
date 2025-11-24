@@ -1,26 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  LineChart, 
-  Line, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  BarChart,
-  Bar,
-  ComposedChart
-} from 'recharts';
+import { useState, useMemo } from 'react';
 import { 
   ChartBarIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   AdjustmentsHorizontalIcon
 } from '@heroicons/react/24/outline';
+import { buildPolylinePoints, buildBandPolygon } from '@/lib/svgChart';
 
 interface ChartData {
   time: string;
@@ -67,53 +54,27 @@ export default function AdvancedCharts({ symbol = 'THYAO', data, isLoading }: Ad
     }
   };
 
-  const CustomTooltip = memo(({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-white p-4 border border-gray-200 rounded-lg shadow-lg">
-          <p className="font-semibold text-gray-900">{label}</p>
-          <div className="space-y-1">
-            <p className="text-sm">
-              <span className="text-gray-600">Fiyat: </span>
-              <span className="font-medium">₺{data.price}</span>
-            </p>
-            {data.volume && (
-              <p className="text-sm">
-                <span className="text-gray-600">Hacim: </span>
-                <span className="font-medium">{data.volume.toLocaleString()}</span>
-              </p>
-            )}
-            {data.signal && (
-              <p className="text-sm">
-                <span className="text-gray-600">Sinyal: </span>
-                <span 
-                  className="font-medium"
-                  style={{ color: getSignalColor(data.signal) }}
-                >
-                  {data.signal}
-                </span>
-              </p>
-            )}
-            {data.rsi && (
-              <p className="text-sm">
-                <span className="text-gray-600">RSI: </span>
-                <span className="font-medium">{data.rsi}</span>
-              </p>
-            )}
-            {data.sentiment && (
-              <p className="text-sm">
-                <span className="text-gray-600">Sentiment: </span>
-                <span className="font-medium">{(data.sentiment * 100).toFixed(0)}%</span>
-              </p>
-            )}
-          </div>
-      </div>
-    );
-    }
-    return null;
-  });
-  CustomTooltip.displayName = 'CustomTooltip';
+  const chartDims = { width: 640, height: 280, padding: 28 };
+
+  const priceLine = useMemo(
+    () => buildPolylinePoints(chartData, (d) => d.price, chartDims),
+    [chartData]
+  );
+
+  const bollingerBand = useMemo(() => {
+    if (!showIndicators || !showSignals) return '';
+    return buildBandPolygon(chartData, 'bollingerUpper', 'bollingerLower', chartDims);
+  }, [chartData, showIndicators, showSignals]);
+
+  const upperLine = useMemo(() => {
+    if (!showIndicators || !showSignals) return '';
+    return buildPolylinePoints(chartData, 'bollingerUpper', chartDims);
+  }, [chartData, showIndicators, showSignals]);
+
+  const lowerLine = useMemo(() => {
+    if (!showIndicators || !showSignals) return '';
+    return buildPolylinePoints(chartData, 'bollingerLower', chartDims);
+  }, [chartData, showIndicators, showSignals]);
 
   if (isLoading) {
     return (
@@ -186,86 +147,98 @@ export default function AdvancedCharts({ symbol = 'THYAO', data, isLoading }: Ad
       
       <div className="p-6">
         <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            {chartType === 'line' ? (
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="time" 
-                  stroke="#6b7280"
-                  fontSize={12}
+          {chartType === 'volume' ? (
+            <div className="flex items-end h-full gap-3 px-2">
+              {chartData.map((item) => {
+                const volume = item.volume || 0;
+                const maxVolume = Math.max(...chartData.map((c) => c.volume || 0), 1);
+                const height = `${(volume / maxVolume) * 100 || 5}%`;
+                return (
+                  <div key={item.time} className="flex flex-col items-center flex-1">
+                    <div
+                      className="w-full rounded-t bg-gradient-to-t from-purple-400 to-purple-600 transition-all"
+                      style={{ height }}
+                    />
+                    <span className="text-[10px] text-slate-500 mt-1">{item.time}</span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <svg
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${chartDims.width} ${chartDims.height}`}
+              preserveAspectRatio="none"
+              className="text-slate-500"
+            >
+              <defs>
+                <linearGradient id="advancedArea" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity={chartType === 'area' ? 0.25 : 0} />
+                  <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+
+              {[0.25, 0.5, 0.75].map((ratio) => (
+                <line
+                  key={ratio}
+                  x1={chartDims.padding}
+                  x2={chartDims.width - chartDims.padding}
+                  y1={chartDims.padding + ratio * (chartDims.height - chartDims.padding * 2)}
+                  y2={chartDims.padding + ratio * (chartDims.height - chartDims.padding * 2)}
+                  stroke="#e5e7eb"
+                  strokeDasharray="4 4"
                 />
-                <YAxis 
-                  stroke="#6b7280"
-                  fontSize={12}
-                  domain={['dataMin - 5', 'dataMax + 5']}
+              ))}
+
+              {chartType === 'area' && priceLine && (
+                <polygon
+                  points={`${chartDims.padding},${chartDims.height - chartDims.padding} ${priceLine} ${
+                    chartDims.width - chartDims.padding
+                  },${chartDims.height - chartDims.padding}`}
+                  fill="url(#advancedArea)"
                 />
-                <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2}
-                  dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+              )}
+
+              {bollingerBand && (
+                <polygon
+                  points={bollingerBand}
+                  fill="rgba(16,185,129,0.08)"
                 />
-                {showIndicators && showSignals && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="bollingerUpper" 
-                    stroke="#10B981" 
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    dot={false}
-                  />
-                )}
-                {showIndicators && showSignals && (
-                  <Line 
-                    type="monotone" 
-                    dataKey="bollingerLower" 
-                    stroke="#EF4444" 
-                    strokeWidth={1}
-                    strokeDasharray="5 5"
-                    dot={false}
-                  />
-                )}
-              </LineChart>
-            ) : chartType === 'area' ? (
-              <AreaChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="time" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Area 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="#3B82F6" 
-                  fill="#3B82F6"
-                  fillOpacity={0.1}
+              )}
+
+              {upperLine && (
+                <polyline
+                  points={upperLine}
+                  fill="none"
+                  stroke="#10b981"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 6"
+                  opacity={0.7}
                 />
-              </AreaChart>
-            ) : chartType === 'volume' ? (
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="time" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar dataKey="volume" fill="#8B5CF6" />
-              </BarChart>
-            ) : (
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="time" stroke="#6b7280" fontSize={12} />
-                <YAxis stroke="#6b7280" fontSize={12} />
-                <Tooltip content={<CustomTooltip />} />
-                <Line 
-                  type="monotone" 
-                  dataKey="price" 
-                  stroke="#3B82F6" 
-                  strokeWidth={2}
+              )}
+
+              {lowerLine && (
+                <polyline
+                  points={lowerLine}
+                  fill="none"
+                  stroke="#ef4444"
+                  strokeWidth={1.5}
+                  strokeDasharray="6 6"
+                  opacity={0.7}
                 />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
+              )}
+
+              <polyline
+                points={priceLine}
+                fill="none"
+                stroke="#3b82f6"
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
         </div>
         
         {/* Technical Indicators */}
