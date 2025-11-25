@@ -14,6 +14,12 @@ from dataclasses import dataclass, field
 import json
 import random
 from pathlib import Path
+import os
+
+try:
+    import requests  # type: ignore
+except ImportError:
+    requests = None
 
 # FinRL import (fallback if not available)
 try:
@@ -115,6 +121,15 @@ class RLPortfolioAgent:
             "GARAN.IS": "XBANK.IS",
             "TUPRS.IS": "BIST:Enerji",
         }
+        self.global_bias_threshold_positive = 15.0
+        self.global_bias_threshold_negative = -15.0
+        self.current_global_bias_score: Optional[float] = None
+        self.global_bias_endpoint = os.getenv("GLOBAL_BIAS_ENDPOINT") or "http://127.0.0.1:3000/api/ai/global-bias"
+        if self.global_bias_endpoint:
+            self.refresh_global_bias_from_endpoint(self.global_bias_endpoint)
+        self.global_bias_threshold_positive = 15.0
+        self.global_bias_threshold_negative = -15.0
+        self.current_global_bias_score: float | None = None
 
     # ------------------------------------------------------------------ #
     # Fusion -> Position sizing heuristics
@@ -125,6 +140,69 @@ class RLPortfolioAgent:
             for key, value in overrides.items():
                 setattr(base, key, value)
         return base
+
+    def _load_global_bias_components(self) -> Tuple[Optional[float], Optional[float], Optional[str], Optional[str]]:
+        try:
+            sentiment_file = Path("data/snapshots/us_sentiment_sample.json")
+            market_file = Path("data/snapshots/us_market_snapshot.json")
+            sentiment_score = None
+            leader = None
+            laggard = None
+            market_bias = None
+            if sentiment_file.exists():
+                payload = json.loads(sentiment_file.read_text())
+                agg = payload.get("aggregate") or {}
+                bullish = agg.get("bullish")
+                bearish = agg.get("bearish")
+                if isinstance(bullish, (int, float)) and isinstance(bearish, (int, float)):
+                    sentiment_score = (float(bullish) - float(bearish)) * 100
+            if market_file.exists():
+                payload = json.loads(market_file.read_text())
+                rows = payload.get("symbols") or []
+                if rows:
+                    sorted_rows = sorted(rows, key=lambda r: r.get("changePct", 0), reverse=True)
+                    leader = sorted_rows[0].get("symbol")
+                    laggard = sorted_rows[-1].get("symbol")
+                    best = sorted_rows[0].get("changePct")
+                    worst = sorted_rows[-1].get("changePct")
+                    if isinstance(best, (int, float)) and isinstance(worst, (int, float)):
+                        market_bias = (float(best) + float(worst)) / 2
+            return sentiment_score, market_bias, leader, laggard
+        except Exception as exc:
+            logger.warning("Global bias components read failed: %s", exc)
+            return None, None, None, None
+
+    def _combine_global_bias(self) -> Optional[float]:
+        sentiment_score, market_bias, _, _ = self._load_global_bias_components()
+        if sentiment_score is None and market_bias is None:
+            return None
+        sentiment_component = sentiment_score or 0.0
+        market_component = market_bias or 0.0
+        score = sentiment_component * 0.6 + market_component * 0.4
+        self.current_global_bias_score = score
+        return score
+
+    def set_global_bias_score(self, score: Optional[float]) -> None:
+        self.current_global_bias_score = score
+    
+    def refresh_global_bias_from_endpoint(self, endpoint: Optional[str] = None) -> Optional[float]:
+        url = endpoint or self.global_bias_endpoint
+        if not url:
+            return self._combine_global_bias()
+        if requests is None:
+            logger.warning("requests module missing, falling back to local bias computation")
+            return self._combine_global_bias()
+        try:
+            resp = requests.get(url, timeout=2)
+            resp.raise_for_status()
+            data = resp.json()
+            score = data.get("score")
+            if isinstance(score, (int, float)):
+                self.current_global_bias_score = float(score)
+                return self.current_global_bias_score
+        except Exception as exc:
+            logger.warning("Global bias endpoint fetch failed (%s), fallback to local snapshot", exc)
+        return self._combine_global_bias()
 
     def _pick_hedge(self, symbol: str) -> Optional[str]:
         return self.hedge_pairs.get(symbol)
@@ -145,6 +223,10 @@ class RLPortfolioAgent:
         FinRL yoksa heuristik RL davranışı taklit eder.
         """
         portfolio = self._estimate_portfolio_state(portfolio_overrides)
+        global_bias_score = self.current_global_bias_score
+        if global_bias_score is None:
+            global_bias_score = self.refresh_global_bias_from_endpoint()
+        start_ts = datetime.utcnow()
 
         volatility = self._aggregate_volatility(fusion.timeframe_signals)
         sentiment_bias = fusion.sentiment.score
@@ -157,14 +239,31 @@ class RLPortfolioAgent:
         sentiment_adjust = 1 + sentiment_bias * (0.4 if action == "BUY" else -0.2)
         confidence_adjust = 0.5 + confidence
 
-        raw_position_pct = base_pct * (1 + abs(momentum_bias)) * risk_adjust * sentiment_adjust * confidence_adjust
+        global_bias_adjust = 1.0
+        global_bias_label = None
+        if global_bias_score is not None:
+            if global_bias_score >= self.global_bias_threshold_positive:
+                global_bias_adjust = 1.2
+                global_bias_label = f"Risk-On (GlobalBias {global_bias_score:+.1f}bp)"
+            elif global_bias_score <= self.global_bias_threshold_negative:
+                global_bias_adjust = 0.7
+                global_bias_label = f"Risk-Off (GlobalBias {global_bias_score:+.1f}bp)"
+
+        raw_position_pct = (
+            base_pct
+            * (1 + abs(momentum_bias))
+            * risk_adjust
+            * sentiment_adjust
+            * confidence_adjust
+            * global_bias_adjust
+        )
         max_allowed = self.portfolio_params["max_position_size"]
         position_pct = float(max(0.005, min(max_allowed, raw_position_pct)))
 
         position_value = portfolio.equity * position_pct
         stop_loss_pct = float(-(0.8 * volatility + (1 - confidence) * 0.05))
         take_profit_pct = float(abs(stop_loss_pct) * 1.8 + sentiment_bias * 0.2)
-        leverage = float(min(2.0, 1 + confidence * 0.5))
+        leverage = float(min(2.0, (1 + confidence * 0.5) * global_bias_adjust))
 
         rationale = [
             f"Aksiyon: {action}",
@@ -173,10 +272,14 @@ class RLPortfolioAgent:
             f"Volatilite: {volatility:.3f}",
             f"Pozisyon %: {position_pct*100:.2f} (limit {max_allowed*100:.1f}%)",
         ]
+        if global_bias_label:
+            rationale.append(global_bias_label)
 
         hedge = self._pick_hedge(fusion.symbol)
         if hedge:
             rationale.append(f"Hedge önerisi: {hedge}")
+
+        latency_ms = (datetime.utcnow() - start_ts).total_seconds() * 1000
 
         meta = {
             "attention_weights": fusion.attention_weights,
@@ -189,7 +292,10 @@ class RLPortfolioAgent:
                 "label": fusion.sentiment.label,
                 "confidence": fusion.sentiment.confidence,
                 "key_events": fusion.sentiment.key_events,
-            }
+            },
+            "global_bias_score": global_bias_score,
+            "global_bias_adjust": global_bias_adjust,
+            "latency_ms": latency_ms,
         }
 
         return PositionRecommendation(
@@ -211,22 +317,28 @@ class RLPortfolioAgent:
         symbol: str,
         fusion: FusionResult,
         recommendation: PositionRecommendation,
-        overrides: Optional[Dict[str, float]] = None
+        overrides: Optional[Dict[str, float]] = None,
+        latency_ms: Optional[float] = None,
     ) -> None:
         entry = {
             "timestamp": datetime.utcnow().isoformat(),
             "symbol": symbol,
+            "latency_ms": latency_ms,
+            "global_bias_score": recommendation.meta.get("global_bias_score") if isinstance(recommendation.meta, dict) else None,
             "portfolio_state": self._estimate_portfolio_state(overrides).__dict__,
             "fusion": {
                 "action": fusion.action,
                 "confidence": fusion.confidence,
-                "sentiment": fusion.sentiment.__dict__,
+                "sentiment": getattr(fusion.sentiment, "__dict__", {}),
                 "attention_weights": fusion.attention_weights,
             },
             "recommendation": recommendation.__dict__,
         }
-        with self.trade_log_path.open("a") as f:
-            f.write(json.dumps(entry) + "\n")
+        try:
+            with self.trade_log_path.open("a") as f:
+                f.write(json.dumps(entry) + "\n")
+        except Exception as exc:
+            logger.warning("RL trade log write failed: %s", exc)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useWebSocket } from '@/hooks/useWebSocket';
 import { normalizeSentiment } from '@/lib/format';
@@ -59,6 +59,48 @@ interface SentimentItem {
   [key: string]: unknown;
 }
 
+type UsSentimentLabel = 'positive' | 'neutral' | 'negative';
+
+interface UsSentimentItem {
+  symbol: string;
+  headline: string;
+  sentiment: UsSentimentLabel;
+  score: number;
+  confidence: number;
+  summary: string;
+  topics: string[];
+  model: string;
+  sourceUrl?: string;
+}
+
+interface UsSentimentAggregate {
+  bullish?: number;
+  bearish?: number;
+  neutral?: number;
+  topSectors?: { name: string; weight: number }[];
+}
+
+interface UsSentimentPayload {
+  generatedAt?: string;
+  source?: string;
+  items?: UsSentimentItem[];
+  aggregate?: UsSentimentAggregate;
+}
+
+interface UsMarketRow {
+  symbol: string;
+  price: number;
+  changePct: number;
+  volume?: number;
+  market?: string;
+}
+
+interface UsMarketSnapshot {
+  generatedAt?: string;
+  source?: string;
+  symbols?: UsMarketRow[];
+}
+
 interface SectorItem {
   name: string;
   change?: number;
@@ -96,6 +138,17 @@ interface AiPositionCard {
   comment: string;
   attentionFocus: string[];
   regime: 'risk-on' | 'risk-off' | 'neutral';
+  sparklineSeries?: number[];
+}
+
+interface AiOrderHistoryEntry {
+  id: string;
+  symbol: string;
+  action: string;
+  quantity: number;
+  price: number | null;
+  status: 'pending' | 'success' | 'error';
+  timestamp: string;
 }
 
 const DEFAULT_AI_POWER_METRICS: AiPowerMetric[] = [
@@ -300,6 +353,14 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   }, []); // Only run once on mount
 
 useEffect(() => {
+  if (typeof window === 'undefined') return;
+  const storedMode = window.localStorage.getItem('paper_mode');
+  const storedUser = window.localStorage.getItem('paper_user_id');
+  if (storedUser) setPaperUserId(storedUser);
+  if (storedMode === 'on') setPaperMode(true);
+}, []);
+
+useEffect(() => {
   if (!mounted) return;
   let cancelled = false;
   let intervalId: NodeJS.Timeout | null = null;
@@ -312,13 +373,13 @@ useEffect(() => {
       const payload = await response.json();
       if (cancelled) return;
       setAiPowerMetrics(payload.metrics || DEFAULT_AI_POWER_METRICS);
-      setAiPositionCards(payload.positions || DEFAULT_AI_POSITION_CARDS);
+      setAiPositionCards(attachSparkline(payload.positions || DEFAULT_AI_POSITION_CARDS));
       setAiPowerUpdatedAt(payload.updatedAt || Date.now());
     } catch (error) {
       console.warn('AI Power fetch failed', error);
       if (!cancelled) {
         setAiPowerMetrics(DEFAULT_AI_POWER_METRICS);
-        setAiPositionCards(DEFAULT_AI_POSITION_CARDS);
+        setAiPositionCards(attachSparkline(DEFAULT_AI_POSITION_CARDS));
       }
     } finally {
       if (!cancelled) setAiPowerLoading(false);
@@ -338,6 +399,12 @@ useEffect(() => {
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
   const [portfolioStocks, setPortfolioStocks] = useState<{symbol: string, count: number}[]>([]);
   const [sentimentData, setSentimentData] = useState<SentimentItem[] | null>(null);
+  const [usSentiment, setUsSentiment] = useState<UsSentimentPayload | null>(null);
+  const [usSentimentLoading, setUsSentimentLoading] = useState(false);
+  const [usSentimentError, setUsSentimentError] = useState<string | null>(null);
+  const [usMarket, setUsMarket] = useState<UsMarketSnapshot | null>(null);
+  const [usMarketLoading, setUsMarketLoading] = useState(false);
+  const [usMarketError, setUsMarketError] = useState<string | null>(null);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<{id: string, message: string, type: 'success' | 'info', timestamp: Date}[]>([]);
   const [portfolioRebalance, setPortfolioRebalance] = useState(false);
@@ -346,6 +413,9 @@ const [aiPowerMetrics, setAiPowerMetrics] = useState<AiPowerMetric[]>(DEFAULT_AI
 const [aiPositionCards, setAiPositionCards] = useState<AiPositionCard[]>(DEFAULT_AI_POSITION_CARDS);
 const [aiPowerUpdatedAt, setAiPowerUpdatedAt] = useState<number | null>(null);
 const [aiPowerLoading, setAiPowerLoading] = useState(false);
+const [aiOrderSubmitting, setAiOrderSubmitting] = useState<string | null>(null);
+const [aiOrderHistory, setAiOrderHistory] = useState<AiOrderHistoryEntry[]>([]);
+const [aiOrderHistoryLoading, setAiOrderHistoryLoading] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
   const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
   const [timeString, setTimeString] = useState<string>('');
@@ -360,6 +430,123 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
       setTimeString(lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
     }
   }, [mounted, lastUpdate]);
+
+useEffect(() => {
+  if (!mounted) return;
+  try {
+    setAiOrderHistoryLoading(true);
+    fetch('/api/broker/ai-orders', { cache: 'no-store' })
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data.logs)) {
+          setAiOrderHistory(data.logs as AiOrderHistoryEntry[]);
+        } else {
+          const stored = localStorage.getItem('ai_order_history');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              setAiOrderHistory(parsed);
+            }
+          }
+        }
+      })
+      .catch(() => {
+        const stored = localStorage.getItem('ai_order_history');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            setAiOrderHistory(parsed);
+          }
+        }
+      })
+      .finally(() => setAiOrderHistoryLoading(false));
+  } catch (error) {
+    console.warn('AI order history load failed', error);
+    setAiOrderHistoryLoading(false);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [mounted]);
+
+useEffect(() => {
+  if (!mounted) return;
+  try {
+    localStorage.setItem('ai_order_history', JSON.stringify(aiOrderHistory.slice(-50)));
+  } catch (error) {
+    console.warn('AI order history persist failed', error);
+  }
+}, [aiOrderHistory, mounted]);
+
+useEffect(() => {
+  if (!mounted) return;
+  fetch('/api/stack-runs', { cache: 'no-store' })
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data.runs)) {
+        setStackRuns(data.runs);
+      }
+    })
+    .catch((error) => console.warn('Stack runs fetch failed', error));
+  fetch('/api/rl/logs', { cache: 'no-store' })
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data.logs)) {
+        setRlLogs(data.logs);
+      }
+    })
+    .catch((error) => console.warn('RL logs fetch failed', error));
+  fetch('/api/health', { cache: 'no-store' })
+    .then((res) => res.json())
+    .then((data) => {
+      if (Array.isArray(data.endpoints)) {
+        setHealthStatus(data.endpoints);
+      }
+    })
+    .catch((error) => console.warn('Health fetch failed', error));
+}, [mounted]);
+
+useEffect(() => {
+  if (!highlightedSymbol) return;
+  const el = document.getElementById(`ai-card-${highlightedSymbol}`);
+  if (el) {
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setTimeout(() => setHighlightedSymbol(null), 2000);
+  }
+}, [highlightedSymbol]);
+
+const refreshPaperPortfolio = useCallback(
+  async (userId: string) => {
+    try {
+      setPaperLoading(true);
+      const res = await fetch(`/api/paper/portfolio?userId=${userId}`, {
+        cache: 'no-store',
+        headers: paperClientToken ? { 'x-paper-token': paperClientToken } : undefined,
+      });
+      if (!res.ok) throw new Error('Paper portfolio yüklenemedi');
+      const portfolio = await res.json();
+      setPaperPortfolio(portfolio);
+      const ordersRes = await fetch(`/api/paper/orders?userId=${userId}`, {
+        cache: 'no-store',
+        headers: paperClientToken ? { 'x-paper-token': paperClientToken } : undefined,
+      });
+      if (ordersRes.ok) {
+        const ordersJson = await ordersRes.json();
+        setPaperOrders(ordersJson.orders || []);
+      }
+      setPaperError(null);
+    } catch (error: any) {
+      setPaperError(error?.message || 'Paper trading hatası');
+    } finally {
+      setPaperLoading(false);
+    }
+  },
+  [],
+);
+
+useEffect(() => {
+  if (paperMode) {
+    refreshPaperPortfolio(paperUserId);
+  }
+}, [paperMode, paperUserId, refreshPaperPortfolio]);
   const AI_MODULE_IDS = [
     'tradergpt',
     'gamification',
@@ -392,6 +579,7 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
   const [aiModules, setAiModules] = useState<Record<AiModuleId, boolean>>(AI_MODULE_DEFAULT_STATE);
   const [v50ActiveTab, setV50ActiveTab] = useState<'risk' | 'portfolio' | 'backtest'>('risk');
   const [activePanel, setActivePanel] = useState<string | null>(null);
+const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
   const isAiModuleId = useCallback(
     (value: string): value is AiModuleId => (AI_MODULE_IDS as readonly string[]).includes(value as AiModuleId),
     []
@@ -497,6 +685,137 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
     console.log('📂 Panel kapatılıyor');
     setActivePanel(null);
   };
+
+  const executeAiOrder = useCallback(
+    async (card: AiPositionCard) => {
+      let entryId: string | null = null;
+      try {
+        setAiOrderSubmitting(card.symbol);
+        entryId = `ai-order-${Date.now()}`;
+        const quantity = Math.max(1, Math.round(card.rlLots || 0));
+        const payload = {
+          symbol: card.symbol,
+          quantity,
+          order_type: card.action,
+          price: Number(card.entry.toFixed(2)),
+          source: 'ai_position_card',
+        };
+        setAiOrderHistory((prev) => [
+          ...prev,
+          {
+            id: entryId,
+            symbol: card.symbol,
+            action: card.action,
+            quantity,
+            price: payload.price,
+            status: 'pending',
+            timestamp: new Date().toISOString(),
+          },
+        ]);
+        const response = await fetch('/api/broker/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(paperClientToken ? { 'x-paper-token': paperClientToken } : {}),
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await response.json();
+        setAiOrderHistory((prev) =>
+          prev.map((item) =>
+            item.id === entryId ? { ...item, status: data?.orders?.[0] ? 'success' : 'error' } : item,
+          ),
+        );
+        setAlerts((prev) => [
+          ...prev,
+          {
+            id: `ai-order-${Date.now()}`,
+            message: data?.orders?.[0]
+              ? `✅ ${card.symbol} için AI emri iletildi (${card.action}).`
+              : `⚠️ ${card.symbol} emri onaylanamadı.`,
+            type: data?.orders?.[0] ? 'success' : 'info',
+            timestamp: new Date(),
+          },
+        ]);
+      } catch (error) {
+        console.warn('AI order execution failed', error);
+        if (entryId) {
+          setAiOrderHistory((prev) =>
+            prev.map((item) => (item.id === entryId ? { ...item, status: 'error' } : item)),
+          );
+        }
+        setAlerts((prev) => [
+          ...prev,
+          {
+            id: `ai-order-error-${Date.now()}`,
+            message: `⚠️ ${card.symbol} için emir gönderilemedi.`,
+            type: 'info',
+            timestamp: new Date(),
+          },
+        ]);
+      } finally {
+        setAiOrderSubmitting(null);
+      }
+    },
+    [],
+  );
+
+  const placePaperTrade = useCallback(
+    async (card: AiPositionCard) => {
+      if (!paperMode) return;
+      try {
+        setPaperLoading(true);
+        await fetch('/api/paper/orders', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(paperClientToken ? { 'x-paper-token': paperClientToken } : {}),
+          },
+          body: JSON.stringify({
+            userId: paperUserId,
+            symbol: card.symbol,
+            action: card.action,
+            quantity: Math.max(1, Math.round((card.rlLots || 100) / 10)),
+            price: Number(card.entry.toFixed(2)),
+          }),
+        });
+        await refreshPaperPortfolio(paperUserId);
+        setAlerts((prev) => [
+          ...prev,
+          {
+            id: `paper-order-${Date.now()}`,
+            message: `📄 Paper trade gönderildi (${card.symbol} ${card.action}).`,
+            type: 'info',
+            timestamp: new Date(),
+          },
+        ]);
+      } catch (error: any) {
+        setPaperError(error?.message || 'Paper trade başarısız');
+      } finally {
+        setPaperLoading(false);
+      }
+    },
+    [paperMode, paperUserId, refreshPaperPortfolio],
+  );
+
+  const togglePaperMode = useCallback(async () => {
+    const next = !paperMode;
+    setPaperMode(next);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('paper_mode', next ? 'on' : 'off');
+    }
+    if (next) {
+      await fetch('/api/paper/portfolio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(paperClientToken ? { 'x-paper-token': paperClientToken } : {}),
+        },
+        body: JSON.stringify({ userId: paperUserId }),
+      });
+      refreshPaperPortfolio(paperUserId);
+    }
+  }, [paperMode, paperUserId, refreshPaperPortfolio]);
   
   // Modal içinde seçilen karta göre canlı içerik render'ı
   const renderFeatureDetail = (detail: { section: string; name: string }) => {
@@ -821,6 +1140,76 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
     
     setSentimentData(normalized);
   }, []);
+
+  useEffect(() => {
+    if (!mounted) return;
+    let cancelled = false;
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const fetchUsSentiment = async () => {
+      try {
+        if (!cancelled) setUsSentimentLoading(true);
+        const response = await fetch('/api/ai/us-sentiment', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`US sentiment status ${response.status}`);
+        }
+        const payload: UsSentimentPayload = await response.json();
+        if (cancelled) return;
+        setUsSentiment(payload);
+        setUsSentimentError(null);
+      } catch (error) {
+        console.warn('US sentiment fetch failed', error);
+        if (!cancelled) {
+          setUsSentimentError('US sentiment verisi alınamadı.');
+        }
+      } finally {
+        if (!cancelled) setUsSentimentLoading(false);
+      }
+    };
+
+    fetchUsSentiment();
+    intervalId = setInterval(fetchUsSentiment, 180_000);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [mounted]);
+
+  useEffect(() => {
+    if (!mounted) return;
+    let cancelled = false;
+    let intervalId: NodeJS.Timeout | null = null;
+
+    const fetchUsMarket = async () => {
+      try {
+        if (!cancelled) setUsMarketLoading(true);
+        const response = await fetch('/api/markets/us', { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`US market status ${response.status}`);
+        }
+        const payload: UsMarketSnapshot = await response.json();
+        if (cancelled) return;
+        setUsMarket(payload);
+        setUsMarketError(null);
+      } catch (error) {
+        console.warn('US market fetch failed', error);
+        if (!cancelled) {
+          setUsMarketError('US market verisi alınamadı.');
+        }
+      } finally {
+        if (!cancelled) setUsMarketLoading(false);
+      }
+    };
+
+    fetchUsMarket();
+    intervalId = setInterval(fetchUsMarket, 120_000);
+
+    return () => {
+      cancelled = true;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [mounted]);
   
   // ✅ Check localStorage for saved user
   useEffect(() => {
@@ -836,6 +1225,28 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
       setShowLogin(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (globalBiasScore === null) return;
+    const severity: 'positive' | 'negative' | null =
+      globalBiasScore >= 15 ? 'positive' : globalBiasScore <= -15 ? 'negative' : null;
+    if (!severity || globalBiasAlertRef.current === severity) {
+      return;
+    }
+    setAlerts((prev) => [
+      ...prev,
+      {
+        id: `global-bias-${Date.now()}`,
+        message:
+          severity === 'positive'
+            ? '🌐 US→BIST Bias pozitif: risk-on moduna geçildi.'
+            : '⚠️ US→BIST Bias negatif: hedge ve nakit oranını artır.',
+        type: severity === 'positive' ? 'success' : 'info',
+        timestamp: new Date(),
+      },
+    ]);
+    globalBiasAlertRef.current = severity;
+  }, [globalBiasScore]);
 
   // ✅ WINDOW-LEVEL WS MESSAGE LISTENER: window.dispatchEvent ile yayılan mesajları yakala
   useEffect(() => {
@@ -1026,6 +1437,144 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
     negative: s.negative,
     neutral: s.neutral,
   }));
+
+  const usSentimentItems = usSentiment?.items ?? [];
+  const usSentimentAggregate = usSentiment?.aggregate;
+  const usSentimentTimestamp = usSentiment?.generatedAt
+    ? new Date(usSentiment.generatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    : '--:--';
+  const usSentimentPercent = (value?: number) =>
+    typeof value === 'number' ? Math.round(value * 100) : undefined;
+  const getUsSentimentColor = (label: UsSentimentLabel) => {
+    if (label === 'positive') return '#10b981';
+    if (label === 'negative') return '#ef4444';
+    return '#eab308';
+  };
+const formatFreshness = (iso?: string | null) => {
+  if (!iso) return 'Bilinmiyor';
+  const ts = new Date(iso).getTime();
+  if (Number.isNaN(ts)) return 'Bilinmiyor';
+  const diffMin = Math.floor((Date.now() - ts) / 60000);
+  if (diffMin <= 0) return 'Az önce';
+  return diffMin === 1 ? '1 dk önce' : `${diffMin} dk önce`;
+};
+const usSentimentFreshness = formatFreshness(usSentiment?.generatedAt);
+
+  const usMarketSymbols = (usMarket?.symbols ?? []).map((row) => ({
+    ...row,
+    price: typeof row.price === 'number' ? row.price : Number(row.price) || 0,
+    changePct: typeof row.changePct === 'number' ? row.changePct : Number(row.changePct) || 0,
+    volume: typeof row.volume === 'number' ? row.volume : Number(row.volume) || 0,
+  }));
+  const sortedUsMarket = [...usMarketSymbols].sort((a, b) => b.changePct - a.changePct);
+  const bestUsGainer = sortedUsMarket[0];
+  const worstUsMover = sortedUsMarket[sortedUsMarket.length - 1];
+  const usMarketTimestamp = usMarket?.generatedAt
+    ? new Date(usMarket.generatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+    : '--:--';
+const usMarketFreshness = formatFreshness(usMarket?.generatedAt);
+
+  const combinedAiPowerData = useMemo(() => {
+    const bullish = typeof usSentimentAggregate?.bullish === 'number' ? usSentimentAggregate.bullish : null;
+    const bearish = typeof usSentimentAggregate?.bearish === 'number' ? usSentimentAggregate.bearish : null;
+    const sentimentBias = bullish !== null && bearish !== null ? (bullish - bearish) * 100 : null;
+    const marketBias =
+      typeof bestUsGainer?.changePct === 'number' && typeof worstUsMover?.changePct === 'number'
+        ? (bestUsGainer.changePct + worstUsMover.changePct) / 2
+        : null;
+    if (sentimentBias === null && marketBias === null) {
+      return { metrics: aiPowerMetrics, globalBiasScore: null };
+    }
+    const score = (sentimentBias ?? 0) * 0.6 + (marketBias ?? 0) * 0.4;
+    const accent = score >= 0 ? '#0ea5e9' : '#f97316';
+    const deltaValueParts: string[] = [];
+    if (sentimentBias !== null) {
+      deltaValueParts.push(`Sent ${sentimentBias >= 0 ? '+' : ''}${sentimentBias.toFixed(1)}pp`);
+    }
+    if (marketBias !== null) {
+      deltaValueParts.push(`Price ${marketBias >= 0 ? '+' : ''}${marketBias.toFixed(1)}%`);
+    }
+    const globalMetric: AiPowerMetric = {
+      title: 'Global Bias (US→BIST)',
+      value: `${score >= 0 ? '+' : ''}${score.toFixed(1)}bp`,
+      deltaLabel: 'Global Risk',
+      deltaValue: deltaValueParts.join(' • '),
+      sublabel: bestUsGainer && worstUsMover
+        ? `${bestUsGainer.symbol} lead vs ${worstUsMover.symbol}`
+        : 'US sentiment + price composite',
+      accent,
+      icon: score >= 0 ? '🌐' : '⚠️',
+    };
+    return { metrics: [globalMetric, ...aiPowerMetrics], globalBiasScore: score };
+  }, [aiPowerMetrics, usSentimentAggregate, bestUsGainer, worstUsMover]);
+const combinedAiPowerMetrics = combinedAiPowerData.metrics;
+const globalBiasScore = combinedAiPowerData.globalBiasScore;
+const aiPowerFreshness = aiPowerUpdatedAt
+  ? formatFreshness(new Date(aiPowerUpdatedAt).toISOString())
+  : 'Bilinmiyor';
+const generateSparklineSeries = (seed: string, points = 12) => {
+  const values: number[] = [];
+  let current = ((seed.charCodeAt(0) % 40) + 30);
+  for (let i = 0; i < points; i += 1) {
+    const delta = ((seed.charCodeAt(i % seed.length) % 6) - 3) * 0.9;
+    current = Math.max(0, Math.min(100, current + delta));
+    values.push(Number(current.toFixed(2)));
+  }
+  return values;
+};
+const attachSparkline = (cards: AiPositionCard[]) =>
+  cards.map((card, idx) => ({
+    ...card,
+    sparklineSeries:
+      card.sparklineSeries && card.sparklineSeries.length > 0
+        ? card.sparklineSeries
+        : generateSparklineSeries(`${card.symbol}-${idx}`),
+  }));
+const Sparkline = ({ series, color }: { series: number[]; color: string }) => {
+  if (!series || series.length === 0) return null;
+  const width = 140;
+  const height = 40;
+  const min = Math.min(...series);
+  const max = Math.max(...series);
+  const range = max - min || 1;
+  const points = series
+    .map((value, idx) => {
+      const x = (idx / (series.length - 1)) * (width - 4) + 2;
+      const y = height - ((value - min) / range) * (height - 4) - 2;
+      return `${x},${y}`;
+    })
+    .join(' ');
+  const areaPoints = `2,${height - 2} ${points} ${width - 2},${height - 2}`;
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      <polyline
+        points={areaPoints}
+        fill={`${color}22`}
+        stroke="none"
+      />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+};
+const [stackRuns, setStackRuns] = useState<Array<{ run_id?: string; best_score?: number; latency_ms?: number }>>([]);
+const [rlLogs, setRlLogs] = useState<Array<{ timestamp?: string; symbol?: string; global_bias_score?: number; latency_ms?: number }>>([]);
+const [healthStatus, setHealthStatus] = useState<Array<{ name: string; status: 'up' | 'down'; latency_ms?: number; lastUpdated?: string }>>([]);
+const [showHealthPanel, setShowHealthPanel] = useState(false);
+const [highlightedSymbol, setHighlightedSymbol] = useState<string | null>(null);
+const paperClientToken = process.env.NEXT_PUBLIC_PAPER_API_TOKEN || '';
+const [paperMode, setPaperMode] = useState(false);
+const [paperUserId, setPaperUserId] = useState<string>('paper-demo');
+const [paperPortfolio, setPaperPortfolio] = useState<any | null>(null);
+const [paperOrders, setPaperOrders] = useState<any[]>([]);
+const [paperLoading, setPaperLoading] = useState(false);
+const [paperError, setPaperError] = useState<string | null>(null);
 
   const allFeatures = {
     signals: [
@@ -1735,6 +2284,61 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
           </div>
         </section>
 
+        <div style={{ border: '1px solid #e2e8f0', borderRadius: '16px', padding: '16px', marginBottom: '16px', background: '#fff' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div>
+              <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>📄 Paper Trading Modu</div>
+              <p style={{ fontSize: '11px', color: '#64748b', margin: 0 }}>Gerçek broker yerine sanal portföyde AI sinyallerini test et.</p>
+            </div>
+            <button
+              onClick={togglePaperMode}
+              style={{
+                padding: '8px 14px',
+                borderRadius: '999px',
+                border: '1px solid',
+                borderColor: paperMode ? '#10b981' : '#cbd5f5',
+                background: paperMode ? 'linear-gradient(135deg, #a7f3d0, #6ee7b7)' : '#fff',
+                color: paperMode ? '#064e3b' : '#0f172a',
+                fontSize: '11px',
+                fontWeight: 700,
+              }}
+            >
+              {paperMode ? 'Paper Modu Açık' : 'Paper Modu Kapalı'}
+            </button>
+          </div>
+          {paperMode && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
+              <div style={{ flex: '1 1 220px' }}>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Portföy Değeri</div>
+                <div style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+                  ₺{paperPortfolio?.totalValue?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '100,000.00'}
+                </div>
+                <div style={{ fontSize: '11px', color: '#94a3b8' }}>Nakit: ₺{paperPortfolio?.cash?.toLocaleString('tr-TR', { minimumFractionDigits: 2 }) || '100,000.00'}</div>
+                {paperError && <div style={{ fontSize: '10px', color: '#ef4444' }}>{paperError}</div>}
+              </div>
+              <div style={{ flex: '1 1 220px', fontSize: '11px', color: '#475569' }}>
+                <div style={{ fontWeight: 700, marginBottom: '6px' }}>Açık Pozisyonlar</div>
+                {Object.entries(paperPortfolio?.positions || {}).slice(0, 3).map(([symbol, pos]: any) => (
+                  <div key={symbol} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{symbol}</span>
+                    <span>{pos.quantity} • ₺{pos.avgPrice.toFixed(2)}</span>
+                  </div>
+                ))}
+                {Object.keys(paperPortfolio?.positions || {}).length === 0 && <div>Henüz pozisyon yok.</div>}
+              </div>
+              <div style={{ flex: '1 1 220px' }}>
+                <div style={{ fontWeight: 700, fontSize: '11px', color: '#475569', marginBottom: '6px' }}>Son Paper Emirleri</div>
+                {paperOrders.slice(0, 3).map((order) => (
+                  <div key={order.id} style={{ fontSize: '11px', color: '#0f172a' }}>
+                    {order.symbol} {order.action} {order.quantity} @ ₺{order.price.toFixed(2)}
+                  </div>
+                ))}
+                {paperOrders.length === 0 && <div style={{ fontSize: '11px', color: '#94a3b8' }}>Emir yok.</div>}
+              </div>
+            </div>
+          )}
+        </div>
+
         {/* 🎯 SPRINT 1: AI TAHMİNLERİ - EN ÜSTE (Öncelik 1) */}
         <div style={{ 
           marginBottom: '16px',
@@ -2233,16 +2837,57 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
                   <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px', marginBottom: 2 }}>⚡ AI Power Grid</h3>
                   <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>Meta modellerin nabzı</span>
                 </div>
-                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
-                  {aiPowerLoading
-                    ? 'Güncelleniyor...'
-                    : aiPowerUpdatedAt
-                      ? `Güncellendi: ${new Date(aiPowerUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`
-                      : ''}
-                </span>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
+                {aiPowerLoading
+                  ? 'Güncelleniyor...'
+                  : aiPowerUpdatedAt
+                    ? `Güncellendi: ${new Date(aiPowerUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} • ${aiPowerFreshness}`
+                    : ''}
+              </span>
+              <button
+                onClick={() => setShowHealthPanel((prev) => !prev)}
+                style={{
+                  fontSize: '10px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: '#f59e0b',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                }}
+              >
+                🩺 Health Panel
+              </button>
+            </div>
+            {showHealthPanel && (
+              <div style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '12px', marginBottom: '12px', background: '#fff' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, marginBottom: '8px', color: '#0f172a' }}>Sistem Sağlığı</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px' }}>
+                  {healthStatus.map((entry) => (
+                    <div key={entry.name} style={{ border: '1px solid #f1f5f9', borderRadius: '10px', padding: '10px', fontSize: '10px' }}>
+                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{entry.name.replace('http://127.0.0.1:3000', '')}</div>
+                      <div style={{ color: entry.status === 'up' ? '#10b981' : '#ef4444', fontWeight: 700 }}>
+                        {entry.status === 'up' ? 'UP' : 'DOWN'}
+                      </div>
+                      <div style={{ color: '#94a3b8' }}>{entry.latency_ms ? `${entry.latency_ms.toFixed(0)} ms` : '--'}</div>
+                      <div style={{ color: '#94a3b8' }}>{entry.lastUpdated ? formatFreshness(entry.lastUpdated) : '---'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '8px', marginBottom: '12px' }}>
+                {stackRuns.slice(-4).reverse().map((run) => (
+                  <div key={run.run_id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '10px', background: '#fff' }}>
+                    <div style={{ fontSize: '10px', fontWeight: 700, color: '#0f172a' }}>Run {run.run_id?.slice(-4)}</div>
+                    <div style={{ fontSize: '10px', color: '#64748b' }}>Score: {typeof run.best_score === 'number' ? run.best_score.toFixed(3) : '--'}</div>
+                    <div style={{ fontSize: '10px', color: '#64748b' }}>Latency: {run.latency_ms ? `${Math.round(run.latency_ms)} ms` : '--'}</div>
+                  </div>
+                ))}
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                {aiPowerMetrics.map((metric, idx) => (
+                {combinedAiPowerMetrics.map((metric, idx) => (
                   <div
                     key={`${metric.title}-${idx}`}
                     style={{
@@ -2290,15 +2935,19 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
                     card.action === 'BUY' ? '#10b981' : card.action === 'SELL' ? '#ef4444' : '#64748b';
                   const sentimentColor =
                     card.sentiment === 'positive' ? '#22c55e' : card.sentiment === 'negative' ? '#ef4444' : '#f59e0b';
+                  const cardHighlighted = highlightedSymbol === card.symbol;
                   return (
                     <div
+                      id={`ai-card-${card.symbol}`}
                       key={`${card.symbol}-${card.action}-${idx}`}
                       style={{
                         borderRadius: '18px',
                         padding: '18px',
                         background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
-                        border: '1px solid #e2e8f0',
-                        boxShadow: '0 18px 45px rgba(15,23,42,0.08)',
+                        border: cardHighlighted ? '2px solid #f97316' : '1px solid #e2e8f0',
+                        boxShadow: cardHighlighted
+                          ? '0 0 0 3px rgba(249,115,22,0.25)'
+                          : '0 18px 45px rgba(15,23,42,0.08)',
                         display: 'flex',
                         flexDirection: 'column',
                         gap: '12px',
@@ -2324,6 +2973,11 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
                           {card.action}
                         </div>
                       </div>
+                      {card.sparklineSeries && (
+                        <div style={{ marginTop: '-4px' }}>
+                          <Sparkline series={card.sparklineSeries} color={actionColor} />
+                        </div>
+                      )}
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
                         <div>
                           <div style={{ fontSize: '10px', color: '#94a3b8' }}>Giriş</div>
@@ -2339,29 +2993,63 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
                         </div>
                       </div>
                       <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>{card.comment}</div>
-                      <button
-                        onClick={() => {
-                          window.dispatchEvent(
-                            new CustomEvent('prefill-broker-order', {
-                              detail: { symbol: card.symbol, quantity: Math.round(card.rlLots / 10) || 100 },
-                            }),
-                          );
-                        }}
-                        style={{
-                          alignSelf: 'flex-start',
-                          marginTop: '4px',
-                          padding: '6px 10px',
-                          borderRadius: '999px',
-                          border: 'none',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          color: '#fff',
-                          background: actionColor,
-                          cursor: 'pointer',
-                        }}
-                      >
-                        Emir Hazırla
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button
+                          onClick={() => {
+                            window.dispatchEvent(
+                              new CustomEvent('prefill-broker-order', {
+                                detail: { symbol: card.symbol, quantity: Math.round(card.rlLots / 10) || 100, price: Number(card.entry.toFixed(2)) },
+                              }),
+                            );
+                          }}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '999px',
+                            border: 'none',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: '#fff',
+                            background: actionColor,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Emir Hazırla
+                        </button>
+                        {paperMode && (
+                          <button
+                            onClick={() => placePaperTrade(card)}
+                            disabled={paperLoading}
+                            style={{
+                              padding: '6px 10px',
+                              borderRadius: '999px',
+                              border: '1px solid rgba(34,197,94,0.4)',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              color: '#047857',
+                              background: '#ecfdf5',
+                              cursor: paperLoading ? 'not-allowed' : 'pointer',
+                            }}
+                          >
+                            {paperLoading ? 'Paper...' : 'Paper Trade'}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => executeAiOrder(card)}
+                          disabled={aiOrderSubmitting === card.symbol}
+                          style={{
+                            padding: '6px 10px',
+                            borderRadius: '999px',
+                            border: '1px solid rgba(15,23,42,0.1)',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: aiOrderSubmitting === card.symbol ? '#94a3b8' : '#0f172a',
+                            background: aiOrderSubmitting === card.symbol ? '#e2e8f0' : '#f8fafc',
+                            cursor: aiOrderSubmitting === card.symbol ? 'not-allowed' : 'pointer',
+                          }}
+                        >
+                          {aiOrderSubmitting === card.symbol ? 'Gönderiliyor...' : 'AI Önerisini Uygula'}
+                        </button>
+                      </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                         <span style={{ fontWeight: 700 }}>
                           Güven: {(card.confidence * 100).toFixed(0)}%
@@ -2393,6 +3081,76 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
                   );
                 })}
               </div>
+            </div>
+
+            {/* AI Emir Geçmişi */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px' }}>🧾 AI Emir Geçmişi</h3>
+                <button
+                  onClick={() => setAiOrderHistory([])}
+                  style={{
+                    fontSize: '11px',
+                    color: '#64748b',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Temizle
+                </button>
+              </div>
+              {aiOrderHistoryLoading && <div style={{ fontSize: '11px', color: '#94a3b8' }}>Yükleniyor...</div>}
+              {!aiOrderHistoryLoading && aiOrderHistory.slice(-5).reverse().map((order) => (
+                <div
+                  key={order.id}
+                  style={{
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    padding: '12px',
+                    marginBottom: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    fontSize: '11px',
+                    background: '#fff',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => setHighlightedSymbol(order.symbol)}
+                >
+                  <div>
+                    <div style={{ fontWeight: 800, color: '#0f172a' }}>
+                      {order.symbol} • {order.action}
+                    </div>
+                    <div style={{ color: '#475569' }}>
+                      {order.quantity} lot @ {order.price ? order.price.toFixed(2) : '--'} /{' '}
+                      {new Date(order.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <span
+                    style={{
+                      padding: '4px 8px',
+                      borderRadius: '999px',
+                      fontWeight: 700,
+                      color:
+                        order.status === 'success'
+                          ? '#10b981'
+                          : order.status === 'pending'
+                          ? '#f59e0b'
+                          : '#ef4444',
+                      background:
+                        order.status === 'success'
+                          ? 'rgba(16,185,129,0.1)'
+                          : order.status === 'pending'
+                          ? 'rgba(245,158,11,0.15)'
+                          : 'rgba(239,68,68,0.12)',
+                    }}
+                  >
+                    {order.status.toUpperCase()}
+                  </span>
+                </div>
+              ))}
+              {aiOrderHistory.length === 0 && <div style={{ fontSize: '11px', color: '#94a3b8' }}>Henüz emir yok.</div>}
             </div>
 
             {/* 1. Backtest (3/6/12 Ay) */}
@@ -3324,6 +4082,180 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
           </div>
         </div>
 
+        {/* US Sentiment Pulse */}
+        <div style={{ 
+          marginTop: '16px',
+          background: 'rgba(255,255,255,0.85)', 
+          backdropFilter: 'blur(16px)',
+          border: '1px solid rgba(59,130,246,0.2)', 
+          borderRadius: '20px', 
+          overflow: 'hidden',
+          boxShadow: '0 12px 40px rgba(59,130,246,0.12)'
+        }}>
+          <div style={{ 
+            padding: '16px', 
+            borderBottom: '1px solid rgba(59,130,246,0.15)', 
+            background: 'linear-gradient(135deg, rgba(59,130,246,0.15), rgba(255,255,255,0.85))',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '4px', color: '#0f172a', letterSpacing: '-0.5px' }}>🌎 US Sentiment Pulse</h2>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>FinBERT-EN + NewsAPI ile ABD mega cap haber analizi</div>
+            </div>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <span style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '999px', background: 'rgba(16,185,129,0.15)', color: '#059669', fontWeight: 700 }}>FinBERT-EN</span>
+              <span style={{ fontSize: '10px', color: '#475569' }}>
+                Son güncelleme: {usSentimentTimestamp} • {usSentimentFreshness}
+              </span>
+            </div>
+          </div>
+          <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {usSentimentLoading ? (
+              <div style={{ fontSize: '12px', color: '#64748b' }}>🔄 ABD haber akışı analiz ediliyor...</div>
+            ) : usSentimentError ? (
+              <div style={{ fontSize: '12px', color: '#ef4444' }}>{usSentimentError}</div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px' }}>
+                  <div style={{ padding: '12px', borderRadius: '14px', background: 'rgba(16,185,129,0.08)', border: '1px solid rgba(16,185,129,0.25)' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Bullish</div>
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#10b981' }}>{usSentimentPercent(usSentimentAggregate?.bullish) ?? 0}%</div>
+                  </div>
+                  <div style={{ padding: '12px', borderRadius: '14px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.25)' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Neutral</div>
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#eab308' }}>{usSentimentPercent(usSentimentAggregate?.neutral) ?? 0}%</div>
+                  </div>
+                  <div style={{ padding: '12px', borderRadius: '14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+                    <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '4px' }}>Bearish</div>
+                    <div style={{ fontSize: '20px', fontWeight: '700', color: '#ef4444' }}>{usSentimentPercent(usSentimentAggregate?.bearish) ?? 0}%</div>
+                  </div>
+                </div>
+
+                {usSentimentAggregate?.topSectors && usSentimentAggregate.topSectors.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                    {usSentimentAggregate.topSectors.map((sector) => (
+                      <span key={sector.name} style={{ fontSize: '11px', padding: '6px 12px', borderRadius: '999px', background: 'rgba(59,130,246,0.1)', color: '#2563eb', border: '1px solid rgba(59,130,246,0.2)' }}>
+                        {sector.name} • {typeof sector.weight === 'number' ? (sector.weight * 100).toFixed(0) : '--'}%
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {usSentimentItems.slice(0, 3).map((item) => (
+                    <div key={`${item.symbol}-${item.headline}`} style={{ padding: '14px', borderRadius: '16px', border: '1px solid rgba(148,163,184,0.3)', background: 'rgba(248,250,252,0.9)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{item.symbol}</div>
+                          <div style={{ fontSize: '12px', color: '#475569', marginTop: '6px' }}>{item.headline}</div>
+                        </div>
+                        <div style={{ fontSize: '13px', fontWeight: 700, color: getUsSentimentColor(item.sentiment), textTransform: 'capitalize' }}>
+                          {item.sentiment} ({item.score >= 0 ? '+' : ''}{(item.score * 100).toFixed(0)}bp)
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '11px', color: '#475569', marginTop: '10px' }}>{item.summary}</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '12px', alignItems: 'center' }}>
+                        <span style={{ fontSize: '11px', color: '#0f172a', fontWeight: 600 }}>Güven: {(item.confidence * 100).toFixed(0)}%</span>
+                        {item.topics?.map((topic) => (
+                          <span key={`${item.symbol}-${topic}`} style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '999px', background: 'rgba(99,102,241,0.12)', color: '#4c1d95' }}>{topic}</span>
+                        ))}
+                        {item.sourceUrl && (
+                          <a href={item.sourceUrl} target="_blank" rel="noreferrer" style={{ fontSize: '10px', padding: '4px 10px', borderRadius: '999px', background: 'rgba(15,118,110,0.12)', color: '#0f766e', textDecoration: 'none' }}>
+                            Kaynak ↗
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  {usSentimentItems.length === 0 && (
+                    <div style={{ fontSize: '12px', color: '#64748b' }}>Veri bekleniyor...</div>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        
+        {/* US Market Radar */}
+        <div style={{
+          marginTop: '16px',
+          background: 'rgba(255,255,255,0.9)',
+          border: '1px solid rgba(148,163,184,0.3)',
+          borderRadius: '20px',
+          padding: '16px',
+          boxShadow: '0 12px 40px rgba(15,23,42,0.08)',
+          backdropFilter: 'blur(12px)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+            <div>
+              <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '4px', color: '#0f172a', letterSpacing: '-0.5px' }}>🇺🇸 US Market Radar</h2>
+              <div style={{ fontSize: '11px', color: '#64748b' }}>Mega cap fiyat/günlük değişim + Fintech kartları</div>
+            </div>
+            <div style={{ fontSize: '11px', color: '#475569' }}>
+              Son güncelleme: {usMarketTimestamp} • {usMarketFreshness}
+            </div>
+          </div>
+          <div style={{ marginTop: '16px' }}>
+            {usMarketLoading ? (
+              <div style={{ fontSize: '12px', color: '#64748b' }}>🔄 US market verisi yükleniyor...</div>
+            ) : usMarketError ? (
+              <div style={{ fontSize: '12px', color: '#ef4444' }}>{usMarketError}</div>
+            ) : (
+              <>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px', marginBottom: '16px' }}>
+                  {bestUsGainer && (
+                    <div style={{ padding: '14px', borderRadius: '16px', border: '1px solid rgba(16,185,129,0.25)', background: 'rgba(16,185,129,0.08)' }}>
+                      <div style={{ fontSize: '11px', color: '#059669', marginBottom: '6px' }}>En Güçlü</div>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{bestUsGainer.symbol}</div>
+                      <div style={{ fontSize: '13px', color: '#059669', marginTop: '4px' }}>+{bestUsGainer.changePct.toFixed(2)}%</div>
+                      <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px' }}>${bestUsGainer.price.toFixed(2)}</div>
+                    </div>
+                  )}
+                  {worstUsMover && (
+                    <div style={{ padding: '14px', borderRadius: '16px', border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.08)' }}>
+                      <div style={{ fontSize: '11px', color: '#b91c1c', marginBottom: '6px' }}>En Zayıf</div>
+                      <div style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a' }}>{worstUsMover.symbol}</div>
+                      <div style={{ fontSize: '13px', color: '#b91c1c', marginTop: '4px' }}>{worstUsMover.changePct.toFixed(2)}%</div>
+                      <div style={{ fontSize: '11px', color: '#475569', marginTop: '6px' }}>${worstUsMover.price.toFixed(2)}</div>
+                    </div>
+                  )}
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                  {sortedUsMarket.slice(0, 6).map((row) => {
+                    const volumeLabel = row.volume ? `${(row.volume / 1_000_000).toFixed(1)}M` : '—';
+                    return (
+                    <div key={`us-market-${row.symbol}`} style={{ padding: '14px', borderRadius: '16px', border: '1px solid rgba(226,232,240,0.8)', background: '#f8fafc' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{row.symbol}</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: row.changePct >= 0 ? '#059669' : '#b91c1c' }}>
+                          {row.changePct >= 0 ? '+' : ''}
+                          {row.changePct.toFixed(2)}%
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '20px', fontWeight: 700, color: '#0f172a', marginTop: '8px' }}>${row.price.toFixed(2)}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Vol: {volumeLabel}</div>
+                      <div style={{ marginTop: '10px', height: '4px', background: '#e2e8f0', borderRadius: '999px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${Math.min(100, Math.abs(row.changePct) * 4)}%`,
+                          height: '100%',
+                          background: row.changePct >= 0 ? 'linear-gradient(90deg,#34d399,#10b981)' : 'linear-gradient(90deg,#f87171,#ef4444)',
+                        }} />
+                      </div>
+                    </div>
+                  );
+                  })}
+                </div>
+                {sortedUsMarket.length === 0 && (
+                  <div style={{ fontSize: '12px', color: '#64748b' }}>Veri bekleniyor...</div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+        
         {/* AI News Trigger - Sentiment altına eklendi */}
         <div style={{ 
           marginTop: '16px',

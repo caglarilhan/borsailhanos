@@ -48,11 +48,34 @@ interface BrokerIntegrationProps {
   isLoading?: boolean;
 }
 
+interface AiOrderHistoryEntry {
+  id: string;
+  symbol: string;
+  action: string;
+  quantity: number;
+  price: number | null;
+  status: 'pending' | 'success' | 'error';
+  timestamp: string;
+}
+
 export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps) {
   const [brokerStatus, setBrokerStatus] = useState<BrokerStatus>({});
   const [accounts, setAccounts] = useState<{ [key: string]: BrokerAccount }>({});
   const [positions, setPositions] = useState<BrokerPosition[]>([]);
   const [portfolio, setPortfolio] = useState<any>({});
+  const [globalRisk, setGlobalRisk] = useState<{ mode: string; label: string; score: number | null; sentimentBias?: number | null; marketBias?: number | null; updatedAt?: string } | null>(null);
+  const formatFreshness = (iso?: string | null) => {
+    if (!iso) return 'Bilinmiyor';
+    const ts = new Date(iso).getTime();
+    if (Number.isNaN(ts)) return 'Bilinmiyor';
+    const diffMin = Math.floor((Date.now() - ts) / 60000);
+    if (diffMin <= 0) return 'Az önce';
+    return diffMin === 1 ? '1 dk önce' : `${diffMin} dk önce`;
+  };
+  const [aiOrderHistory, setAiOrderHistory] = useState<AiOrderHistoryEntry[]>([]);
+  const [aiOrderHistoryLoading, setAiOrderHistoryLoading] = useState(false);
+  const [hedgeSubmitting, setHedgeSubmitting] = useState(false);
+  const [hedgeStatus, setHedgeStatus] = useState<'success' | 'error' | null>(null);
   const [selectedBroker, setSelectedBroker] = useState<string>('all');
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderForm, setOrderForm] = useState({
@@ -64,6 +87,8 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
 
   useEffect(() => {
     loadBrokerData();
+    loadGlobalRisk();
+    loadAiOrderHistory();
     const handler = (event: Event) => {
       const custom = event as CustomEvent<{ symbol: string; quantity?: number; price?: number }>;
       if (custom.detail?.symbol) {
@@ -113,6 +138,88 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
       setPortfolio(portfolioData);
     } catch (error) {
       console.error('Error loading broker data:', error);
+    }
+  };
+  const loadAiOrderHistory = () => {
+    try {
+      setAiOrderHistoryLoading(true);
+      fetch('/api/broker/ai-orders', { cache: 'no-store' })
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data.logs)) {
+            setAiOrderHistory(data.logs);
+          } else {
+            const stored = localStorage.getItem('ai_order_history');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed)) {
+                setAiOrderHistory(parsed);
+              }
+            }
+          }
+        })
+        .catch(() => {
+          const stored = localStorage.getItem('ai_order_history');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed)) {
+              setAiOrderHistory(parsed);
+            }
+          }
+        })
+        .finally(() => setAiOrderHistoryLoading(false));
+    } catch (error) {
+      console.warn('AI order history load failed', error);
+      setAiOrderHistoryLoading(false);
+    }
+  };
+
+
+  const loadGlobalRisk = async () => {
+    try {
+      const res = await fetch('/api/ai/global-bias', { cache: 'no-store' });
+      const data = await res.json();
+      setGlobalRisk({
+        mode: data.mode || 'neutral',
+        label: data.label || 'Nötr',
+        score: typeof data.score === 'number' ? data.score : null,
+        sentimentBias: data.sentimentBias,
+        marketBias: data.marketBias,
+        updatedAt: data.updatedAt || new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Global bias fetch failed', error);
+    }
+  };
+
+  const sendHedgeOrder = async () => {
+    try {
+      setHedgeSubmitting(true);
+      setHedgeStatus(null);
+      const response = await fetch('/api/broker/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: 'XBANK.IS',
+          quantity: 200,
+          order_type: 'SELL',
+          price: null,
+          source: 'risk_off_auto_hedge',
+        }),
+      });
+      const data = await response.json();
+      if (data?.orders?.[0]) {
+        setHedgeStatus('success');
+        await loadBrokerData();
+        loadAiOrderHistory();
+      } else {
+        setHedgeStatus('error');
+      }
+    } catch (error) {
+      console.error('Hedge order error', error);
+      setHedgeStatus('error');
+    } finally {
+      setHedgeSubmitting(false);
     }
   };
 
@@ -178,6 +285,35 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
     return status ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
+  const globalRiskStyle = (() => {
+    if (!globalRisk) {
+      return {
+        container: 'bg-gray-50 border-gray-200',
+        badge: 'bg-gray-200 text-gray-700',
+        text: 'text-gray-700',
+      };
+    }
+    if (globalRisk.mode === 'risk_on') {
+      return {
+        container: 'bg-emerald-50 border-emerald-200',
+        badge: 'bg-emerald-200 text-emerald-800',
+        text: 'text-emerald-700',
+      };
+    }
+    if (globalRisk.mode === 'risk_off') {
+      return {
+        container: 'bg-amber-50 border-amber-200',
+        badge: 'bg-amber-200 text-amber-800',
+        text: 'text-amber-700',
+      };
+    }
+    return {
+      container: 'bg-blue-50 border-blue-200',
+      badge: 'bg-blue-200 text-blue-800',
+      text: 'text-blue-700',
+    };
+  })();
+
   const filteredPositions = selectedBroker === 'all' 
     ? positions 
     : positions.filter(pos => pos.broker === selectedBroker);
@@ -241,9 +377,83 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 space-y-6">
+        {/* Global AI Risk Pulse */}
+        <div className={`border rounded-xl p-4 flex flex-col gap-4 ${globalRiskStyle.container}`}>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">AI Risk Modu</p>
+            <div className="flex items-center gap-3 mt-1">
+              <span className={`text-sm font-semibold px-2 py-1 rounded-full ${globalRiskStyle.badge}`}>
+                {globalRisk?.label || 'Nötr'}
+              </span>
+              <span className={`text-lg font-bold ${globalRiskStyle.text}`}>
+                {globalRisk?.score !== null && globalRisk?.score !== undefined
+                  ? `${globalRisk.score >= 0 ? '+' : ''}${globalRisk.score.toFixed(1)} bp`
+                  : 'Veri bekleniyor'}
+              </span>
+            </div>
+            {globalRisk && (
+              <p className="text-xs text-gray-500 mt-1">
+                Sentiment {globalRisk.sentimentBias ? `${globalRisk.sentimentBias >= 0 ? '+' : ''}${globalRisk.sentimentBias.toFixed(1)}pp` : '--'} •
+                Price {globalRisk.marketBias ? `${globalRisk.marketBias >= 0 ? '+' : ''}${globalRisk.marketBias.toFixed(1)}%` : '--'}
+              </p>
+            )}
+            <p className="text-xs text-gray-400">Veri tazeliği: {formatFreshness(globalRisk?.updatedAt)}</p>
+          </div>
+          <button
+            onClick={loadGlobalRisk}
+            className="text-xs font-semibold text-gray-600 border border-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-50"
+          >
+            Yenile
+          </button>
+          {globalRisk?.mode === 'risk_off' && (
+            <div className="flex flex-col gap-2 border border-amber-200 bg-white/80 px-3 py-2 rounded-lg">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div className="text-xs text-amber-700 font-semibold">
+                  Risk-Off modu aktif. Portföyde hedge pozisyonu açmayı düşünün.
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() =>
+                      window.dispatchEvent(
+                        new CustomEvent('prefill-broker-order', {
+                          detail: {
+                            symbol: 'XBANK.IS',
+                            quantity: 200,
+                            order_type: 'SELL',
+                          },
+                        }),
+                      )
+                    }
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-100 text-amber-900 hover:bg-amber-200"
+                  >
+                    Formu Doldur
+                  </button>
+                  <button
+                    onClick={sendHedgeOrder}
+                    disabled={hedgeSubmitting}
+                    className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-60"
+                  >
+                    {hedgeSubmitting ? 'Gönderiliyor...' : 'Hedge’i Otomatik Gönder'}
+                  </button>
+                </div>
+              </div>
+              {hedgeStatus === 'success' && (
+                <div className="text-xs text-emerald-600 font-semibold">
+                  ✅ Hedge emri mock broker’a iletildi.
+                </div>
+              )}
+              {hedgeStatus === 'error' && (
+                <div className="text-xs text-red-600 font-semibold">
+                  ⚠️ Hedge emri gönderilemedi, lütfen tekrar deneyin.
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Broker Status */}
-        <div className="mb-6">
+        <div>
           <h3 className="text-md font-semibold text-gray-900 mb-4">Broker Durumu</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.entries(brokerStatus).map(([broker, status]) => (
@@ -297,6 +507,56 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
             </div>
           </div>
         )}
+
+        {/* AI Emir Geçmişi */}
+        <div className="mb-6">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-md font-semibold text-gray-900">AI Emir Geçmişi</h3>
+            <button
+              onClick={() => {
+                setAiOrderHistory([]);
+                localStorage.removeItem('ai_order_history');
+              }}
+              className="text-xs text-gray-500 hover:text-gray-700"
+            >
+              Temizle
+            </button>
+          </div>
+          {aiOrderHistoryLoading && <p className="text-sm text-gray-500">Yükleniyor...</p>}
+          {!aiOrderHistoryLoading && aiOrderHistory.length === 0 ? (
+            <p className="text-sm text-gray-500">Henüz AI tarafından gönderilmiş emir yok.</p>
+          ) : (
+            <div className="space-y-2">
+              {aiOrderHistory.slice(-5).reverse().map((order) => (
+                <div
+                  key={order.id}
+                  className="border rounded-lg px-4 py-3 flex items-center justify-between text-sm"
+                >
+                  <div>
+                    <div className="font-semibold text-gray-900">
+                      {order.symbol} • {order.action}
+                    </div>
+                    <div className="text-gray-500 text-xs">
+                      {order.quantity} lot @ {order.price ? order.price.toFixed(2) : '--'} •{' '}
+                      {new Date(order.timestamp).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                  <span
+                    className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                      order.status === 'success'
+                        ? 'bg-green-100 text-green-700'
+                        : order.status === 'pending'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-red-100 text-red-700'
+                    }`}
+                  >
+                    {order.status.toUpperCase()}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Account Details */}
         <div className="mb-6">

@@ -7,6 +7,8 @@ import json
 import logging
 from dataclasses import dataclass
 from typing import Dict, Any, Optional, Tuple
+from pathlib import Path
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -55,6 +57,11 @@ class StackTuner:
         self.best_params: Dict[str, Any] = {}
         self.best_score: float = -np.inf
         self.regime_table = {
+        self.log_path = Path("logs/stack_runs.jsonl")
+        self.log_path.parent.mkdir(parents=True, exist_ok=True)
+        self.last_run_id: Optional[str] = None
+        self.last_latency_ms: Optional[float] = None
+
             "risk_on": {"buy_bias": 0.1, "momentum_weight": 0.15},
             "risk_off": {"sell_bias": 0.1, "defensive_weight": 0.2},
             "neutral": {"balance": 0.0}
@@ -102,6 +109,8 @@ class StackTuner:
             logger.error("StackTuner için gerekli kütüphaneler yok")
             return None
         X_train, X_valid, y_train, y_valid = self._prepare_data(df)
+        start_ts = datetime.utcnow()
+        self.last_run_id = f"stacktuner-{start_ts.strftime('%Y%m%d%H%M%S')}"
 
         def objective(trial):
             score = self._objective(trial, X_train, X_valid, y_train, y_valid)
@@ -112,6 +121,9 @@ class StackTuner:
         self.best_params["lightgbm"] = study.best_params
         self.best_score = study.best_value
         logger.info(f"Best score: {self.best_score:.4f}")
+        end_ts = datetime.utcnow()
+        self.last_latency_ms = (end_ts - start_ts).total_seconds() * 1000
+        self._log_run(start_ts, end_ts)
         return self.best_params
 
     def regime_adjust(self, base_weights: Dict[str, float], regime: str) -> Dict[str, float]:
@@ -134,6 +146,21 @@ class StackTuner:
         with open(path, "w") as f:
             json.dump(payload, f, indent=2)
         logger.info(f"StackTuner results saved to {path}")
+
+    def _log_run(self, start_ts: datetime, end_ts: datetime) -> None:
+        entry = {
+            "run_id": self.last_run_id,
+            "started_at": start_ts.isoformat() + "Z",
+            "finished_at": end_ts.isoformat() + "Z",
+            "latency_ms": self.last_latency_ms,
+            "best_score": self.best_score,
+            "best_params": self.best_params,
+        }
+        try:
+            with self.log_path.open("a") as f:
+                f.write(json.dumps(entry) + "\n")
+        except Exception as exc:
+            logger.warning("StackTuner log write failed: %s", exc)
 
 
 # CLI kullanım

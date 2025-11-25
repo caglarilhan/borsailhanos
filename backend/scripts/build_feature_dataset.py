@@ -13,6 +13,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("dataset")
 
 SNAPSHOT_ROOT = Path("data/snapshots")
+US_SNAPSHOT_FILE = SNAPSHOT_ROOT / "us_market_snapshot.json"
+US_SENTIMENT_FILE = SNAPSHOT_ROOT / "us_sentiment_sample.json"
 DATASET_ROOT = Path("data/datasets")
 DATASET_ROOT.mkdir(parents=True, exist_ok=True)
 
@@ -35,6 +37,24 @@ def load_latest_snapshot() -> pd.DataFrame:
     return df
 
 
+def load_us_market_snapshot() -> pd.DataFrame:
+    if not US_SNAPSHOT_FILE.exists():
+        return pd.DataFrame()
+    payload = json.loads(US_SNAPSHOT_FILE.read_text())
+    rows = payload.get("symbols", [])
+    if not rows:
+        return pd.DataFrame()
+    df = pd.DataFrame(rows)
+    df = df.rename(columns={"price": "close", "changePct": "change_pct"})
+    if "change_pct" in df.columns and "close" in df.columns:
+        df["change"] = df["close"] * df["change_pct"] / 100
+    df["market"] = "US"
+    df["timestamp"] = payload.get("generatedAt")
+    df["symbol_clean"] = df["symbol"]
+    logger.info("US snapshot loaded: %s rows", len(df))
+    return df
+
+
 def load_ranking_csv() -> pd.DataFrame:
     ranking_files = sorted(Path("backend").glob("BIST_ranking_*.csv"))
     frames: List[pd.DataFrame] = []
@@ -53,9 +73,40 @@ def load_ranking_csv() -> pd.DataFrame:
     return merged
 
 
+def load_us_sentiment() -> pd.DataFrame:
+    if not US_SENTIMENT_FILE.exists():
+        return pd.DataFrame()
+    payload = json.loads(US_SENTIMENT_FILE.read_text())
+    items = payload.get("items", [])
+    if not items:
+        return pd.DataFrame()
+    df = pd.DataFrame(items)
+    df["symbol_clean"] = df["symbol"]
+    df = df.rename(
+        columns={
+            "sentiment": "us_sentiment_label",
+            "score": "us_sentiment_score",
+            "confidence": "us_sentiment_confidence",
+        }
+    )
+    logger.info("US sentiment rows: %s", len(df))
+    return df[
+        [
+            "symbol_clean",
+            "us_sentiment_label",
+            "us_sentiment_score",
+            "us_sentiment_confidence",
+        ]
+    ]
+
+
 def build_dataset() -> pd.DataFrame:
     snap_df = load_latest_snapshot()
+    us_df = load_us_market_snapshot()
+    if not us_df.empty:
+        snap_df = pd.concat([snap_df, us_df], ignore_index=True)
     ranking_df = load_ranking_csv()
+    sentiment_df = load_us_sentiment()
 
     df = snap_df.copy()
     df["symbol_clean"] = df["symbol"].str.replace(".IS", "", regex=False)
@@ -67,6 +118,9 @@ def build_dataset() -> pd.DataFrame:
             how="left",
             suffixes=("", "_ranking")
         )
+
+    if not sentiment_df.empty:
+        df = df.merge(sentiment_df, on="symbol_clean", how="left")
 
     df["target"] = df["change_pct"].apply(lambda x: 2 if x > 0.5 else (0 if x < -0.5 else 1))
     df.fillna(0, inplace=True)

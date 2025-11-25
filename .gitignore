@@ -46,6 +46,8 @@ pids/
 
 # Data snapshots
 data/snapshots/
+!data/snapshots/.gitkeep
+!data/snapshots/us_sentiment_sample.json
 data/datasets/*.csv
 
 # Production
