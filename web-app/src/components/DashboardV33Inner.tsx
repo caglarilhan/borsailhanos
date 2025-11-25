@@ -73,6 +73,115 @@ interface AlertItem {
   [key: string]: unknown;
 }
 
+interface AiPowerMetric {
+  title: string;
+  value: string;
+  deltaLabel: string;
+  deltaValue: string;
+  sublabel: string;
+  accent: string;
+  icon: string;
+}
+
+interface AiPositionCard {
+  symbol: string;
+  action: 'BUY' | 'SELL' | 'HOLD';
+  confidence: number;
+  entry: number;
+  target: number;
+  stop: number;
+  rlLots: number;
+  sentiment: 'positive' | 'neutral' | 'negative';
+  sentimentScore: number;
+  comment: string;
+  attentionFocus: string[];
+  regime: 'risk-on' | 'risk-off' | 'neutral';
+}
+
+const AI_POWER_METRICS: AiPowerMetric[] = [
+  {
+    title: 'Meta Ensemble Gücü',
+    value: '%92.1',
+    deltaLabel: '30g doğruluk',
+    deltaValue: '+3.2pp',
+    sublabel: 'LightGBM + LSTM + Transformer',
+    accent: '#3b82f6',
+    icon: '🧠',
+  },
+  {
+    title: 'Regime Awareness',
+    value: 'Risk-On',
+    deltaLabel: 'Regime güveni',
+    deltaValue: '0.78',
+    sublabel: 'HMM + makro faktörler',
+    accent: '#10b981',
+    icon: '🌍',
+  },
+  {
+    title: 'RL Positioning',
+    value: '%38',
+    deltaLabel: 'Pozisyon önerisi',
+    deltaValue: 'Mid-Conviction',
+    sublabel: 'DDPG lot optimizasyonu',
+    accent: '#f59e0b',
+    icon: '🎯',
+  },
+  {
+    title: 'Sentiment Pulse',
+    value: '+0.41',
+    deltaLabel: 'FinBERT skoru',
+    deltaValue: 'Pozitif',
+    sublabel: 'News + Twitter + KAP',
+    accent: '#ef4444',
+    icon: '💬',
+  },
+];
+
+const AI_POSITION_CARDS: AiPositionCard[] = [
+  {
+    symbol: 'THYAO',
+    action: 'BUY',
+    confidence: 0.91,
+    entry: 251.4,
+    target: 274.0,
+    stop: 239.5,
+    rlLots: 420,
+    sentiment: 'positive',
+    sentimentScore: 0.32,
+    comment: 'Momentum + sentiment uyumlu, RL ajanı %3.4 risk öneriyor.',
+    attentionFocus: ['1h Momentum', 'Sentiment Bias', 'VaR 95%'],
+    regime: 'risk-on',
+  },
+  {
+    symbol: 'EREGL',
+    action: 'HOLD',
+    confidence: 0.72,
+    entry: 52.1,
+    target: 55.8,
+    stop: 49.9,
+    rlLots: 180,
+    sentiment: 'neutral',
+    sentimentScore: 0.08,
+    comment: 'Meta-model tarafsız, spread daralması bekleniyor.',
+    attentionFocus: ['4h Volatilite', 'RSI 48', 'Sentiment nötr'],
+    regime: 'neutral',
+  },
+  {
+    symbol: 'KRDMD',
+    action: 'SELL',
+    confidence: 0.67,
+    entry: 19.4,
+    target: 17.9,
+    stop: 20.2,
+    rlLots: 260,
+    sentiment: 'negative',
+    sentimentScore: -0.22,
+    comment: 'Hedge eşleşmesi: EREGL long + KRDMD short.',
+    attentionFocus: ['1d Trend', 'Volume Spike', 'Sentiment -0.2'],
+    regime: 'risk-off',
+  },
+];
+
 // V5.0 Enterprise Components
 import RiskManagementPanel from './V50/RiskManagementPanel';
 import PortfolioOptimizer from './V50/PortfolioOptimizer';
@@ -2076,6 +2185,138 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
           {activeFeaturesTab === 'ai-analysis' && <div role="tabpanel" style={{ marginBottom: '16px' }}>
             <div style={{ fontSize: '16px', fontWeight: '900', marginBottom: '16px', paddingBottom: '8px', borderBottom: '2px solid #f59e0b', color: '#0f172a', letterSpacing: '-0.3px' }}>
               🤖 AI ANALİZLERİ <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '600' }}>Derin analiz araçları</span>
+            </div>
+
+            {/* AI POWER GRID */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px' }}>⚡ AI Power Grid</h3>
+                <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>Meta modellerin nabzı</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                {AI_POWER_METRICS.map((metric) => (
+                  <div
+                    key={metric.title}
+                    style={{
+                      borderRadius: '16px',
+                      padding: '16px',
+                      background: `linear-gradient(145deg, ${metric.accent}1a, #ffffff)`,
+                      border: `1px solid ${metric.accent}40`,
+                      boxShadow: `0 15px 35px ${metric.accent}1f`,
+                      color: '#0f172a',
+                      minHeight: '150px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ fontSize: '24px' }}>{metric.icon}</div>
+                      <span style={{ fontSize: '11px', fontWeight: 700, color: metric.accent }}>{metric.deltaLabel}</span>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: 900 }}>{metric.value}</div>
+                      <div style={{ fontSize: '12px', fontWeight: 600, color: metric.accent }}>{metric.deltaValue}</div>
+                    </div>
+                    <div style={{ fontSize: '12px', color: '#475569' }}>{metric.title}</div>
+                    <div style={{ fontSize: '11px', color: '#94a3b8' }}>{metric.sublabel}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* AI HISSE KARTLARI */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px' }}>🛰️ AI Hisse Kartları 2.0</h3>
+                <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Transformer + Sentiment + RL</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                {AI_POSITION_CARDS.map((card) => {
+                  const actionColor =
+                    card.action === 'BUY' ? '#10b981' : card.action === 'SELL' ? '#ef4444' : '#64748b';
+                  const sentimentColor =
+                    card.sentiment === 'positive' ? '#22c55e' : card.sentiment === 'negative' ? '#ef4444' : '#f59e0b';
+                  return (
+                    <div
+                      key={card.symbol}
+                      style={{
+                        borderRadius: '18px',
+                        padding: '18px',
+                        background: 'linear-gradient(135deg, #ffffff, #f8fafc)',
+                        border: '1px solid #e2e8f0',
+                        boxShadow: '0 18px 45px rgba(15,23,42,0.08)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div>
+                          <div style={{ fontSize: '14px', fontWeight: 900, letterSpacing: '-0.4px', color: '#0f172a' }}>
+                            {card.symbol}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#94a3b8' }}>Regime: {card.regime}</div>
+                        </div>
+                        <div
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '999px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            color: '#fff',
+                            background: actionColor,
+                          }}
+                        >
+                          {card.action}
+                        </div>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                        <div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8' }}>Giriş</div>
+                          <div style={{ fontWeight: 800 }}>{card.entry.toFixed(1)} ₺</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8' }}>Hedef</div>
+                          <div style={{ fontWeight: 800, color: '#10b981' }}>{card.target.toFixed(1)} ₺</div>
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '10px', color: '#94a3b8' }}>Stop</div>
+                          <div style={{ fontWeight: 800, color: '#ef4444' }}>{card.stop.toFixed(1)} ₺</div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>{card.comment}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
+                        <span style={{ fontWeight: 700 }}>
+                          Güven: {(card.confidence * 100).toFixed(0)}%
+                        </span>
+                        <span style={{ color: sentimentColor, fontWeight: 600 }}>
+                          Sentiment: {card.sentimentScore > 0 ? '+' : ''}
+                          {card.sentimentScore.toFixed(2)}
+                        </span>
+                        <span style={{ fontWeight: 600 }}>RL Lots: {card.rlLots}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                        {card.attentionFocus.map((focus) => (
+                          <span
+                            key={focus}
+                            style={{
+                              fontSize: '10px',
+                              padding: '4px 8px',
+                              borderRadius: '8px',
+                              background: '#f1f5f9',
+                              color: '#334155',
+                              fontWeight: 600,
+                            }}
+                          >
+                            {focus}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
             {/* 1. Backtest (3/6/12 Ay) */}
