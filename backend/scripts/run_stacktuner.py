@@ -15,9 +15,17 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("run_stacktuner")
 
 DATA_PATHS = sorted(Path("backend").glob("BIST_ranking_*.csv"))
+SNAPSHOT_DATASET = Path("data/datasets/stack_dataset.csv")
 
 
 def build_dataset(threshold: float = 0.01) -> pd.DataFrame:
+    if SNAPSHOT_DATASET.exists():
+        logger.info("Using pre-built dataset %s", SNAPSHOT_DATASET)
+        dataset = pd.read_csv(SNAPSHOT_DATASET)
+        if "target" in dataset.columns:
+            return dataset
+        logger.warning("Dataset at %s missing target, falling back to rankings", SNAPSHOT_DATASET)
+
     frames = []
     for path in DATA_PATHS:
         try:

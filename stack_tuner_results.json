@@ -2,12 +2,12 @@
   "best_score": 0.0,
   "best_params": {
     "lightgbm": {
-      "lgb_n_estimators": 425,
-      "lgb_max_depth": 11,
-      "lgb_lr": 0.19976958599580305,
-      "lgb_leaves": 72,
-      "lgb_subsample": 0.9534264088153714,
-      "lgb_colsample": 0.8653406371063166
+      "lgb_n_estimators": 470,
+      "lgb_max_depth": 4,
+      "lgb_lr": 0.1368489706765556,
+      "lgb_leaves": 86,
+      "lgb_subsample": 0.7739080508153479,
+      "lgb_colsample": 0.7971714178943407
     }
   }
 }

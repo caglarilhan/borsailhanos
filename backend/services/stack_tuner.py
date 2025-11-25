@@ -62,7 +62,11 @@ class StackTuner:
 
     def _prepare_data(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Train/test split"""
-        X = df.drop("target", axis=1).values
+        numeric_cols = df.select_dtypes(include=["number"]).columns.tolist()
+        if "target" not in numeric_cols:
+            raise ValueError("Dataset must contain numeric 'target' column")
+        feature_cols = [col for col in numeric_cols if col != "target"]
+        X = df[feature_cols].values
         y = df["target"].values
         return train_test_split(X, y, test_size=self.config.test_size, random_state=self.config.random_state)
 

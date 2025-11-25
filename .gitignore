@@ -44,5 +44,9 @@ pids/
 *.sock
 .cache/
 
+# Data snapshots
+data/snapshots/
+data/datasets/*.csv
+
 # Production
 Pipfile.lock
