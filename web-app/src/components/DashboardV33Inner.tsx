@@ -2339,6 +2339,29 @@ const [aiPowerLoading, setAiPowerLoading] = useState(false);
                         </div>
                       </div>
                       <div style={{ fontSize: '12px', color: '#475569', lineHeight: 1.4 }}>{card.comment}</div>
+                      <button
+                        onClick={() => {
+                          window.dispatchEvent(
+                            new CustomEvent('prefill-broker-order', {
+                              detail: { symbol: card.symbol, quantity: Math.round(card.rlLots / 10) || 100 },
+                            }),
+                          );
+                        }}
+                        style={{
+                          alignSelf: 'flex-start',
+                          marginTop: '4px',
+                          padding: '6px 10px',
+                          borderRadius: '999px',
+                          border: 'none',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: '#fff',
+                          background: actionColor,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Emir Hazırla
+                      </button>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px' }}>
                         <span style={{ fontWeight: 700 }}>
                           Güven: {(card.confidence * 100).toFixed(0)}%

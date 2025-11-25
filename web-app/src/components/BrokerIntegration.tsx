@@ -64,22 +64,36 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
 
   useEffect(() => {
     loadBrokerData();
+    const handler = (event: Event) => {
+      const custom = event as CustomEvent<{ symbol: string; quantity?: number; price?: number }>;
+      if (custom.detail?.symbol) {
+        setOrderForm({
+          symbol: custom.detail.symbol,
+          quantity: custom.detail.quantity ? String(custom.detail.quantity) : '',
+          order_type: 'MARKET',
+          price: custom.detail.price ? String(custom.detail.price) : '',
+        });
+        setShowOrderModal(true);
+      }
+    };
+    window.addEventListener('prefill-broker-order', handler as EventListener);
+    return () => window.removeEventListener('prefill-broker-order', handler as EventListener);
   }, []);
 
   const loadBrokerData = async () => {
     try {
       // Load broker status
-      const statusResponse = await fetch('http://localhost:8081/api/brokers/status');
+      const statusResponse = await fetch('/api/broker/status');
       const statusData = await statusResponse.json();
       setBrokerStatus(statusData.brokers || {});
 
       // Load accounts
-      const accountsResponse = await fetch('http://localhost:8081/api/brokers/accounts');
+      const accountsResponse = await fetch('/api/broker/accounts');
       const accountsData = await accountsResponse.json();
       setAccounts(accountsData.accounts || {});
 
       // Load positions
-      const positionsResponse = await fetch('http://localhost:8081/api/brokers/positions');
+      const positionsResponse = await fetch('/api/broker/positions');
       const positionsData = await positionsResponse.json();
       
       // Flatten positions from all brokers
@@ -94,7 +108,7 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
       setPositions(allPositions);
 
       // Load aggregated portfolio
-      const portfolioResponse = await fetch('http://localhost:8081/api/brokers/portfolio');
+      const portfolioResponse = await fetch('/api/broker/portfolio');
       const portfolioData = await portfolioResponse.json();
       setPortfolio(portfolioData);
     } catch (error) {
@@ -104,7 +118,7 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
 
   const initializeBrokers = async () => {
     try {
-      const response = await fetch('http://localhost:8081/api/brokers/initialize', {
+      const response = await fetch('/api/broker/initialize', {
         method: 'POST'
       });
       const data = await response.json();
@@ -123,7 +137,7 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
 
   const placeOrder = async () => {
     try {
-      const response = await fetch('http://localhost:8081/api/brokers/orders', {
+      const response = await fetch('/api/broker/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
