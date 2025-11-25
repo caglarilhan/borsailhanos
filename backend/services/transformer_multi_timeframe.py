@@ -13,6 +13,7 @@ import numpy as np
 import pandas as pd
 from typing import Dict, List, Optional, Tuple, Any
 from datetime import datetime, timedelta
+from dataclasses import dataclass, field
 import logging
 
 logger = logging.getLogger(__name__)
@@ -24,6 +25,8 @@ try:
     TENSORFLOW_AVAILABLE = True
 except ImportError:
     TENSORFLOW_AVAILABLE = False
+    keras = None  # type: ignore
+    layers = None  # type: ignore
     logger.warning("TensorFlow not available, using mock implementation")
 
 try:
@@ -33,88 +36,138 @@ except ImportError:
     YFINANCE_AVAILABLE = False
     logger.warning("yfinance not available")
 
-
-class MultiHeadAttention(layers.Layer):
-    """Multi-Head Attention Layer (TensorFlow)"""
-    
-    def __init__(self, d_model: int, num_heads: int):
-        super().__init__()
-        self.d_model = d_model
-        self.num_heads = num_heads
-        self.depth = d_model // num_heads
-        
-        self.wq = layers.Dense(d_model)
-        self.wk = layers.Dense(d_model)
-        self.wv = layers.Dense(d_model)
-        self.dense = layers.Dense(d_model)
-    
-    def call(self, v, k, q, mask=None):
-        batch_size = tf.shape(q)[0]
-        
-        q = self.wq(q)
-        k = self.wk(k)
-        v = self.wv(v)
-        
-        q = self.split_heads(q, batch_size)
-        k = self.split_heads(k, batch_size)
-        v = self.split_heads(v, batch_size)
-        
-        scaled_attention, attention_weights = self.scaled_dot_product_attention(
-            q, k, v, mask
-        )
-        
-        scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])
-        concat_attention = tf.reshape(scaled_attention, (batch_size, -1, self.d_model))
-        output = self.dense(concat_attention)
-        
-        return output, attention_weights
-    
-    def split_heads(self, x, batch_size):
-        x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
-        return tf.transpose(x, perm=[0, 2, 1, 3])
-    
-    def scaled_dot_product_attention(self, q, k, v, mask):
-        matmul_qk = tf.matmul(q, k, transpose_b=True)
-        dk = tf.cast(tf.shape(k)[-1], tf.float32)
-        scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
-        
-        if mask is not None:
-            scaled_attention_logits += (mask * -1e9)
-        
-        attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)
-        output = tf.matmul(attention_weights, v)
-        
-        return output, attention_weights
+try:
+    from sentiment_analyzer import SentimentAnalyzer, SentimentResult
+    SENTIMENT_AVAILABLE = True
+except ImportError:
+    SentimentAnalyzer = None  # type: ignore
+    SentimentResult = None  # type: ignore
+    SENTIMENT_AVAILABLE = False
+    logger.warning("SentimentAnalyzer not available, sentiment fusion will use mock values")
 
 
-class TransformerEncoderBlock(layers.Layer):
-    """Transformer Encoder Block"""
-    
-    def __init__(self, d_model: int, num_heads: int, dff: int, rate: float = 0.1):
-        super().__init__()
+@dataclass
+class TimeframeSignal:
+    timeframe: str
+    slope: float
+    momentum: float
+    volatility: float
+    latest_return: float
+
+
+@dataclass
+class SentimentSnapshot:
+    score: float
+    label: str
+    confidence: float
+    news_count: int
+    key_events: List[str] = field(default_factory=list)
+    timestamp: Optional[str] = None
+
+
+@dataclass
+class FusionResult:
+    symbol: str
+    action: str
+    confidence: float
+    rationale: List[str]
+    attention_weights: Dict[str, float]
+    timeframe_signals: List[TimeframeSignal]
+    sentiment: SentimentSnapshot
+
+
+if TENSORFLOW_AVAILABLE:
+    class MultiHeadAttention(layers.Layer):
+        """Multi-Head Attention Layer (TensorFlow)"""
         
-        self.mha = MultiHeadAttention(d_model, num_heads)
-        self.ffn = keras.Sequential([
-            layers.Dense(dff, activation='relu'),
-            layers.Dense(d_model)
-        ])
+        def __init__(self, d_model: int, num_heads: int):
+            super().__init__()
+            self.d_model = d_model
+            self.num_heads = num_heads
+            self.depth = d_model // num_heads
+            
+            self.wq = layers.Dense(d_model)
+            self.wk = layers.Dense(d_model)
+            self.wv = layers.Dense(d_model)
+            self.dense = layers.Dense(d_model)
         
-        self.layernorm1 = layers.LayerNormalization(epsilon=1e-6)
-        self.layernorm2 = layers.LayerNormalization(epsilon=1e-6)
+        def call(self, v, k, q, mask=None):
+            batch_size = tf.shape(q)[0]
+            
+            q = self.wq(q)
+            k = self.wk(k)
+            v = self.wv(v)
+            
+            q = self.split_heads(q, batch_size)
+            k = self.split_heads(k, batch_size)
+            v = self.split_heads(v, batch_size)
+            
+            scaled_attention, attention_weights = self.scaled_dot_product_attention(
+                q, k, v, mask
+            )
+            
+            scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])
+            concat_attention = tf.reshape(scaled_attention, (batch_size, -1, self.d_model))
+            output = self.dense(concat_attention)
+            
+            return output, attention_weights
         
-        self.dropout1 = layers.Dropout(rate)
-        self.dropout2 = layers.Dropout(rate)
-    
-    def call(self, x, training, mask=None):
-        attn_output, attention_weights = self.mha(x, x, x, mask)
-        attn_output = self.dropout1(attn_output, training=training)
-        out1 = self.layernorm1(x + attn_output)
+        def split_heads(self, x, batch_size):
+            x = tf.reshape(x, (batch_size, -1, self.num_heads, self.depth))
+            return tf.transpose(x, perm=[0, 2, 1, 3])
         
-        ffn_output = self.ffn(out1)
-        ffn_output = self.dropout2(ffn_output, training=training)
-        out2 = self.layernorm2(out1 + ffn_output)
+        def scaled_dot_product_attention(self, q, k, v, mask):
+            matmul_qk = tf.matmul(q, k, transpose_b=True)
+            dk = tf.cast(tf.shape(k)[-1], tf.float32)
+            scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
+            
+            if mask is not None:
+                scaled_attention_logits += (mask * -1e9)
+            
+            attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)
+            output = tf.matmul(attention_weights, v)
+            
+            return output, attention_weights
+
+
+    class TransformerEncoderBlock(layers.Layer):
+        """Transformer Encoder Block"""
         
-        return out2, attention_weights
+        def __init__(self, d_model: int, num_heads: int, dff: int, rate: float = 0.1):
+            super().__init__()
+            
+            self.mha = MultiHeadAttention(d_model, num_heads)
+            self.ffn = keras.Sequential([
+                layers.Dense(dff, activation='relu'),
+                layers.Dense(d_model)
+            ])
+            
+            self.layernorm1 = layers.LayerNormalization(epsilon=1e-6)
+            self.layernorm2 = layers.LayerNormalization(epsilon=1e-6)
+            
+            self.dropout1 = layers.Dropout(rate)
+            self.dropout2 = layers.Dropout(rate)
+        
+        def call(self, x, training, mask=None):
+            attn_output, attention_weights = self.mha(x, x, x, mask)
+            attn_output = self.dropout1(attn_output, training=training)
+            out1 = self.layernorm1(x + attn_output)
+            
+            ffn_output = self.ffn(out1)
+            ffn_output = self.dropout2(ffn_output, training=training)
+            out2 = self.layernorm2(out1 + ffn_output)
+            
+            return out2, attention_weights
+else:
+    class MultiHeadAttention:  # type: ignore
+        """Fallback attention when TensorFlow is unavailable"""
+        def __init__(self, *args, **kwargs):
+            pass
+
+    class TransformerEncoderBlock:  # type: ignore
+        """Fallback encoder block when TensorFlow is unavailable"""
+        def __init__(self, *args, **kwargs):
+            pass
 
 
 class TransformerMultiTimeframe:
@@ -139,6 +192,15 @@ class TransformerMultiTimeframe:
         self.timeframes = ['1m', '5m', '15m', '1h', '4h', '1d', '1w']
         self.model: Optional[Any] = None
         self.is_trained = False
+        self.sentiment_analyzer: Optional[SentimentAnalyzer] = None
+        
+        if SENTIMENT_AVAILABLE:
+            try:
+                self.sentiment_analyzer = SentimentAnalyzer()
+                logger.info("🧠 Sentiment analyzer initialized for Transformer fusion")
+            except Exception as exc:
+                logger.warning("SentimentAnalyzer initialization failed: %s", exc)
+                self.sentiment_analyzer = None
         
         if TENSORFLOW_AVAILABLE:
             self._build_model()
@@ -267,6 +329,125 @@ class TransformerMultiTimeframe:
             multi_data[tf] = features
         
         return multi_data
+
+    def summarize_timeframe_signals(self, multi_data: Dict[str, np.ndarray]) -> List[TimeframeSignal]:
+        """Her timeframe için temel istatistikleri çıkar"""
+        signals: List[TimeframeSignal] = []
+        for tf, series in multi_data.items():
+            flat = series.flatten()
+            if len(flat) < 5:
+                continue
+            slope = float(flat[-1] - flat[0])
+            short_window = float(flat[-5:].mean())
+            long_window = float(flat.mean())
+            momentum = short_window - long_window
+            volatility = float(np.std(flat))
+            latest_return = float(flat[-1] - flat[-2]) if len(flat) > 1 else 0.0
+            signals.append(TimeframeSignal(
+                timeframe=tf,
+                slope=slope,
+                momentum=momentum,
+                volatility=volatility,
+                latest_return=latest_return
+            ))
+        return signals
+
+    def get_sentiment_snapshot(self, symbol: str) -> SentimentSnapshot:
+        """Sentiment skorlarını getir (varsa)"""
+        if self.sentiment_analyzer is None:
+            return SentimentSnapshot(
+                score=0.0,
+                label='neutral',
+                confidence=0.5,
+                news_count=0,
+                key_events=[],
+                timestamp=datetime.utcnow().isoformat()
+            )
+        try:
+            result: Optional[SentimentResult] = self.sentiment_analyzer.analyze_stock_sentiment(symbol)
+        except Exception as exc:
+            logger.warning("Sentiment analysis failed for %s: %s", symbol, exc)
+            result = None
+        if not result:
+            return SentimentSnapshot(
+                score=0.0,
+                label='neutral',
+                confidence=0.5,
+                news_count=0,
+                key_events=[],
+                timestamp=datetime.utcnow().isoformat()
+            )
+        sentiment_label = 'positive' if result.overall_sentiment > 0.05 else 'negative' if result.overall_sentiment < -0.05 else 'neutral'
+        return SentimentSnapshot(
+            score=float(result.overall_sentiment),
+            label=sentiment_label,
+            confidence=float(result.confidence),
+            news_count=int(result.news_count),
+            key_events=result.key_events[:5],
+            timestamp=result.timestamp.isoformat()
+        )
+
+    def fuse_timeframes_with_sentiment(self, symbol: str) -> FusionResult:
+        """Timeframe sinyallerini sentiment ile birleştir"""
+        multi_data = self.get_multi_timeframe_data(symbol)
+        timeframe_signals = self.summarize_timeframe_signals(multi_data)
+        sentiment_snapshot = self.get_sentiment_snapshot(symbol)
+        
+        if not timeframe_signals:
+            rationale = ["Yeterli fiyat verisi bulunamadı, varsayılan HOLD."]
+            attention = {tf: 1.0 / len(self.timeframes) for tf in self.timeframes}
+            return FusionResult(
+                symbol=symbol,
+                action='HOLD',
+                confidence=0.5,
+                rationale=rationale,
+                attention_weights=attention,
+                timeframe_signals=[],
+                sentiment=sentiment_snapshot
+            )
+        
+        # Momentum ağırlıklı attention
+        raw_weights = np.array([abs(sig.momentum) + 1e-6 for sig in timeframe_signals])
+        weight_sum = raw_weights.sum()
+        if weight_sum == 0:
+            attention_weights = {sig.timeframe: 1.0 / len(timeframe_signals) for sig in timeframe_signals}
+        else:
+            attention_weights = {
+                sig.timeframe: float(w / weight_sum)
+                for sig, w in zip(timeframe_signals, raw_weights)
+            }
+        
+        momentum_score = sum(sig.momentum * attention_weights[sig.timeframe] for sig in timeframe_signals)
+        volatility_penalty = np.mean([sig.volatility for sig in timeframe_signals])
+        sentiment_bias = sentiment_snapshot.score * 0.3  # sentiment %30 ağırlık
+        composite_score = momentum_score - volatility_penalty * 0.05 + sentiment_bias
+        
+        if composite_score > 0.03:
+            action = 'BUY'
+        elif composite_score < -0.03:
+            action = 'SELL'
+        else:
+            action = 'HOLD'
+        
+        confidence = min(0.99, max(0.1, abs(composite_score) * 15 + sentiment_snapshot.confidence * 0.3))
+        
+        rationale = [
+            f"Momentum skoru: {momentum_score:.4f}",
+            f"Sentiment bias: {sentiment_bias:.4f} ({sentiment_snapshot.label})",
+            f"Volatilite cezası: {volatility_penalty:.4f}"
+        ]
+        if sentiment_snapshot.key_events:
+            rationale.append(f"Öne çıkan haberler: {', '.join(sentiment_snapshot.key_events[:2])}")
+        
+        return FusionResult(
+            symbol=symbol,
+            action=action,
+            confidence=confidence,
+            rationale=rationale,
+            attention_weights=attention_weights,
+            timeframe_signals=timeframe_signals,
+            sentiment=sentiment_snapshot
+        )
     
     def predict(self, symbol: str) -> Dict[str, Any]:
         """
@@ -326,6 +507,23 @@ class TransformerMultiTimeframe:
                 for i, tf in enumerate(self.timeframes)
             }
         }
+    
+    def predict_with_sentiment(self, symbol: str) -> FusionResult:
+        """
+        Transformer çıkışı + sentiment füzyonunu döndür.
+        Model eğitilmemiş olsa bile heuristik füzyon çalışır.
+        """
+        fusion_result = self.fuse_timeframes_with_sentiment(symbol)
+        
+        if self.is_trained and self.model is not None:
+            base_prediction = self.predict(symbol)
+            prob = base_prediction['all_timeframe_predictions']
+            model_bias = (prob[self.timeframes[0]] - 0.33) * 0.1
+            fusion_score = fusion_result.confidence + model_bias
+            fusion_result.confidence = max(0.1, min(0.99, fusion_score))
+            fusion_result.rationale.append(f"Transformer modeli bias'ı: {model_bias:+.4f}")
+        
+        return fusion_result
     
     def train(self, symbols: List[str], labels: List[int]):
         """
