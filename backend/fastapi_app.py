@@ -16,6 +16,20 @@ from prophet_model import ProphetModel
 from timegpt_mock import TimeGPTMock
 from ensemble_combiner import EnsembleCombiner
 
+# Alpaca entegrasyonu
+try:
+    from services.alpaca_client import (
+        get_account,
+        get_positions,
+        place_order as alpaca_place_order,
+        cancel_order as alpaca_cancel_order,
+        get_orders as alpaca_get_orders,
+    )
+    ALPACA_AVAILABLE = True
+except ImportError:
+    ALPACA_AVAILABLE = False
+    logger.warning("Alpaca client import edilemedi")
+
 # Logging ayarları
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -413,6 +427,69 @@ async def get_api_docs():
         "modes": ["aggressive", "normal", "safe"],
         "brokers": ["paper", "mock"]
     }
+
+
+# Alpaca Paper Trading Endpoints
+if ALPACA_AVAILABLE:
+    @app.get("/api/alpaca/account")
+    async def alpaca_account():
+        """Alpaca hesap bilgilerini döndürür"""
+        account = get_account()
+        if not account:
+            raise HTTPException(status_code=503, detail="Alpaca hesap bilgisi alınamadı")
+        return account
+
+    @app.get("/api/alpaca/positions")
+    async def alpaca_positions():
+        """Alpaca açık pozisyonları döndürür"""
+        positions = get_positions()
+        return {"positions": positions, "count": len(positions)}
+
+    class AlpacaOrderRequest(BaseModel):
+        symbol: str
+        qty: float
+        side: str  # 'buy' or 'sell'
+        order_type: str = "market"
+        time_in_force: str = "day"
+        limit_price: Optional[float] = None
+        stop_price: Optional[float] = None
+
+    @app.post("/api/alpaca/orders")
+    async def alpaca_place_order(order: AlpacaOrderRequest):
+        """Alpaca'da emir gönderir"""
+        try:
+            result = alpaca_place_order(
+                symbol=order.symbol,
+                qty=order.qty,
+                side=order.side,
+                order_type=order.order_type,
+                time_in_force=order.time_in_force,
+                limit_price=order.limit_price,
+                stop_price=order.stop_price,
+            )
+            if not result:
+                raise HTTPException(status_code=503, detail="Emir gönderilemedi")
+            return result
+        except Exception as exc:
+            logger.error("Alpaca emir hatası: %s", exc)
+            raise HTTPException(status_code=400, detail=str(exc))
+
+    @app.delete("/api/alpaca/orders/{order_id}")
+    async def alpaca_cancel_order_endpoint(order_id: str):
+        """Alpaca emrini iptal eder"""
+        success = alpaca_cancel_order(order_id)
+        if not success:
+            raise HTTPException(status_code=400, detail="Emir iptal edilemedi")
+        return {"success": True, "order_id": order_id}
+
+    @app.get("/api/alpaca/orders")
+    async def alpaca_get_orders_endpoint(
+        status: Optional[str] = None,
+        limit: int = 50,
+    ):
+        """Alpaca emir geçmişini döndürür"""
+        orders = alpaca_get_orders(status=status, limit=limit)
+        return {"orders": orders, "count": len(orders)}
 
 if __name__ == "__main__":
     # Development server başlat

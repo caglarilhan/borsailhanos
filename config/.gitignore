@@ -1,0 +1,7 @@
+# Şifreli olmayan secret dump dosyalarını version control dışı bırak
+secrets.json
+secrets.plain.json
+secrets.dump.json
+*.dec.json
+
+

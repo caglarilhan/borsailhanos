@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ensurePortfolio, getPortfolio } from '@/lib/paperTradingStore';
+import { getAlpacaAccount, getAlpacaPositions } from '@/lib/alpacaClient';
 
 function authorize(request: Request) {
   const token = process.env.PAPER_API_TOKEN;
@@ -17,6 +18,34 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const { searchParams } = new URL(request.url);
+  const useAlpaca = searchParams.get('useAlpaca') === 'true';
+  
+  // Alpaca kullanılıyorsa gerçek hesap bilgilerini döndür
+  if (useAlpaca) {
+    const account = await getAlpacaAccount();
+    const positions = await getAlpacaPositions();
+    if (account) {
+      return NextResponse.json({
+        userId: 'alpaca-paper',
+        cash: account.cash,
+        equity: account.equity,
+        portfolioValue: account.portfolio_value,
+        buyingPower: account.buying_power,
+        positions: positions.map(p => ({
+          symbol: p.symbol,
+          quantity: p.qty,
+          side: p.side,
+          avgPrice: p.avg_entry_price,
+          currentPrice: p.current_price,
+          marketValue: p.market_value,
+          unrealizedPL: p.unrealized_pl,
+        })),
+        source: 'alpaca',
+      });
+    }
+  }
+  
+  // Fallback: local paper trading store
   const userId = searchParams.get('userId') || 'paper-demo';
   const portfolio = await getPortfolio(userId);
   if (!portfolio) {
