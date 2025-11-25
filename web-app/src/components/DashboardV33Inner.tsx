@@ -98,7 +98,7 @@ interface AiPositionCard {
   regime: 'risk-on' | 'risk-off' | 'neutral';
 }
 
-const AI_POWER_METRICS: AiPowerMetric[] = [
+const DEFAULT_AI_POWER_METRICS: AiPowerMetric[] = [
   {
     title: 'Meta Ensemble Gücü',
     value: '%92.1',
@@ -137,7 +137,7 @@ const AI_POWER_METRICS: AiPowerMetric[] = [
   },
 ];
 
-const AI_POSITION_CARDS: AiPositionCard[] = [
+const DEFAULT_AI_POSITION_CARDS: AiPositionCard[] = [
   {
     symbol: 'THYAO',
     action: 'BUY',
@@ -298,6 +298,41 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
     setPortfolioData(initialPortfolioData);
     console.log('✅ Component mounted successfully');
   }, []); // Only run once on mount
+
+useEffect(() => {
+  if (!mounted) return;
+  let cancelled = false;
+  let intervalId: NodeJS.Timeout | null = null;
+
+  const fetchAiPower = async () => {
+    try {
+      setAiPowerLoading(true);
+      const response = await fetch('/api/ai/power-grid');
+      if (!response.ok) throw new Error(`Status ${response.status}`);
+      const payload = await response.json();
+      if (cancelled) return;
+      setAiPowerMetrics(payload.metrics || DEFAULT_AI_POWER_METRICS);
+      setAiPositionCards(payload.positions || DEFAULT_AI_POSITION_CARDS);
+      setAiPowerUpdatedAt(payload.updatedAt || Date.now());
+    } catch (error) {
+      console.warn('AI Power fetch failed', error);
+      if (!cancelled) {
+        setAiPowerMetrics(DEFAULT_AI_POWER_METRICS);
+        setAiPositionCards(DEFAULT_AI_POSITION_CARDS);
+      }
+    } finally {
+      if (!cancelled) setAiPowerLoading(false);
+    }
+  };
+
+  fetchAiPower();
+  intervalId = setInterval(fetchAiPower, 60_000);
+
+  return () => {
+    cancelled = true;
+    if (intervalId) clearInterval(intervalId);
+  };
+}, [mounted]);
   const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
   const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
@@ -306,7 +341,11 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<{id: string, message: string, type: 'success' | 'info', timestamp: Date}[]>([]);
   const [portfolioRebalance, setPortfolioRebalance] = useState(false);
-  const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
+const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
+const [aiPowerMetrics, setAiPowerMetrics] = useState<AiPowerMetric[]>(DEFAULT_AI_POWER_METRICS);
+const [aiPositionCards, setAiPositionCards] = useState<AiPositionCard[]>(DEFAULT_AI_POSITION_CARDS);
+const [aiPowerUpdatedAt, setAiPowerUpdatedAt] = useState<number | null>(null);
+const [aiPowerLoading, setAiPowerLoading] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
   const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
   const [timeString, setTimeString] = useState<string>('');
@@ -2190,13 +2229,22 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
             {/* AI POWER GRID */}
             <div style={{ marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px' }}>⚡ AI Power Grid</h3>
-                <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>Meta modellerin nabzı</span>
+                <div>
+                  <h3 style={{ fontSize: '14px', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.2px', marginBottom: 2 }}>⚡ AI Power Grid</h3>
+                  <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 700 }}>Meta modellerin nabzı</span>
+                </div>
+                <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
+                  {aiPowerLoading
+                    ? 'Güncelleniyor...'
+                    : aiPowerUpdatedAt
+                      ? `Güncellendi: ${new Date(aiPowerUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}`
+                      : ''}
+                </span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-                {AI_POWER_METRICS.map((metric) => (
+                {aiPowerMetrics.map((metric, idx) => (
                   <div
-                    key={metric.title}
+                    key={`${metric.title}-${idx}`}
                     style={{
                       borderRadius: '16px',
                       padding: '16px',
@@ -2232,14 +2280,19 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
                 <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>Transformer + Sentiment + RL</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                {AI_POSITION_CARDS.map((card) => {
+                {aiPositionCards.length === 0 && (
+                  <div style={{ padding: '24px', border: '1px dashed #cbd5f5', borderRadius: '16px', color: '#94a3b8', fontSize: '13px' }}>
+                    Henüz canlı pozisyon önerisi bulunmuyor. Meta modellerden sinyal bekleniyor.
+                  </div>
+                )}
+                {aiPositionCards.map((card, idx) => {
                   const actionColor =
                     card.action === 'BUY' ? '#10b981' : card.action === 'SELL' ? '#ef4444' : '#64748b';
                   const sentimentColor =
                     card.sentiment === 'positive' ? '#22c55e' : card.sentiment === 'negative' ? '#ef4444' : '#f59e0b';
                   return (
                     <div
-                      key={card.symbol}
+                      key={`${card.symbol}-${card.action}-${idx}`}
                       style={{
                         borderRadius: '18px',
                         padding: '18px',
