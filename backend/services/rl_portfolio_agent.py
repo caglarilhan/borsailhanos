@@ -13,6 +13,7 @@ from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, field
 import json
 import random
+from pathlib import Path
 
 # FinRL import (fallback if not available)
 try:
@@ -26,10 +27,11 @@ except ImportError:
 
 try:
     # Sentiment-fused transformer output
-    from services.transformer_multi_timeframe import FusionResult, TimeframeSignal
+    from services.transformer_multi_timeframe import FusionResult, TimeframeSignal, TransformerMultiTimeframe
 except Exception:
     FusionResult = Any  # type: ignore
     TimeframeSignal = Any  # type: ignore
+    TransformerMultiTimeframe = None  # type: ignore
 
 # Logging setup
 logging.basicConfig(level=logging.INFO)
@@ -67,6 +69,8 @@ class RLPortfolioAgent:
         self.portfolio_history = []
         self.trading_history = []
         self.performance_metrics = {}
+        self.trade_log_path = Path("logs/rl_trade_logs.jsonl")
+        self.trade_log_path.parent.mkdir(parents=True, exist_ok=True)
         
         # RL parametreleri
         self.rl_params = {
@@ -201,6 +205,28 @@ class RLPortfolioAgent:
             rationale=fusion.rationale + rationale,
             meta=meta
         )
+
+    def log_fusion_session(
+        self,
+        symbol: str,
+        fusion: FusionResult,
+        recommendation: PositionRecommendation,
+        overrides: Optional[Dict[str, float]] = None
+    ) -> None:
+        entry = {
+            "timestamp": datetime.utcnow().isoformat(),
+            "symbol": symbol,
+            "portfolio_state": self._estimate_portfolio_state(overrides).__dict__,
+            "fusion": {
+                "action": fusion.action,
+                "confidence": fusion.confidence,
+                "sentiment": fusion.sentiment.__dict__,
+                "attention_weights": fusion.attention_weights,
+            },
+            "recommendation": recommendation.__dict__,
+        }
+        with self.trade_log_path.open("a") as f:
+            f.write(json.dumps(entry) + "\n")
 
 
 if __name__ == "__main__":
@@ -1252,3 +1278,34 @@ if __name__ == "__main__":
 
 # Aşağıdaki demo bloğu, transformer fusion çıktısına göre pozisyon önerisi üretir.
 # Daha kapsamlı RL eğitim/test fonksiyonları gerektiğinde ayrı scriptlerde çağrılmalıdır.
+def simulate_fusion_session(symbols: Optional[List[str]] = None, overrides: Optional[Dict[str, float]] = None):
+    agent = RLPortfolioAgent()
+    mtf = TransformerMultiTimeframe() if TransformerMultiTimeframe else None
+    symbols = symbols or ["THYAO.IS", "AKBNK.IS", "GARAN.IS"]
+
+    sessions = []
+    for sym in symbols:
+        if mtf:
+            fusion = mtf.predict_with_sentiment(sym)
+        else:
+            fusion = FusionResult(
+                symbol=sym,
+                action=random.choice(["BUY", "HOLD", "SELL"]),
+                confidence=random.uniform(0.6, 0.9),
+                rationale=["Mock fusion"],
+                attention_weights={},
+                timeframe_signals=[],
+                sentiment=agent.get_sentiment_snapshot(sym),
+            )
+        rec = agent.recommend_from_fusion(fusion, overrides)
+        agent.log_fusion_session(sym, fusion, rec, overrides)
+        sessions.append(rec.__dict__)
+
+    out_path = Path("logs/rl_session_summary.json")
+    out_path.write_text(json.dumps(sessions, indent=2))
+    logger.info("RL session summary saved to %s", out_path)
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    simulate_fusion_session()
