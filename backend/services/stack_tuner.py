@@ -23,14 +23,21 @@ except ImportError:
 try:
     import lightgbm as lgb
     import xgboost as xgb
-    import catboost as cb
     from sklearn.ensemble import GradientBoostingClassifier
     from sklearn.metrics import accuracy_score, roc_auc_score, log_loss
     from sklearn.model_selection import train_test_split
     SKLEARN_AVAILABLE = True
-except ImportError:
+except ImportError as exc:
     SKLEARN_AVAILABLE = False
-    logger.warning("ML kütüphaneleri eksik, StackTuner çalışmaz")
+    logger.warning("ML kütüphaneleri eksik, StackTuner çalışmaz: %s", exc)
+
+# CatBoost opsiyonel; mevcut değilse uyarı verip devam ediyoruz
+try:
+    import catboost as cb  # noqa: F401
+    CATBOOST_AVAILABLE = True
+except ImportError:
+    CATBOOST_AVAILABLE = False
+    logger.info("CatBoost bulunamadı, tuning LightGBM/XGBoost ile devam edecek")
 
 
 @dataclass
