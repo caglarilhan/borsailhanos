@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 """
-🚀 Advanced AI Ensemble System
+🚀 Advanced AI Ensemble System v2.0
 Doğruluk optimizasyonu için gelişmiş ensemble model
++ Caching Layer
++ Online Learning
++ Advanced Feature Engineering
 """
 
 import asyncio
@@ -12,6 +15,16 @@ from typing import Dict, List, Any, Optional
 import logging
 from dataclasses import dataclass
 import json
+
+# Yeni modüller
+try:
+    from .intelligent_cache import IntelligentCache, get_cache
+    from .online_learning_system import OnlineLearningSystem, get_online_learner
+    from .advanced_feature_engineering_v3 import AdvancedFeatureEngineering, get_feature_engine
+    NEW_MODULES_AVAILABLE = True
+except ImportError:
+    NEW_MODULES_AVAILABLE = False
+    print("⚠️ New modules not available, using basic implementations")
 
 # Mock imports for demonstration
 try:
@@ -48,6 +61,18 @@ class AdvancedAIEnsemble:
         self.feature_importance = {}
         self.model_weights = {}
         self.performance_history = []
+        
+        # Yeni modüller: Caching, Online Learning, Feature Engineering
+        if NEW_MODULES_AVAILABLE:
+            self.cache = get_cache()
+            self.online_learner = get_online_learner(model_type='classification')
+            self.feature_engine = get_feature_engine()
+            self.logger.info("✅ New modules loaded: Cache, Online Learning, Feature Engineering")
+        else:
+            self.cache = None
+            self.online_learner = None
+            self.feature_engine = None
+            self.logger.warning("⚠️ New modules not available")
         
         # Initialize models
         self._initialize_models()
@@ -238,13 +263,45 @@ class AdvancedAIEnsemble:
         return features
 
     async def predict_single_stock(self, symbol: str, timeframe: str = '1d') -> PredictionResult:
-        """Generate prediction for a single stock using ensemble"""
+        """Generate prediction for a single stock using ensemble + caching + online learning"""
         try:
-            # Generate features
-            features = await self.generate_features(symbol, timeframe)
+            # 1. CACHE CHECK: Önce cache'den kontrol et
+            if self.cache:
+                cached_prediction = self.cache.get_cached_prediction(symbol, 'ensemble', timeframe)
+                if cached_prediction:
+                    self.logger.debug(f"✅ Cache hit for {symbol}")
+                    return PredictionResult(**cached_prediction)
+            
+            # 2. FEATURE GENERATION: Advanced feature engineering kullan
+            if self.feature_engine:
+                # Gerçek fiyat verisi al (yfinance veya başka kaynak)
+                try:
+                    import yfinance as yf
+                    ticker = yf.Ticker(symbol)
+                    hist = ticker.history(period='6mo')
+                    
+                    if not hist.empty:
+                        # Advanced features oluştur
+                        advanced_features_df = self.feature_engine.create_all_features(
+                            symbol=symbol,
+                            price_data=hist,
+                            market_data=None  # İleride eklenebilir
+                        )
+                        # Son satırı al ve dict'e çevir
+                        features = advanced_features_df.iloc[-1].to_dict()
+                    else:
+                        # Fallback: normal feature generation
+                        features = await self.generate_features(symbol, timeframe)
+                except Exception as e:
+                    self.logger.warning(f"Advanced feature engineering failed: {e}, using basic features")
+                    features = await self.generate_features(symbol, timeframe)
+            else:
+                # Normal feature generation
+                features = await self.generate_features(symbol, timeframe)
+            
             feature_array = np.array(list(features.values())).reshape(1, -1)
             
-            # Get predictions from all models
+            # 3. MODEL PREDICTIONS: Tüm modellerden tahmin al
             model_predictions = {}
             model_confidences = {}
             
@@ -266,22 +323,44 @@ class AdvancedAIEnsemble:
                 model_predictions[model_name] = prediction
                 model_confidences[model_name] = confidence
             
-            # Ensemble prediction with weighted voting
+            # 4. ONLINE LEARNING: Online learner ile tahmin yap (opsiyonel)
+            if self.online_learner and self.online_learner.is_fitted:
+                try:
+                    online_pred = self.online_learner.predict(feature_array)
+                    # Online learner prediction'ı ensemble'e ekle
+                    model_predictions['online_learner'] = 'BUY' if online_pred[0] > 0.5 else 'SELL'
+                    model_confidences['online_learner'] = abs(online_pred[0] - 0.5) * 2  # 0-1 arası confidence
+                except Exception as e:
+                    self.logger.warning(f"Online learning prediction failed: {e}")
+            
+            # 5. ENSEMBLE VOTING: Weighted ensemble prediction
             ensemble_prediction = self._ensemble_vote(model_predictions, model_confidences)
             
-            # Calculate risk score
+            # 6. RISK SCORE: Risk hesapla
             risk_score = self._calculate_risk_score(features, ensemble_prediction)
             
-            # Generate price targets
-            current_price = np.random.uniform(50, 200)  # Mock current price
+            # 7. PRICE TARGETS: Fiyat hedefleri hesapla
+            current_price = np.random.uniform(50, 200)  # Mock current price (gerçekte API'den alınacak)
             price_target, stop_loss, take_profit = self._calculate_price_targets(
                 current_price, ensemble_prediction, risk_score
             )
             
-            # Feature importance (mock for now)
-            feature_importance = {k: np.random.uniform(0, 1) for k in features.keys()}
+            # 8. FEATURE IMPORTANCE: Feature importance hesapla
+            if self.feature_engine:
+                try:
+                    # Mock target (gerçekte gerçek fiyat değişimi kullanılacak)
+                    target = pd.Series([ensemble_prediction['confidence']] * len(features))
+                    feature_importance = self.feature_engine.get_feature_importance(
+                        pd.DataFrame([features]), target
+                    )
+                except Exception as e:
+                    self.logger.warning(f"Feature importance calculation failed: {e}")
+                    feature_importance = {k: np.random.uniform(0, 1) for k in features.keys()}
+            else:
+                feature_importance = {k: np.random.uniform(0, 1) for k in features.keys()}
             
-            return PredictionResult(
+            # 9. RESULT: PredictionResult oluştur
+            result = PredictionResult(
                 symbol=symbol,
                 prediction=ensemble_prediction['prediction'],
                 confidence=ensemble_prediction['confidence'],
@@ -294,6 +373,29 @@ class AdvancedAIEnsemble:
                 risk_score=risk_score,
                 timestamp=datetime.now().isoformat()
             )
+            
+            # 10. CACHE: Sonucu cache'e kaydet
+            if self.cache:
+                try:
+                    # PredictionResult'ı dict'e çevir
+                    result_dict = {
+                        'symbol': result.symbol,
+                        'prediction': result.prediction,
+                        'confidence': result.confidence,
+                        'price_target': result.price_target,
+                        'stop_loss': result.stop_loss,
+                        'take_profit': result.take_profit,
+                        'timeframe': result.timeframe,
+                        'model_scores': result.model_scores,
+                        'feature_importance': result.feature_importance,
+                        'risk_score': result.risk_score,
+                        'timestamp': result.timestamp
+                    }
+                    self.cache.set_cached_prediction(symbol, 'ensemble', result_dict, timeframe)
+                except Exception as e:
+                    self.logger.warning(f"Cache save failed: {e}")
+            
+            return result
             
         except Exception as e:
             self.logger.error(f"Error predicting {symbol}: {e}")
