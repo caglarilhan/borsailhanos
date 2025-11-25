@@ -10,6 +10,7 @@ import yfinance as yf
 from datetime import datetime, timedelta
 import logging
 from typing import Dict, List, Optional, Tuple, Any
+from dataclasses import dataclass, field
 import json
 import random
 
@@ -23,9 +24,40 @@ except ImportError:
     FINRL_AVAILABLE = False
     logging.warning("⚠️ FinRL bulunamadı, simüle edilmiş RL ajanı kullanılacak")
 
+try:
+    # Sentiment-fused transformer output
+    from services.transformer_multi_timeframe import FusionResult, TimeframeSignal
+except Exception:
+    FusionResult = Any  # type: ignore
+    TimeframeSignal = Any  # type: ignore
+
 # Logging setup
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class PortfolioState:
+    equity: float = 100000.0
+    cash: float = 60000.0
+    invested: float = 40000.0
+    risk_budget_pct: float = 0.02
+    open_positions: Dict[str, float] = field(default_factory=dict)
+
+
+@dataclass
+class PositionRecommendation:
+    symbol: str
+    action: str
+    position_pct: float
+    position_value: float
+    confidence: float
+    max_leverage: float
+    stop_loss_pct: float
+    take_profit_pct: float
+    hedge_symbol: Optional[str]
+    rationale: List[str]
+    meta: Dict[str, Any] = field(default_factory=dict)
 
 class RLPortfolioAgent:
     """Reinforcement Learning tabanlı portföy ajanı"""
@@ -73,6 +105,116 @@ class RLPortfolioAgent:
             "volatility_threshold": 0.3, # Volatilite eşiği
             "liquidity_threshold": 1000000  # Likidite eşiği
         }
+        self.hedge_pairs = {
+            "THYAO.IS": "TAVHL.IS",
+            "EREGL.IS": "KRDMD.IS",
+            "GARAN.IS": "XBANK.IS",
+            "TUPRS.IS": "BIST:Enerji",
+        }
+
+    # ------------------------------------------------------------------ #
+    # Fusion -> Position sizing heuristics
+    # ------------------------------------------------------------------ #
+    def _estimate_portfolio_state(self, overrides: Optional[Dict[str, float]] = None) -> PortfolioState:
+        base = PortfolioState()
+        if overrides:
+            for key, value in overrides.items():
+                setattr(base, key, value)
+        return base
+
+    def _pick_hedge(self, symbol: str) -> Optional[str]:
+        return self.hedge_pairs.get(symbol)
+
+    def _aggregate_volatility(self, signals: List[TimeframeSignal]) -> float:
+        if not signals:
+            return 1.0
+        vols = [max(1e-3, abs(sig.volatility)) for sig in signals]
+        return float(np.mean(vols))
+
+    def recommend_from_fusion(
+        self,
+        fusion: FusionResult,
+        portfolio_overrides: Optional[Dict[str, float]] = None
+    ) -> PositionRecommendation:
+        """
+        Transformer + sentiment çıktısından pozisyon planı üretir.
+        FinRL yoksa heuristik RL davranışı taklit eder.
+        """
+        portfolio = self._estimate_portfolio_state(portfolio_overrides)
+
+        volatility = self._aggregate_volatility(fusion.timeframe_signals)
+        sentiment_bias = fusion.sentiment.score
+        action = fusion.action
+        confidence = fusion.confidence
+
+        base_pct = 0.015 if action == "HOLD" else 0.035
+        momentum_bias = sum(sig.momentum for sig in fusion.timeframe_signals) / max(1, len(fusion.timeframe_signals))
+        risk_adjust = max(0.5, min(1.5, 1 - volatility * 0.3))
+        sentiment_adjust = 1 + sentiment_bias * (0.4 if action == "BUY" else -0.2)
+        confidence_adjust = 0.5 + confidence
+
+        raw_position_pct = base_pct * (1 + abs(momentum_bias)) * risk_adjust * sentiment_adjust * confidence_adjust
+        max_allowed = self.portfolio_params["max_position_size"]
+        position_pct = float(max(0.005, min(max_allowed, raw_position_pct)))
+
+        position_value = portfolio.equity * position_pct
+        stop_loss_pct = float(-(0.8 * volatility + (1 - confidence) * 0.05))
+        take_profit_pct = float(abs(stop_loss_pct) * 1.8 + sentiment_bias * 0.2)
+        leverage = float(min(2.0, 1 + confidence * 0.5))
+
+        rationale = [
+            f"Aksiyon: {action}",
+            f"Momentum ortalaması: {momentum_bias:.4f}",
+            f"Sentiment bias: {sentiment_bias:+.3f}",
+            f"Volatilite: {volatility:.3f}",
+            f"Pozisyon %: {position_pct*100:.2f} (limit {max_allowed*100:.1f}%)",
+        ]
+
+        hedge = self._pick_hedge(fusion.symbol)
+        if hedge:
+            rationale.append(f"Hedge önerisi: {hedge}")
+
+        meta = {
+            "attention_weights": fusion.attention_weights,
+            "timeframe_highlights": [
+                {"timeframe": sig.timeframe, "momentum": sig.momentum, "volatility": sig.volatility}
+                for sig in fusion.timeframe_signals[:3]
+            ],
+            "sentiment": {
+                "score": fusion.sentiment.score,
+                "label": fusion.sentiment.label,
+                "confidence": fusion.sentiment.confidence,
+                "key_events": fusion.sentiment.key_events,
+            }
+        }
+
+        return PositionRecommendation(
+            symbol=fusion.symbol,
+            action=action,
+            position_pct=position_pct,
+            position_value=position_value,
+            confidence=confidence,
+            max_leverage=leverage,
+            stop_loss_pct=stop_loss_pct,
+            take_profit_pct=take_profit_pct,
+            hedge_symbol=hedge,
+            rationale=fusion.rationale + rationale,
+            meta=meta
+        )
+
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    agent = RLPortfolioAgent()
+    try:
+        from services.transformer_multi_timeframe import TransformerMultiTimeframe
+
+        mtf = TransformerMultiTimeframe()
+        fusion = mtf.predict_with_sentiment("THYAO.IS")
+        recommendation = agent.recommend_from_fusion(fusion)
+        logger.info("RL Position Recommendation:\n%s", json.dumps(recommendation.__dict__, indent=2, default=str))
+    except Exception as exc:
+        logger.error("RL position sizing demo failed: %s", exc)
     
     def get_market_data(self, symbols: List[str], period: str = "1y") -> pd.DataFrame:
         """Piyasa verilerini çek"""
@@ -1108,25 +1250,5 @@ class RLPortfolioAgent:
             logger.error(f"❌ Ajan durumu hatası: {e}")
             return {"error": str(e)}
 
-# Test fonksiyonu
-if __name__ == "__main__":
-    agent = RLPortfolioAgent()
-    
-    # Test RL ajanı
-    logger.info("🧪 RL Portföy Ajanı test başlatılıyor...")
-    
-    # Test eğitimi
-    training_result = agent.train_rl_agent(episodes=20)
-    logger.info(f"📊 Eğitim sonucu: {training_result}")
-    
-    # Test portföy sinyali
-    portfolio_result = agent.generate_portfolio_signal()
-    logger.info(f"📈 Portföy sinyali: {portfolio_result}")
-    
-    # Test performans
-    performance = agent.get_portfolio_performance()
-    logger.info(f"📊 Performans: {performance}")
-    
-    # Test durum
-    status = agent.get_agent_status()
-    logger.info(f"🤖 Ajan durumu: {status}")
+# Aşağıdaki demo bloğu, transformer fusion çıktısına göre pozisyon önerisi üretir.
+# Daha kapsamlı RL eğitim/test fonksiyonları gerektiğinde ayrı scriptlerde çağrılmalıdır.
