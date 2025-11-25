@@ -49,6 +49,6 @@ const nextConfig = {
       },
     ];
   },
-} as any;
+} satisfies import('next').NextConfig;
 
 export default nextConfig;

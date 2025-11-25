@@ -17,6 +17,62 @@ export function isDashboardTab(value: string | null): value is DashboardTab {
   return !!value && DASHBOARD_TAB_SET.has(value as DashboardTab);
 }
 
+// Type definitions for data structures
+interface ChartDataPoint {
+  day: string;
+  actual?: number;
+  predicted: number;
+  predicted_upper: number;
+  predicted_lower: number;
+  confidence: number;
+}
+
+interface PortfolioDataPoint {
+  day: string;
+  value: number;
+  profit: number;
+}
+
+interface Signal {
+  symbol: string;
+  signal?: string;
+  confidence?: number;
+  accuracy?: number;
+  currentPrice?: number;
+  change?: number;
+  changePercent?: number;
+  volume?: number;
+  price?: number;
+  target?: number;
+  comment?: string;
+  [key: string]: unknown;
+}
+
+interface SentimentItem {
+  symbol: string;
+  sentiment?: number;
+  positive?: number;
+  negative?: number;
+  neutral?: number;
+  total?: number;
+  sources?: string[];
+  [key: string]: unknown;
+}
+
+interface SectorItem {
+  name: string;
+  change?: number;
+  [key: string]: unknown;
+}
+
+interface AlertItem {
+  id: string;
+  message: string;
+  type: 'success' | 'info';
+  timestamp: Date;
+  [key: string]: unknown;
+}
+
 // V5.0 Enterprise Components
 import RiskManagementPanel from './V50/RiskManagementPanel';
 import PortfolioOptimizer from './V50/PortfolioOptimizer';
@@ -66,8 +122,8 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [mounted, setMounted] = useState(false);
-  const [chartData, setChartData] = useState<any[]>([]);
-  const [portfolioData, setPortfolioData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [portfolioData, setPortfolioData] = useState<PortfolioDataPoint[]>([]);
   
   // Sync tab with URL
   const handleTabChange = (tab: DashboardTab) => {
@@ -78,12 +134,16 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   };
 
   // Actions for opening tabs via centralized actions.ts
-  const { openSignals, openAnalysis, openOperations, openAdvanced } = (function(){
+  const { openSignals, openAnalysis, openOperations, openAdvanced, openAIAnalysis } = (function(){
     try {
       // dynamic import types already handled via static import at top
       const actionsObj = require('@/lib/actions');
       if (actionsObj && actionsObj.createTabActions) {
-        return actionsObj.createTabActions({ setActiveFeaturesTab, router });
+        const result = actionsObj.createTabActions({ setActiveFeaturesTab, router });
+        return {
+          ...result,
+          openAIAnalysis: result.openAIAnalysis || (() => handleTabChange('ai-analysis' as const)),
+        };
       }
     } catch (e) {
       // fallback to local handler
@@ -133,7 +193,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
   const [portfolioStocks, setPortfolioStocks] = useState<{symbol: string, count: number}[]>([]);
-  const [sentimentData, setSentimentData] = useState<any>(null);
+  const [sentimentData, setSentimentData] = useState<SentimentItem[] | null>(null);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<{id: string, message: string, type: 'success' | 'info', timestamp: Date}[]>([]);
   const [portfolioRebalance, setPortfolioRebalance] = useState(false);
@@ -141,7 +201,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
   const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
   const [timeString, setTimeString] = useState<string>('');
-  const [dynamicSignals, setDynamicSignals] = useState<any[]>([]); // WebSocket'ten gelen dinamik sinyaller
+  const [dynamicSignals, setDynamicSignals] = useState<Signal[]>([]); // WebSocket'ten gelen dinamik sinyaller
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null); // Bildirim tıklama için
   const [dynamicSummary, setDynamicSummary] = useState<string>(''); // AI Summary
   const [sectorStats, setSectorStats] = useState<any>(null); // Sektör İstatistikleri
@@ -347,7 +407,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   // ✅ DYNAMIC WATCHLIST: Gelen sinyallere göre dinamik güncelleme
   useEffect(() => {
     if (dynamicSignals.length > 0) {
-      const topSymbols = dynamicSignals.slice(0, 5).map((s: any) => s.symbol).filter(Boolean);
+      const topSymbols = dynamicSignals.slice(0, 5).map((s: Signal) => s.symbol).filter(Boolean);
       if (topSymbols.length > 0) {
         setWatchlist(topSymbols);
       }
@@ -484,14 +544,14 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   };
   
   // ✅ NOTIFICATION CLICK HANDLER: Bildirim tıklandığında sembol seç, detay göster, tabloya scroll yap
-  const handleNotificationClick = (alert: any) => {
+  const handleNotificationClick = (alert: AlertItem) => {
     // Bildirim mesajından sembolü çıkar (örn: "🔔 THYAO: BUY sinyali...")
     const symbolMatch = alert.message.match(/([A-Z]{2,6}):/);
     if (symbolMatch && symbolMatch[1]) {
       const symbol = symbolMatch[1];
       setSelectedSymbol(symbol);
       // İlgili satırı bul ve highlight yap
-      const signal = signals.find((s: any) => s.symbol === symbol);
+      const signal = signals.find((s: Signal) => s.symbol === symbol);
       if (signal) {
         console.log('📊 ' + symbol + ' detay analizi açılıyor...', signal);
         
@@ -529,7 +589,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   const { connected, error, lastMessage } = useWebSocket({
     url: shouldConnectWS ? wsUrl : '', // Empty URL prevents connection
     maxReconnectAttempts: 5, // Limit retry attempts to 5
-    onMessage: (data: any) => {
+    onMessage: (data: { signals?: Signal[]; [key: string]: unknown }) => {
       if (!data) return;
       console.log('📊 Realtime data received:', data);
       
@@ -544,7 +604,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
           }));
           
           // Add alerts for new signals
-          data.signals.forEach((signal: any) => {
+          data.signals.forEach((signal: Signal) => {
             if (signal && typeof signal === 'object' && signal.symbol && typeof signal.symbol === 'string') {
               setAlerts(prev => [...prev, {
                 id: 'signal-' + Date.now() + '-' + signal.symbol,
@@ -639,7 +699,11 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
         if (typeof data.ai_confidence === 'number') {
           setChartData(prev => [...prev.slice(-29), {
             day: 'Gün ' + (prev.length + 1),
-            value: data.ai_confidence
+            actual: data.ai_confidence,
+            predicted: data.ai_confidence,
+            predicted_upper: data.ai_confidence * 1.02,
+            predicted_lower: data.ai_confidence * 0.98,
+            confidence: 85
           }]);
         }
       }
@@ -661,15 +725,19 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
         const json = await res.json();
         if (!json || !Array.isArray(json.top30)) return;
         // Map to dashboard signal shape
-        const mapped = json.top30.slice(0, 15).map((x: any) => ({
-          symbol: x.symbol,
-          signal: x.signal,
-          price: x.currentPrice,
-          target: x.currentPrice * (1 + (x.predictedChange || 0) / 100),
-          change: x.predictedChange,
-          comment: x.aiSummaryText || 'AI güncel analiz',
-          accuracy: x.accuracy,
-          confidence: (x.confidence || 80) / 100
+        const mapped = json.top30.slice(0, 15).map((x: { symbol: string; signal: string; currentPrice?: number; predictedChange?: number; [key: string]: unknown }) => {
+          const price = typeof x.currentPrice === 'number' ? x.currentPrice : 0;
+          const change = typeof x.predictedChange === 'number' ? x.predictedChange : 0;
+          return {
+            symbol: x.symbol,
+            signal: x.signal,
+            price: price,
+            target: price * (1 + change / 100),
+            change: change,
+            comment: (typeof x.aiSummaryText === 'string' ? x.aiSummaryText : 'AI güncel analiz'),
+            accuracy: (typeof x.accuracy === 'number' ? x.accuracy : undefined),
+            confidence: (typeof x.confidence === 'number' ? x.confidence / 100 : 0.8)
+          };
         }));
         if (isMounted && mapped.length > 0) {
           setDynamicSignals(mapped);
@@ -696,7 +764,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
       // Add alert for new signal using dynamic pool instead of fixed symbols
       if (Math.random() > 0.7) {
         const pool = (dynamicSignals && dynamicSignals.length > 0)
-          ? dynamicSignals.map((s: any) => s.symbol).filter(Boolean)
+          ? dynamicSignals.map((s: Signal) => s.symbol).filter(Boolean)
           : ['ASELS','ENKAI','LOGO','KAREL','NETAS','TKNSA','BIMAS','MIGRS','TOASO','KOZAL','PGSUS','TRKCM','AEFES','GUBRF','KORDS','FROTO','GESAN','GLYHO','VRGYO','ZOREN'];
         if (pool.length > 0) {
           const randSymbol = pool[Math.floor(Math.random() * pool.length)];
@@ -804,7 +872,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   const sentimentAnalysis = sentimentData || [];
   
   // @ts-ignore
-  const sentimentChartData = sentimentAnalysis.map((s: any, i: number) => ({
+  const sentimentChartData = sentimentAnalysis.map((s: SentimentItem, i: number) => ({
     symbol: s.symbol,
     positive: s.positive,
     negative: s.negative,
@@ -1564,7 +1632,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
                 </tr>
               </thead>
               <tbody>
-                {signals.slice(0, 10).map((s: any, idx: number) => {
+                {signals.slice(0, 10).map((s: Signal, idx: number) => {
                   const isBuy = s.signal === 'BUY';
                   const signalColor = isBuy ? '#10b981' : s.signal === 'SELL' ? '#ef4444' : '#64748b';
                   const changeColor = (s.change || 0) >= 0 ? '#10b981' : '#ef4444';
@@ -1671,7 +1739,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
             <div style={{ fontSize: '11px', color: '#64748b' }}>Yeşil: Pozitif · Kırmızı: Negatif</div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
-            {sectors.map((sec: any, idx: number) => {
+            {sectors.map((sec: SectorItem, idx: number) => {
               const isUp = sec.change >= 0;
               const bg = isUp ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)';
               const border = isUp ? '1px solid #10b98155' : '1px solid #ef444455';
@@ -1728,7 +1796,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
         </div>
         {(() => {
           const riskProfile = (() => {
-            const base = signals && signals.length > 0 ? signals.map((s:any)=>s.symbol).slice(0,3) : ['THYAO','AKBNK','EREGL'];
+            const base = signals && signals.length > 0 ? signals.map((s: Signal)=>s.symbol).slice(0,3) : ['THYAO','AKBNK','EREGL'];
             return {
               low: base.map((s,i) => ({ symbol: s, pct: [35,33,32][i] || 33 })),
               medium: base.map((s,i) => ({ symbol: s, pct: [42,31,27][i] || 33 })),
@@ -2285,7 +2353,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
                 <div style={{ fontSize: '11px', color: '#64748b' }}>Yeşil: + korelasyon · Kırmızı: - korelasyon</div>
               </div>
               {(() => {
-                const symbols = (signals && signals.length > 0 ? signals.map((s:any)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
+                const symbols = (signals && signals.length > 0 ? signals.map((s: Signal)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
                 const n = symbols.length;
                 const corr: number[][] = [];
                 for (let i=0;i<n;i++){ 
@@ -2504,7 +2572,13 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
                         <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#0f172a', minWidth: '45px' }} aria-label={'Doğruluk oranı: ' + s.accuracy + ' yüzde'}>{s.accuracy}%</span>
                         {((selectedMarket === 'BIST' && (s.symbol === 'THYAO' || s.symbol === 'TUPRS')) || (selectedMarket === 'NYSE' && s.symbol === 'AAPL') || (selectedMarket === 'NASDAQ' && s.symbol === 'NVDA')) && (
                           <button 
-                            onClick={() => (actions as any).explainSymbol ? (actions as any).explainSymbol(s.symbol) : openExplanation(s.symbol)}
+                            onClick={() => {
+                              if ('explainSymbol' in actions && typeof actions.explainSymbol === 'function') {
+                                actions.explainSymbol(s.symbol);
+                              } else {
+                                openExplanation(s.symbol);
+                              }
+                            }}
                             style={{ 
                               padding: '8px 12px', 
                               background: 'rgba(139,92,246,0.1)', 
@@ -2889,7 +2963,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
           </div>
           <div style={{ padding: '16px' }}>
             {/* @ts-ignore */}
-            {sentimentAnalysis.map((s: any, idx: number) => (
+            {sentimentAnalysis.map((s: SentimentItem, idx: number) => (
               <div key={idx} style={{ marginBottom: '16px', padding: '12px', background: s.sentiment > 70 ? 'rgba(16,185,129,0.1)' : s.sentiment < 50 ? 'rgba(239,68,68,0.1)' : 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid ' + (s.sentiment > 70 ? '#10b981' : s.sentiment < 50 ? '#ef4444' : '#eab308') + '40' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                   <div>
@@ -3055,7 +3129,11 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
               }}
               onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
               onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-              onClick={() => (actions as any).openAlert ? (actions as any).openAlert(alert) : void 0}
+              onClick={() => {
+                if ('openAlert' in actions && typeof actions.openAlert === 'function') {
+                  actions.openAlert(alert);
+                }
+              }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                   <div style={{ fontSize: '18px' }}>{alert.type === 'success' ? '🔔' : 'ℹ️'}</div>
@@ -3707,7 +3785,13 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
               {(['risk', 'portfolio', 'backtest'] as const).map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => (actions as any).openV50Tab ? (actions as any).openV50Tab(tab) : (openPanel && openPanel(tab))}
+                  onClick={() => {
+                    if ('openV50Tab' in actions && typeof actions.openV50Tab === 'function') {
+                      actions.openV50Tab(tab);
+                    } else if (openPanel) {
+                      openPanel(tab);
+                    }
+                  }}
                   style={{
                     padding: '8px 14px',
                     background: v50ActiveTab === tab 
@@ -3799,7 +3883,13 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
                         cursor: 'pointer',
                         transition: 'all 0.2s'
                       }}
-                      onClick={() => (actions as any).scrollToSignals ? (actions as any).scrollToSignals(symbol) : (document.getElementById('signals-table')?.scrollIntoView({ behavior: 'smooth' }))}
+                      onClick={() => {
+                        if ('scrollToSignals' in actions && typeof actions.scrollToSignals === 'function') {
+                          actions.scrollToSignals(symbol);
+                        } else {
+                          document.getElementById('signals-table')?.scrollIntoView({ behavior: 'smooth' });
+                        }
+                      }}
                     >
                       <p style={{ margin: 0, fontWeight: 'bold', fontSize: '14px' }}>{symbol}</p>
                     </div>
@@ -3865,10 +3955,18 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
 
                 <div style={{ padding: '16px', background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)', borderRadius: '12px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: 'bold', marginBottom: '8px' }}>🔧 Ayarlar</h3>
-                  <button onClick={(actions as any).refreshData} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', marginRight: '8px' }}>
+                  <button onClick={() => {
+                    if ('refreshData' in actions && typeof actions.refreshData === 'function') {
+                      actions.refreshData();
+                    }
+                  }} style={{ padding: '8px 16px', background: '#10b981', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer', marginRight: '8px' }}>
                     Veri Yenile
                   </button>
-                  <button onClick={(actions as any).openLogs} style={{ padding: '8px 16px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
+                  <button onClick={() => {
+                    if ('openLogs' in actions && typeof actions.openLogs === 'function') {
+                      actions.openLogs();
+                    }
+                  }} style={{ padding: '8px 16px', background: '#f59e0b', color: '#fff', border: 'none', borderRadius: '8px', fontSize: '12px', cursor: 'pointer' }}>
                     Log İzle
                   </button>
                 </div>
@@ -3984,7 +4082,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
           {(() => {
             // Ortalama güveni signals/dynamicSignals üzerinden tahmin et
             const pool = signals && signals.length > 0 ? signals : [];
-            const avg = pool.length > 0 ? Math.round(pool.map((s:any)=> (typeof s.confidence==='number' ? s.confidence*100 : (s.accuracy||80))).reduce((a:number,b:number)=>a+b,0)/pool.length) : 78;
+            const avg = pool.length > 0 ? Math.round(pool.map((s: Signal)=> (typeof s.confidence==='number' ? s.confidence*100 : (s.accuracy||80))).reduce((a:number,b:number)=>a+b,0)/pool.length) : 78;
             const level = avg >= 85 ? 'Yüksek' : avg >= 70 ? 'Orta' : 'Düşük';
             const color = avg >= 85 ? '#10b981' : avg >= 70 ? '#f59e0b' : '#ef4444';
             return (
@@ -4016,9 +4114,9 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
         }}>
           {(() => {
             // sentimentAnalysis'i sektör bazında grupla
-            const rows:any[] = Array.isArray(sentimentAnalysis) ? sentimentAnalysis : [];
+            const rows: SentimentItem[] = Array.isArray(sentimentAnalysis) ? sentimentAnalysis : [];
             const bySector: Record<string, { pos:number; neg:number; neu:number; n:number }> = {};
-            rows.forEach((r:any)=>{
+            rows.forEach((r: SentimentItem)=>{
               const sector = (getSectorForSymbol && typeof getSectorForSymbol==='function') ? (getSectorForSymbol(r.symbol) || 'Genel') : 'Genel';
               const g = bySector[sector] || { pos:0, neg:0, neu:0, n:0 };
               g.pos += r.positive || 0; g.neg += r.negative || 0; g.neu += r.neutral || 0; g.n += 1; bySector[sector]=g;
@@ -4101,7 +4199,7 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
           </div>
           {(() => {
             // Derive top symbols from signals
-            const syms = (signals && signals.length > 0 ? Array.from(new Set(signals.map((s:any)=>s.symbol))) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN']).slice(0, 6);
+            const syms = (signals && signals.length > 0 ? Array.from(new Set(signals.map((s: Signal)=>s.symbol))) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN']).slice(0, 6);
             const horizons = ['1h','4h','1d'];
             function mtfScore(symbol: string, horizon: string) {
               // hashed pseudo score -1..+1

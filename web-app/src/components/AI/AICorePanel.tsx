@@ -20,7 +20,7 @@ export function AICorePanel() {
   // Calculate drift (slope of confidence over time)
   const drift = useMemo(() => {
     if (calibration?.reliability && calibration.reliability.length >= 2) {
-      const obs = calibration.reliability.map((r: any) => r.observed || 0);
+      const obs = calibration.reliability.map((r: { observed?: number; [key: string]: unknown }) => r.observed || 0);
       const first = obs[0];
       const last = obs[obs.length - 1];
       return Math.round((last - first) * 1000) / 10; // Convert to percentage points

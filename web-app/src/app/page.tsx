@@ -38,7 +38,7 @@ export default function LandingPage() {
               onClick={() => router.push('/dashboard')}
               className="px-4 py-2 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
             >
-              Dashboard'a Git
+              Dashboard&apos;a Git
             </button>
           </div>
         </div>
@@ -61,7 +61,7 @@ export default function LandingPage() {
               onClick={() => router.push('/dashboard')}
               className="px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-colors"
             >
-              Dashboard'a Git
+              Dashboard&apos;a Git
             </button>
             <button
               onClick={() => router.push('/pricing')}

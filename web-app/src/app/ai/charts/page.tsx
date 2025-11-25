@@ -1,6 +1,7 @@
 'use client';
 import React from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 
 const DriftGraph = dynamic(() => import('@/components/AI/DriftGraph').then(m=>m.DriftGraph), { ssr: false });
 const SentimentTrend = dynamic(() => import('@/components/AI/SentimentTrend').then(m=>m.SentimentTrend), { ssr: false });
@@ -13,7 +14,7 @@ export default function AIChartsPage() {
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-bold text-slate-900">🧠 AI Grafik Merkezi</h1>
-        <a href="/" className="text-xs underline text-slate-600">Ana sayfaya dön</a>
+        <Link href="/" className="text-xs underline text-slate-600">Ana sayfaya dön</Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

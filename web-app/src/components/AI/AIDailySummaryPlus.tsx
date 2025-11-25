@@ -67,6 +67,15 @@ export function AIDailySummaryPlus({
   sharpeChange24h
 }: AIDailySummaryPlusProps) {
   const [tickerText, setTickerText] = useState<string>('');
+  const [currentTime, setCurrentTime] = useState<string>('');
+  
+  // Time update effect
+  useEffect(() => {
+    const updateTime = () => setCurrentTime(new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+    updateTime();
+    const id = setInterval(updateTime, 60000);
+    return () => clearInterval(id);
+  }, []);
   
   // Generate AI confidence history if not provided
   const confidenceSeries = useMemo(() => {
@@ -156,20 +165,9 @@ export function AIDailySummaryPlus({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {(() => {
-            const [t, setT] = React.useState<string>('');
-            React.useEffect(() => {
-              const up = () => setT(new Date().toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
-              up();
-              const id = setInterval(up, 60000);
-              return () => clearInterval(id);
-            }, []);
-            return (
-              <span className="subtle-time badge badge-muted">{t || '--:--'} • UTC+3</span>
-            );
-          })()}
+          <span className="subtle-time badge badge-muted">{currentTime || '--:--'} • UTC+3</span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200" title="Expected Calibration Error (ECE)">
-            ECE: {(typeof window !== 'undefined' && (window as any).__ECE_LATEST__) ? (window as any).__ECE_LATEST__.toFixed(3) : '0.065'}
+            ECE: {(typeof window !== 'undefined' && '__ECE_LATEST__' in window && typeof (window as { __ECE_LATEST__?: number }).__ECE_LATEST__ === 'number') ? (window as { __ECE_LATEST__: number }).__ECE_LATEST__.toFixed(3) : '0.065'}
           </span>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">
             ✓ Canlı
