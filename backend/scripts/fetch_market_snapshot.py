@@ -3,6 +3,7 @@ BIST + US market snapshot fetcher.
 Kaynak: yfinance
 Çıktı: data/snapshots/{YYYYMMDD_HHMM}.json
 """
+import argparse
 import json
 import logging
 import os
@@ -171,19 +172,69 @@ def build_snapshot(symbols: List[str], market: str, td_budget: Optional[Dict[str
     return {"market": market, "count": len(items), "symbols": items}
 
 
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Build market snapshots with optional Twelve Data budget control.")
+    parser.add_argument(
+        "--markets",
+        type=str,
+        default="us,bist",
+        help="Comma-separated list of markets to fetch (us,bist). Default=both.",
+    )
+    parser.add_argument(
+        "--twelvedata-budget",
+        type=int,
+        default=None,
+        help="Override Twelve Data symbol budget for this run.",
+    )
+    parser.add_argument(
+        "--latest-link",
+        type=str,
+        default="data/snapshots/latest.json",
+        help="Optional path to symlink/copy latest snapshot (set empty to skip).",
+    )
+    parser.add_argument(
+        "--output",
+        type=str,
+        default=None,
+        help="Optional custom output path (default auto timestamp).",
+    )
+    return parser.parse_args()
+
+
 def main():
+    args = parse_args()
+    selected_markets = [m.strip().lower() for m in args.markets.split(",") if m.strip()]
+    if not selected_markets:
+        selected_markets = ["us", "bist"]
+
     timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M")
-    td_budget = {"remaining": max(TWELVE_DATA_SYMBOL_LIMIT, 0)}
-    us_snapshot = build_snapshot(US_SYMBOLS, "US", td_budget)
-    bist_snapshot = build_snapshot(BIST_SYMBOLS, "BIST", td_budget)
-    output = {
-        "generated_at": datetime.utcnow().isoformat(),
-        "bist": bist_snapshot,
-        "us": us_snapshot,
-    }
-    out_path = SNAPSHOT_ROOT / f"snapshot_{timestamp}.json"
+    td_limit = args.twelvedata_budget if args.twelvedata_budget is not None else TWELVE_DATA_SYMBOL_LIMIT
+    td_budget = {"remaining": max(int(td_limit or 0), 0)}
+
+    output = {"generated_at": datetime.utcnow().isoformat()}
+    if "us" in selected_markets:
+        output["us"] = build_snapshot(US_SYMBOLS, "US", td_budget)
+    if "bist" in selected_markets:
+        output["bist"] = build_snapshot(BIST_SYMBOLS, "BIST", td_budget)
+
+    out_path = Path(args.output) if args.output else SNAPSHOT_ROOT / f"snapshot_{timestamp}.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(output, indent=2))
     logger.info("📦 Snapshot saved: %s", out_path)
+
+    if args.latest_link:
+        latest_path = Path(args.latest_link)
+        latest_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            if latest_path.exists() or latest_path.is_symlink():
+                latest_path.unlink()
+        except FileNotFoundError:
+            pass
+        try:
+            latest_path.symlink_to(out_path.resolve())
+        except OSError:
+            latest_path.write_text(out_path.read_text())
+        logger.info("🔗 Latest snapshot link updated: %s -> %s", latest_path, out_path)
 
 
 if __name__ == "__main__":

@@ -79,16 +79,6 @@ const nextConfig = {
     ];
   },
 
-  // Rewrites for API (fixed WebSocket rewrite)
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:8000/api/:path*',
-      },
-    ];
-  },
-
   // TypeScript configuration
   typescript: {
     // Dangerously allow production builds to successfully complete even if

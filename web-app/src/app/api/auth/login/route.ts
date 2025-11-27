@@ -83,13 +83,17 @@ async function verifyCSRFToken(request: NextRequest): Promise<boolean> {
  * TODO: Replace with actual Argon2id verification against database
  */
 async function verifyPassword(username: string, password: string): Promise<boolean> {
-  // Mock verification - in production, hash password and compare with database
-  // Example: const hashedPassword = await argon2.hash(password, { type: argon2.argon2id });
-  // const storedHash = await getUserPasswordHash(username);
-  // return await argon2.verify(storedHash, password);
-  
-  // For now, simple mock (REMOVE IN PRODUCTION)
-  return username.length >= 3 && password.length >= 8;
+  // Geçici çözüm: admin/admin şimdilik garanti giriş yapsın.
+  // TODO: Gerçek kullanıcı doğrulaması eklenince kaldırılacak.
+  const normalizedUsername = username.trim().toLowerCase();
+  const normalizedPassword = password.trim();
+
+  if (normalizedUsername === 'admin' && normalizedPassword === 'admin') {
+    return true;
+  }
+
+  // Diğer kullanıcılar için mevcut mock kuralı
+  return normalizedUsername.length >= 3 && normalizedPassword.length >= 8;
 }
 
 /**
@@ -192,7 +196,7 @@ export async function POST(request: NextRequest) {
     const cookieStore = await cookies();
     const response = NextResponse.json({
       success: true,
-      redirect: '/feature/bist30',
+      redirect: '/dashboard',
       user: { id: userId, role },
     });
 

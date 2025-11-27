@@ -28,10 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="tr" className={inter.variable} suppressHydrationWarning>
-      <body
-        className="antialiased font-inter bg-white text-[#111827]"
-        suppressHydrationWarning
-      >
+      <body className="antialiased font-inter" suppressHydrationWarning>
         <Providers>
           {children}
         </Providers>

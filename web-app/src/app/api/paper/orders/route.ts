@@ -49,12 +49,32 @@ export async function POST(request: Request) {
   // Alpaca kullanılıyorsa gerçek emir gönder
   if (useAlpaca) {
     try {
+      const requestedType =
+        typeof body.order_type === 'string'
+          ? body.order_type.toLowerCase()
+          : undefined;
+      const alpacaOrderType = requestedType || (price ? 'limit' : 'market');
+      let limitPrice: number | undefined;
+      let stopPrice: number | undefined;
+      if (typeof price === 'number') {
+        if (alpacaOrderType === 'limit') {
+          limitPrice = price;
+        } else if (alpacaOrderType === 'stop') {
+          stopPrice = price;
+        } else if (alpacaOrderType === 'stop_limit') {
+          limitPrice = price;
+          stopPrice = price;
+        } else {
+          limitPrice = price;
+        }
+      }
       const order = await placeAlpacaOrder({
         symbol: symbol.toUpperCase(),
         qty: Number(quantity),
         side: action.toLowerCase() as 'buy' | 'sell',
-        order_type: price ? 'limit' : 'market',
-        limit_price: price ? Number(price) : undefined,
+        order_type: alpacaOrderType as any,
+        limit_price: limitPrice,
+        stop_price: stopPrice,
       });
       return NextResponse.json({
         success: true,

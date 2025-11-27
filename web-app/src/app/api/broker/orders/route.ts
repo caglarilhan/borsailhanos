@@ -24,12 +24,33 @@ export async function POST(request: Request) {
   // Alpaca kullanılıyorsa gerçek emir gönder
   if (useAlpaca && payload.symbol && payload.action && payload.quantity) {
     try {
+      const requestedType =
+        typeof payload.order_type === 'string'
+          ? payload.order_type.toLowerCase()
+          : undefined;
+      const alpacaOrderType = requestedType || (payload.price ? 'limit' : 'market');
+      let limitPrice: number | undefined;
+      let stopPrice: number | undefined;
+      if (payload.price) {
+        const numericPrice = Number(payload.price);
+        if (alpacaOrderType === 'limit') {
+          limitPrice = numericPrice;
+        } else if (alpacaOrderType === 'stop') {
+          stopPrice = numericPrice;
+        } else if (alpacaOrderType === 'stop_limit') {
+          limitPrice = numericPrice;
+          stopPrice = numericPrice;
+        } else {
+          limitPrice = numericPrice;
+        }
+      }
       const order = await placeAlpacaOrder({
         symbol: payload.symbol.toUpperCase(),
         qty: Number(payload.quantity),
         side: payload.action.toLowerCase() as 'buy' | 'sell',
-        order_type: payload.price ? 'limit' : 'market',
-        limit_price: payload.price ? Number(payload.price) : undefined,
+        order_type: alpacaOrderType as 'market' | 'limit' | 'stop' | 'stop_limit',
+        limit_price: limitPrice,
+        stop_price: stopPrice,
       });
       
       const orderLog = {
@@ -56,7 +77,7 @@ export async function POST(request: Request) {
         success: true,
         orders: [orderLog],
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Alpaca order error:', error);
       // Fallback to mock on error
     }

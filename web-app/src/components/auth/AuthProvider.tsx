@@ -1,6 +1,7 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useMemo } from 'react';
+import { SessionProvider, useSession } from 'next-auth/react';
 
 interface AuthContextValue {
   role: 'admin' | 'trader';
@@ -14,37 +15,23 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [value, setValue] = useState<AuthContextValue>({ role: 'trader', isAuthenticated: false });
-
-  // Auto-refresh session every 10 minutes
-  useEffect(() => {
-    let mounted = true;
-    const refresh = async () => {
-      try {
-        const res = await fetch('/api/auth/refresh', { method: 'POST', credentials: 'include' });
-        if (res.ok) {
-          const data = await res.json();
-          if (!mounted) return;
-          setValue({ role: (data?.user?.role || 'trader') as any, isAuthenticated: true });
-        } else if (res.status === 401) {
-          // 401 = no valid session = not authenticated
-          // Guest login may create a session for middleware, but user is still not authenticated
-          if (!mounted) return;
-          setValue({ role: 'trader', isAuthenticated: false });
-        }
-      } catch {
-        // Silent fail - don't spam logs
-      }
-    };
-    // initial & interval
-    refresh();
-    const id = setInterval(refresh, 10 * 60 * 1000);
-    return () => { mounted = false; clearInterval(id); };
-  }, []);
-
   return (
-    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+    <SessionProvider>
+      <AuthContextBridge>{children}</AuthContextBridge>
+    </SessionProvider>
   );
+}
+
+function AuthContextBridge({ children }: { children: React.ReactNode }) {
+  const { data, status } = useSession();
+  const value = useMemo<AuthContextValue>(() => {
+    const role = (data?.user?.role === 'admin' ? 'admin' : 'trader') as 'admin' | 'trader';
+    return {
+      role,
+      isAuthenticated: status === 'authenticated',
+    };
+  }, [data?.user?.role, status]);
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 

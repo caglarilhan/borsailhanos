@@ -2,12 +2,38 @@ export type BrokerStatusResponse = {
   brokers: Record<string, boolean>;
 };
 
+export interface BrokerAccount {
+  account_id: string;
+  account_type: string;
+  currency: string;
+  balance: number;
+  available_balance: number;
+  blocked_amount: number;
+  equity: number;
+  margin_used: number;
+  margin_available: number;
+  last_update: string;
+}
+
+export interface BrokerPosition {
+  symbol: string;
+  quantity: number;
+  avg_price: number;
+  current_price: number;
+  market_value: number;
+  unrealized_pnl: number;
+  unrealized_pnl_percent: string;
+  position_type: string;
+  broker: string;
+  last_update: string;
+}
+
 export type BrokerAccountsResponse = {
-  accounts: Record<string, any>;
+  accounts: Record<string, BrokerAccount>;
 };
 
 export type BrokerPositionsResponse = {
-  positions: Record<string, any[]>;
+  positions: Record<string, BrokerPosition[]>;
 };
 
 export type BrokerPortfolioResponse = {
@@ -46,7 +72,7 @@ export function mockStatus(): BrokerStatusResponse {
 }
 
 export function mockAccounts(): BrokerAccountsResponse {
-  const accounts: Record<string, any> = {};
+  const accounts: Record<string, BrokerAccount> = {};
   BROKERS.forEach((name) => {
     accounts[name] = {
       account_id: `${name}-001`,
@@ -65,7 +91,7 @@ export function mockAccounts(): BrokerAccountsResponse {
 }
 
 export function mockPositions(): BrokerPositionsResponse {
-  const positions: Record<string, any[]> = {};
+  const positions: Record<string, BrokerPosition[]> = {};
   BROKERS.forEach((name) => {
     positions[name] = sampleSymbols.slice(0, 3).map((symbol) => {
       const quantity = Math.round(randomBetween(50, 500));

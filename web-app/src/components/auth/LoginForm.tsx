@@ -63,7 +63,8 @@ export function LoginForm() {
     
     if (name === 'password') {
       if (!value) return null; // Don't show error until blur or submit
-      if (value.length < 8) return 'Parola en az 8 karakter olmalı';
+      // Geçici olarak admin/admin kombinasyonuna izin ver
+      if (value !== 'admin' && value.length < 8) return 'Parola en az 8 karakter olmalı';
     }
     
     return null;
@@ -304,7 +305,6 @@ export function LoginForm() {
               type={state.showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               required
-              minLength={8}
               value={state.password}
               onChange={handleChange}
               onBlur={handleBlur}

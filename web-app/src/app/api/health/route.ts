@@ -26,8 +26,9 @@ async function pingJson(url: string, label: string): Promise<EndpointStatus> {
       lastUpdated: json.generatedAt || json.updatedAt || json.finished_at,
       detail: json.mode || undefined,
     };
-  } catch (error: any) {
-    return { name: label, status: 'down', detail: error?.message || 'fetch failed' };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'fetch failed';
+    return { name: label, status: 'down', detail: message };
   }
 }
 
@@ -47,8 +48,9 @@ async function checkSnapshots(): Promise<EndpointStatus[]> {
         status: 'up',
         lastUpdated: stat.mtime.toISOString(),
       });
-    } catch (error: any) {
-      results.push({ name, status: 'down', detail: error?.message });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'file not found';
+      results.push({ name, status: 'down', detail: message });
     }
   }
   return results;

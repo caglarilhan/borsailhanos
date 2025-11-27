@@ -96,7 +96,12 @@ async function readJson<T>(filePath: string): Promise<T | null> {
   }
 }
 
-function buildMetrics(raw: any): PowerMetricPayload[] {
+interface StackTunerRaw {
+  best_score?: number;
+  best_params?: Record<string, unknown>;
+}
+
+function buildMetrics(raw: StackTunerRaw | null): PowerMetricPayload[] {
   if (!raw) {
     return DEFAULT_METRICS;
   }
@@ -110,11 +115,27 @@ function buildMetrics(raw: any): PowerMetricPayload[] {
   return [metaMetric, ...DEFAULT_METRICS.slice(1)];
 }
 
-function buildPositions(raw: any): PositionPayload[] {
+interface RLSummaryEntry {
+  action?: string;
+  symbol?: string;
+  confidence?: number;
+  entry?: number;
+  take_profit_pct?: number;
+  stop_loss_pct?: number;
+  rlLots?: number;
+  position_value?: number;
+  meta?: {
+    sentiment?: { score?: number };
+    timeframe_highlights?: Array<{ timeframe: string; momentum: number }>;
+  };
+  rationale?: string[];
+}
+
+function buildPositions(raw: RLSummaryEntry[] | null): PositionPayload[] {
   if (!Array.isArray(raw) || raw.length === 0) {
     return DEFAULT_POSITIONS;
   }
-  return raw.slice(0, 4).map((entry: any): PositionPayload => {
+  return raw.slice(0, 4).map((entry: RLSummaryEntry): PositionPayload => {
     const action = (entry.action || 'HOLD').toUpperCase() as PositionPayload['action'];
     const sentimentScore = entry?.meta?.sentiment?.score ?? 0;
     const sentimentLabel: PositionPayload['sentiment'] =
@@ -124,9 +145,9 @@ function buildPositions(raw: any): PositionPayload[] {
     const stopPct = entry.stop_loss_pct ?? -0.8;
     const target = basePrice * (1 + tpPct / 100);
     const stop = basePrice * (1 + stopPct / 100);
-    const focus = entry.meta?.timeframe_highlights
+      const focus = entry.meta?.timeframe_highlights
       ?.slice(0, 3)
-      .map((h: any) => `${h.timeframe} ${h.momentum >= 0 ? '↑' : '↓'} ${Math.abs(h.momentum).toFixed(2)}`) ?? ['Momentum Mix'];
+      .map((h) => `${h.timeframe} ${h.momentum >= 0 ? '↑' : '↓'} ${Math.abs(h.momentum).toFixed(2)}`) ?? ['Momentum Mix'];
     return {
       symbol: (entry.symbol || 'SYMBOL').replace('.IS', ''),
       action,
@@ -147,8 +168,8 @@ function buildPositions(raw: any): PositionPayload[] {
 }
 
 export async function GET() {
-  const stackMetrics = await readJson<any>(stackTunerPath);
-  const rlSummary = await readJson<any>(rlSummaryPath);
+  const stackMetrics = await readJson<StackTunerRaw | null>(stackTunerPath);
+  const rlSummary = await readJson<RLSummaryEntry[] | null>(rlSummaryPath);
 
   const data = {
     updatedAt: Date.now(),

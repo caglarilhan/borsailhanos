@@ -423,6 +423,18 @@ const [aiOrderHistoryLoading, setAiOrderHistoryLoading] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null); // Bildirim tıklama için
   const [dynamicSummary, setDynamicSummary] = useState<string>(''); // AI Summary
   const [sectorStats, setSectorStats] = useState<any>(null); // Sektör İstatistikleri
+const [paperMode, setPaperMode] = useState(false);
+const [paperUserId, setPaperUserId] = useState<string>('paper-demo');
+const [paperPortfolio, setPaperPortfolio] = useState<any | null>(null);
+const [paperOrders, setPaperOrders] = useState<any[]>([]);
+const [paperLoading, setPaperLoading] = useState(false);
+const [paperError, setPaperError] = useState<string | null>(null);
+const paperClientToken = process.env.NEXT_PUBLIC_PAPER_API_TOKEN || '';
+const [highlightedSymbol, setHighlightedSymbol] = useState<string | null>(null);
+const [stackRuns, setStackRuns] = useState<Array<{ run_id?: string; best_score?: number; latency_ms?: number }>>([]);
+const [rlLogs, setRlLogs] = useState<Array<{ timestamp?: string; symbol?: string; global_bias_score?: number; latency_ms?: number }>>([]);
+const [healthStatus, setHealthStatus] = useState<Array<{ name: string; status: 'up' | 'down'; latency_ms?: number; lastUpdated?: string }>>([]);
+const [showHealthPanel, setShowHealthPanel] = useState(false);
   
   // Time update effect - hydration-safe
   useEffect(() => {
@@ -504,15 +516,6 @@ useEffect(() => {
     .catch((error) => console.warn('Health fetch failed', error));
 }, [mounted]);
 
-useEffect(() => {
-  if (!highlightedSymbol) return;
-  const el = document.getElementById(`ai-card-${highlightedSymbol}`);
-  if (el) {
-    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => setHighlightedSymbol(null), 2000);
-  }
-}, [highlightedSymbol]);
-
 const refreshPaperPortfolio = useCallback(
   async (userId: string) => {
     try {
@@ -541,12 +544,6 @@ const refreshPaperPortfolio = useCallback(
   },
   [],
 );
-
-useEffect(() => {
-  if (paperMode) {
-    refreshPaperPortfolio(paperUserId);
-  }
-}, [paperMode, paperUserId, refreshPaperPortfolio]);
   const AI_MODULE_IDS = [
     'tradergpt',
     'gamification',
@@ -1226,28 +1223,6 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
     }
   }, []);
 
-  useEffect(() => {
-    if (globalBiasScore === null) return;
-    const severity: 'positive' | 'negative' | null =
-      globalBiasScore >= 15 ? 'positive' : globalBiasScore <= -15 ? 'negative' : null;
-    if (!severity || globalBiasAlertRef.current === severity) {
-      return;
-    }
-    setAlerts((prev) => [
-      ...prev,
-      {
-        id: `global-bias-${Date.now()}`,
-        message:
-          severity === 'positive'
-            ? '🌐 US→BIST Bias pozitif: risk-on moduna geçildi.'
-            : '⚠️ US→BIST Bias negatif: hedge ve nakit oranını artır.',
-        type: severity === 'positive' ? 'success' : 'info',
-        timestamp: new Date(),
-      },
-    ]);
-    globalBiasAlertRef.current = severity;
-  }, [globalBiasScore]);
-
   // ✅ WINDOW-LEVEL WS MESSAGE LISTENER: window.dispatchEvent ile yayılan mesajları yakala
   useEffect(() => {
     const handleWsMessage = (event: CustomEvent) => {
@@ -1284,7 +1259,7 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
         const json = await res.json();
         if (!json || !Array.isArray(json.top30)) return;
         // Map to dashboard signal shape
-        const mapped = json.top30.slice(0, 15).map((x: { symbol: string; signal: string; currentPrice?: number; predictedChange?: number; [key: string]: unknown }) => {
+        const mapped = json.top30.slice(0, 15).map((x: any) => {
           const price = typeof x.currentPrice === 'number' ? x.currentPrice : 0;
           const change = typeof x.predictedChange === 'number' ? x.predictedChange : 0;
           return {
@@ -1297,7 +1272,7 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
             accuracy: (typeof x.accuracy === 'number' ? x.accuracy : undefined),
             confidence: (typeof x.confidence === 'number' ? x.confidence / 100 : 0.8)
           };
-        }));
+        });
         if (isMounted && mapped.length > 0) {
           setDynamicSignals(mapped);
         }
@@ -1328,12 +1303,12 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
         if (pool.length > 0) {
           const randSymbol = pool[Math.floor(Math.random() * pool.length)];
           if (isWithinMarketScope(randSymbol, selectedMarket)) {
-        setAlerts(prev => [...prev, {
+            setAlerts(prev => [...prev, {
               id: 'realtime-' + Date.now() + '-' + randSymbol,
               message: '🔔 Yeni sinyal: ' + randSymbol + ' - AI analizi güncellendi',
-          type: 'success',
-          timestamp: new Date()
-        }]);
+              type: 'success',
+              timestamp: new Date()
+            }]);
           }
         }
       }
@@ -1474,44 +1449,66 @@ const usSentimentFreshness = formatFreshness(usSentiment?.generatedAt);
     : '--:--';
 const usMarketFreshness = formatFreshness(usMarket?.generatedAt);
 
-  const combinedAiPowerData = useMemo(() => {
-    const bullish = typeof usSentimentAggregate?.bullish === 'number' ? usSentimentAggregate.bullish : null;
-    const bearish = typeof usSentimentAggregate?.bearish === 'number' ? usSentimentAggregate.bearish : null;
-    const sentimentBias = bullish !== null && bearish !== null ? (bullish - bearish) * 100 : null;
-    const marketBias =
-      typeof bestUsGainer?.changePct === 'number' && typeof worstUsMover?.changePct === 'number'
-        ? (bestUsGainer.changePct + worstUsMover.changePct) / 2
-        : null;
-    if (sentimentBias === null && marketBias === null) {
-      return { metrics: aiPowerMetrics, globalBiasScore: null };
-    }
-    const score = (sentimentBias ?? 0) * 0.6 + (marketBias ?? 0) * 0.4;
-    const accent = score >= 0 ? '#0ea5e9' : '#f97316';
-    const deltaValueParts: string[] = [];
-    if (sentimentBias !== null) {
-      deltaValueParts.push(`Sent ${sentimentBias >= 0 ? '+' : ''}${sentimentBias.toFixed(1)}pp`);
-    }
-    if (marketBias !== null) {
-      deltaValueParts.push(`Price ${marketBias >= 0 ? '+' : ''}${marketBias.toFixed(1)}%`);
-    }
-    const globalMetric: AiPowerMetric = {
-      title: 'Global Bias (US→BIST)',
-      value: `${score >= 0 ? '+' : ''}${score.toFixed(1)}bp`,
-      deltaLabel: 'Global Risk',
-      deltaValue: deltaValueParts.join(' • '),
-      sublabel: bestUsGainer && worstUsMover
-        ? `${bestUsGainer.symbol} lead vs ${worstUsMover.symbol}`
-        : 'US sentiment + price composite',
-      accent,
-      icon: score >= 0 ? '🌐' : '⚠️',
-    };
-    return { metrics: [globalMetric, ...aiPowerMetrics], globalBiasScore: score };
-  }, [aiPowerMetrics, usSentimentAggregate, bestUsGainer, worstUsMover]);
+const combinedAiPowerData = useMemo(() => {
+  const bullish = typeof usSentimentAggregate?.bullish === 'number' ? usSentimentAggregate.bullish : null;
+  const bearish = typeof usSentimentAggregate?.bearish === 'number' ? usSentimentAggregate.bearish : null;
+  const sentimentBias = bullish !== null && bearish !== null ? (bullish - bearish) * 100 : null;
+  const marketBias =
+    typeof bestUsGainer?.changePct === 'number' && typeof worstUsMover?.changePct === 'number'
+      ? (bestUsGainer.changePct + worstUsMover.changePct) / 2
+      : null;
+  if (sentimentBias === null && marketBias === null) {
+    return { metrics: aiPowerMetrics, globalBiasScore: null };
+  }
+  const score = (sentimentBias ?? 0) * 0.6 + (marketBias ?? 0) * 0.4;
+  const accent = score >= 0 ? '#0ea5e9' : '#f97316';
+  const deltaValueParts: string[] = [];
+  if (sentimentBias !== null) {
+    deltaValueParts.push(`Sent ${sentimentBias >= 0 ? '+' : ''}${sentimentBias.toFixed(1)}pp`);
+  }
+  if (marketBias !== null) {
+    deltaValueParts.push(`Price ${marketBias >= 0 ? '+' : ''}${marketBias.toFixed(1)}%`);
+  }
+  const globalMetric: AiPowerMetric = {
+    title: 'Global Bias (US→BIST)',
+    value: `${score >= 0 ? '+' : ''}${score.toFixed(1)}bp`,
+    deltaLabel: 'Global Risk',
+    deltaValue: deltaValueParts.join(' • '),
+    sublabel: bestUsGainer && worstUsMover
+      ? `${bestUsGainer.symbol} lead vs ${worstUsMover.symbol}`
+      : 'US sentiment + price composite',
+    accent,
+    icon: score >= 0 ? '🌐' : '⚠️',
+  };
+  return { metrics: [globalMetric, ...aiPowerMetrics], globalBiasScore: score };
+}, [aiPowerMetrics, usSentimentAggregate, bestUsGainer, worstUsMover]);
 const combinedAiPowerMetrics = combinedAiPowerData.metrics;
 const globalBiasScore = combinedAiPowerData.globalBiasScore;
 const aiPowerFreshness = aiPowerUpdatedAt
   ? formatFreshness(new Date(aiPowerUpdatedAt).toISOString())
   : 'Bilinmiyor';
+
+useEffect(() => {
+  if (globalBiasScore === null) return;
+  const severity: 'positive' | 'negative' | null =
+    globalBiasScore >= 15 ? 'positive' : globalBiasScore <= -15 ? 'negative' : null;
+  if (!severity || globalBiasAlertRef.current === severity) {
+    return;
+  }
+  setAlerts((prev) => [
+    ...prev,
+    {
+      id: `global-bias-${Date.now()}`,
+      message:
+        severity === 'positive'
+          ? '🌐 US→BIST Bias pozitif: risk-on moduna geçildi.'
+          : '⚠️ US→BIST Bias negatif: hedge ve nakit oranını artır.',
+      type: severity === 'positive' ? 'success' : 'info',
+      timestamp: new Date(),
+    },
+  ]);
+  globalBiasAlertRef.current = severity;
+}, [globalBiasScore]);
 const generateSparklineSeries = (seed: string, points = 12) => {
   const values: number[] = [];
   let current = ((seed.charCodeAt(0) % 40) + 30);
@@ -1563,18 +1560,11 @@ const Sparkline = ({ series, color }: { series: number[]; color: string }) => {
     </svg>
   );
 };
-const [stackRuns, setStackRuns] = useState<Array<{ run_id?: string; best_score?: number; latency_ms?: number }>>([]);
-const [rlLogs, setRlLogs] = useState<Array<{ timestamp?: string; symbol?: string; global_bias_score?: number; latency_ms?: number }>>([]);
-const [healthStatus, setHealthStatus] = useState<Array<{ name: string; status: 'up' | 'down'; latency_ms?: number; lastUpdated?: string }>>([]);
-const [showHealthPanel, setShowHealthPanel] = useState(false);
-const [highlightedSymbol, setHighlightedSymbol] = useState<string | null>(null);
-const paperClientToken = process.env.NEXT_PUBLIC_PAPER_API_TOKEN || '';
-const [paperMode, setPaperMode] = useState(false);
-const [paperUserId, setPaperUserId] = useState<string>('paper-demo');
-const [paperPortfolio, setPaperPortfolio] = useState<any | null>(null);
-const [paperOrders, setPaperOrders] = useState<any[]>([]);
-const [paperLoading, setPaperLoading] = useState(false);
-const [paperError, setPaperError] = useState<string | null>(null);
+
+useEffect(() => {
+  if (!paperMode) return;
+  refreshPaperPortfolio(paperUserId);
+}, [paperMode, paperUserId, refreshPaperPortfolio]);
 
   const allFeatures = {
     signals: [

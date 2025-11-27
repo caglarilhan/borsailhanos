@@ -58,10 +58,33 @@ interface AiOrderHistoryEntry {
   timestamp: string;
 }
 
+interface AlpacaPortfolioSnapshot {
+  userId: string;
+  cash: number;
+  equity: number;
+  portfolioValue: number;
+  buyingPower: number;
+  positions: Array<{
+    symbol: string;
+    quantity: number;
+    side: string;
+    avgPrice: number;
+    currentPrice: number;
+    marketValue: number;
+    unrealizedPL: number;
+  }>;
+  source?: string;
+  updatedAt?: string;
+}
+
 export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps) {
   const [brokerStatus, setBrokerStatus] = useState<BrokerStatus>({});
   const [accounts, setAccounts] = useState<{ [key: string]: BrokerAccount }>({});
   const [positions, setPositions] = useState<BrokerPosition[]>([]);
+  const [alpacaAccount, setAlpacaAccount] = useState<AlpacaPortfolioSnapshot | null>(null);
+  const [alpacaPositions, setAlpacaPositions] = useState<BrokerPosition[]>([]);
+  const [alpacaLoading, setAlpacaLoading] = useState(false);
+  const [alpacaError, setAlpacaError] = useState<string | null>(null);
   const [portfolio, setPortfolio] = useState<any>({});
   const [globalRisk, setGlobalRisk] = useState<{ mode: string; label: string; score: number | null; sentimentBias?: number | null; marketBias?: number | null; updatedAt?: string } | null>(null);
   const formatFreshness = (iso?: string | null) => {
@@ -78,15 +101,18 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
   const [hedgeStatus, setHedgeStatus] = useState<'success' | 'error' | null>(null);
   const [selectedBroker, setSelectedBroker] = useState<string>('all');
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [useAlpacaOrders, setUseAlpacaOrders] = useState(true);
   const [orderForm, setOrderForm] = useState({
     symbol: '',
     quantity: '',
     order_type: 'MARKET',
-    price: ''
+    price: '',
+    action: 'BUY',
   });
 
   useEffect(() => {
     loadBrokerData();
+    loadAlpacaData();
     loadGlobalRisk();
     loadAiOrderHistory();
     const handler = (event: Event) => {
@@ -97,6 +123,7 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
           quantity: custom.detail.quantity ? String(custom.detail.quantity) : '',
           order_type: 'MARKET',
           price: custom.detail.price ? String(custom.detail.price) : '',
+          action: 'BUY',
         });
         setShowOrderModal(true);
       }
@@ -104,6 +131,38 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
     window.addEventListener('prefill-broker-order', handler as EventListener);
     return () => window.removeEventListener('prefill-broker-order', handler as EventListener);
   }, []);
+
+  const normalizeAlpacaPositions = (items: any[]): BrokerPosition[] => {
+    if (!Array.isArray(items)) return [];
+    return items.map((pos) => {
+      const quantity = Number(pos.quantity ?? pos.qty ?? 0);
+      const avgPrice = Number(pos.avgPrice ?? pos.avg_price ?? pos.avg_entry_price ?? 0);
+      const currentPrice = Number(pos.currentPrice ?? pos.current_price ?? 0);
+      const marketValue = Number(pos.marketValue ?? pos.market_value ?? quantity * currentPrice);
+      const unrealized = Number(
+        pos.unrealizedPL ??
+          pos.unrealized_pl ??
+          (currentPrice - avgPrice) * quantity
+      );
+      const unrealizedPct =
+        quantity && avgPrice
+          ? (unrealized / (quantity * avgPrice || 1)) * 100
+          : Number(pos.unrealized_pnl_percent ?? pos.unrealizedPLPC ?? pos.unrealized_plpc ?? 0);
+
+      return {
+        symbol: pos.symbol,
+        quantity,
+        avg_price: avgPrice,
+        current_price: currentPrice,
+        market_value: marketValue,
+        unrealized_pnl: unrealized,
+        unrealized_pnl_percent: unrealizedPct,
+        position_type: (pos.side || 'long').toUpperCase(),
+        broker: 'Alpaca',
+        last_update: new Date().toISOString(),
+      };
+    });
+  };
 
   const loadBrokerData = async () => {
     try {
@@ -138,6 +197,30 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
       setPortfolio(portfolioData);
     } catch (error) {
       console.error('Error loading broker data:', error);
+    }
+  };
+
+  const loadAlpacaData = async () => {
+    try {
+      setAlpacaLoading(true);
+      setAlpacaError(null);
+      const res = await fetch('/api/paper/portfolio?useAlpaca=true', { cache: 'no-store' });
+      if (!res.ok) {
+        throw new Error('Alpaca verisi alınamadı');
+      }
+      const data: AlpacaPortfolioSnapshot = await res.json();
+      setAlpacaAccount({
+        ...data,
+        updatedAt: new Date().toISOString(),
+      });
+      setAlpacaPositions(normalizeAlpacaPositions(data.positions || []));
+    } catch (error: any) {
+      console.warn('Alpaca data load failed', error);
+      setAlpacaAccount(null);
+      setAlpacaPositions([]);
+      setAlpacaError(error?.message || 'Alpaca verisi alınamadı');
+    } finally {
+      setAlpacaLoading(false);
     }
   };
   const loadAiOrderHistory = () => {
@@ -202,15 +285,18 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
         body: JSON.stringify({
           symbol: 'XBANK.IS',
           quantity: 200,
-          order_type: 'SELL',
+          action: 'SELL',
+          order_type: 'MARKET',
           price: null,
           source: 'risk_off_auto_hedge',
+          useAlpaca: false,
         }),
       });
       const data = await response.json();
       if (data?.orders?.[0]) {
         setHedgeStatus('success');
         await loadBrokerData();
+        await loadAlpacaData();
         loadAiOrderHistory();
       } else {
         setHedgeStatus('error');
@@ -232,6 +318,7 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
       
       if (data.success) {
         await loadBrokerData();
+        await loadAlpacaData();
         alert('Broker bağlantıları başarıyla kuruldu!');
       } else {
         alert('Broker bağlantıları kurulamadı: ' + data.message);
@@ -243,6 +330,16 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
   };
 
   const placeOrder = async () => {
+    const symbol = orderForm.symbol.trim();
+    const quantity = Number(orderForm.quantity);
+    if (!symbol) {
+      alert('Lütfen bir sembol girin');
+      return;
+    }
+    if (!quantity || quantity <= 0) {
+      alert('Miktar pozitif olmalıdır');
+      return;
+    }
     try {
       const response = await fetch('/api/broker/orders', {
         method: 'POST',
@@ -250,10 +347,12 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          symbol: orderForm.symbol,
-          quantity: parseInt(orderForm.quantity),
+          symbol,
+          quantity,
+          action: orderForm.action,
           order_type: orderForm.order_type,
-          price: orderForm.price ? parseFloat(orderForm.price) : null
+          price: orderForm.order_type !== 'MARKET' && orderForm.price ? parseFloat(orderForm.price) : null,
+          useAlpaca: useAlpacaOrders,
         })
       });
       
@@ -262,8 +361,9 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
       if (data.orders) {
         alert('Emirler başarıyla verildi!');
         setShowOrderModal(false);
-        setOrderForm({ symbol: '', quantity: '', order_type: 'MARKET', price: '' });
+        setOrderForm({ symbol: '', quantity: '', order_type: 'MARKET', price: '', action: 'BUY' });
         await loadBrokerData();
+        await loadAlpacaData();
       } else {
         alert('Emir verilirken hata oluştu: ' + data.error);
       }
@@ -314,9 +414,16 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
     };
   })();
 
-  const filteredPositions = selectedBroker === 'all' 
-    ? positions 
-    : positions.filter(pos => pos.broker === selectedBroker);
+  const combinedPositions = [...alpacaPositions, ...positions];
+  const brokerOptions = Array.from(
+    new Set([
+      ...Object.keys(brokerStatus),
+      ...(alpacaPositions.length ? ['Alpaca'] : []),
+    ])
+  );
+  const filteredPositions = selectedBroker === 'all'
+    ? combinedPositions
+    : combinedPositions.filter(pos => pos.broker === selectedBroker);
 
   if (isLoading) {
     return (
@@ -361,6 +468,17 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
             </span>
           </div>
           <div className="flex items-center space-x-4">
+            <button
+              onClick={() => setUseAlpacaOrders((prev) => !prev)}
+              className={`px-3 py-2 text-xs font-semibold rounded-lg border ${
+                useAlpacaOrders
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  : 'bg-gray-100 border-gray-200 text-gray-600'
+              }`}
+              title="Alpaca paper trading emirlerini aç/kapat"
+            >
+              {useAlpacaOrders ? 'Alpaca Emir Modu AÇIK' : 'Alpaca Emir Modu KAPALI'}
+            </button>
             <button
               onClick={initializeBrokers}
               className="px-4 py-2 bg-green-600 text-white text-sm rounded-lg hover:bg-green-700 transition-colors"
@@ -558,6 +676,103 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
           )}
         </div>
 
+        {/* Alpaca Live Account */}
+        <div className="border rounded-xl p-4">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Alpaca Paper Trading</p>
+              <p className="text-lg font-semibold text-gray-900">{alpacaAccount?.userId || 'Alpaca Hesabı'}</p>
+            </div>
+            <div className="flex items-center space-x-2 text-xs text-gray-500">
+              <span className="inline-flex items-center gap-1">
+                <span className={`w-2 h-2 rounded-full ${alpacaError ? 'bg-red-500' : 'bg-emerald-500'}`} />
+                {alpacaLoading ? 'Yükleniyor...' : alpacaError ? 'Pasif' : 'Aktif'}
+              </span>
+              {!alpacaLoading && !alpacaError && (
+                <span>Güncellik: {formatFreshness(alpacaAccount?.updatedAt)}</span>
+              )}
+              <button
+                onClick={loadAlpacaData}
+                className="text-blue-600 hover:text-blue-800 font-semibold"
+              >
+                Yenile
+              </button>
+            </div>
+          </div>
+          {alpacaLoading ? (
+            <div className="mt-4 animate-pulse grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, idx) => (
+                <div key={idx} className="h-16 bg-gray-100 rounded-lg" />
+              ))}
+            </div>
+          ) : alpacaAccount ? (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500">Portföy</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${alpacaAccount.portfolioValue?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500">Equity</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${alpacaAccount.equity?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500">Cash</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${alpacaAccount.cash?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-xs text-gray-500">Buying Power</p>
+                  <p className="text-lg font-semibold text-gray-900">
+                    ${alpacaAccount.buyingPower?.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+              {alpacaPositions.length > 0 && (
+                <div className="mt-4">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Öne Çıkan Pozisyonlar</p>
+                  <div className="space-y-2">
+                    {alpacaPositions.slice(0, 3).map((pos) => (
+                      <div key={pos.symbol} className="flex items-center justify-between border rounded-lg px-3 py-2">
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {pos.symbol} <span className="text-xs text-gray-500">({pos.position_type})</span>
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            {pos.quantity} @ ${pos.avg_price.toFixed(2)} • Güncel ${pos.current_price.toFixed(2)}
+                          </p>
+                        </div>
+                        <p
+                          className={`text-sm font-semibold ${
+                            pos.unrealized_pnl >= 0 ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {pos.unrealized_pnl >= 0 ? '+' : '-'}${Math.abs(pos.unrealized_pnl).toFixed(2)}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="mt-4 flex items-center justify-between">
+              <p className="text-sm text-red-600">{alpacaError || 'Alpaca hesabına bağlanılamadı.'}</p>
+              <button
+                onClick={loadAlpacaData}
+                className="px-3 py-1 text-xs rounded bg-red-100 text-red-700"
+              >
+                Tekrar Dene
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Account Details */}
         <div className="mb-6">
           <h3 className="text-md font-semibold text-gray-900 mb-4">Hesap Detayları</h3>
@@ -597,7 +812,7 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
               className="text-sm border border-gray-300 rounded px-2 py-1"
             >
               <option value="all">Tüm Brokerlar</option>
-              {Object.keys(brokerStatus).map(broker => (
+              {brokerOptions.map(broker => (
                 <option key={broker} value={broker}>{broker}</option>
               ))}
             </select>
@@ -706,6 +921,20 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                  İşlem Yönü
+                </label>
+                <select
+                  value={orderForm.action}
+                  onChange={(e) => setOrderForm({ ...orderForm, action: e.target.value })}
+                  className="w-full border border-gray-300 rounded px-3 py-2"
+                >
+                  <option value="BUY">Alış (BUY)</option>
+                  <option value="SELL">Satış (SELL)</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
                   Emir Türü
                 </label>
                 <select
@@ -734,6 +963,22 @@ export default function BrokerIntegration({ isLoading }: BrokerIntegrationProps)
                   />
                 </div>
               )}
+              
+              <div className="flex items-center justify-between border rounded-lg px-3 py-2 bg-gray-50">
+                <div>
+                  <p className="text-sm font-medium text-gray-700">Alpaca Paper Trading</p>
+                  <p className="text-xs text-gray-500">Emir doğrudan Alpaca API'sine gönderilir</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUseAlpacaOrders((prev) => !prev)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                    useAlpacaOrders ? 'bg-emerald-200 text-emerald-800' : 'bg-gray-200 text-gray-600'
+                  }`}
+                >
+                  {useAlpacaOrders ? 'Açık' : 'Kapalı'}
+                </button>
+              </div>
               
               <div className="flex space-x-3">
                 <button

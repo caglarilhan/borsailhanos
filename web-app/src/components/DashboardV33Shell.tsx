@@ -3,6 +3,7 @@
 import { Suspense, useCallback, useState } from 'react';
 import DashboardV33Inner, { DashboardTab, isDashboardTab } from '@/components/DashboardV33Inner';
 import SearchParamWrapper from '@/components/SearchParamWrapper';
+import UserBadge from '@/components/auth/UserBadge';
 
 export default function DashboardV33Shell() {
   const [initialTab, setInitialTab] = useState<DashboardTab | undefined>(undefined);
@@ -14,6 +15,7 @@ export default function DashboardV33Shell() {
 
   return (
     <>
+      <UserBadge />
       <Suspense fallback={null}>
         <SearchParamWrapper onTab={handleTab} />
       </Suspense>
