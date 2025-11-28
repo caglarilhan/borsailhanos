@@ -1,32 +1,7 @@
 import { NextResponse } from 'next/server';
 import path from 'path';
 import { promises as fs } from 'fs';
-
-type SentimentLabel = 'positive' | 'neutral' | 'negative';
-
-interface SentimentRow {
-  symbol: string;
-  headline: string;
-  sentiment: SentimentLabel;
-  score: number;
-  confidence: number;
-  summary: string;
-  topics: string[];
-  model: string;
-  sourceUrl?: string;
-}
-
-interface SentimentPayload {
-  generatedAt: string;
-  source: string;
-  items: SentimentRow[];
-  aggregate?: {
-    bullish: number;
-    bearish: number;
-    neutral: number;
-    topSectors: { name: string; weight: number }[];
-  };
-}
+import type { SentimentPayload } from '@/types/sentiment';
 
 const rootDir = process.cwd();
 const dataPath = path.join(rootDir, 'data', 'snapshots', 'us_sentiment_sample.json');

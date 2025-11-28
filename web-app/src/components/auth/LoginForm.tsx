@@ -49,9 +49,11 @@ export function LoginForm() {
   const usernameInputRef = useRef<HTMLInputElement>(null);
 
   // Real-time validation with debouncing
-  const validateField = (name: string, value: string): string | null => {
+  const validateField = (name: string, value: string, allFields?: { username?: string; password?: string }): string | null => {
     if (name === 'username') {
       if (!value.trim()) return null; // Don't show error until blur or submit
+      // Admin kullanıcı adı için özel kontrol
+      if (value.toLowerCase() === 'admin') return null; // Admin kullanıcı adı geçerli
       if (value.length < 3) return 'Kullanıcı adı en az 3 karakter olmalı';
       // Email or username format
       const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
@@ -63,8 +65,22 @@ export function LoginForm() {
     
     if (name === 'password') {
       if (!value) return null; // Don't show error until blur or submit
-      // Geçici olarak admin/admin kombinasyonuna izin ver
-      if (value !== 'admin' && value.length < 8) return 'Parola en az 8 karakter olmalı';
+      
+      // Admin/admin kombinasyonu için özel kontrol
+      // Hem allFields'den hem de state'den kontrol et (async state güncellemesi için)
+      const username = (allFields?.username || state.username || '').trim().toLowerCase();
+      const passwordValue = value.trim();
+      
+      // Eğer username "admin" ise, password için 8 karakter kontrolünü TAMAMEN ATLA
+      // (Admin kullanıcısı için herhangi bir password uzunluk kontrolü yok)
+      if (username === 'admin') {
+        return null; // Admin kullanıcısı için password validasyonu yok
+      }
+      
+      // Diğer kullanıcılar için 8 karakter kontrolü
+      if (passwordValue.length < 8) {
+        return 'Parola en az 8 karakter olmalı';
+      }
     }
     
     return null;
@@ -92,13 +108,31 @@ export function LoginForm() {
     // Debounced validation (only for non-empty values)
     if (value) {
       const timeoutId = setTimeout(() => {
-        const error = validateField(name, value);
-        if (error) {
-          setState(prev => ({
-            ...prev,
-            fieldErrors: { ...prev.fieldErrors, [name]: error },
-          }));
-        }
+        // Get current state values for combined validation
+        setState(prev => {
+          const currentUsername = name === 'username' ? value : prev.username;
+          const currentPassword = name === 'password' ? value : prev.password;
+          const allFields = {
+            username: currentUsername,
+            password: currentPassword,
+          };
+          const error = validateField(name, value, allFields);
+          
+          // Clear error if validation passes
+          if (!error && prev.fieldErrors[name]) {
+            const newErrors = { ...prev.fieldErrors };
+            delete newErrors[name as keyof typeof newErrors];
+            return { ...prev, fieldErrors: newErrors };
+          }
+          
+          if (error) {
+            return {
+              ...prev,
+              fieldErrors: { ...prev.fieldErrors, [name]: error },
+            };
+          }
+          return prev;
+        });
       }, 300);
       return () => clearTimeout(timeoutId);
     }
@@ -107,7 +141,10 @@ export function LoginForm() {
   // Handle blur for immediate validation
   const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const error = validateField(name, value);
+    const error = validateField(name, value, {
+      username: state.username,
+      password: state.password,
+    });
     setState(prev => ({
       ...prev,
       fieldErrors: { ...prev.fieldErrors, [name]: error || undefined },
@@ -141,9 +178,13 @@ export function LoginForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
-    // Validate all fields
-    const usernameError = validateField('username', state.username);
-    const passwordError = validateField('password', state.password);
+    // Validate all fields with combined context (for admin/admin check)
+    const allFields = {
+      username: state.username,
+      password: state.password,
+    };
+    const usernameError = validateField('username', state.username, allFields);
+    const passwordError = validateField('password', state.password, allFields);
     
     if (usernameError || passwordError) {
       setState(prev => ({
@@ -201,9 +242,20 @@ export function LoginForm() {
       }
 
       // Success: redirect
-      const target = data.redirect || '/';
-      // Prefer client router to avoid full reload
-      router.push(target);
+      const target = data.redirect || '/dashboard';
+      
+      // Cookie'nin set edilmesini beklemek için delay
+      // HttpOnly cookie'ler JavaScript'ten okunamaz ama response'dan set edilir
+      // Full page reload ile cookie'nin kesinlikle set edilmesini sağla
+      console.log('✅ [LOGIN] Login successful, redirecting to:', target);
+      console.log('✅ [LOGIN] User:', data.user);
+      console.log('✅ [LOGIN] Remember me:', state.remember);
+      
+      // Cookie set edilmesi için yeterli süre bekle (300ms)
+      setTimeout(() => {
+        console.log('✅ [LOGIN] Redirecting to dashboard...');
+        window.location.href = target;
+      }, 300);
     } catch (error) {
       console.error('Login error:', error);
       setState(prev => ({

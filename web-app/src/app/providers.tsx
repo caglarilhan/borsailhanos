@@ -4,6 +4,9 @@ import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { MarketDataProvider } from '@/contexts/MarketDataContext';
+import { PlanFeatureProvider } from '@/contexts/PlanFeatureContext';
+import { AiModuleConfigProvider } from '@/contexts/AiModuleConfigContext';
 
 // P2-1: API latency - Optimize TanStack Query cache (staleTime + gcTime)
 const queryClient = new QueryClient({
@@ -26,7 +29,13 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {children}
+        <MarketDataProvider>
+          <PlanFeatureProvider>
+            <AiModuleConfigProvider>
+              {children}
+            </AiModuleConfigProvider>
+          </PlanFeatureProvider>
+        </MarketDataProvider>
       </AuthProvider>
       <ReactQueryDevtools initialOpen={false} />
     </QueryClientProvider>

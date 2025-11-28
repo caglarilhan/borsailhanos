@@ -9,6 +9,12 @@ import { filterStale, isWithinMarketScope, deduplicateBySymbol } from '@/lib/gua
 import { getSectorForSymbol } from '@/lib/sectorMap';
 import { createActions, actions } from '@/lib/actions';
 import { buildPolylinePoints, buildBandPolygon, DEFAULT_CHART_DIMENSIONS } from '@/lib/svgChart';
+import { AiPowerMetric, AiPositionCard } from '@/types/ai-power';
+import { useMarketData } from '@/contexts/MarketDataContext';
+import { usePlanFeatures } from '@/contexts/PlanFeatureContext';
+import { TimestampBadge } from './TimestampBadge';
+import { PortfolioLabel } from './PortfolioLabel';
+import { PlanFeatureLock } from './PlanFeatureLock';
 
 export type DashboardTab = 'signals' | 'analysis' | 'operations' | 'advanced' | 'ai-analysis';
 const DASHBOARD_TABS: DashboardTab[] = ['signals', 'analysis', 'operations', 'advanced', 'ai-analysis'];
@@ -115,32 +121,6 @@ interface AlertItem {
   [key: string]: unknown;
 }
 
-interface AiPowerMetric {
-  title: string;
-  value: string;
-  deltaLabel: string;
-  deltaValue: string;
-  sublabel: string;
-  accent: string;
-  icon: string;
-}
-
-interface AiPositionCard {
-  symbol: string;
-  action: 'BUY' | 'SELL' | 'HOLD';
-  confidence: number;
-  entry: number;
-  target: number;
-  stop: number;
-  rlLots: number;
-  sentiment: 'positive' | 'neutral' | 'negative';
-  sentimentScore: number;
-  comment: string;
-  attentionFocus: string[];
-  regime: 'risk-on' | 'risk-off' | 'neutral';
-  sparklineSeries?: number[];
-}
-
 interface AiOrderHistoryEntry {
   id: string;
   symbol: string;
@@ -235,6 +215,31 @@ const DEFAULT_AI_POSITION_CARDS: AiPositionCard[] = [
   },
 ];
 
+const FALLBACK_SENTIMENT_SOURCE: SentimentItem[] = [
+  { symbol: 'THYAO', sentiment: 82, positive: 68, negative: 18, neutral: 14, sources: ['Bloomberg HT', 'Anadolu Ajansı', 'Hürriyet'] },
+  { symbol: 'AKBNK', sentiment: 75, positive: 56, negative: 24, neutral: 20, sources: ['Şebnem Turhan', 'Para Dergisi'] },
+  { symbol: 'EREGL', sentiment: 88, positive: 72, negative: 10, neutral: 18, sources: ['KAP', 'Dünya'] },
+  { symbol: 'TUPRS', sentiment: 45, positive: 28, negative: 52, neutral: 20, sources: ['Bloomberg', 'Haberler.com'] },
+];
+
+const FALLBACK_SENTIMENT_DATA: SentimentItem[] = FALLBACK_SENTIMENT_SOURCE.map((item) => {
+  const [positive, negative, neutral] = normalizeSentiment(item.positive ?? 0, item.negative ?? 0, item.neutral ?? 0);
+  return {
+    ...item,
+    positive,
+    negative,
+    neutral,
+    total: 100,
+  };
+});
+
+const RISK_LEVEL_LABELS: Record<'low' | 'medium' | 'high' | 'aggressive', string> = {
+  low: 'Düşük Risk',
+  medium: 'Orta Risk',
+  high: 'Yüksek Risk',
+  aggressive: 'Agresif Risk',
+};
+
 // V5.0 Enterprise Components
 import RiskManagementPanel from './V50/RiskManagementPanel';
 import PortfolioOptimizer from './V50/PortfolioOptimizer';
@@ -280,9 +285,8 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   }, [initialTab]);
 
   const [hoveredFeature, setHoveredFeature] = useState<string | null>(null);
-  const [visibleSignals, setVisibleSignals] = useState(5);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [isRefreshing, setIsRefreshing] = useState(false);
+const [visibleSignals, setVisibleSignals] = useState(5);
+const [minAccuracy, setMinAccuracy] = useState(75);
   const [mounted, setMounted] = useState(false);
   const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
   const [portfolioData, setPortfolioData] = useState<PortfolioDataPoint[]>([]);
@@ -344,12 +348,22 @@ function DashboardV33Content({ initialTab }: { initialTab?: DashboardTab }) {
   , []);
 
   useEffect(() => {
-    console.log('🎯 Component mounting...');
+    console.log('🎯 [HYDRATION] DashboardV33Content mounting...');
+    console.log('🎯 [HYDRATION] typeof window:', typeof window);
+    console.log('🎯 [HYDRATION] document.readyState:', typeof window !== 'undefined' ? document.readyState : 'N/A');
+    
     setMounted(true);
     // Initialize chart data after mount (prevents hydration error)
     setChartData(initialChartData);
     setPortfolioData(initialPortfolioData);
-    console.log('✅ Component mounted successfully');
+    
+    console.log('✅ [HYDRATION] DashboardV33Content mounted successfully');
+    console.log('✅ [HYDRATION] React is working - client-side JS is active');
+    
+    // Verify event binding works
+    if (typeof window !== 'undefined') {
+      console.log('✅ [HYDRATION] Window object available - event binding should work');
+    }
   }, []); // Only run once on mount
 
 useEffect(() => {
@@ -360,69 +374,80 @@ useEffect(() => {
   if (storedMode === 'on') setPaperMode(true);
 }, []);
 
-useEffect(() => {
-  if (!mounted) return;
-  let cancelled = false;
-  let intervalId: NodeJS.Timeout | null = null;
-
-  const fetchAiPower = async () => {
-    try {
-      setAiPowerLoading(true);
-      const response = await fetch('/api/ai/power-grid');
-      if (!response.ok) throw new Error(`Status ${response.status}`);
-      const payload = await response.json();
-      if (cancelled) return;
-      setAiPowerMetrics(payload.metrics || DEFAULT_AI_POWER_METRICS);
-      setAiPositionCards(attachSparkline(payload.positions || DEFAULT_AI_POSITION_CARDS));
-      setAiPowerUpdatedAt(payload.updatedAt || Date.now());
-    } catch (error) {
-      console.warn('AI Power fetch failed', error);
-      if (!cancelled) {
-        setAiPowerMetrics(DEFAULT_AI_POWER_METRICS);
-        setAiPositionCards(attachSparkline(DEFAULT_AI_POSITION_CARDS));
-      }
-    } finally {
-      if (!cancelled) setAiPowerLoading(false);
-    }
-  };
-
-  fetchAiPower();
-  intervalId = setInterval(fetchAiPower, 60_000);
-
-  return () => {
-    cancelled = true;
-    if (intervalId) clearInterval(intervalId);
-  };
-}, [mounted]);
   const [watchlist, setWatchlist] = useState<string[]>(['THYAO', 'AKBNK']);
   const [selectedForXAI, setSelectedForXAI] = useState<string | null>(null);
   const [portfolioValue, setPortfolioValue] = useState(100000); // Start with 100k
   const [portfolioStocks, setPortfolioStocks] = useState<{symbol: string, count: number}[]>([]);
-  const [sentimentData, setSentimentData] = useState<SentimentItem[] | null>(null);
-  const [usSentiment, setUsSentiment] = useState<UsSentimentPayload | null>(null);
-  const [usSentimentLoading, setUsSentimentLoading] = useState(false);
-  const [usSentimentError, setUsSentimentError] = useState<string | null>(null);
   const [usMarket, setUsMarket] = useState<UsMarketSnapshot | null>(null);
   const [usMarketLoading, setUsMarketLoading] = useState(false);
   const [usMarketError, setUsMarketError] = useState<string | null>(null);
   const [hoveredSector, setHoveredSector] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<{id: string, message: string, type: 'success' | 'info', timestamp: Date}[]>([]);
   const [portfolioRebalance, setPortfolioRebalance] = useState(false);
-const [aiLearning, setAiLearning] = useState({ accuracy: 87.3, recommendations: ['Portföy yoğunluğu: %40 THYAO', 'Risk düzeyi: Düşük', 'Son 7 gün: +12.5% kâr'] });
-const [aiPowerMetrics, setAiPowerMetrics] = useState<AiPowerMetric[]>(DEFAULT_AI_POWER_METRICS);
-const [aiPositionCards, setAiPositionCards] = useState<AiPositionCard[]>(DEFAULT_AI_POSITION_CARDS);
-const [aiPowerUpdatedAt, setAiPowerUpdatedAt] = useState<number | null>(null);
-const [aiPowerLoading, setAiPowerLoading] = useState(false);
+const [aiLearning, setAiLearning] = useState({ accuracy: 87.3 });
+const {
+  aiPower,
+  sentiment,
+  lastUpdated: _priceDataLastUpdated,
+  sentimentUpdatedAt,
+  loading: marketLoading,
+  error: marketDataError,
+  globalLastUpdated,
+} = useMarketData();
+const { plan, hasFeature } = usePlanFeatures();
+const lastUpdateDate = useMemo(
+  () => (globalLastUpdated ? new Date(globalLastUpdated) : null),
+  [globalLastUpdated],
+);
+const sentimentLastUpdateDate = useMemo(
+  () => (sentimentUpdatedAt ? new Date(sentimentUpdatedAt) : null),
+  [sentimentUpdatedAt],
+);
+const aiPowerLoading = marketLoading && aiPower.metrics.length === 0;
+const isRefreshing = marketLoading;
+
+// Helper functions for sparkline generation (must be defined before useMemo)
+const generateSparklineSeries = (seed: string, points = 12) => {
+  const values: number[] = [];
+  let current = ((seed.charCodeAt(0) % 40) + 30);
+  for (let i = 0; i < points; i += 1) {
+    const delta = ((seed.charCodeAt(i % seed.length) % 6) - 3) * 0.9;
+    current = Math.max(0, Math.min(100, current + delta));
+    values.push(Number(current.toFixed(2)));
+  }
+  return values;
+};
+
+const attachSparkline = (cards: AiPositionCard[]) =>
+  cards.map((card, idx) => ({
+    ...card,
+    sparklineSeries:
+      card.sparklineSeries && card.sparklineSeries.length > 0
+        ? card.sparklineSeries
+        : generateSparklineSeries(`${card.symbol}-${idx}`),
+  }));
+
+const aiPowerMetrics = useMemo(
+  () => (aiPower.metrics.length ? aiPower.metrics : DEFAULT_AI_POWER_METRICS),
+  [aiPower.metrics],
+);
+const aiPositionCards = useMemo(
+  () =>
+    attachSparkline(
+      aiPower.positions.length ? aiPower.positions : DEFAULT_AI_POSITION_CARDS,
+    ),
+  [aiPower.positions],
+);
 const [aiOrderSubmitting, setAiOrderSubmitting] = useState<string | null>(null);
 const [aiOrderHistory, setAiOrderHistory] = useState<AiOrderHistoryEntry[]>([]);
 const [aiOrderHistoryLoading, setAiOrderHistoryLoading] = useState(false);
   const [selectedMarket, setSelectedMarket] = useState<'BIST' | 'NYSE' | 'NASDAQ'>('BIST');
-  const [realtimeUpdates, setRealtimeUpdates] = useState({ signals: 0, risk: 0 });
+const [realtimeUpdates] = useState({ signals: 0, risk: 0 }); // TODO: connect to actual realtime feed
   const [timeString, setTimeString] = useState<string>('');
-  const [dynamicSignals, setDynamicSignals] = useState<Signal[]>([]); // WebSocket'ten gelen dinamik sinyaller
+const [dynamicSignals] = useState<Signal[]>([]); // TODO: hook up to real realtime feed
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null); // Bildirim tıklama için
   const [dynamicSummary, setDynamicSummary] = useState<string>(''); // AI Summary
-  const [sectorStats, setSectorStats] = useState<any>(null); // Sektör İstatistikleri
+const [sectorStats, setSectorStats] = useState<any>(null); // TODO: move into provider
 const [paperMode, setPaperMode] = useState(false);
 const [paperUserId, setPaperUserId] = useState<string>('paper-demo');
 const [paperPortfolio, setPaperPortfolio] = useState<any | null>(null);
@@ -437,11 +462,14 @@ const [healthStatus, setHealthStatus] = useState<Array<{ name: string; status: '
 const [showHealthPanel, setShowHealthPanel] = useState(false);
   
   // Time update effect - hydration-safe
-  useEffect(() => {
-    if (mounted) {
-      setTimeString(lastUpdate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
-    }
-  }, [mounted, lastUpdate]);
+useEffect(() => {
+  if (!mounted) return;
+  if (!lastUpdateDate) {
+    setTimeString('--:--');
+    return;
+  }
+  setTimeString(lastUpdateDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' }));
+}, [mounted, lastUpdateDate]);
 
 useEffect(() => {
   if (!mounted) return;
@@ -453,21 +481,25 @@ useEffect(() => {
         if (Array.isArray(data.logs)) {
           setAiOrderHistory(data.logs as AiOrderHistoryEntry[]);
         } else {
+          if (typeof window !== 'undefined') {
+            const stored = localStorage.getItem('ai_order_history');
+            if (stored) {
+              const parsed = JSON.parse(stored);
+              if (Array.isArray(parsed)) {
+                setAiOrderHistory(parsed);
+              }
+            }
+          }
+        }
+      })
+      .catch(() => {
+        if (typeof window !== 'undefined') {
           const stored = localStorage.getItem('ai_order_history');
           if (stored) {
             const parsed = JSON.parse(stored);
             if (Array.isArray(parsed)) {
               setAiOrderHistory(parsed);
             }
-          }
-        }
-      })
-      .catch(() => {
-        const stored = localStorage.getItem('ai_order_history');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed)) {
-            setAiOrderHistory(parsed);
           }
         }
       })
@@ -480,7 +512,7 @@ useEffect(() => {
 }, [mounted]);
 
 useEffect(() => {
-  if (!mounted) return;
+  if (!mounted || typeof window === 'undefined') return;
   try {
     localStorage.setItem('ai_order_history', JSON.stringify(aiOrderHistory.slice(-50)));
   } catch (error) {
@@ -643,11 +675,60 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showFilter, setShowFilter] = useState(false);
   const [filterAccuracy, setFilterAccuracy] = useState<number | null>(null);
-  const [riskProfileLevel, setRiskProfileLevel] = useState<'low' | 'medium' | 'high' | 'aggressive'>('medium');
+const [riskProfileLevel, setRiskProfileLevel] = useState<'low' | 'medium' | 'high' | 'aggressive'>('medium');
   // Portföy kişiselleştirme state'leri
-  const [portfolioRiskLevel, setPortfolioRiskLevel] = useState<'low' | 'medium' | 'high' | 'aggressive'>('medium');
-  const [portfolioHorizon, setPortfolioHorizon] = useState<'1m' | '6m' | '1y' | '5y'>('6m');
-  const [portfolioSectorPreference, setPortfolioSectorPreference] = useState<'all' | 'technology' | 'banking' | 'energy' | 'industry'>('all');
+const [portfolioRiskLevel, setPortfolioRiskLevel] = useState<'low' | 'medium' | 'high' | 'aggressive'>('medium');
+const [portfolioHorizon, setPortfolioHorizon] = useState<'1m' | '6m' | '1y' | '5y'>('6m');
+const [portfolioSectorPreference, setPortfolioSectorPreference] = useState<'all' | 'technology' | 'banking' | 'energy' | 'industry'>('all');
+
+const recommendedPortfolio = useMemo(() => {
+  if (aiPower.positions.length > 0) {
+    const top = aiPower.positions.slice(0, 3);
+    const totalConfidence =
+      top.reduce((acc, card) => acc + Math.max(card.confidence ?? 0.01, 0.01), 0) || 1;
+    return top.map((card) => ({
+      symbol: card.symbol,
+      weight: Math.max(5, Math.round(((card.confidence ?? 0.01) / totalConfidence) * 100)),
+    }));
+  }
+  return [
+    { symbol: 'THYAO', weight: 40 },
+    { symbol: 'AKBNK', weight: 30 },
+    { symbol: 'EREGL', weight: 30 },
+  ];
+}, [aiPower.positions]);
+
+const recommendedSummary = useMemo(
+  () => recommendedPortfolio.map((entry) => `${entry.symbol} %${entry.weight}`).join(', '),
+  [recommendedPortfolio],
+);
+
+const riskAllocations = useMemo(() => {
+  const normalize = (entries: { symbol: string; weight: number }[]) => {
+    const total = entries.reduce((acc, entry) => acc + entry.weight, 0) || 1;
+    return entries.map((entry) => ({
+      symbol: entry.symbol,
+      pct: Math.max(5, Math.round((entry.weight / total) * 100)),
+    }));
+  };
+
+  const adjust = (bias: number) => {
+    const adjusted = recommendedPortfolio.map((entry, index) => {
+      const influence =
+        index === 0 ? 1 : index === recommendedPortfolio.length - 1 ? -1 : 0.4;
+      return { symbol: entry.symbol, weight: entry.weight + bias * influence };
+    });
+    return normalize(adjusted);
+  };
+
+  return {
+    low: adjust(-10),
+    medium: adjust(-2),
+    high: adjust(6),
+    aggressive: adjust(12),
+  };
+}, [recommendedPortfolio]);
+
   // Removed: showFeatureDetail and selectedFeatureDetail states
   // Artık direkt route yönlendirmesi yapıyoruz (/feature/[slug])
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -658,6 +739,7 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
   const userPlan: 'basic' | 'pro' | 'enterprise' = 'basic';
   
   const openPanel = (panel: string) => {
+    console.log('🎯 [EVENT] openPanel called with:', panel);
     console.log('📂 Panel açılıyor: ' + panel);
     console.log('🔍 Önceki activePanel: ' + activePanel);
     setActivePanel(panel);
@@ -796,7 +878,9 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
   );
 
   const togglePaperMode = useCallback(async () => {
+    console.log('🎯 [EVENT] togglePaperMode called, current:', paperMode);
     const next = !paperMode;
+    console.log('🎯 [EVENT] Setting paperMode to:', next);
     setPaperMode(next);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('paper_mode', next ? 'on' : 'off');
@@ -820,9 +904,14 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
     // V60 / V50 bileşenlerinden eşleştirme
     if (lower.includes('gelişmiş analiz') || lower.includes('gelişmiş grafik')) {
       return (
-        <div style={{ height: '420px', background: '#fff', borderRadius: '12px', padding: '12px', border: '1px solid #e5e7eb' }}>
-          <AdvancedVisualizationHub />
-        </div>
+        <>
+          <div style={{ height: '420px', background: '#fff', borderRadius: '12px', padding: '12px', border: '1px solid #e5e7eb' }}>
+            <AdvancedVisualizationHub />
+          </div>
+          <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '8px', textAlign: 'right' }}>
+            Bu sonuçlar yalnızca simülasyon amaçlıdır ve yatırım tavsiyesi değildir.
+          </p>
+        </>
       );
     }
     if (lower.includes('xai') || lower.includes('explain') || lower.includes('ai tahmin')) {
@@ -919,9 +1008,9 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
   // Actions map (optional - mevcut handler'ları koruyor)
   // Tüm butonlar zaten onClick handler'ları ile çalışıyor
   
-  const handleLoadMore = () => {
-    setVisibleSignals(signals.length);
-  };
+const handleLoadMore = () => {
+  setVisibleSignals(activeSignalCount);
+};
   
   const handleOpenReport = () => {
     alert('📊 Detaylı rapor açılıyor...');
@@ -940,7 +1029,9 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
     setIsLoggedIn(false);
     setShowLogin(true);
     setCurrentUser('');
-    localStorage.removeItem('bistai_user');
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('bistai_user');
+    }
   };
   
   const handleShare = async () => {
@@ -1112,66 +1203,6 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
       console.warn('⚠️ WebSocket disconnected');
     }
   });
-  
-  // Initialize sentiment data with normalized percentages
-  useEffect(() => {
-    // Raw sentiment values (will be normalized)
-    const rawSentiment = [
-      { symbol: 'THYAO', sentiment: 82, positive: 68, negative: 18, neutral: 14, sources: ['Bloomberg HT', 'Anadolu Ajansı', 'Hürriyet'] },
-      { symbol: 'AKBNK', sentiment: 75, positive: 56, negative: 24, neutral: 20, sources: ['Şebnem Turhan', 'Para Dergisi'] },
-      { symbol: 'EREGL', sentiment: 88, positive: 72, negative: 10, neutral: 18, sources: ['KAP', 'Dünya'] },
-      { symbol: 'TUPRS', sentiment: 45, positive: 28, negative: 52, neutral: 20, sources: ['Bloomberg', 'Haberler.com'] },
-    ];
-    
-    // Normalize sentiment percentages to ensure sum = 100%
-    const normalized = rawSentiment.map(s => {
-      const [p, n, u] = normalizeSentiment(s.positive, s.negative, s.neutral);
-      return {
-        ...s,
-        positive: p,
-        negative: n,
-        neutral: u,
-        total: 100.0 // Ensure explicit total
-      };
-    });
-    
-    setSentimentData(normalized);
-  }, []);
-
-  useEffect(() => {
-    if (!mounted) return;
-    let cancelled = false;
-    let intervalId: NodeJS.Timeout | null = null;
-
-    const fetchUsSentiment = async () => {
-      try {
-        if (!cancelled) setUsSentimentLoading(true);
-        const response = await fetch('/api/ai/us-sentiment', { cache: 'no-store' });
-        if (!response.ok) {
-          throw new Error(`US sentiment status ${response.status}`);
-        }
-        const payload: UsSentimentPayload = await response.json();
-        if (cancelled) return;
-        setUsSentiment(payload);
-        setUsSentimentError(null);
-      } catch (error) {
-        console.warn('US sentiment fetch failed', error);
-        if (!cancelled) {
-          setUsSentimentError('US sentiment verisi alınamadı.');
-        }
-      } finally {
-        if (!cancelled) setUsSentimentLoading(false);
-      }
-    };
-
-    fetchUsSentiment();
-    intervalId = setInterval(fetchUsSentiment, 180_000);
-
-    return () => {
-      cancelled = true;
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [mounted]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -1287,35 +1318,7 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
   }, []);
   
   // Realtime Data Fetch Simulation (15s interval)
-  useEffect(() => {
-    const realtimeInterval = setInterval(() => {
-      // Simulate realtime updates
-      setRealtimeUpdates(prev => ({
-        signals: prev.signals + Math.floor(Math.random() * 2),
-        risk: Math.random() * 0.5 - 0.25 // -0.25 to +0.25 change
-      }));
-      
-      // Add alert for new signal using dynamic pool instead of fixed symbols
-      if (Math.random() > 0.7) {
-        const pool = (dynamicSignals && dynamicSignals.length > 0)
-          ? dynamicSignals.map((s: Signal) => s.symbol).filter(Boolean)
-          : ['ASELS','ENKAI','LOGO','KAREL','NETAS','TKNSA','BIMAS','MIGRS','TOASO','KOZAL','PGSUS','TRKCM','AEFES','GUBRF','KORDS','FROTO','GESAN','GLYHO','VRGYO','ZOREN'];
-        if (pool.length > 0) {
-          const randSymbol = pool[Math.floor(Math.random() * pool.length)];
-          if (isWithinMarketScope(randSymbol, selectedMarket)) {
-            setAlerts(prev => [...prev, {
-              id: 'realtime-' + Date.now() + '-' + randSymbol,
-              message: '🔔 Yeni sinyal: ' + randSymbol + ' - AI analizi güncellendi',
-              type: 'success',
-              timestamp: new Date()
-            }]);
-          }
-        }
-      }
-    }, 15000); // 15 seconds
-    
-    return () => clearInterval(realtimeInterval);
-  }, [dynamicSignals, selectedMarket]);
+// TODO: Wire up realtime updates via websocket data source
   
   // ✅ Portfolio Chart Dynamic Update: Yeni sinyaller geldiğinde grafiği güncelle
   // Portfolio updates are now handled in the onMessage callback above (line 267-277)
@@ -1351,28 +1354,12 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
     }
   }, []);
   
-  // Auto-refresh every 60 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setIsRefreshing(true);
-      setTimeout(() => {
-        setLastUpdate(new Date());
-        setIsRefreshing(false);
-      }, 1000);
-    }, 60000);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
   // Risk Engine Update Cron (10 min)
   // Risk engine update simulation removed - not used
   
   // FinBERT Sentiment Update Cron (10 min) - DISABLED to prevent infinite loop
   // Sentiment data is now static to avoid re-render loops
-  useEffect(() => {
-    // Disabled: setSentimentData updates were causing infinite render loop
-    // Sentiment data is initialized once and remains static
-  }, []);
+  // Sentiment data now provided via MarketDataProvider
   
   // Sector Heatmap Data with sub-sectors
   const sectors = [
@@ -1402,9 +1389,29 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
     { stock1: 'EREGL', stock2: 'SISE', correlation: 0.86 },
   ];
   
-  // FinBERT Türkçe Sentiment Data (from state)
-  const sentimentAnalysis = sentimentData || [];
-  
+  // FinBERT Türkçe Sentiment Data
+  const usSentiment = sentiment;
+  const usSentimentItems = usSentiment?.items ?? [];
+  const sentimentAnalysis = useMemo(() => {
+    if (usSentimentItems.length) {
+      return usSentimentItems.map((item) => {
+        const rawPositive = item.score > 0 ? item.score * 100 : 0;
+        const rawNegative = item.score < 0 ? Math.abs(item.score) * 100 : 0;
+        const rawNeutral = Math.max(0, 100 - rawPositive - rawNegative);
+        const [positive, negative, neutral] = normalizeSentiment(rawPositive, rawNegative, rawNeutral);
+        return {
+          symbol: item.symbol,
+          sentiment: Math.round((item.score + 1) * 50),
+          positive,
+          negative,
+          neutral,
+          sources: item.topics ?? [],
+        };
+      });
+    }
+    return FALLBACK_SENTIMENT_DATA;
+  }, [usSentimentItems]);
+
   // @ts-ignore
   const sentimentChartData = sentimentAnalysis.map((s: SentimentItem, i: number) => ({
     symbol: s.symbol,
@@ -1413,10 +1420,9 @@ const globalBiasAlertRef = useRef<'positive' | 'negative' | null>(null);
     neutral: s.neutral,
   }));
 
-  const usSentimentItems = usSentiment?.items ?? [];
   const usSentimentAggregate = usSentiment?.aggregate;
-  const usSentimentTimestamp = usSentiment?.generatedAt
-    ? new Date(usSentiment.generatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
+  const usSentimentTimestamp = sentimentLastUpdateDate
+    ? sentimentLastUpdateDate.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })
     : '--:--';
   const usSentimentPercent = (value?: number) =>
     typeof value === 'number' ? Math.round(value * 100) : undefined;
@@ -1434,6 +1440,8 @@ const formatFreshness = (iso?: string | null) => {
   return diffMin === 1 ? '1 dk önce' : `${diffMin} dk önce`;
 };
 const usSentimentFreshness = formatFreshness(usSentiment?.generatedAt);
+const usSentimentLoading = !usSentiment && marketLoading;
+const usSentimentError = !usSentiment && !marketLoading ? (marketDataError || 'US sentiment verisi alınamadı.') : null;
 
   const usMarketSymbols = (usMarket?.symbols ?? []).map((row) => ({
     ...row,
@@ -1484,8 +1492,8 @@ const combinedAiPowerData = useMemo(() => {
 }, [aiPowerMetrics, usSentimentAggregate, bestUsGainer, worstUsMover]);
 const combinedAiPowerMetrics = combinedAiPowerData.metrics;
 const globalBiasScore = combinedAiPowerData.globalBiasScore;
-const aiPowerFreshness = aiPowerUpdatedAt
-  ? formatFreshness(new Date(aiPowerUpdatedAt).toISOString())
+const aiPowerFreshness = globalLastUpdated
+  ? formatFreshness(new Date(globalLastUpdated).toISOString())
   : 'Bilinmiyor';
 
 useEffect(() => {
@@ -1509,24 +1517,7 @@ useEffect(() => {
   ]);
   globalBiasAlertRef.current = severity;
 }, [globalBiasScore]);
-const generateSparklineSeries = (seed: string, points = 12) => {
-  const values: number[] = [];
-  let current = ((seed.charCodeAt(0) % 40) + 30);
-  for (let i = 0; i < points; i += 1) {
-    const delta = ((seed.charCodeAt(i % seed.length) % 6) - 3) * 0.9;
-    current = Math.max(0, Math.min(100, current + delta));
-    values.push(Number(current.toFixed(2)));
-  }
-  return values;
-};
-const attachSparkline = (cards: AiPositionCard[]) =>
-  cards.map((card, idx) => ({
-    ...card,
-    sparklineSeries:
-      card.sparklineSeries && card.sparklineSeries.length > 0
-        ? card.sparklineSeries
-        : generateSparklineSeries(`${card.symbol}-${idx}`),
-  }));
+
 const Sparkline = ({ series, color }: { series: number[]; color: string }) => {
   if (!series || series.length === 0) return null;
   const width = 140;
@@ -1588,52 +1579,107 @@ useEffect(() => {
     ],
   };
 
-  // Multi-market signals data
-  const marketSignals = {
-    'BIST': [
-      { symbol: 'THYAO', signal: 'BUY', price: 245.50, target: 268.30, change: 9.3, comment: 'Güçlü teknik formasyon ve pozitif momentum', accuracy: 89.2 },
-      { symbol: 'TUPRS', signal: 'SELL', price: 180.30, target: 165.20, change: -8.4, comment: 'Direnç seviyesinde satış baskısı', accuracy: 76.5 },
-      { symbol: 'ASELS', signal: 'HOLD', price: 48.20, target: 49.10, change: 1.9, comment: 'Piyasa belirsizliği - bekleme', accuracy: 81.3 },
-      { symbol: 'EREGL', signal: 'BUY', price: 55.80, target: 62.40, change: 11.8, comment: 'Yükseliş formasyonu tespit edildi', accuracy: 88.7 },
-      { symbol: 'SISE', signal: 'BUY', price: 32.50, target: 36.80, change: 13.2, comment: 'Ters başlı omuz formasyonu', accuracy: 91.5 },
-      { symbol: 'GARAN', signal: 'BUY', price: 185.40, target: 228.20, change: 23.1, comment: 'Güçlü kırılım ve yukarı trend', accuracy: 92.3 },
-      { symbol: 'AKBNK', signal: 'BUY', price: 162.80, target: 198.60, change: 22.0, comment: 'Pozitif hacim sinyalleri', accuracy: 91.8 },
-    ],
-    'NYSE': [
-      { symbol: 'AAPL', signal: 'BUY', price: 185.20, target: 195.80, change: 5.7, comment: 'Strong technical breakout, high volume', accuracy: 89.5 },
-      { symbol: 'MSFT', signal: 'BUY', price: 420.50, target: 438.30, change: 4.2, comment: 'AI infrastructure momentum', accuracy: 92.1 },
-      { symbol: 'JPM', signal: 'HOLD', price: 178.40, target: 180.10, change: 1.0, comment: 'Rate decision pending', accuracy: 78.3 },
-      { symbol: 'BAC', signal: 'BUY', price: 38.60, target: 41.80, change: 8.3, comment: 'Banking sector recovery', accuracy: 85.2 },
-      { symbol: 'WMT', signal: 'SELL', price: 165.30, target: 155.20, change: -6.1, comment: 'Resistance level rejection', accuracy: 82.7 },
-      { symbol: 'DIS', signal: 'BUY', price: 112.80, target: 122.40, change: 8.5, comment: 'Content monetization growth', accuracy: 88.9 },
-      { symbol: 'CVX', signal: 'BUY', price: 152.60, target: 165.20, change: 8.3, comment: 'Energy sector bullish trend', accuracy: 86.4 },
-    ],
-    'NASDAQ': [
-      { symbol: 'GOOGL', signal: 'BUY', price: 145.80, target: 155.30, change: 6.5, comment: 'Search dominance + AI integration', accuracy: 91.2 },
-      { symbol: 'AMZN', signal: 'BUY', price: 178.40, target: 192.80, change: 8.1, comment: 'AWS growth and retail recovery', accuracy: 93.5 },
-      { symbol: 'META', signal: 'BUY', price: 485.20, target: 520.40, change: 7.3, comment: 'Reels monetization + Metaverse', accuracy: 90.8 },
-      { symbol: 'NVDA', signal: 'BUY', price: 895.50, target: 950.30, change: 6.1, comment: 'AI chip demand surge', accuracy: 94.2 },
-      { symbol: 'TSLA', signal: 'HOLD', price: 248.60, target: 252.40, change: 1.5, comment: 'Elon factor + production delays', accuracy: 75.8 },
-      { symbol: 'ADBE', signal: 'BUY', price: 612.80, target: 650.20, change: 6.1, comment: 'Creative Cloud expansion', accuracy: 88.7 },
-      { symbol: 'NFLX', signal: 'BUY', price: 485.30, target: 515.60, change: 6.2, comment: 'Subscriber growth + price hikes', accuracy: 87.3 },
-    ],
-  };
+  // 🚀 SPRINT 3: Generate signals from MarketData provider (Twelve Data source)
+  const marketSignalsFromProvider = useMemo(() => {
+    if (!aiPower.positions || aiPower.positions.length === 0) {
+      return [];
+    }
+    
+    return aiPower.positions.map((card) => {
+      const change = card.target && card.entry 
+        ? ((card.target - card.entry) / card.entry) * 100 
+        : 0;
+      const accuracy = card.confidence ? card.confidence * 100 : 0;
+      
+      return {
+        symbol: card.symbol,
+        signal: card.action,
+        price: card.entry,
+        target: card.target,
+        change,
+        comment: card.comment || 'Twelve Data analizi',
+        accuracy,
+      };
+    });
+  }, [aiPower.positions]);
   
-  // ✅ DYNAMIC SIGNALS: WebSocket'ten gelirse kullan, yoksa fallback
-  // 🚀 SPRINT 3: Memoize signals calculation
+  // ✅ DYNAMIC SIGNALS: WebSocket'ten gelirse kullan, yoksa provider'dan gelen verileri kullan
+  // 🚀 SPRINT 3: Memoize signals calculation - UNIFIED DATA SOURCE
   const signals = useMemo(() => {
-    const rawSignals = dynamicSignals.length > 0 ? dynamicSignals : marketSignals[selectedMarket];
+    // Priority: dynamicSignals (WebSocket) > provider data > empty array
+    const rawSignals = dynamicSignals.length > 0 
+      ? dynamicSignals 
+      : marketSignalsFromProvider.length > 0
+        ? marketSignalsFromProvider
+        : [];
+    
     const marketFiltered = rawSignals.filter(s => isWithinMarketScope(s.symbol, selectedMarket));
     return deduplicateBySymbol(marketFiltered);
-  }, [dynamicSignals, selectedMarket]);
+  }, [dynamicSignals, marketSignalsFromProvider, selectedMarket]);
 
+  const filteredSignals = useMemo(
+    () => signals.filter((s) => (s.accuracy ?? 0) >= minAccuracy),
+    [signals, minAccuracy],
+  );
+
+  const displayedSignals = useMemo(
+    () => filteredSignals.slice(0, visibleSignals),
+    [filteredSignals, visibleSignals],
+  );
+
+  const activeSignalCount = filteredSignals.length;
   // 🚀 SPRINT 3: Memoize metrics calculation
-  const metrics = useMemo(() => [
-    { label: 'Toplam Kâr', value: formatCurrency(125000), change: formatPercent(12.5), color: '#10b981', icon: '💰', pulse: true, percent: 72 },
-    { label: 'Aktif Sinyaller', value: String(signals.length), change: '+3 yeni', color: '#3b82f6', icon: '🎯', pulse: true, percent: 60 },
-    { label: 'Doğruluk Oranı', value: formatPercent(87.3), change: formatPercent(2.1), color: '#10b981', icon: '📊', pulse: false, percent: 87 },
-    { label: 'Risk Skoru', value: '3.2', change: '▼ Düşük', color: '#10b981', icon: '⚠️', pulse: false, percent: 32 },
-  ], [signals.length]);
+  const metrics = useMemo(
+    () => [
+      {
+        label: 'Toplam Kâr',
+        value: formatCurrency(125000),
+        change: '+12.5%',
+        color: '#10b981',
+        icon: '💰',
+        pulse: true,
+        percent: 72,
+      },
+      {
+        label: 'Aktif Sinyaller',
+        value: String(activeSignalCount),
+        change: `${minAccuracy}% min doğruluk`,
+        color: '#3b82f6',
+        icon: '🎯',
+        pulse: true,
+        percent: Math.min(100, activeSignalCount * 4),
+      },
+      {
+        label: 'Doğruluk Oranı',
+        value: `${aiLearning.accuracy.toFixed(1)}%`,
+        change: 'Son 30 gün',
+        color: '#10b981',
+        icon: '📊',
+        pulse: false,
+        percent: Math.min(100, Math.round(aiLearning.accuracy)),
+      },
+      {
+        label: 'Risk Modu',
+        value: RISK_LEVEL_LABELS[riskProfileLevel],
+        change: selectedMarket,
+        color: '#f97316',
+        icon: '⚖️',
+        pulse: false,
+        percent: riskProfileLevel === 'low' ? 25 : riskProfileLevel === 'medium' ? 50 : riskProfileLevel === 'high' ? 75 : 90,
+      },
+    ],
+    [activeSignalCount, minAccuracy, aiLearning.accuracy, riskProfileLevel, selectedMarket],
+  );
+
+  const aiLearningInsights = useMemo(
+    () => [
+      `Önerilen dağılım: ${recommendedSummary}`,
+      `Risk modu: ${RISK_LEVEL_LABELS[riskProfileLevel]}`,
+      `Aktif sinyal: ${activeSignalCount}`,
+      'Son 7 gün: +12.5% kâr',
+    ],
+    [recommendedSummary, riskProfileLevel, activeSignalCount],
+  );
 
   // 🚀 SPRINT 3: Memoize signal click handler
   const handleSignalClick = useCallback((symbol: string) => {
@@ -1819,7 +1865,7 @@ useEffect(() => {
                 ) : (
                   <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: connected ? '#10b981' : '#ef4444' }} suppressHydrationWarning>
                     <div style={{ width: '6px', height: '6px', background: connected ? '#10b981' : '#ef4444', borderRadius: '50%', animation: connected ? 'pulse 2s infinite' : 'none' }}></div>
-                    {connected ? 'Canlı' : 'Offline'} • {mounted ? formatTime(lastUpdate) : '--:--'} • İzleme: {watchlist.join(', ')}
+                    {connected ? 'Canlı' : 'Offline'} • {mounted && lastUpdateDate ? formatTime(lastUpdateDate) : '--:--'} • İzleme: {watchlist.join(', ')}
                     {realtimeUpdates.signals > 0 && (
                       <span style={{ fontSize: '10px', background: 'rgba(16,185,129,0.1)', padding: '2px 6px', borderRadius: '6px', fontWeight: '600', color: '#10b981' }}>
                         +{realtimeUpdates.signals}
@@ -1832,7 +1878,10 @@ useEffect(() => {
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
             <button 
-              onClick={() => openPanel('tradergpt')}
+              onClick={() => {
+                console.log('🎯 [EVENT] TraderGPT button clicked');
+                openPanel('tradergpt');
+              }}
               style={{ 
                 padding: '8px 16px', 
                 background: aiModules.tradergpt ? 'linear-gradient(135deg, #10b981, #059669)' : 'linear-gradient(135deg, #f59e0b, #f97316)', 
@@ -1856,7 +1905,10 @@ useEffect(() => {
               <span aria-hidden="true">🤖</span> GPT
             </button>
             <button 
-              onClick={() => openPanel('viz')}
+              onClick={() => {
+                console.log('🎯 [EVENT] Viz Hub button clicked');
+                openPanel('viz');
+              }}
               style={{ 
                 padding: '8px 16px', 
                 background: aiModules.viz ? 'linear-gradient(135deg, #8b5cf6, #06b6d4)' : 'linear-gradient(135deg, #8b5cf6, #a855f7)', 
@@ -1880,7 +1932,10 @@ useEffect(() => {
               <span aria-hidden="true">📊</span> Viz
             </button>
             <button 
-              onClick={() => openPanel('aiconf')}
+              onClick={() => {
+                console.log('🎯 [EVENT] AI Confidence button clicked');
+                openPanel('aiconf');
+              }}
               style={{ 
                 padding: '8px 14px', 
                 background: aiModules.aiconf ? 'linear-gradient(135deg, #ec4899, #06b6d4)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
@@ -1904,7 +1959,10 @@ useEffect(() => {
               <span aria-hidden="true">🧠</span> AI
             </button>
             <button 
-              onClick={() => openPanel('cognitive')}
+              onClick={() => {
+                console.log('🎯 [EVENT] Cognitive AI button clicked');
+                openPanel('cognitive');
+              }}
               style={{ 
                 padding: '8px 14px', 
                 background: aiModules.cognitive ? 'linear-gradient(135deg, #06b6d4, #ec4899)' : 'linear-gradient(135deg, #10b981, #059669)', 
@@ -1928,7 +1986,10 @@ useEffect(() => {
               💬 AI Yorum
             </button>
             <button 
-              onClick={() => openPanel('riskguard')}
+              onClick={() => {
+                console.log('🎯 [EVENT] Risk Guard button clicked');
+                openPanel('riskguard');
+              }}
               style={{ 
                 padding: '8px 14px', 
                 background: aiModules.riskguard ? 'linear-gradient(135deg, #f97316, #ef4444)' : 'linear-gradient(135deg, #f97316, #f59e0b)', 
@@ -1952,7 +2013,10 @@ useEffect(() => {
               📈 Risk Model
             </button>
             <button 
-              onClick={() => openPanel('meta')}
+              onClick={() => {
+                console.log('🎯 [EVENT] Meta Model button clicked');
+                openPanel('meta');
+              }}
               style={{ 
                 padding: '8px 14px', 
                 background: aiModules.meta ? 'linear-gradient(135deg, #ec4899, #8b5cf6)' : 'linear-gradient(135deg, #ec4899, #a855f7)', 
@@ -2296,6 +2360,11 @@ useEffect(() => {
               {paperMode ? 'Paper Modu Açık' : 'Paper Modu Kapalı'}
             </button>
           </div>
+          <p style={{ fontSize: '11px', color: '#94a3b8', marginBottom: paperMode ? '12px' : '0' }}>
+            {paperMode
+              ? 'Paper modu açıkken tüm portföy kartları simülasyon verisi gösterir.'
+              : 'Paper modu kapalı; örnek/veri kaynağındaki gerçek portföy metrikleri gösteriliyor.'}
+          </p>
           {paperMode && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px' }}>
               <div style={{ flex: '1 1 220px' }}>
@@ -2344,7 +2413,7 @@ useEffect(() => {
                 🤖 AI Tahminleri & Sinyaller
               </h2>
               <div style={{ fontSize: '12px', color: '#64748b' }}>
-                Gerçek zamanlı AI analizi • {signals.length} aktif sinyal • {selectedMarket} piyasası
+                Gerçek zamanlı AI analizi • {activeSignalCount} aktif sinyal • {selectedMarket} piyasası
               </div>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
@@ -2357,101 +2426,124 @@ useEffect(() => {
                 <option value="NYSE">NYSE</option>
                 <option value="NASDAQ">NASDAQ</option>
               </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 10px', borderRadius: '8px', border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                <label htmlFor="accuracy-filter" style={{ fontSize: '11px', fontWeight: 600, color: '#0f172a' }}>
+                  Doğruluk ≥ {minAccuracy}%
+                </label>
+                <input
+                  id="accuracy-filter"
+                  type="range"
+                  min={50}
+                  max={95}
+                  step={5}
+                  value={minAccuracy}
+                  onChange={(e) => setMinAccuracy(Number(e.target.value))}
+                  style={{ accentColor: '#06b6d4' }}
+                />
+              </div>
             </div>
           </div>
           
           {/* Signals Table */}
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Sembol</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Sinyal</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Fiyat</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Hedef</th>
-                  <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Değişim</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Doğruluk</th>
-                </tr>
-              </thead>
-              <tbody>
-                {signals.slice(0, 10).map((s: Signal, idx: number) => {
-                  const isBuy = s.signal === 'BUY';
-                  const signalColor = isBuy ? '#10b981' : s.signal === 'SELL' ? '#ef4444' : '#64748b';
-                  const changeColor = (s.change || 0) >= 0 ? '#10b981' : '#ef4444';
-                  return (
-                    <tr 
-                      key={idx} 
-                      style={{ 
-                        borderBottom: '1px solid #f1f5f9',
-                        cursor: 'pointer',
-                        transition: 'background 0.2s'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
-                      onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
-                      onClick={() => handleSignalClick(s.symbol)}
-                    >
-                      <td style={{ padding: '12px', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{s.symbol}</td>
-                      <td style={{ padding: '12px', textAlign: 'center' }}>
-                        <span style={{ 
-                          padding: '4px 12px', 
-                          borderRadius: '6px', 
-                          fontSize: '11px', 
-                          fontWeight: '700',
-                          background: signalColor + '15',
-                          color: signalColor,
-                          border: '1px solid ' + signalColor + '40'
-                        }}>
-                          {s.signal}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                        {formatCurrency(s.price || 0)}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
-                        {formatCurrency(s.target || 0)}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: changeColor }}>
-                        {(s.change || 0) >= 0 ? '+' : ''}{formatPercent(s.change || 0)}
-                      </td>
-                      <td style={{ padding: '12px', textAlign: 'center' }}>
-                        <div style={{ 
-                          display: 'inline-block',
-                          padding: '4px 8px', 
-                          borderRadius: '6px', 
-                          fontSize: '11px', 
-                          fontWeight: '700',
-                          background: s.accuracy >= 85 ? '#10b98115' : s.accuracy >= 75 ? '#f59e0b15' : '#ef444415',
-                          color: s.accuracy >= 85 ? '#10b981' : s.accuracy >= 75 ? '#f59e0b' : '#ef4444'
-                        }}>
-                          {s.accuracy?.toFixed(1) || '--'}%
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-          
-          {signals.length > 10 && (
-            <div style={{ marginTop: '12px', textAlign: 'center' }}>
-              <button
-                onClick={() => router.push('/feature/bist30')}
-                style={{
-                  padding: '8px 16px',
-                  background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                  fontWeight: '700',
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 12px rgba(6,182,212,0.3)'
-                }}
-              >
-                Tüm Sinyalleri Gör ({signals.length} toplam) →
-              </button>
+          {filteredSignals.length === 0 ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: '#64748b', fontSize: '13px' }}>
+              Şu an {minAccuracy}% üzeri aktif sinyal bulunmuyor. Eşiği düşürerek daha fazla sonuç görebilirsiniz.
             </div>
+          ) : (
+            <>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid #e2e8f0' }}>
+                      <th style={{ padding: '12px', textAlign: 'left', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Sembol</th>
+                      <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Sinyal</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Fiyat</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Hedef</th>
+                      <th style={{ padding: '12px', textAlign: 'right', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Değişim</th>
+                      <th style={{ padding: '12px', textAlign: 'center', fontSize: '12px', fontWeight: '700', color: '#475569', textTransform: 'uppercase' }}>Doğruluk</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSignals.slice(0, 10).map((s: Signal, idx: number) => {
+                      const isBuy = s.signal === 'BUY';
+                      const signalColor = isBuy ? '#10b981' : s.signal === 'SELL' ? '#ef4444' : '#64748b';
+                      const changeColor = (s.change || 0) >= 0 ? '#10b981' : '#ef4444';
+                      return (
+                        <tr 
+                          key={idx} 
+                          style={{ 
+                            borderBottom: '1px solid #f1f5f9',
+                            cursor: 'pointer',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#f8fafc'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
+                          onClick={() => handleSignalClick(s.symbol)}
+                        >
+                          <td style={{ padding: '12px', fontSize: '14px', fontWeight: '700', color: '#0f172a' }}>{s.symbol}</td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>
+                            <span style={{ 
+                              padding: '4px 12px', 
+                              borderRadius: '6px', 
+                              fontSize: '11px', 
+                              fontWeight: '700',
+                              background: signalColor + '15',
+                              color: signalColor,
+                              border: '1px solid ' + signalColor + '40'
+                            }}>
+                              {s.signal}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
+                            {formatCurrency(s.price || 0)}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '600', color: '#0f172a' }}>
+                            {formatCurrency(s.target || 0)}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'right', fontSize: '14px', fontWeight: '700', color: changeColor }}>
+                            {(s.change || 0) >= 0 ? '+' : ''}{formatPercent(s.change || 0)}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>
+                            <div style={{ 
+                              display: 'inline-block',
+                              padding: '4px 8px', 
+                              borderRadius: '6px', 
+                              fontSize: '11px', 
+                              fontWeight: '700',
+                              background: s.accuracy >= 85 ? '#10b98115' : s.accuracy >= 75 ? '#f59e0b15' : '#ef444415',
+                              color: s.accuracy >= 85 ? '#10b981' : s.accuracy >= 75 ? '#f59e0b' : '#ef4444'
+                            }}>
+                              {s.accuracy?.toFixed(1) || '--'}%
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              
+              {filteredSignals.length > 10 && (
+                <div style={{ marginTop: '12px', textAlign: 'center' }}>
+                  <button
+                    onClick={() => router.push('/feature/bist30')}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: '700',
+                      cursor: 'pointer',
+                      boxShadow: '0 4px 12px rgba(6,182,212,0.3)'
+                    }}
+                  >
+                    Tüm Sinyalleri Gör ({filteredSignals.length} toplam) →
+                  </button>
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -2519,8 +2611,12 @@ useEffect(() => {
         padding: '16px',
         marginBottom: '16px'
       }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-          <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>⚖️ Risk Dağılımı</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', gap: '12px', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>⚖️ Risk Dağılımı</div>
+            <PortfolioLabel type="suggested" />
+          </div>
+          <TimestampBadge label="prices" prefix="Fiyat" />
           <select
             style={{ padding: '6px 12px', fontSize: '12px', border: '1px solid #e2e8f0', borderRadius: '6px', background: '#ffffff' }}
             value={riskProfileLevel}
@@ -2537,17 +2633,7 @@ useEffect(() => {
           </select>
         </div>
         {(() => {
-          const riskProfile = (() => {
-            const base = signals && signals.length > 0 ? signals.map((s: Signal)=>s.symbol).slice(0,3) : ['THYAO','AKBNK','EREGL'];
-            return {
-              low: base.map((s,i) => ({ symbol: s, pct: [35,33,32][i] || 33 })),
-              medium: base.map((s,i) => ({ symbol: s, pct: [42,31,27][i] || 33 })),
-              high: base.map((s,i) => ({ symbol: s, pct: [30,35,35][i] || 33 })),
-              aggressive: base.map((s,i) => ({ symbol: s, pct: [25,25,25][i] || 33 }))
-            };
-          })();
-          const current = riskProfileLevel;
-          const alloc = riskProfile[current];
+          const alloc = riskAllocations[riskProfileLevel];
           return (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '10px' }}>
               {alloc.map((a, idx) => (
@@ -2831,8 +2917,8 @@ useEffect(() => {
               <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600 }}>
                 {aiPowerLoading
                   ? 'Güncelleniyor...'
-                  : aiPowerUpdatedAt
-                    ? `Güncellendi: ${new Date(aiPowerUpdatedAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} • ${aiPowerFreshness}`
+                  : globalLastUpdated
+                    ? `Güncellendi: ${new Date(globalLastUpdated).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })} • ${aiPowerFreshness}`
                     : ''}
               </span>
               <button
@@ -3418,7 +3504,7 @@ useEffect(() => {
                 <div style={{ fontSize: '11px', color: '#64748b' }}>Yeşil: + korelasyon · Kırmızı: - korelasyon</div>
               </div>
               {(() => {
-                const symbols = (signals && signals.length > 0 ? signals.map((s: Signal)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
+                const symbols = (filteredSignals.length > 0 ? filteredSignals.map((s: Signal)=>s.symbol) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN','BIMAS','TOASO']).slice(0,8);
                 const n = symbols.length;
                 const corr: number[][] = [];
                 for (let i=0;i<n;i++){ 
@@ -3599,7 +3685,7 @@ useEffect(() => {
                 </tr>
               </thead>
               <tbody>
-                {signals.slice(0, visibleSignals).map((s, idx) => (
+                {displayedSignals.map((s, idx) => (
                   <tr key={idx} id={'signal-row-' + s.symbol} style={{ borderBottom: '1px solid rgba(6,182,212,0.08)', cursor: 'pointer' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(6,182,212,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = '#fff'; }} aria-label={s.symbol + ' - ' + s.signal + ' sinyali, Fiyat: ' + (s.price ? (selectedMarket === 'BIST' ? '₺' : '$') + s.price.toFixed(2) : 'N/A') + ', Beklenen: ' + (s.target ? (selectedMarket === 'BIST' ? '₺' : '$') + s.target.toFixed(2) : 'N/A')}>
                     <td style={{ padding: '12px', fontWeight: 'bold', fontSize: '16px', color: '#0f172a' }}>{s.symbol}</td>
                     <td style={{ padding: '12px' }}>
@@ -3669,7 +3755,7 @@ useEffect(() => {
               </tbody>
             </table>
           </div>
-          {signals.length > visibleSignals && (
+        {filteredSignals.length > visibleSignals && (
             <div style={{ padding: '12px', borderTop: '1px solid rgba(6,182,212,0.1)', background: 'rgba(255,255,255,0.5)', display: 'flex', justifyContent: 'center' }}>
               <button 
                 onClick={handleLoadMore}
@@ -3688,9 +3774,9 @@ useEffect(() => {
                 }} 
                 onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(6,182,212,0.5)'; }} 
                 onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(6,182,212,0.4)'; }}
-                aria-label={(signals.length - visibleSignals) + ' sinyal daha göster'}
+              aria-label={(filteredSignals.length - visibleSignals) + ' sinyal daha göster'}
               >
-                {signals.length - visibleSignals} Daha Fazla Sinyal Göster
+              {filteredSignals.length - visibleSignals} Daha Fazla Sinyal Göster
               </button>
             </div>
           )}
@@ -3817,9 +3903,13 @@ useEffect(() => {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <div style={{ padding: '16px', borderBottom: '1px solid rgba(6,182,212,0.1)', background: 'linear-gradient(135deg, rgba(6,182,212,0.15), rgba(255,255,255,0.8))' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px', flexWrap: 'wrap', gap: '12px' }}>
               <div>
-                <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, marginBottom: '8px', color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0, color: '#0f172a', letterSpacing: '-0.5px' }}>💹 Portföy Simulatörü</h2>
+                  <PortfolioLabel type="simulator" />
+                  <TimestampBadge label="prices" prefix="Fiyat" />
+                </div>
                 <div style={{ fontSize: '11px', color: '#64748b' }}>AI sinyalleriyle 30 günlük portföy performansı simülasyonu</div>
               </div>
               <button
@@ -3997,6 +4087,9 @@ useEffect(() => {
           boxShadow: '0 10px 50px rgba(6,182,212,0.15)'
         }}>
           <BacktestingPreview />
+          <p style={{ fontSize: '11px', color: '#94a3b8', marginTop: '6px', textAlign: 'right' }}>
+            Geçmiş performans sonuçları yatırım tavsiyesi değildir.
+          </p>
         </div>
 
         {/* Risk Attribution - Portföy altına eklendi */}
@@ -4307,20 +4400,33 @@ useEffect(() => {
                 <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Son 30 gün ortalaması</div>
               </div>
               <div style={{ padding: '12px', background: 'rgba(59,130,246,0.1)', borderRadius: '16px', border: '2px solid rgba(59,130,246,0.3)' }}>
-                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Önerilen Portföy</div>
-                <div style={{ fontSize: '18px', fontWeight: 'bold', color: '#3b82f6' }}>THYAO %40</div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>AKBNK %30, EREGL %30</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: '11px', color: '#64748b', fontWeight: '700' }}>Önerilen Portföy</div>
+                  <PortfolioLabel type="suggested" />
+                  <TimestampBadge label="aiPower" prefix="AI" />
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {recommendedPortfolio.map((entry) => (
+                    <div key={entry.symbol} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#0f172a' }}>
+                      <span style={{ fontWeight: 700 }}>{entry.symbol}</span>
+                      <span>%{entry.weight}</span>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>
+                  {recommendedSummary}
+                </div>
               </div>
               <div style={{ padding: '12px', background: 'rgba(251,191,36,0.1)', borderRadius: '16px', border: '2px solid rgba(251,191,36,0.3)' }}>
-                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Risk Skoru</div>
-                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#eab308' }}>3.2</div>
-                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>3.2 / 5 — Düşük Risk</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginBottom: '8px', fontWeight: '700' }}>Risk Modu</div>
+                <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#eab308' }}>{RISK_LEVEL_LABELS[riskProfileLevel]}</div>
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '8px' }}>Modele göre {selectedMarket} için önerilen profil</div>
               </div>
             </div>
             <div style={{ padding: '12px', background: 'rgba(139,92,246,0.1)', borderRadius: '16px', border: '2px solid rgba(139,92,246,0.3)' }}>
               <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#8b5cf6', marginBottom: '16px' }}>💡 AI Önerileri:</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                {aiLearning.recommendations.map((rec, idx) => (
+                {aiLearningInsights.map((rec, idx) => (
                   <div key={idx} style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
@@ -4488,7 +4594,11 @@ useEffect(() => {
               padding: '12px',
               border: '1px solid rgba(251,191,36,0.2)'
             }}>
-              <GamificationSystem />
+              {hasFeature('gamification') ? (
+                <GamificationSystem />
+              ) : (
+                <PlanFeatureLock feature="gamification" requiredPlan="pro" currentPlan={plan} />
+              )}
         </div>
           </div>
         )}
@@ -4680,7 +4790,11 @@ useEffect(() => {
               padding: '12px',
               border: '1px solid rgba(139,92,246,0.2)'
             }}>
-              <FeedbackLoop />
+              {hasFeature('feedbackLoop') ? (
+                <FeedbackLoop />
+              ) : (
+                <PlanFeatureLock feature="feedbackLoop" requiredPlan="pro" currentPlan={plan} />
+              )}
           </div>
           </div>
         )}
@@ -4729,6 +4843,9 @@ useEffect(() => {
               border: '1px solid rgba(249,115,22,0.2)'
             }}>
               <VolatilityModel />
+              <p style={{ fontSize: '11px', color: '#f97316', marginTop: '6px', textAlign: 'right' }}>
+                Volatilite model çıktıları yalnızca risk simülasyonu amaçlıdır, yatırım tavsiyesi değildir.
+              </p>
             </div>
           </div>
         )}
@@ -4838,7 +4955,11 @@ useEffect(() => {
             borderRadius: '20px',
             boxShadow: '0 8px 32px rgba(0,0,0,0.1)'
           }}>
-            <InvestorPanel />
+            {hasFeature('investorPanel') ? (
+              <InvestorPanel />
+            ) : (
+              <PlanFeatureLock feature="investorPanel" requiredPlan="enterprise" currentPlan={plan} />
+            )}
           </div>
         )}
 
@@ -4903,17 +5024,17 @@ useEffect(() => {
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', fontSize: '11px', color: '#64748b' }}>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+            <div>
+              <span style={{ fontWeight: '700', color: '#3b82f6' }}>AI:</span> {filteredSignals.length} aktif sinyal
+            </div>
               <div>
-                <span style={{ fontWeight: '700', color: '#3b82f6' }}>AI:</span> 15 aktif sinyal
+                <span style={{ fontWeight: '700', color: '#10b981' }}>Ortalama Doğruluk:</span> {aiLearning.accuracy.toFixed(1)}%
               </div>
               <div>
-                <span style={{ fontWeight: '700', color: '#10b981' }}>Ortalama Doğruluk:</span> 87.3%
+                <span style={{ fontWeight: '700', color: '#ef4444' }}>Ortalama Risk:</span> {RISK_LEVEL_LABELS[riskProfileLevel]}
               </div>
               <div>
-                <span style={{ fontWeight: '700', color: '#ef4444' }}>Ortalama Risk:</span> Düşük
-              </div>
-              <div>
-                <span style={{ fontWeight: '700', color: '#06b6d4' }}>Son Güncelleme:</span> {mounted ? timeString : '--:--'}
+                <TimestampBadge label="prices" prefix="Son güncelleme" />
               </div>
             </div>
             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
@@ -5320,7 +5441,7 @@ useEffect(() => {
         }}>
           {(() => {
             // Ortalama güveni signals/dynamicSignals üzerinden tahmin et
-            const pool = signals && signals.length > 0 ? signals : [];
+            const pool = filteredSignals.length > 0 ? filteredSignals : [];
             const avg = pool.length > 0 ? Math.round(pool.map((s: Signal)=> (typeof s.confidence==='number' ? s.confidence*100 : (s.accuracy||80))).reduce((a:number,b:number)=>a+b,0)/pool.length) : 78;
             const level = avg >= 85 ? 'Yüksek' : avg >= 70 ? 'Orta' : 'Düşük';
             const color = avg >= 85 ? '#10b981' : avg >= 70 ? '#f59e0b' : '#ef4444';
@@ -5438,7 +5559,7 @@ useEffect(() => {
           </div>
           {(() => {
             // Derive top symbols from signals
-            const syms = (signals && signals.length > 0 ? Array.from(new Set(signals.map((s: Signal)=>s.symbol))) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN']).slice(0, 6);
+            const syms = (filteredSignals.length > 0 ? Array.from(new Set(filteredSignals.map((s: Signal)=>s.symbol))) : ['THYAO','AKBNK','EREGL','SISE','TUPRS','GARAN']).slice(0, 6);
             const horizons = ['1h','4h','1d'];
             function mtfScore(symbol: string, horizon: string) {
               // hashed pseudo score -1..+1

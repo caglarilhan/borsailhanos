@@ -1,14 +1,13 @@
-import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
+'use client';
+
+import { useEffect } from 'react';
 import DashboardV33Shell from '@/components/DashboardV33Shell';
 
-export default async function DashboardPage() {
-  const cookieStore = await cookies();
-  const sessionId = cookieStore.get('session_id')?.value;
-
-  if (!sessionId) {
-    redirect(`/login?callbackUrl=${encodeURIComponent('/dashboard')}`);
-  }
+export default function DashboardPage() {
+  useEffect(() => {
+    console.log('🚀 [HYDRATION] DashboardPage CLIENT COMPONENT MOUNTED');
+    console.log('🚀 [HYDRATION] Dashboard page is now fully client-side');
+  }, []);
 
   return <DashboardV33Shell />;
 }

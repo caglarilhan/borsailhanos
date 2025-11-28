@@ -1,25 +1,13 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Send, Bot, User, Sparkles, TrendingUp } from 'lucide-react';
-
-interface Message {
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-}
+import { useTraderGptChat } from '@/hooks/useTraderGptChat';
 
 export default function TraderGPT() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'assistant',
-      content: 'Merhaba! Ben TraderGPT. Size bugün BIST piyasasında hangi sinyalleri izlemeniz gerektiğini söyleyebilirim. Sormak istediğiniz bir şey var mı?',
-      timestamp: new Date()
-    }
-  ]);
+  const { messages, isLoading, sendMessage, error } = useTraderGptChat();
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -30,52 +18,20 @@ export default function TraderGPT() {
     scrollToBottom();
   }, [messages]);
 
+  const normalizedMessages = useMemo(
+    () =>
+      messages.map((msg) => ({
+        ...msg,
+        timestamp: new Date(msg.timestamp),
+      })),
+    [messages],
+  );
+
   const handleSend = async () => {
     if (!input.trim()) return;
-
-    const userMessage: Message = {
-      role: 'user',
-      content: input,
-      timestamp: new Date()
-    };
-
-    setMessages(prev => [...prev, userMessage]);
+    const text = input;
     setInput('');
-    setIsTyping(true);
-
-    // Simulate AI response
-    setTimeout(() => {
-      const responses: Record<string, string> = {
-        'bugün hangi hisseleri izlemeliyim': 'Bugün özellikle THYAO, AKBNK ve EREGL\'i izlemenizi öneririm. AI sinyallerine göre: THYAO\'da güçlü momentum var (RSI 71). AKBNK\'da son 3 günde %5 pozitif trend görülüyor. EREGL ise destek seviyesine yakın, kısa vade fırsat olabilir.',
-        'risk': 'Portföyünüzdeki risk seviyesi şu anda DÜŞÜK (CVaR: %3.2). En yüksek risk taşıyan pozisyon THYAO (%40 ağırlık). Önerim: Ağırlığı AKBNK ve EREGL\'e dağıtarak riski dengeliyin. Hedging için BIST30 short pozisyonu ekleyebilirsiniz.',
-        'portfolio': 'Mevcut portföyünüz (THYAO %40, AKBNK %30, EREGL %30) için optimal ağırlık dağılımı: THYAO %35, AKBNK %35, EREGL %30. Bu dağılım ile Sharpe ratio 1.85\'e yükselir ve beklenen getiri %18\'dir.',
-        'al sat': 'AI sinyallerine göre: THYAO için BUY sinyali mevcut (%85 güven). Hedef: 255 ₺, Stop-Loss: 240 ₺. AKBNK için BEKLE sinyali. EREGL için SELL sinyali (%72 güven). Hedef: 45 ₺, Stop-Loss: 48 ₺.'
-      };
-
-      const lowerInput = input.toLowerCase();
-      let response = '';
-
-      if (lowerInput.includes('hisse') || lowerInput.includes('izlemeli')) {
-        response = responses['bugün hangi hisseleri izlemeliyim'];
-      } else if (lowerInput.includes('risk')) {
-        response = responses['risk'];
-      } else if (lowerInput.includes('portfolio') || lowerInput.includes('portföy')) {
-        response = responses['portfolio'];
-      } else if (lowerInput.includes('al') || lowerInput.includes('sat')) {
-        response = responses['al sat'];
-      } else {
-        response = `Bu konuda size yardımcı olabilirim. Şu alanlar hakkında soru sorabilirsiniz: ${lowerInput.includes('hisse') ? '' : 'hisseler, '}risk analizi, portfolio optimizasyonu, sinyaller. Daha spesifik bir soru sorarsanız, size detaylı yanıt verebilirim.`;
-      }
-
-      const aiMessage: Message = {
-        role: 'assistant',
-        content: response,
-        timestamp: new Date()
-      };
-
-      setMessages(prev => [...prev, aiMessage]);
-      setIsTyping(false);
-    }, 1500);
+    await sendMessage(text);
   };
 
   return (
@@ -97,7 +53,7 @@ export default function TraderGPT() {
       <div className="bg-slate-900/50 rounded-xl border border-slate-700/50 overflow-hidden">
         <div className="h-[400px] overflow-y-auto p-6 space-y-4" style={{ background: 'rgba(15,23,42,0.5)' }}>
           <AnimatePresence>
-            {messages.map((msg, idx) => (
+            {normalizedMessages.map((msg, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, y: 20 }}
@@ -128,18 +84,22 @@ export default function TraderGPT() {
             ))}
           </AnimatePresence>
 
-          {isTyping && (
+          {(isLoading || error) && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="flex gap-2 items-center text-purple-400"
             >
               <Bot className="w-4 h-4" />
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-              </div>
+              {isLoading ? (
+                <div className="flex gap-1">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                </div>
+              ) : (
+                <span className="text-xs text-red-300">{error}</span>
+              )}
             </motion.div>
           )}
 
@@ -172,7 +132,10 @@ export default function TraderGPT() {
             {['Hisseler?', 'Risk?', 'Portföy?', 'Al/Sat?'].map((action) => (
               <button
                 key={action}
-                onClick={() => setInput(action)}
+                onClick={() => {
+                  setInput(action);
+                  sendMessage(action);
+                }}
                 className="px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg text-sm hover:bg-purple-500/30 transition-colors"
               >
                 {action}

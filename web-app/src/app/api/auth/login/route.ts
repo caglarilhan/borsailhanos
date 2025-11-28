@@ -11,15 +11,12 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import crypto from 'crypto';
+import { signTokenWithExpiration } from '@/lib/auth/jwt';
 
 // Rate limiting store (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>();
 const RATE_LIMIT_MAX_ATTEMPTS = 10;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
-
-// Session store (in production, use Redis or database)
-const sessionStore = new Map<string, { userId: string; expiresAt: number }>();
 
 interface LoginRequest {
   username: string;
@@ -96,19 +93,6 @@ async function verifyPassword(username: string, password: string): Promise<boole
   return normalizedUsername.length >= 3 && normalizedPassword.length >= 8;
 }
 
-/**
- * Create session
- */
-function createSession(userId: string, remember: boolean): string {
-  const sessionId = crypto.randomBytes(32).toString('hex');
-  const expiresAt = remember
-    ? Date.now() + 30 * 24 * 60 * 60 * 1000 // 30 days
-    : Date.now() + 24 * 60 * 60 * 1000; // 1 day
-
-  sessionStore.set(sessionId, { userId, expiresAt });
-
-  return sessionId;
-}
 
 /**
  * Audit log (in production, write to database/logging service)
@@ -185,14 +169,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create session
+    // Determine user ID and role
     const userId = username; // In production, get actual user ID from database
-    const sessionId = createSession(userId, remember);
-
-    // Determine role (mock): admin if username includes 'admin'
     const role = /admin/i.test(username) ? 'admin' : 'trader';
 
-    // Set session cookie
+    // Generate JWT token
+    const expiresIn = remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 1 day in seconds
+    const token = await signTokenWithExpiration(
+      { userId, role },
+      expiresIn
+    );
+
+    // Set JWT token as HttpOnly cookie
     const cookieStore = await cookies();
     const response = NextResponse.json({
       success: true,
@@ -200,21 +188,19 @@ export async function POST(request: NextRequest) {
       user: { id: userId, role },
     });
 
-    response.cookies.set('session_id', sessionId, {
+    const cookieOptions = {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60, // 30 days or 1 day
+      sameSite: 'lax' as const,
+      maxAge: expiresIn,
       path: '/',
-    });
-    // Set role cookie for quick access on refresh
-    response.cookies.set('user_role', role, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: remember ? 30 * 24 * 60 * 60 : 24 * 60 * 60,
-      path: '/',
-    });
+    };
+
+    response.cookies.set('auth_token', token, cookieOptions);
+    response.cookies.set('user_role', role, cookieOptions);
+
+    console.log(`[LOGIN_API] Cookie set - auth_token: present, user_role: ${role}, maxAge: ${expiresIn}s, remember: ${remember}`);
+    console.log(`[LOGIN_API] Cookie options: httpOnly=${cookieOptions.httpOnly}, secure=${cookieOptions.secure}, sameSite=${cookieOptions.sameSite}, path=${cookieOptions.path}`);
 
     // Audit success
     auditLog('login_success', username, request);
